@@ -1,0 +1,147 @@
+# options for analysis running
+run:
+  # timeout for analysis, e.g. 30s, 5m, default is 1m
+  timeout: 10m
+  modules-download-mode: readonly
+
+# list of useful linters could be found at https://github.com/golangci/awesome-go-linters
+linters:
+  disable-all: true
+  enable:
+    - bidichk
+    - depguard
+    - errcheck
+    - errname
+    - exportloopref
+    - forbidigo
+    - gci
+    # We use both gofmt and gofumpt because gofumpt doesn't seem to be linting
+    # for simplifications, while gofmt does.
+    - gofmt
+    - gofumpt
+    - goimports
+    - gosimple
+    - govet
+    - ineffassign
+    - makezero
+    - megacheck
+    - misspell
+    - noctx
+    - nolintlint
+    - paralleltest
+    - revive
+    - staticcheck
+    - stylecheck
+    - tenv
+    - thelper
+    - unconvert
+    - unused
+    - gitaly-linters
+    # These linters don't currently support Go 1.18+. Please refer to
+    # https://github.com/golangci/golangci-lint/issues/2649 for further
+    # information.
+    #- rowserrcheck
+    #- sqlclosecheck
+    #- wastedassign
+
+linters-settings:
+  depguard:
+    list-type: blacklist
+    include-go-root: true
+    packages-with-error-message:
+      - io/ioutil: "ioutil is deprecated starting with Go 1.16"
+  errcheck:
+    # The following are functions for which we are currently not consistently
+    # checking returned errors. This is not intended as a list of known-okay
+    # cases to skip the checks, but rather as a list of things we should
+    # eventually fix.
+    exclude-functions:
+      - (*database/sql.DB).Close
+      - (*database/sql.Rows).Close
+      - (*gitlab.com/gitlab-org/gitaly/v15/client.Pool).Close
+      - (*gitlab.com/gitlab-org/gitaly/v15/internal/sidechannel.ServerConn).Close
+      - (*gitlab.com/gitlab-org/gitaly/v15/internal/streamcache.pipe).Close
+      - (*gitlab.com/gitlab-org/gitaly/v15/internal/streamcache.pipeReader).Close
+      - (*google.golang.org/grpc.ClientConn).Close
+      - (*google.golang.org/grpc.ServerConn).Close
+      - (*io.PipeReader).Close
+      - (*io.PipeWriter).Close
+      - (*os.File).Close
+      - (io.Closer).Close
+      - (net.Conn).Close
+      - (net.Listener).Close
+  forbidigo:
+    forbid:
+      # Tests and code which use timing-based setups have repeatedly resulted
+      # in flaky tests and are considered a code smell. Tests should be
+      # rewritten to use deterministic timing sources like tickers. Using the
+      # following functions is thus disallowed. and a code smell.
+      - ^context.WithDeadline$
+      - ^context.WithTimeout$
+      # Tests should always use `testhelper.Context()`: this context has
+      # special handling for feature flags which allows us to assert that
+      # they're tested as expected.
+      - ^context.Background$
+      - ^context.TODO$
+  paralleltest:
+    # Ignore missing calls to `t.Parallel()` and only report incorrect uses of it.
+    ignore-missing: true
+  revive:
+    # Specifying any rule explicitly will disable the default-enabled rules.
+    # Manually specify the defaults along with `context-as-argument`.
+    rules:
+      - name: blank-imports
+        disabled: false
+      - name: context-as-argument
+        arguments:
+          # The context should always be first, except in our testing packages.
+          allowTypesBefore: "*testing.T,*testing.B,testing.TB"
+      - name: dot-imports
+        disabled: false
+      - name: error-naming
+        disabled: false
+      - name: error-return
+        disabled: false
+      - name: error-strings
+        disabled: false
+      - name: exported
+        disabled: false
+      - name: increment-decrement
+        disabled: false
+      - name: indent-error-flow
+        disabled: false
+      - name: receiver-naming
+        disabled: false
+      - name: range
+        disabled: false
+      - name: var-naming
+        disabled: false
+  stylecheck:
+    # ST1000 checks for missing package comments. We don't use these for most
+    # packages, so let's disable this check.
+    checks: [ "all", "-ST1000" ]
+  thelper:
+    test:
+      # The following linter would check whether we always call `t.Helper()` in
+      # functions that are not the top-level testcase. While this is nice in
+      # theory, in practice it would also impact e.g. usecases like
+      # `testhelper.NewFeatureSets(...).Run(t, testWithFeatures)`. This isn't
+      # really what we want, so we just leave these as disabled for the time
+      # being.
+      begin: false
+    benchmark:
+      begin: false
+    tb:
+      begin: false
+  
+issues:
+  exclude-use-default: false
+  exclude-rules:
+    - linters:
+        - forbidigo
+      # This fine thing excludes all paths which don't end with "_test.go".
+      path: "^([^_]|_([^t]|t([^e]|e([^s]|s([^t]|t([^\\.]|\\.([^g]|g[^o])))))))*$"
+  # Maximum issues count per one linter. Set to 0 to disable. Default is 50.
+  max-issues-per-linter: 0
+  # Maximum count of issues with the same text. Set to 0 to disable. Default is 3.
+  max-same-issues: 0
