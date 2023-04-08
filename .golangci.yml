@@ -36,7 +36,6 @@ linters:
     - thelper
     - unconvert
     - unused
-    - gitaly-linters
     # These linters don't currently support Go 1.18+. Please refer to
     # https://github.com/golangci/golangci-lint/issues/2649 for further
     # information.
