@@ -16,17 +16,17 @@ type MongoDB struct {
 var _ Database = (*MongoDB)(nil)
 
 // NewMongoDB return new instance of MongoDB.
-func NewMongoDB(uri, dbName string) (*MongoDB, error) {
-	var database *MongoDB
+func NewMongoDB(ctx context.Context, uri, dbName string) (*MongoDB, error) {
+	var database MongoDB
 
-	client, err := mongo.Connect(context.TODO(), options.Client().ApplyURI(uri))
+	client, err := mongo.Connect(ctx, options.Client().ApplyURI(uri))
 	if err != nil {
 		return nil, fmt.Errorf("connect to mongodb: %w", err)
 	}
 
 	database.DB = client.Database(dbName)
 
-	return database, nil
+	return &database, nil
 }
 
 // Close closes the connection with MongoDB.
