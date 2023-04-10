@@ -8,15 +8,16 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
-type mongoDB struct {
+// MongoDB represents a connection with MongoDB.
+type MongoDB struct {
 	DB *mongo.Database
 }
 
-var _ Database = (*mongoDB)(nil)
+var _ Database = (*MongoDB)(nil)
 
-// New return new instance of MongoDB.
-func New(uri, dbName string) (*mongoDB, error) {
-	var database *mongoDB
+// NewMongoDB return new instance of MongoDB.
+func NewMongoDB(uri, dbName string) (*MongoDB, error) {
+	var database *MongoDB
 
 	client, err := mongo.Connect(context.TODO(), options.Client().ApplyURI(uri))
 	if err != nil {
@@ -28,7 +29,8 @@ func New(uri, dbName string) (*mongoDB, error) {
 	return database, nil
 }
 
-func (m mongoDB) Close() error {
+// Close closes the connection with MongoDB.
+func (m MongoDB) Close() error {
 	if m.DB != nil {
 		err := m.DB.Client().Disconnect(context.Background())
 		if err != nil {
