@@ -2,11 +2,14 @@ package store
 
 import (
 	"context"
+	"errors"
 
 	"github.com/VladPetriv/finance_bot/internal/models"
 	"github.com/VladPetriv/finance_bot/internal/service"
 	"github.com/VladPetriv/finance_bot/pkg/database"
+	"github.com/google/uuid"
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/mongo"
 )
 
 type balanceStore struct {
@@ -29,6 +32,10 @@ func (b balanceStore) Get(ctx context.Context, balanceID string) (*models.Balanc
 
 	err := b.DB.Collection(collectionBalance).FindOne(ctx, bson.M{"_id": balanceID}).Decode(&balance)
 	if err != nil {
+		if errors.Is(err, mongo.ErrNoDocuments) {
+			return nil, nil
+		}
+
 		return nil, err
 	}
 
