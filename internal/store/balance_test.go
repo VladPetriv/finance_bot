@@ -4,12 +4,15 @@ import (
 	"context"
 	"testing"
 
+	"github.com/VladPetriv/finance_bot/config"
 	"github.com/VladPetriv/finance_bot/internal/models"
 	"github.com/VladPetriv/finance_bot/internal/store"
 	"github.com/VladPetriv/finance_bot/pkg/database"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/mongo"
 )
 
 var (
@@ -21,52 +24,58 @@ func TestBalance_Get(t *testing.T) {
 	t.Parallel()
 
 	ctx := context.TODO() //nolint: forbidigo
+	cfg := config.Get()
 
-	db, err := database.NewMongoDB(ctx, "mongodb://localhost:27017", "api")
+	db, err := database.NewMongoDB(ctx, cfg.MongoDB.URI, cfg.MongoDB.Database)
 	require.NoError(t, err)
-
 	balanceStore := store.NewBalance(db)
 
 	balanceID := uuid.NewString()
 
-	err = balanceStore.Create(ctx, &models.Balance{
-		ID:     balanceID,
-		Amount: &amount3000,
-	}) //
-	require.NoError(t, err)
-
-	tests := []struct {
-		desc  string
-		input string
-		want  *models.Balance
+	testCases := []struct {
+		desc          string
+		preconditions *models.Balance
+		input         string
+		expected      *models.Balance
 	}{
 		{
-			desc:  "should return balance by id",
+			desc: "positive: balance received",
+			preconditions: &models.Balance{
+				ID:     balanceID,
+				Amount: &amount3000,
+			},
 			input: balanceID,
-			want: &models.Balance{
+			expected: &models.Balance{
 				ID:     balanceID,
 				Amount: &amount3000,
 			},
 		},
 		{
-			desc:  "should not return balance by id because it's not exist",
-			input: uuid.NewString(),
-			want:  nil,
+			desc:     "negative: balance not found",
+			input:    uuid.NewString(),
+			expected: nil,
 		},
 	}
-	for _, tt := range tests {
-		tt := tt
-		t.Run(tt.desc, func(t *testing.T) {
+	for _, tc := range testCases {
+		tc := tc
+		t.Run(tc.desc, func(t *testing.T) {
 			t.Parallel()
 
-			got, err := balanceStore.Get(ctx, tt.input)
-			assert.NoError(t, err)
-			assert.Equal(t, tt.want, got)
+			if tc.preconditions != nil {
+				err := balanceStore.Create(ctx, tc.preconditions)
+				require.NoError(t, err)
+			}
 
 			t.Cleanup(func() {
-				err := balanceStore.Delete(ctx, balanceID)
-				require.NoError(t, err)
+				if tc.preconditions != nil {
+					err := balanceStore.Delete(ctx, tc.preconditions.ID)
+					assert.NoError(t, err)
+				}
 			})
+
+			got, err := balanceStore.Get(ctx, tc.input)
+			assert.NoError(t, err)
+			assert.Equal(t, tc.expected, got)
 		})
 	}
 }
@@ -75,38 +84,59 @@ func TestBalance_Create(t *testing.T) {
 	t.Parallel()
 
 	ctx := context.TODO() //nolint: forbidigo
+	cfg := config.Get()
 
-	db, err := database.NewMongoDB(ctx, "mongodb://localhost:27017", "api")
+	db, err := database.NewMongoDB(ctx, cfg.MongoDB.URI, cfg.MongoDB.Database)
 	require.NoError(t, err)
-
 	balanceStore := store.NewBalance(db)
+
 	balanceID := uuid.NewString()
 
-	tests := []struct {
-		desc          string
-		input         *models.Balance
-		expectedError error
+	testCases := []struct {
+		desc                 string
+		preconditions        *models.Balance
+		input                *models.Balance
+		expectDuplicateError bool
 	}{
 		{
-			desc: "should create new balance",
+			desc: "positive: balance craeted",
 			input: &models.Balance{
-				ID:     balanceID,
+				ID:     uuid.NewString(),
 				Amount: &amount3000,
 			},
 		},
+		{
+			desc: "positive: balance craeted",
+			preconditions: &models.Balance{
+				ID: balanceID,
+			},
+			input: &models.Balance{
+				ID: balanceID,
+			},
+			expectDuplicateError: true,
+		},
 	}
-	for _, tt := range tests {
-		tt := tt
-		t.Run(tt.desc, func(t *testing.T) {
+	for _, tc := range testCases {
+		tc := tc
+		t.Run(tc.desc, func(t *testing.T) {
 			t.Parallel()
 
-			err := balanceStore.Create(ctx, tt.input)
-			assert.NoError(t, err)
+			if tc.preconditions != nil {
+				err = balanceStore.Create(ctx, tc.preconditions)
+				require.NoError(t, err)
+			}
 
 			t.Cleanup(func() {
-				err := balanceStore.Delete(ctx, balanceID)
-				require.NoError(t, err)
+				err = balanceStore.Delete(ctx, tc.input.ID)
+				assert.NoError(t, err)
 			})
+
+			err := balanceStore.Create(ctx, tc.input)
+			if tc.expectDuplicateError {
+				assert.True(t, mongo.IsDuplicateKeyError(err))
+			} else {
+				assert.NoError(t, err)
+			}
 		})
 	}
 }
@@ -115,65 +145,73 @@ func TestBalance_Update(t *testing.T) {
 	t.Parallel()
 
 	ctx := context.TODO() //nolint: forbidigo
+	cfg := config.Get()
 
-	db, err := database.NewMongoDB(ctx, "mongodb://localhost:27017", "api")
+	db, err := database.NewMongoDB(ctx, cfg.MongoDB.URI, cfg.MongoDB.Database)
 	require.NoError(t, err)
-
 	balanceStore := store.NewBalance(db)
 
 	balanceID1 := uuid.NewString()
 	balanceID2 := uuid.NewString()
 
-	tests := []struct {
+	testCases := []struct {
 		desc          string
+		preconditions *models.Balance
 		input         *models.Balance
-		want          *models.Balance
-		expectedError error
+		expected      *models.Balance
 	}{
 		{
-			desc: "should update existed balance",
-			input: &models.Balance{
+			desc: "positive: balance updated",
+			preconditions: &models.Balance{
 				ID:     balanceID1,
 				Amount: &amount3000,
 			},
-			want: &models.Balance{
+			input: &models.Balance{
+				ID:     balanceID1,
+				Amount: &amount4000,
+			},
+			expected: &models.Balance{
 				ID:     balanceID1,
 				Amount: &amount4000,
 			},
 		},
 		{
-			desc: "should not update balance because it's not exist",
-			input: &models.Balance{
+			desc: "negative: balance not updated because of not existed id",
+			preconditions: &models.Balance{
 				ID:     balanceID2,
 				Amount: &amount3000,
 			},
-			want: &models.Balance{
+			input: &models.Balance{
 				ID:     uuid.NewString(),
+				Amount: &amount4000,
+			},
+			expected: &models.Balance{
+				ID:     balanceID2,
 				Amount: &amount3000,
 			},
 		},
 	}
-	for _, tt := range tests {
-		tt := tt
-		t.Run(tt.desc, func(t *testing.T) {
+	for _, tc := range testCases {
+		tc := tc
+		t.Run(tc.desc, func(t *testing.T) {
 			t.Parallel()
 
-			err = balanceStore.Create(ctx, tt.input)
-			require.NoError(t, err)
-
-			err := balanceStore.Update(ctx, tt.want)
-			assert.NoError(t, err)
-
-			if tt.input != nil {
-				got, err := balanceStore.Get(ctx, tt.input.ID)
-				assert.NoError(t, err)
-				assert.Equal(t, tt.want.Amount, got.Amount)
+			if tc.preconditions != nil {
+				err = balanceStore.Create(ctx, tc.preconditions)
+				require.NoError(t, err)
 			}
 
 			t.Cleanup(func() {
-				err := balanceStore.Delete(ctx, tt.input.ID)
-				require.NoError(t, err)
+				err = balanceStore.Delete(ctx, tc.preconditions.ID)
+				assert.NoError(t, err)
 			})
+
+			err = balanceStore.Update(ctx, tc.input)
+			assert.NoError(t, err)
+
+			got, err := balanceStore.Get(ctx, tc.preconditions.ID)
+			assert.NoError(t, err)
+			assert.Equal(t, tc.expected, got)
 		})
 	}
 }
@@ -182,46 +220,62 @@ func TestBalance_Delete(t *testing.T) {
 	t.Parallel()
 
 	ctx := context.TODO() //nolint: forbidigo
+	cfg := config.Get()
 
-	db, err := database.NewMongoDB(ctx, "mongodb://localhost:27017", "api")
+	db, err := database.NewMongoDB(ctx, cfg.MongoDB.URI, cfg.MongoDB.Database)
 	require.NoError(t, err)
-
 	balanceStore := store.NewBalance(db)
 
 	balanceID := uuid.NewString()
 
-	tests := []struct {
-		desc                string
-		input               *models.Balance
-		shouldCreateBalance bool
+	testCases := []struct {
+		desc          string
+		preconditions *models.Balance
+		input         string
 	}{
 		{
-			desc: "should delete existed balance",
-			input: &models.Balance{
-				ID:     balanceID,
-				Amount: &amount3000,
+			desc: "positive: balance deleted",
+			preconditions: &models.Balance{
+				ID: balanceID,
 			},
-			shouldCreateBalance: true,
+			input: balanceID,
 		},
 		{
-			desc: "should not delete balance because it's not exist",
-			input: &models.Balance{
+			desc: "negative: balance not deleted because of not existed id",
+			preconditions: &models.Balance{
 				ID: uuid.NewString(),
 			},
+			input: uuid.NewString(),
 		},
 	}
-	for _, tt := range tests {
-		tt := tt
-		t.Run(tt.desc, func(t *testing.T) {
+	for _, tc := range testCases {
+		tc := tc
+		t.Run(tc.desc, func(t *testing.T) {
 			t.Parallel()
 
-			if tt.shouldCreateBalance {
-				err = balanceStore.Create(ctx, tt.input)
+			if tc.preconditions != nil {
+				err = balanceStore.Create(ctx, tc.preconditions)
 				require.NoError(t, err)
 			}
 
-			err := balanceStore.Delete(ctx, tt.input.ID)
+			t.Cleanup(func() {
+				err = balanceStore.Delete(ctx, tc.preconditions.ID)
+			})
+
+			err := balanceStore.Delete(ctx, tc.input)
 			assert.NoError(t, err)
+
+			// balance should not be deleted
+			if tc.preconditions.ID != tc.input {
+				var balance models.Balance
+
+				err := db.DB.Collection("Balance").
+					FindOne(ctx, bson.M{"_id": tc.preconditions.ID}).
+					Decode(&balance)
+
+				assert.NoError(t, err)
+				assert.NotNil(t, balance)
+			}
 		})
 	}
 }
