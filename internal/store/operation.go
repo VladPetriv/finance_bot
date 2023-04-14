@@ -32,7 +32,11 @@ func (o operationStore) GetAll(ctx context.Context) ([]models.Operation, error) 
 
 	var operations []models.Operation
 
-	if err := cursor.Decode(&operations); err != nil {
+	if err := cursor.All(ctx, &operations); err != nil {
+		return nil, err
+	}
+
+	if err := cursor.Close(ctx); err != nil {
 		return nil, err
 	}
 
