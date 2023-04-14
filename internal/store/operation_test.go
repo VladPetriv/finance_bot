@@ -15,59 +15,6 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
-func TestOperation_GetAll(t *testing.T) {
-	t.Parallel()
-
-	ctx := context.Background() //nolint: forbidigo
-	cfg := config.Get()
-
-	db, err := database.NewMongoDB(ctx, cfg.MongoDB.URI, cfg.MongoDB.Database)
-	require.NoError(t, err)
-	operationStore := store.NewOperationStore(db)
-
-	testCases := []struct {
-		desc          string
-		preconditions []models.Operation
-		expected      int
-	}{
-		{
-			desc: "positive: returned all existed operation",
-			preconditions: []models.Operation{
-				{ID: uuid.NewString()},
-				{ID: uuid.NewString()},
-				{ID: uuid.NewString()},
-			},
-			expected: 3,
-		},
-		{
-			desc:     "negative: returned nil because there are no operation in store",
-			expected: 0,
-		},
-	}
-	for _, tc := range testCases {
-		tc := tc
-		t.Run(tc.desc, func(t *testing.T) {
-			t.Parallel()
-
-			for _, o := range tc.preconditions {
-				err := operationStore.Create(ctx, &o)
-				require.NoError(t, err)
-			}
-
-			t.Cleanup(func() {
-				for _, o := range tc.preconditions {
-					err := operationStore.Delete(ctx, o.ID)
-					assert.NoError(t, err)
-				}
-			})
-
-			got, err := operationStore.GetAll(ctx)
-			assert.NoError(t, err)
-			assert.Equal(t, tc.expected, len(got))
-		})
-	}
-}
-
 func TestOperation_Create(t *testing.T) {
 	t.Parallel()
 

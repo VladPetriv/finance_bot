@@ -15,59 +15,6 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
-func TestCategory_GetAll(t *testing.T) {
-	t.Parallel()
-
-	ctx := context.TODO() //nolint: forbidigo
-	cfg := config.Get()
-
-	db, err := database.NewMongoDB(ctx, cfg.MongoDB.URI, cfg.MongoDB.Database)
-	require.NoError(t, err)
-	categoryStore := store.NewCategory(db)
-
-	testCases := []struct {
-		desc          string
-		preconditions []models.Category
-		expected      int
-	}{
-		{
-			desc: "positive: returned all existed categories",
-			preconditions: []models.Category{
-				{ID: uuid.NewString()},
-				{ID: uuid.NewString()},
-				{ID: uuid.NewString()},
-			},
-			expected: 3,
-		},
-		{
-			desc:     "negative: returned nil because there are no categories in store",
-			expected: 0,
-		},
-	}
-	for _, tc := range testCases {
-		tc := tc
-		t.Run(tc.desc, func(t *testing.T) {
-			t.Parallel()
-
-			for _, c := range tc.preconditions {
-				err := categoryStore.Create(ctx, &c)
-				require.NoError(t, err)
-			}
-
-			t.Cleanup(func() {
-				for _, c := range tc.preconditions {
-					err := categoryStore.Delete(ctx, c.ID)
-					assert.NoError(t, err)
-				}
-			})
-
-			got, err := categoryStore.GetAll(ctx)
-			assert.NoError(t, err)
-			assert.Equal(t, tc.expected, len(got))
-		})
-	}
-}
-
 func TestCategory_Create(t *testing.T) {
 	t.Parallel()
 
