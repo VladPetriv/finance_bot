@@ -21,7 +21,7 @@ type Telegram struct {
 // MongoDB represents MongoDB database configuration.
 type MongoDB struct {
 	URI      string `env:"MONGODB_URI" env-default:"mongodb://localhost:27017"`
-	Database string `env:"MONGODB_DATABASE"`
+	Database string `env:"MONGODB_DATABASE" env-default:"api"`
 }
 
 var (
