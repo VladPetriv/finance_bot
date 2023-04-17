@@ -11,6 +11,7 @@ import (
 type Config struct {
 	Telegram Telegram
 	MongoDB  MongoDB
+	Logger   Logger
 }
 
 // Telegram represents Telegram bot configuration.
@@ -22,6 +23,12 @@ type Telegram struct {
 type MongoDB struct {
 	URI      string `env:"MONGODB_URI" env-default:"mongodb://localhost:27017"`
 	Database string `env:"MONGODB_DATABASE" env-default:"api"`
+}
+
+// Logger represents Logger configuration.
+type Logger struct {
+	LogLevel    string `env:"LOG_LEVEL" env-default:"debug"`
+	LogFilename string `env:"LOG_FILENAME" env-default:""`
 }
 
 var (
