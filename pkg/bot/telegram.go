@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 
 	"github.com/mymmrac/telego"
+	"github.com/mymmrac/telego/telegoutil"
 )
 
 type bot struct {
@@ -54,4 +55,16 @@ func (b botAPI) ReadUpdates(result chan []byte, errors chan error) {
 
 		result <- updatedData
 	}
+}
+
+func (b botAPI) SendMessage(chatID int64, message string) error {
+	_, err := b.api.SendMessage(&telego.SendMessageParams{
+		ChatID: telegoutil.ID(chatID),
+		Text:   message,
+	})
+	if err != nil {
+		return err
+	}
+
+	return nil
 }

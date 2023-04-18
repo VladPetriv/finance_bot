@@ -10,4 +10,6 @@ type Bot interface {
 type API interface {
 	// ReadUpdates is used to get all user actions.
 	ReadUpdates(result chan []byte, errors chan error)
+	// SendMessage is used to send specific messages to user.
+	SendMessage(chatID int64, message string) error
 }
