@@ -11,5 +11,17 @@ type API interface {
 	// ReadUpdates is used to get all user actions.
 	ReadUpdates(result chan []byte, errors chan error)
 	// SendMessage is used to send specific messages to user.
-	SendMessage(chatID int64, message string) error
+	SendMessage(opts SendMessageOptions) error
+}
+
+// SendMessageOptions represents an input struct for SendMessage method.
+type SendMessageOptions struct {
+	ChatID   int64
+	Message  string
+	Keyboard []KeyboardRow
+}
+
+// KeyboardRow represents keyboard row with buttons.
+type KeyboardRow struct {
+	Buttons []string
 }

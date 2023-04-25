@@ -57,14 +57,35 @@ func (b botAPI) ReadUpdates(result chan []byte, errors chan error) {
 	}
 }
 
-func (b botAPI) SendMessage(chatID int64, message string) error {
-	_, err := b.api.SendMessage(&telego.SendMessageParams{
-		ChatID: telegoutil.ID(chatID),
-		Text:   message,
-	})
+func (b botAPI) SendMessage(opts SendMessageOptions) error {
+	message := telegoutil.Message(telegoutil.ID(opts.ChatID), opts.Message)
+
+	if opts.Keyboard != nil {
+		message = message.WithReplyMarkup(b.createKeyboard(opts.Keyboard))
+	}
+
+	_, err := b.api.SendMessage(message)
 	if err != nil {
 		return err
 	}
 
 	return nil
+}
+
+func (b botAPI) createKeyboard(rows []KeyboardRow) *telego.ReplyKeyboardMarkup {
+	var convertedRows [][]telego.KeyboardButton
+
+	for _, r := range rows {
+		var buttons []telego.KeyboardButton
+
+		for _, b := range r.Buttons {
+			buttons = append(buttons, telegoutil.KeyboardButton(b))
+		}
+
+		convertedRows = append(convertedRows, buttons)
+	}
+
+	keyboard := telegoutil.Keyboard(convertedRows...).WithResizeKeyboard()
+
+	return keyboard
 }
