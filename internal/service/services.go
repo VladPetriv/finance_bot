@@ -22,13 +22,21 @@ type MessageService interface {
 
 // KeyboardService provides functinally rendering keyboard.
 type KeyboardService interface {
-	// CreateRowKeyboard ...
-	CreateKeyboard(keyboardType keyboardType, opts *bot.SendOptions)
+	// CreateRowKeyboard is used to create all available keyboard.
+	CreateKeyboard(opts *CreateKeyboardOptions) error
 }
 
-type keyboardType string
+// CreateKeyboardOptions represents input structure for CreateKeyboard method
+type CreateKeyboardOptions struct {
+	ChatID int64
+	Type   KeyboardType
+	Rows   []bot.KeyboardRow
+}
+
+// KeyboardType represents available keyboard types.
+type KeyboardType string
 
 const (
-	keyboardTypeInline keyboardType = "inline"
-	keyboardTypeRow    keyboardType = "row"
+	keyboardTypeInline KeyboardType = "inline"
+	keyboardTypeRow    KeyboardType = "row"
 )
