@@ -57,7 +57,7 @@ func (b botAPI) ReadUpdates(result chan []byte, errors chan error) {
 	}
 }
 
-func (b botAPI) Send(opts SendMessageOptions) error {
+func (b botAPI) Send(opts SendOptions) error {
 	message := telegoutil.Message(telegoutil.ID(opts.ChatID), opts.Message)
 
 	if opts.Keyboard != nil {

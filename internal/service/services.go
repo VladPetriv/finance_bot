@@ -1,5 +1,7 @@
 package service
 
+import "github.com/VladPetriv/finance_bot/pkg/bot"
+
 // Services contains all Services.
 type Services struct {
 	EventService   EventService
@@ -17,3 +19,16 @@ type MessageService interface {
 	// SendMessage is used to send messages for specific chat.
 	SendMessage(chatID int64, message string) error
 }
+
+// KeyboardService provides functinally rendering keyboard.
+type KeyboardService interface {
+	// CreateRowKeyboard ...
+	CreateKeyboard(keyboardType keyboardType, opts *bot.SendOptions)
+}
+
+type keyboardType string
+
+const (
+	keyboardTypeInline keyboardType = "inline"
+	keyboardTypeRow    keyboardType = "row"
+)
