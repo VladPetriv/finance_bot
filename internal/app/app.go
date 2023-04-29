@@ -11,9 +11,9 @@ import (
 
 // Run is used to start the application.
 func Run(cfg *config.Config, logger *logger.Logger) {
-	bot := bot.NewTelegramgBot(cfg.Telegram.BotToken)
+	b := bot.NewTelegramgBot(cfg.Telegram.BotToken)
 
-	botAPI, err := bot.NewAPI()
+	botAPI, err := b.NewAPI()
 	if err != nil {
 		logger.Fatal().Err(err).Msg("create new bot api")
 	}
@@ -22,6 +22,5 @@ func Run(cfg *config.Config, logger *logger.Logger) {
 		MessageService: service.NewMessage(botAPI, logger),
 		EventService:   service.NewEvent(botAPI, logger),
 	}
-
 	fmt.Printf("services: %v\n", services)
 }

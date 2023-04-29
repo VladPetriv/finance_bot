@@ -10,15 +10,16 @@ type Bot interface {
 type API interface {
 	// ReadUpdates is used to get all user actions.
 	ReadUpdates(result chan []byte, errors chan error)
-	// SendMessage is used to send specific messages to user.
-	SendMessage(opts SendMessageOptions) error
+	// Send is used to send information to user.
+	Send(opts SendMessageOptions) error
 }
 
 // SendMessageOptions represents an input struct for SendMessage method.
 type SendMessageOptions struct {
-	ChatID   int64
-	Message  string
-	Keyboard []KeyboardRow
+	ChatID         int64
+	Message        string
+	Keyboard       []KeyboardRow
+	InlineKeyboard []KeyboardRow
 }
 
 // KeyboardRow represents keyboard row with buttons.

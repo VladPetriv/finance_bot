@@ -57,11 +57,15 @@ func (b botAPI) ReadUpdates(result chan []byte, errors chan error) {
 	}
 }
 
-func (b botAPI) SendMessage(opts SendMessageOptions) error {
+func (b botAPI) Send(opts SendMessageOptions) error {
 	message := telegoutil.Message(telegoutil.ID(opts.ChatID), opts.Message)
 
 	if opts.Keyboard != nil {
 		message = message.WithReplyMarkup(b.createKeyboard(opts.Keyboard))
+	}
+
+	if opts.InlineKeyboard != nil {
+		message = message.WithReplyMarkup(b.createInlineKeyboard(opts.InlineKeyboard))
 	}
 
 	_, err := b.api.SendMessage(message)
@@ -86,6 +90,24 @@ func (b botAPI) createKeyboard(rows []KeyboardRow) *telego.ReplyKeyboardMarkup {
 	}
 
 	keyboard := telegoutil.Keyboard(convertedRows...).WithResizeKeyboard()
+
+	return keyboard
+}
+
+func (b botAPI) createInlineKeyboard(rows []KeyboardRow) *telego.InlineKeyboardMarkup {
+	var convertedRows [][]telego.InlineKeyboardButton
+
+	for _, r := range rows {
+		var buttons []telego.InlineKeyboardButton
+
+		for _, b := range r.Buttons {
+			buttons = append(buttons, telegoutil.InlineKeyboardButton(b).WithCallbackData(b))
+		}
+
+		convertedRows = append(convertedRows, buttons)
+	}
+
+	keyboard := telegoutil.InlineKeyboard(convertedRows...)
 
 	return keyboard
 }
