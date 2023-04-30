@@ -1,8 +1,6 @@
 package app
 
 import (
-	"fmt"
-
 	"github.com/VladPetriv/finance_bot/config"
 	"github.com/VladPetriv/finance_bot/internal/service"
 	"github.com/VladPetriv/finance_bot/pkg/bot"
@@ -18,9 +16,23 @@ func Run(cfg *config.Config, logger *logger.Logger) {
 		logger.Fatal().Err(err).Msg("create new bot api")
 	}
 
+	messageService := service.NewMessage(botAPI, logger)
+	keyboardService := service.NewKeyboard(botAPI, logger)
+	eventService := service.NewEvent(&service.EventOptinos{
+		BotAPI:          botAPI,
+		Logger:          logger,
+		MessageService:  messageService,
+		KeyboardService: keyboardService,
+	})
+
 	services := service.Services{
-		MessageService: service.NewMessage(botAPI, logger),
-		EventService:   service.NewEvent(botAPI, logger),
+		MessageService:  messageService,
+		KeyboardService: keyboardService,
+		EventService:    eventService,
 	}
-	fmt.Printf("services: %v\n", services)
+
+	errs := make(chan error)
+	updates := make(chan []byte)
+
+	services.EventService.Listen(updates, errs)
 }
