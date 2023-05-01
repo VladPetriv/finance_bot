@@ -6,25 +6,60 @@ import "github.com/VladPetriv/finance_bot/pkg/bot"
 type Services struct {
 	MessageService  MessageService
 	KeyboardService KeyboardService
+	HandlerService  HandlerService
 	EventService    EventService
+}
+
+// EventService provides functinally for handling bot commands.
+type HandlerService interface {
+	// HandleEventStart is used to handle event start.
+	HandleEventStart(messageData []byte) error
+	// HandleEventStop is used to handle event stop.
+	HandleEventStop(messageData []byte) error
+	// HandleEventUnknown is used to handle event unknown.
+	HandleEventUnknown(messageData []byte) error
 }
 
 // EventService provides functinally for receiving an updates from bot and reacting on it.
 type EventService interface {
 	// Listen is used to receive all updates from bot and react for them.
 	Listen(updates chan []byte, errs chan error)
+	// ReactOnEven is used to
+	ReactOnEvent(eventName event, messageData []byte) error
+}
+
+// HandleEventStartMessage ...
+type HandleEventStartMessage struct {
+	Message struct {
+		Chat chat `json:"chat"`
+		From from `json:"from"`
+	} `json:"message"`
+}
+
+// HandleEventUnknownMessage ...
+type HandleEventUnknownMessage struct {
+	Message struct {
+		Chat chat `json:"chat"`
+	} `json:"message"`
 }
 
 // BaseMessage represents a message with not detailed information.
 // BaseMessage is used to determine which command to do.
 type BaseMessage struct {
 	Message struct {
-		Chat struct {
-			ID int64 `json:"id"`
-		} `json:"chat"`
+		Chat     chat     `json:"chat"`
 		Text     string   `json:"text"`
 		Entities []Entity `json:"entities"`
 	} `json:"message"`
+}
+
+type chat struct {
+	ID int64 `json:"id"`
+}
+
+type from struct {
+	ID       int    `json:"id"`
+	Username string `json:"username"`
 }
 
 // Entity represents message entity that contains about message type.
@@ -54,8 +89,8 @@ type MessageService interface {
 
 // SendMessageOptions represents input structure for CreateKeyboard method.
 type SendMessageOptions struct {
-	ChantID int64
-	Text    string
+	ChatID int64
+	Text   string
 }
 
 // KeyboardService provides functinally rendering keyboard.
