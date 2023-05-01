@@ -18,16 +18,22 @@ func Run(cfg *config.Config, logger *logger.Logger) {
 
 	messageService := service.NewMessage(botAPI, logger)
 	keyboardService := service.NewKeyboard(botAPI, logger)
-	eventService := service.NewEvent(&service.EventOptinos{
-		BotAPI:          botAPI,
+
+	handlerService := service.NewHandler(&service.HandlerOptions{
 		Logger:          logger,
 		MessageService:  messageService,
 		KeyboardService: keyboardService,
+	})
+	eventService := service.NewEvent(&service.EventOptions{
+		BotAPI:         botAPI,
+		Logger:         logger,
+		HandlerService: handlerService,
 	})
 
 	services := service.Services{
 		MessageService:  messageService,
 		KeyboardService: keyboardService,
+		HandlerService:  handlerService,
 		EventService:    eventService,
 	}
 
