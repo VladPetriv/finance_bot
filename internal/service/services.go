@@ -10,7 +10,7 @@ type Services struct {
 	EventService    EventService
 }
 
-// EventService provides functinally for handling bot commands.
+// HandlerService provides functinally for handling bot commands.
 type HandlerService interface {
 	// HandleEventStart is used to handle event start.
 	HandleEventStart(messageData []byte) error
