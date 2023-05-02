@@ -54,10 +54,6 @@ func (h handlerService) HandleEventStart(messageData []byte) error {
 	return nil
 }
 
-func (h handlerService) HandleEventStop(messageData []byte) error {
-	return nil
-}
-
 func (h handlerService) HandleEventUnknown(messageData []byte) error {
 	logger := h.logger
 

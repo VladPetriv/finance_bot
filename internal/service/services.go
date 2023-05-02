@@ -14,10 +14,25 @@ type Services struct {
 type HandlerService interface {
 	// HandleEventStart is used to handle event start.
 	HandleEventStart(messageData []byte) error
-	// HandleEventStop is used to handle event stop.
-	HandleEventStop(messageData []byte) error
 	// HandleEventUnknown is used to handle event unknown.
 	HandleEventUnknown(messageData []byte) error
+}
+
+// HandleEventStartMessage represents structure with all required info
+// about message that needed for handling this event.
+type HandleEventStartMessage struct {
+	Message struct {
+		Chat chat `json:"chat"`
+		From from `json:"from"`
+	} `json:"message"`
+}
+
+// HandleEventUnknownMessage represents structure with all required info
+// about message that needed for handling this event.
+type HandleEventUnknownMessage struct {
+	Message struct {
+		Chat chat `json:"chat"`
+	} `json:"message"`
 }
 
 // EventService provides functinally for receiving an updates from bot and reacting on it.
@@ -26,21 +41,6 @@ type EventService interface {
 	Listen(updates chan []byte, errs chan error)
 	// ReactOnEven is used to
 	ReactOnEvent(eventName event, messageData []byte) error
-}
-
-// HandleEventStartMessage ...
-type HandleEventStartMessage struct {
-	Message struct {
-		Chat chat `json:"chat"`
-		From from `json:"from"`
-	} `json:"message"`
-}
-
-// HandleEventUnknownMessage ...
-type HandleEventUnknownMessage struct {
-	Message struct {
-		Chat chat `json:"chat"`
-	} `json:"message"`
 }
 
 // BaseMessage represents a message with not detailed information.
@@ -71,14 +71,12 @@ type event string
 
 const (
 	startEvent   event = "start"
-	stopEvent    event = "stop"
 	unknownEvent event = "unknown"
 )
 
 // Commands that we can received from bot.
 const (
 	botStartCommand string = "/start"
-	botStopCommand  string = "/stop"
 )
 
 // MessageService provides functinally for sending messages.
