@@ -76,6 +76,66 @@ func TestCategory_Create(t *testing.T) {
 	}
 }
 
+func TestCategory_GetByTitle(t *testing.T) {
+	t.Parallel()
+
+	ctx := context.TODO() //nolint: forbidigo
+	cfg := config.Get()
+
+	db, err := database.NewMongoDB(ctx, cfg.MongoDB.URI, cfg.MongoDB.Database)
+	require.NoError(t, err)
+	categoryStore := store.NewCategory(db)
+
+	categoryID := uuid.NewString()
+
+	testCases := []struct {
+		desc          string
+		preconditions *models.Category
+		input         string
+		expected      *models.Category
+	}{
+		{
+			desc: "positive: returned category by Title",
+			preconditions: &models.Category{
+				ID:    categoryID,
+				Title: "test_get",
+			},
+			input: "test_get",
+			expected: &models.Category{
+				ID:    categoryID,
+				Title: "test_get",
+			},
+		},
+		{
+			desc:     "negative: category not found",
+			input:    "test_get",
+			expected: nil,
+		},
+	}
+	for _, tc := range testCases {
+		tc := tc
+		t.Run(tc.desc, func(t *testing.T) {
+			t.Parallel()
+
+			if tc.preconditions != nil {
+				err = categoryStore.Create(ctx, tc.preconditions)
+				assert.NoError(t, err)
+			}
+
+			t.Cleanup(func() {
+				if tc.preconditions != nil {
+					err = categoryStore.Delete(ctx, tc.preconditions.ID)
+					assert.NoError(t, err)
+				}
+			})
+
+			got, err := categoryStore.GetByTitle(ctx, tc.input)
+			assert.NoError(t, err)
+			assert.Equal(t, tc.expected, got)
+		})
+	}
+}
+
 func TestCategory_Delete(t *testing.T) {
 	t.Parallel()
 
