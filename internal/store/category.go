@@ -2,11 +2,13 @@ package store
 
 import (
 	"context"
+	"errors"
 
 	"github.com/VladPetriv/finance_bot/internal/models"
 	"github.com/VladPetriv/finance_bot/internal/service"
 	"github.com/VladPetriv/finance_bot/pkg/database"
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/mongo"
 )
 
 type categoryStore struct {
@@ -37,6 +39,21 @@ func (c categoryStore) GetAll(ctx context.Context) ([]models.Category, error) {
 	}
 
 	return categories, nil
+}
+
+func (c categoryStore) GetByTitle(ctx context.Context, title string) (*models.Category, error) {
+	var category models.Category
+
+	err := c.DB.Collection(collectionCategory).FindOne(ctx, bson.M{"title": title}).Decode(&category)
+	if err != nil {
+		if errors.Is(err, mongo.ErrNoDocuments) {
+			return nil, nil
+		}
+
+		return nil, err
+	}
+
+	return &category, nil
 }
 
 func (c categoryStore) Create(ctx context.Context, category *models.Category) error {
