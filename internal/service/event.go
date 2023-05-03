@@ -50,7 +50,7 @@ func (e eventService) Listen(updates chan []byte, errs chan error) {
 			}
 			logger.Debug().Interface("baseMessage", baseMessage).Msg("unmarshalled base message")
 
-			eventName := e.getEventNameromMsg(&baseMessage)
+			eventName := e.getEventNameFromMsg(&baseMessage)
 			logger.Debug().Interface("eventName", eventName).Msg("got event from message")
 
 			err = e.ReactOnEvent(eventName, update)
@@ -68,7 +68,7 @@ func (e eventService) Listen(updates chan []byte, errs chan error) {
 // it contains a command for the bot to execute.
 const botCommand = "bot_command"
 
-func (e eventService) getEventNameromMsg(msg *BaseMessage) event {
+func (e eventService) getEventNameFromMsg(msg *BaseMessage) event {
 	if msg.Message.Text == botStartCommand && isBotCommand(msg.Message.Entities) {
 		return startEvent
 	}
