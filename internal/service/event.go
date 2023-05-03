@@ -72,9 +72,6 @@ func (e eventService) getEventNameromMsg(msg *BaseMessage) event {
 	if msg.Message.Text == botStartCommand && isBotCommand(msg.Message.Entities) {
 		return startEvent
 	}
-	if msg.Message.Text == botStopCommand && isBotCommand(msg.Message.Entities) {
-		return stopEvent
-	}
 
 	return unknownEvent
 }
