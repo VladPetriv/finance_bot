@@ -58,10 +58,12 @@ func TestCategory_Create(t *testing.T) {
 
 			if tc.preconditions != nil {
 				err = categoryStore.Create(ctx, tc.preconditions)
+				assert.NoError(t, err)
 			}
 
 			t.Cleanup(func() {
 				err = categoryStore.Delete(ctx, tc.input.ID)
+				assert.NoError(t, err)
 			})
 
 			err := categoryStore.Create(ctx, tc.input)
@@ -113,7 +115,7 @@ func TestCategory_Delete(t *testing.T) {
 
 			if tc.preconditions != nil {
 				err := categoryStore.Create(ctx, tc.preconditions)
-				require.NoError(t, err)
+				assert.NoError(t, err)
 			}
 
 			t.Cleanup(func() {

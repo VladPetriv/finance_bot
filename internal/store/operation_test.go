@@ -59,7 +59,7 @@ func TestOperation_Create(t *testing.T) {
 
 			if tc.preconditions != nil {
 				err = operationStore.Create(ctx, tc.preconditions)
-				require.NoError(t, err)
+				assert.NoError(t, err)
 			}
 
 			t.Cleanup(func() {
@@ -116,7 +116,7 @@ func TestOperation_Delete(t *testing.T) {
 
 			if tc.preconditions != nil {
 				err := operationStore.Create(ctx, tc.preconditions)
-				require.NoError(t, err)
+				assert.NoError(t, err)
 			}
 
 			t.Cleanup(func() {

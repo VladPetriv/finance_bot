@@ -63,7 +63,7 @@ func TestBalance_Get(t *testing.T) {
 
 			if tc.preconditions != nil {
 				err := balanceStore.Create(ctx, tc.preconditions)
-				require.NoError(t, err)
+				assert.NoError(t, err)
 			}
 
 			t.Cleanup(func() {
@@ -123,7 +123,7 @@ func TestBalance_Create(t *testing.T) {
 
 			if tc.preconditions != nil {
 				err = balanceStore.Create(ctx, tc.preconditions)
-				require.NoError(t, err)
+				assert.NoError(t, err)
 			}
 
 			t.Cleanup(func() {
@@ -198,7 +198,7 @@ func TestBalance_Update(t *testing.T) {
 
 			if tc.preconditions != nil {
 				err = balanceStore.Create(ctx, tc.preconditions)
-				require.NoError(t, err)
+				assert.NoError(t, err)
 			}
 
 			t.Cleanup(func() {
@@ -255,11 +255,12 @@ func TestBalance_Delete(t *testing.T) {
 
 			if tc.preconditions != nil {
 				err = balanceStore.Create(ctx, tc.preconditions)
-				require.NoError(t, err)
+				assert.NoError(t, err)
 			}
 
 			t.Cleanup(func() {
 				err = balanceStore.Delete(ctx, tc.preconditions.ID)
+				assert.NoError(t, err)
 			})
 
 			err := balanceStore.Delete(ctx, tc.input)
