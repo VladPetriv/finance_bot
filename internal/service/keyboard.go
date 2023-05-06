@@ -26,7 +26,8 @@ func (k keyboardService) CreateKeyboard(opts *CreateKeyboardOptions) error {
 	logger := k.logger
 
 	sendOptions := &bot.SendOptions{
-		ChatID: opts.ChatID,
+		ChatID:  opts.ChatID,
+		Message: opts.Message,
 	}
 
 	if opts.Type == keyboardTypeInline {

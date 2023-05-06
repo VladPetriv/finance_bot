@@ -95,15 +95,16 @@ type SendMessageOptions struct {
 
 // KeyboardService provides functinally rendering keyboard.
 type KeyboardService interface {
-	// CreateRowKeyboard is used to create all available keyboard.
+	// CreateRowKeyboard is used to create keyboard and send message with it..
 	CreateKeyboard(opts *CreateKeyboardOptions) error
 }
 
 // CreateKeyboardOptions represents input structure for CreateKeyboard method.
 type CreateKeyboardOptions struct {
-	ChatID int64
-	Type   KeyboardType
-	Rows   []bot.KeyboardRow
+	ChatID  int64
+	Message string
+	Type    KeyboardType
+	Rows    []bot.KeyboardRow
 }
 
 // KeyboardType represents available keyboard types.

@@ -42,13 +42,13 @@ func (h handlerService) HandleEventStart(messageData []byte) error {
 	}
 	logger.Debug().Interface("msg", msg).Msg("unmarshalled handle event start message")
 
-	err = h.messageService.SendMessage(&SendMessageOptions{
-		ChatID: msg.Message.Chat.ID,
-		Text:   fmt.Sprintf("Hello, @%s!\nWelcome to @FinanceTracking_bot!", msg.Message.From.Username),
+	err = h.keyboardService.CreateKeyboard(&CreateKeyboardOptions{
+		ChatID:  msg.Message.Chat.ID,
+		Message: fmt.Sprintf("Hello, @%s!\nWelcome to @FinanceTracking_bot!", msg.Message.From.Username),
 	})
 	if err != nil {
-		logger.Error().Err(err).Msg("send message")
-		return fmt.Errorf("send message: %w", err)
+		logger.Error().Err(err).Msg("create keyboard with message")
+		return fmt.Errorf("create keyboard: %w", err)
 	}
 
 	return nil
