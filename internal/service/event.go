@@ -76,12 +76,12 @@ func (e eventService) getEventNameFromMsg(msg *BaseMessage) event {
 	return unknownEvent
 }
 
-func isBotCommand(mesasgeEnitties []Entity) bool {
-	if mesasgeEnitties == nil {
+func isBotCommand(messageEntities []entity) bool {
+	if messageEntities == nil {
 		return false
 	}
 
-	if mesasgeEnitties[0].Type == botCommand {
+	if messageEntities[0].Type == botCommand {
 		return true
 	}
 

@@ -1,6 +1,9 @@
 package service
 
-import "github.com/VladPetriv/finance_bot/pkg/bot"
+import (
+	"github.com/VladPetriv/finance_bot/internal/models"
+	"github.com/VladPetriv/finance_bot/pkg/bot"
+)
 
 // Services contains all Services.
 type Services struct {
@@ -49,7 +52,7 @@ type BaseMessage struct {
 	Message struct {
 		Chat     chat     `json:"chat"`
 		Text     string   `json:"text"`
-		Entities []Entity `json:"entities"`
+		Entities []entity `json:"entities"`
 	} `json:"message"`
 }
 
@@ -62,8 +65,7 @@ type from struct {
 	Username string `json:"username"`
 }
 
-// Entity represents message entity that contains about message type.
-type Entity struct {
+type entity struct {
 	Type string `json:"type"`
 }
 
