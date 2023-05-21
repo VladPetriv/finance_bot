@@ -9,7 +9,7 @@ import (
 
 // Run is used to start the application.
 func Run(cfg *config.Config, logger *logger.Logger) {
-	b := bot.NewTelegramgBot(cfg.Telegram.BotToken)
+	b := bot.NewTelegramBot(cfg.Telegram.BotToken)
 
 	botAPI, err := b.NewAPI()
 	if err != nil {

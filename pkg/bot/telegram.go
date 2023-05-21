@@ -19,8 +19,8 @@ type botAPI struct {
 
 var _ API = (*botAPI)(nil)
 
-// NewTelegramgBot creates a new instance of telegram bot.
-func NewTelegramgBot(token string) *bot {
+// NewTelegramBot creates a new instance of telegram bot.
+func NewTelegramBot(token string) *bot {
 	return &bot{
 		token: token,
 	}
