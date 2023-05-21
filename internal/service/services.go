@@ -1,6 +1,9 @@
 package service
 
 import (
+	"context"
+	"errors"
+
 	"github.com/VladPetriv/finance_bot/internal/models"
 	"github.com/VladPetriv/finance_bot/pkg/bot"
 )
@@ -11,14 +14,17 @@ type Services struct {
 	KeyboardService KeyboardService
 	HandlerService  HandlerService
 	EventService    EventService
+	CategoryService CategoryService
 }
 
-// HandlerService provides functinally for handling bot commands.
+// HandlerService provides functionally for handling bot commands.
 type HandlerService interface {
 	// HandleEventStart is used to handle event start.
 	HandleEventStart(messageData []byte) error
 	// HandleEventUnknown is used to handle event unknown.
 	HandleEventUnknown(messageData []byte) error
+	// HandleEventCategoryCreate is used to handle category created event.
+	HandleEventCategoryCreate(messageData []byte) error
 }
 
 // HandleEventStartMessage represents structure with all required info
@@ -38,7 +44,17 @@ type HandleEventUnknownMessage struct {
 	} `json:"message"`
 }
 
-// EventService provides functinally for receiving an updates from bot and reacting on it.
+// HandleEventCategoryCreate represents structure with all required info
+// about message that needed for handling this event.
+type HandleEventCategoryCreate struct {
+	Message struct {
+		Chat     chat     `json:"chat"`
+		Entities []entity `json:"entities"`
+		Text     string   `json:"text"`
+	} `json:"message"`
+}
+
+// EventService provides functionally for receiving an updates from bot and reacting on it.
 type EventService interface {
 	// Listen is used to receive all updates from bot and react for them.
 	Listen(updates chan []byte, errs chan error)
@@ -69,19 +85,25 @@ type entity struct {
 	Type string `json:"type"`
 }
 
+func (e entity) IsBotCommand() bool {
+	return e.Type == botCommand
+}
+
 type event string
 
 const (
-	startEvent   event = "start"
-	unknownEvent event = "unknown"
+	startEvent          event = "start"
+	createCategoryEvent event = "create/category"
+	unknownEvent        event = "unknown"
 )
 
 // Commands that we can received from bot.
 const (
-	botStartCommand string = "/start"
+	botStartCommand          string = "/start"
+	botCreateCategoryCommand string = "/create_category"
 )
 
-// MessageService provides functinally for sending messages.
+// MessageService provides functionally for sending messages.
 type MessageService interface {
 	// SendMessage is used to send messages for specific chat.
 	SendMessage(opts *SendMessageOptions) error
@@ -93,7 +115,7 @@ type SendMessageOptions struct {
 	Text   string
 }
 
-// KeyboardService provides functinally rendering keyboard.
+// KeyboardService provides functionally rendering keyboard.
 type KeyboardService interface {
 	// CreateRowKeyboard is used to create keyboard and send message with it..
 	CreateKeyboard(opts *CreateKeyboardOptions) error
@@ -114,3 +136,17 @@ const (
 	keyboardTypeInline KeyboardType = "inline"
 	keyboardTypeRow    KeyboardType = "row"
 )
+
+var defaultKeyboardRows = []bot.KeyboardRow{
+	{
+		Buttons: []string{"/create_category"},
+	},
+}
+
+// CategoryService provides business logic for processing categories.
+type CategoryService interface {
+	CreateCategory(ctx context.Context, category *models.Category) error
+}
+
+// ErrCategoryAlreadyExists happens when try to create category that already exists.
+var ErrCategoryAlreadyExists = errors.New("category already exist")
