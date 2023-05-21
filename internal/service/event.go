@@ -94,23 +94,18 @@ func (e eventService) Listen(updates chan []byte, errs chan error) {
 const botCommand = "bot_command"
 
 func (e eventService) getEventNameFromMsg(msg *BaseMessage) event {
-	if msg.Message.Text == botStartCommand && isBotCommand(msg.Message.Entities) {
+	if len(msg.Message.Entities) == 0 {
+		return unknownEvent
+	}
+
+	if msg.Message.Text == botStartCommand && msg.Message.Entities[0].IsBotCommand() {
 		return startEvent
+	}
+	if msg.Message.Text == botCreateCategoryCommand && msg.Message.Entities[0].IsBotCommand() {
+		return createCategoryEvent
 	}
 
 	return unknownEvent
-}
-
-func isBotCommand(messageEntities []entity) bool {
-	if messageEntities == nil {
-		return false
-	}
-
-	if messageEntities[0].Type == botCommand {
-		return true
-	}
-
-	return false
 }
 
 func (e eventService) ReactOnEvent(eventName event, messageData []byte) error {
@@ -123,12 +118,21 @@ func (e eventService) ReactOnEvent(eventName event, messageData []byte) error {
 			logger.Error().Err(err).Msg("handle event start")
 			return fmt.Errorf("handle event start: %w", err)
 		}
+
 	case unknownEvent:
 		err := e.handlerService.HandleEventUnknown(messageData)
 		if err != nil {
 			logger.Error().Err(err).Msg("handle event start")
 			return fmt.Errorf("handle event start: %w", err)
 		}
+
+	case createCategoryEvent:
+		err := e.handlerService.HandleEventCategoryCreate(messageData)
+		if err != nil {
+			logger.Error().Err(err).Msg("handle event create category")
+			return fmt.Errorf("handle event create category: %w", err)
+		}
+
 	default:
 		logger.Info().Interface("eventName", eventName).Msg("didn't react on event")
 		return nil
