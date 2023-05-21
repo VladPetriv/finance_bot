@@ -1,16 +1,21 @@
 package service
 
 import (
+	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 
+	"github.com/VladPetriv/finance_bot/internal/models"
 	"github.com/VladPetriv/finance_bot/pkg/logger"
+	"github.com/google/uuid"
 )
 
 type handlerService struct {
 	logger          *logger.Logger
 	messageService  MessageService
 	keyboardService KeyboardService
+	categoryService CategoryService
 }
 
 var _ HandlerService = (*handlerService)(nil)
@@ -20,6 +25,7 @@ type HandlerOptions struct {
 	Logger          *logger.Logger
 	MessageService  MessageService
 	KeyboardService KeyboardService
+	CategoryService CategoryService
 }
 
 // NewHandler returns new instance of handler service.
@@ -28,6 +34,7 @@ func NewHandler(opts *HandlerOptions) *handlerService {
 		logger:          opts.Logger,
 		messageService:  opts.MessageService,
 		keyboardService: opts.KeyboardService,
+		categoryService: opts.CategoryService,
 	}
 }
 
@@ -38,19 +45,79 @@ func (h handlerService) HandleEventStart(messageData []byte) error {
 
 	err := json.Unmarshal(messageData, &msg)
 	if err != nil {
-		logger.Error().Err(err).Msg("unmarshall handle event start message")
+		logger.Error().Err(err).Msg("unmarshal handle event start message")
+		return fmt.Errorf("unmarshal event start message: %w", err)
 	}
 	logger.Debug().Interface("msg", msg).Msg("unmarshalled handle event start message")
 
 	err = h.keyboardService.CreateKeyboard(&CreateKeyboardOptions{
 		ChatID:  msg.Message.Chat.ID,
 		Message: fmt.Sprintf("Hello, @%s!\nWelcome to @FinanceTracking_bot!", msg.Message.From.Username),
+		Type:    keyboardTypeRow,
+		Rows:    defaultKeyboardRows,
 	})
 	if err != nil {
 		logger.Error().Err(err).Msg("create keyboard with message")
 		return fmt.Errorf("create keyboard: %w", err)
 	}
 
+	return nil
+}
+
+func (h handlerService) HandleEventCategoryCreate(messageData []byte) error {
+	logger := h.logger
+
+	var msg HandleEventCategoryCreate
+
+	err := json.Unmarshal(messageData, &msg)
+	if err != nil {
+		logger.Error().Err(err).Msg("unmarshal handle event category create message")
+		return fmt.Errorf("unmarshal event category create message: %w", err)
+	}
+	logger.Debug().Interface("msg", msg).Msg("unmarshalled handle event category create message")
+
+	if len(msg.Message.Entities) != 0 && msg.Message.Entities[0].IsBotCommand() {
+		err := h.messageService.SendMessage(&SendMessageOptions{
+			ChatID: msg.Message.Chat.ID,
+			Text:   "Enter category name!",
+		})
+		if err != nil {
+			logger.Error().Err(err).Msg("send message")
+			return fmt.Errorf("send message: %w", err)
+		}
+
+		return nil
+	}
+
+	err = h.categoryService.CreateCategory(context.Background(), &models.Category{
+		ID:    uuid.NewString(),
+		Title: msg.Message.Text,
+	})
+	if err != nil {
+		if errors.Is(err, ErrCategoryAlreadyExists) {
+			err := h.messageService.SendMessage(&SendMessageOptions{
+				ChatID: msg.Message.Chat.ID,
+				Text:   fmt.Sprintf("Category with name '%s' already exists!", msg.Message.Text),
+			})
+			if err != nil {
+				logger.Error().Err(err).Msg("send message")
+				return fmt.Errorf("send message: %w", err)
+			}
+		}
+
+		return fmt.Errorf("send message: %w", err)
+	}
+
+	err = h.messageService.SendMessage(&SendMessageOptions{
+		ChatID: msg.Message.Chat.ID,
+		Text:   "Category successfully created!",
+	})
+	if err != nil {
+		logger.Error().Err(err).Msg("send message")
+		return fmt.Errorf("send message: %w", err)
+	}
+
+	logger.Info().Msg("successfully handle create category event")
 	return nil
 }
 
@@ -61,7 +128,8 @@ func (h handlerService) HandleEventUnknown(messageData []byte) error {
 
 	err := json.Unmarshal(messageData, &msg)
 	if err != nil {
-		logger.Error().Err(err).Msg("unmarshall handle event unknown message")
+		logger.Error().Err(err).Msg("unmarshal handle event unknown message")
+		return fmt.Errorf("unmarshal event unknown message: %w", err)
 	}
 	logger.Debug().Interface("msg", msg).Msg("unmarshalled handle event unknown message")
 
