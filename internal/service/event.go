@@ -37,6 +37,10 @@ func (e eventService) Listen(updates chan []byte, errs chan error) {
 
 	go e.botAPI.ReadUpdates(updates, errs)
 
+	var eventName event
+	var previousEvent event
+	var previousEventWaitCount int
+
 	for {
 		select {
 		case update := <-updates:
@@ -50,12 +54,33 @@ func (e eventService) Listen(updates chan []byte, errs chan error) {
 			}
 			logger.Debug().Interface("baseMessage", baseMessage).Msg("unmarshalled base message")
 
-			eventName := e.getEventNameFromMsg(&baseMessage)
+			// event was processed 2 times, need to stop do it
+			if previousEventWaitCount > 1 {
+				previousEvent = ""
+				previousEventWaitCount = 0
+			}
+
+			eventName = e.getEventNameFromMsg(&baseMessage)
 			logger.Debug().Interface("eventName", eventName).Msg("got event from message")
+
+			// TODO: create function that will decide which event will have second input which not
+			if eventName != startEvent && eventName != unknownEvent {
+				previousEvent = eventName
+			}
+
+			// need to send event one more time with input value
+			if previousEvent != "" && previousEventWaitCount == 1 {
+				eventName = previousEvent
+			}
 
 			err = e.ReactOnEvent(eventName, update)
 			if err != nil {
 				logger.Error().Err(err).Msg("react on event")
+			}
+
+			// increase wait count once event was processed
+			if previousEvent != "" {
+				previousEventWaitCount++
 			}
 
 		case err := <-errs:
