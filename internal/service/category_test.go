@@ -84,7 +84,7 @@ func TestCategory_CreateCategory(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 
-			categoryStoreMock := &mocks.CategoryStore{}
+			categoryStoreMock := mocks.NewCategoryStore(t)
 			tc.mock(categoryStoreMock)
 
 			categoryService := NewCategory(logger.New("debug", ""), categoryStoreMock)
