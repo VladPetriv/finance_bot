@@ -38,6 +38,10 @@ func (c categoryStore) GetAll(ctx context.Context) ([]models.Category, error) {
 		return nil, err
 	}
 
+	if err := cursor.Close(ctx); err != nil {
+		return nil, err
+	}
+
 	return categories, nil
 }
 
