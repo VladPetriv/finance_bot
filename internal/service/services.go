@@ -139,14 +139,19 @@ const (
 
 var defaultKeyboardRows = []bot.KeyboardRow{
 	{
-		Buttons: []string{"/create_category"},
+		Buttons: []string{"/create_category", "/list-categories"},
 	},
 }
 
 // CategoryService provides business logic for processing categories.
 type CategoryService interface {
 	CreateCategory(ctx context.Context, category *models.Category) error
+	ListCategories(ctx context.Context) ([]models.Category, error)
 }
 
-// ErrCategoryAlreadyExists happens when try to create category that already exists.
-var ErrCategoryAlreadyExists = errors.New("category already exist")
+var (
+	// ErrCategoryAlreadyExists happens when try to create category that already exists.
+	ErrCategoryAlreadyExists = errors.New("category already exist")
+	// ErrCategoriesNotFound happens when received zero categories from store.
+	ErrCategoriesNotFound = errors.New("categories not found")
+)

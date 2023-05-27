@@ -45,3 +45,20 @@ func (c categoryService) CreateCategory(ctx context.Context, category *models.Ca
 	logger.Info().Interface("category", category).Msg("category successfully created")
 	return nil
 }
+
+func (c categoryService) ListCategories(ctx context.Context) ([]models.Category, error) {
+	logger := c.logger
+
+	categories, err := c.categoryStore.GetAll(ctx)
+	if err != nil {
+		logger.Error().Err(err).Msg("get all categories")
+		return nil, fmt.Errorf("get all categories: %w", err)
+	}
+
+	if len(categories) == 0 {
+		logger.Info().Msg("categories not found")
+		return nil, ErrCategoriesNotFound
+	}
+
+	return categories, nil
+}
