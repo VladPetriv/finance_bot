@@ -94,3 +94,68 @@ func TestCategory_CreateCategory(t *testing.T) {
 		})
 	}
 }
+
+func TestCategory_ListCategories(t *testing.T) {
+	t.Parallel()
+
+	ctx := context.TODO() //nolint: forbidigo
+	categories := []models.Category{
+		{ID: uuid.NewString()},
+		{ID: uuid.NewString()},
+		{ID: uuid.NewString()},
+	}
+
+	type expected struct {
+		categories []models.Category
+		err        error
+	}
+
+	testCases := []struct {
+		name     string
+		mock     func(categoryStore *mocks.CategoryStore)
+		expected expected
+	}{
+		{
+			name: "positive: categories found",
+			mock: func(categoryStore *mocks.CategoryStore) {
+				categoryStore.On("GetAll", ctx).Return(categories, nil)
+			},
+			expected: expected{
+				categories: categories,
+			},
+		},
+		{
+			name: "negative: got an error while get all categories",
+			mock: func(categoryStore *mocks.CategoryStore) {
+				categoryStore.On("GetAll", ctx).Return(nil, fmt.Errorf("some error"))
+			},
+			expected: expected{
+				err: fmt.Errorf("get all categories: %w", fmt.Errorf("some error")),
+			},
+		},
+		{
+			name: "negative: categories not found",
+			mock: func(categoryStore *mocks.CategoryStore) {
+				categoryStore.On("GetAll", ctx).Return(nil, nil)
+			},
+			expected: expected{
+				err: ErrCategoriesNotFound,
+			},
+		},
+	}
+	for _, tc := range testCases {
+		tc := tc
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+
+			categoryStoreMock := mocks.NewCategoryStore(t)
+			tc.mock(categoryStoreMock)
+
+			categoryService := NewCategory(logger.New("debug", ""), categoryStoreMock)
+
+			actual, err := categoryService.ListCategories(ctx)
+			assert.Equal(t, tc.expected.err, err)
+			assert.Equal(t, tc.expected.categories, actual)
+		})
+	}
+}
