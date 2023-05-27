@@ -63,8 +63,7 @@ func (e eventService) Listen(updates chan []byte, errs chan error) {
 			eventName = e.getEventNameFromMsg(&baseMessage)
 			logger.Debug().Interface("eventName", eventName).Msg("got event from message")
 
-			// TODO: create function that will decide which event will have second input which not
-			if eventName != startEvent && eventName != unknownEvent && eventName != listCategoryEvent {
+			if eventsWithInput[eventName] {
 				previousEvent = eventName
 			}
 

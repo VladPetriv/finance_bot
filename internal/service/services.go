@@ -108,6 +108,10 @@ const (
 	unknownEvent        event = "unknown"
 )
 
+var eventsWithInput = map[event]bool{
+	createCategoryEvent: true,
+}
+
 // Commands that we can received from bot.
 const (
 	botStartCommand          string = "/start"
