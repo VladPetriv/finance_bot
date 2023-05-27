@@ -64,7 +64,7 @@ func (h handlerService) HandleEventStart(messageData []byte) error {
 	return nil
 }
 
-func (h handlerService) HandleEventCategoryCreate(messageData []byte) error {
+func (h handlerService) HandleEventCategoryCreate(ctx context.Context, messageData []byte) error {
 	logger := h.logger
 
 	var msg HandleEventCategoryCreate
@@ -89,7 +89,7 @@ func (h handlerService) HandleEventCategoryCreate(messageData []byte) error {
 		return nil
 	}
 
-	err = h.categoryService.CreateCategory(context.Background(), &models.Category{
+	err = h.categoryService.CreateCategory(ctx, &models.Category{
 		ID:    uuid.NewString(),
 		Title: msg.Message.Text,
 	})
@@ -121,7 +121,7 @@ func (h handlerService) HandleEventCategoryCreate(messageData []byte) error {
 	return nil
 }
 
-func (h handlerService) HanldeEventListCategories(messageData []byte) error {
+func (h handlerService) HanldeEventListCategories(ctx context.Context, messageData []byte) error {
 	logger := h.logger
 
 	var msg HandleEventListCategories
@@ -134,7 +134,7 @@ func (h handlerService) HanldeEventListCategories(messageData []byte) error {
 	logger.Debug().Interface("msg", msg).Msg("unmarshalled handle event list categories message")
 
 	// TODO: Pass context into all handler functions.
-	categories, err := h.categoryService.ListCategories(context.Background())
+	categories, err := h.categoryService.ListCategories(ctx)
 	if err != nil {
 		if errors.Is(err, ErrCategoriesNotFound) {
 			err = h.messageService.SendMessage(&SendMessageOptions{

@@ -1,6 +1,7 @@
 package service
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 
@@ -32,7 +33,7 @@ func NewEvent(opts *EventOptions) *eventService {
 	}
 }
 
-func (e eventService) Listen(updates chan []byte, errs chan error) {
+func (e eventService) Listen(ctx context.Context, updates chan []byte, errs chan error) {
 	logger := e.logger
 
 	go e.botAPI.ReadUpdates(updates, errs)
@@ -72,7 +73,7 @@ func (e eventService) Listen(updates chan []byte, errs chan error) {
 				eventName = previousEvent
 			}
 
-			err = e.ReactOnEvent(eventName, update)
+			err = e.ReactOnEvent(ctx, eventName, update)
 			if err != nil {
 				logger.Error().Err(err).Msg("react on event")
 			}
@@ -110,7 +111,7 @@ func (e eventService) getEventNameFromMsg(msg *BaseMessage) event {
 	return unknownEvent
 }
 
-func (e eventService) ReactOnEvent(eventName event, messageData []byte) error {
+func (e eventService) ReactOnEvent(ctx context.Context, eventName event, messageData []byte) error {
 	logger := e.logger
 
 	switch eventName {
@@ -129,14 +130,14 @@ func (e eventService) ReactOnEvent(eventName event, messageData []byte) error {
 		}
 
 	case createCategoryEvent:
-		err := e.handlerService.HandleEventCategoryCreate(messageData)
+		err := e.handlerService.HandleEventCategoryCreate(ctx, messageData)
 		if err != nil {
 			logger.Error().Err(err).Msg("handle event create category")
 			return fmt.Errorf("handle event create category: %w", err)
 		}
 
 	case listCategoryEvent:
-		err := e.handlerService.HanldeEventListCategories(messageData)
+		err := e.handlerService.HanldeEventListCategories(ctx, messageData)
 		if err != nil {
 			logger.Error().Err(err).Msg("handle event list categories")
 			return fmt.Errorf("handle event list categories: %w", err)

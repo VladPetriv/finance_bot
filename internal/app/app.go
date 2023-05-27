@@ -56,5 +56,5 @@ func Run(ctx context.Context, cfg *config.Config, logger *logger.Logger) {
 	errs := make(chan error)
 	updates := make(chan []byte)
 
-	services.EventService.Listen(updates, errs)
+	services.EventService.Listen(ctx, updates, errs)
 }

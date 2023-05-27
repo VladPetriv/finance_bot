@@ -24,9 +24,9 @@ type HandlerService interface {
 	// HandleEventUnknown is used to handle event unknown.
 	HandleEventUnknown(messageData []byte) error
 	// HandleEventCategoryCreate is used to handle category created event.
-	HandleEventCategoryCreate(messageData []byte) error
+	HandleEventCategoryCreate(ctx context.Context, messageData []byte) error
 	// HanldeEventListCategories is used to handle lit categories event.
-	HanldeEventListCategories(messageData []byte) error
+	HanldeEventListCategories(ctx context.Context, messageData []byte) error
 }
 
 // HandleEventStartMessage represents structure with all required info
@@ -67,9 +67,9 @@ type HandleEventListCategories struct {
 // EventService provides functionally for receiving an updates from bot and reacting on it.
 type EventService interface {
 	// Listen is used to receive all updates from bot and react for them.
-	Listen(updates chan []byte, errs chan error)
+	Listen(ctx context.Context, updates chan []byte, errs chan error)
 	// ReactOnEven is used to
-	ReactOnEvent(eventName event, messageData []byte) error
+	ReactOnEvent(ctx context.Context, eventName event, messageData []byte) error
 }
 
 // BaseMessage represents a message with not detailed information.
