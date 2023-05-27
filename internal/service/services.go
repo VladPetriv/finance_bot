@@ -25,6 +25,8 @@ type HandlerService interface {
 	HandleEventUnknown(messageData []byte) error
 	// HandleEventCategoryCreate is used to handle category created event.
 	HandleEventCategoryCreate(messageData []byte) error
+	// HanldeEventListCategories is used to handle lit categories event.
+	HanldeEventListCategories(messageData []byte) error
 }
 
 // HandleEventStartMessage represents structure with all required info
@@ -51,6 +53,14 @@ type HandleEventCategoryCreate struct {
 		Chat     chat     `json:"chat"`
 		Entities []entity `json:"entities"`
 		Text     string   `json:"text"`
+	} `json:"message"`
+}
+
+// HandleEventListCategories represents structure with all required info
+// about message that needed for handling this event.
+type HandleEventListCategories struct {
+	Message struct {
+		Chat chat `json:"chat"`
 	} `json:"message"`
 }
 
@@ -94,6 +104,7 @@ type event string
 const (
 	startEvent          event = "start"
 	createCategoryEvent event = "create/category"
+	listCategoryEvent   event = "list/categories"
 	unknownEvent        event = "unknown"
 )
 
@@ -101,6 +112,7 @@ const (
 const (
 	botStartCommand          string = "/start"
 	botCreateCategoryCommand string = "/create_category"
+	botListCategoriesCommand string = "/list-categories"
 )
 
 // MessageService provides functionally for sending messages.

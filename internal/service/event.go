@@ -64,7 +64,7 @@ func (e eventService) Listen(updates chan []byte, errs chan error) {
 			logger.Debug().Interface("eventName", eventName).Msg("got event from message")
 
 			// TODO: create function that will decide which event will have second input which not
-			if eventName != startEvent && eventName != unknownEvent {
+			if eventName != startEvent && eventName != unknownEvent && eventName != listCategoryEvent {
 				previousEvent = eventName
 			}
 
@@ -104,6 +104,9 @@ func (e eventService) getEventNameFromMsg(msg *BaseMessage) event {
 	if msg.Message.Text == botCreateCategoryCommand && msg.Message.Entities[0].IsBotCommand() {
 		return createCategoryEvent
 	}
+	if msg.Message.Text == botListCategoriesCommand && msg.Message.Entities[0].IsBotCommand() {
+		return listCategoryEvent
+	}
 
 	return unknownEvent
 }
@@ -133,8 +136,15 @@ func (e eventService) ReactOnEvent(eventName event, messageData []byte) error {
 			return fmt.Errorf("handle event create category: %w", err)
 		}
 
+	case listCategoryEvent:
+		err := e.handlerService.HanldeEventListCategories(messageData)
+		if err != nil {
+			logger.Error().Err(err).Msg("handle event list categories")
+			return fmt.Errorf("handle event list categories: %w", err)
+		}
+
 	default:
-		logger.Info().Interface("eventName", eventName).Msg("didn't react on event")
+		logger.Warn().Interface("eventName", eventName).Msg("didn't react on event")
 		return nil
 	}
 

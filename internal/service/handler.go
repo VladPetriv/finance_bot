@@ -121,6 +121,57 @@ func (h handlerService) HandleEventCategoryCreate(messageData []byte) error {
 	return nil
 }
 
+func (h handlerService) HanldeEventListCategories(messageData []byte) error {
+	logger := h.logger
+
+	var msg HandleEventListCategories
+
+	err := json.Unmarshal(messageData, &msg)
+	if err != nil {
+		logger.Error().Err(err).Msg("unmarshal handle event list categories message")
+		return fmt.Errorf("unmarshal event list categories message: %w", err)
+	}
+	logger.Debug().Interface("msg", msg).Msg("unmarshalled handle event list categories message")
+
+	// TODO: Pass context into all handler functions.
+	categories, err := h.categoryService.ListCategories(context.Background())
+	if err != nil {
+		if errors.Is(err, ErrCategoriesNotFound) {
+			err = h.messageService.SendMessage(&SendMessageOptions{
+				ChatID: msg.Message.Chat.ID,
+				Text:   "Categories not found!",
+			})
+			if err != nil {
+				logger.Error().Err(err).Msg("send message")
+				return fmt.Errorf("send message: %w", err)
+			}
+
+			return nil
+		}
+		logger.Error().Err(err).Msg("get list of categories")
+		return fmt.Errorf("get list of categories: %w", err)
+	}
+
+	outputMessage := "Categories: \n"
+
+	for i, c := range categories {
+		i++
+		outputMessage += fmt.Sprintf("%v. %s\n", i, c.Title)
+	}
+
+	err = h.messageService.SendMessage(&SendMessageOptions{
+		ChatID: msg.Message.Chat.ID,
+		Text:   outputMessage,
+	})
+	if err != nil {
+		logger.Error().Err(err).Msg("send message")
+		return fmt.Errorf("send message: %w", err)
+	}
+
+	logger.Info().Msg("successfully handle list categories event")
+	return nil
+}
+
 func (h handlerService) HandleEventUnknown(messageData []byte) error {
 	logger := h.logger
 
