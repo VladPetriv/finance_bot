@@ -134,5 +134,4 @@ func TestUser_GetByUsername(t *testing.T) {
 			assert.Equal(t, tc.expected, actual)
 		})
 	}
-
 }
