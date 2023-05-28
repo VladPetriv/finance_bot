@@ -108,7 +108,7 @@ func TestCategory_GetByTitle(t *testing.T) {
 		},
 		{
 			desc:     "negative: category not found",
-			input:    "test_get",
+			input:    "not_found",
 			expected: nil,
 		},
 	}
