@@ -13,6 +13,16 @@ type Stores struct {
 	Category  CategoryStore
 }
 
+// UserStore provides functionality for work with users.
+//
+//go:generate mockery --dir . --name UserStore --output ./mocks
+type UserStore interface {
+	// Create creates a new user model in store.
+	Create(ctx context.Context, user *models.User) error
+	// GetByUsername returns a user from store by username.
+	GetByUsername(ctx context.Context, username string) (*models.User, error)
+}
+
 // BalanceStore provides functionality for work with balance.
 //
 //go:generate mockery --dir . --name BalanceStore --output ./mocks
