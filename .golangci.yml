@@ -9,7 +9,8 @@ linters:
   disable-all: true
   enable:
     - bidichk
-      # - depguard
+    # TODO: Find why this linter failed on Github but works well locally.
+    #- depguard
     - errcheck
     - errname
     - exportloopref
