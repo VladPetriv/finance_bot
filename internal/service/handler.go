@@ -108,7 +108,7 @@ func (h handlerService) HandleEventCategoryCreate(ctx context.Context, messageDa
 	logger.Debug().Interface("msg", msg).Msg("unmarshalled handle event category create message")
 
 	if len(msg.Message.Entities) != 0 && msg.Message.Entities[0].IsBotCommand() {
-		err := h.messageService.SendMessage(&SendMessageOptions{
+		err = h.messageService.SendMessage(&SendMessageOptions{
 			ChatID: msg.Message.Chat.ID,
 			Text:   "Enter category name!",
 		})
@@ -120,13 +120,21 @@ func (h handlerService) HandleEventCategoryCreate(ctx context.Context, messageDa
 		return nil
 	}
 
+	user, err := h.userService.GetUserByUsername(ctx, msg.Message.From.Username)
+	if err != nil {
+		// TODO: What if user not found?
+		logger.Error().Err(err).Msg("get user by username")
+		return fmt.Errorf("get user by username: %w", err)
+	}
+
 	err = h.categoryService.CreateCategory(ctx, &models.Category{
-		ID:    uuid.NewString(),
-		Title: msg.Message.Text,
+		ID:     uuid.NewString(),
+		UserID: user.ID,
+		Title:  msg.Message.Text,
 	})
 	if err != nil {
 		if errors.Is(err, ErrCategoryAlreadyExists) {
-			err := h.messageService.SendMessage(&SendMessageOptions{
+			err = h.messageService.SendMessage(&SendMessageOptions{
 				ChatID: msg.Message.Chat.ID,
 				Text:   fmt.Sprintf("Category with name '%s' already exists!", msg.Message.Text),
 			})
@@ -164,8 +172,15 @@ func (h handlerService) HandleEventListCategories(ctx context.Context, messageDa
 	}
 	logger.Debug().Interface("msg", msg).Msg("unmarshalled handle event list categories message")
 
+	user, err := h.userService.GetUserByUsername(ctx, msg.Message.From.Username)
+	if err != nil {
+		// TODO: What if user not found?
+		logger.Error().Err(err).Msg("get user by username")
+		return fmt.Errorf("get user by username: %w", err)
+	}
+
 	// TODO: Pass context into all handler functions.
-	categories, err := h.categoryService.ListCategories(ctx)
+	categories, err := h.categoryService.ListCategories(ctx, user.ID)
 	if err != nil {
 		if errors.Is(err, ErrCategoriesNotFound) {
 			err = h.messageService.SendMessage(&SendMessageOptions{

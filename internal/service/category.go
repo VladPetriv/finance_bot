@@ -46,10 +46,12 @@ func (c categoryService) CreateCategory(ctx context.Context, category *models.Ca
 	return nil
 }
 
-func (c categoryService) ListCategories(ctx context.Context) ([]models.Category, error) {
+func (c categoryService) ListCategories(ctx context.Context, userID string) ([]models.Category, error) {
 	logger := c.logger
 
-	categories, err := c.categoryStore.GetAll(ctx)
+	categories, err := c.categoryStore.GetAll(ctx, &GetALlCategoriesFilter{
+		UserID: &userID,
+	})
 	if err != nil {
 		logger.Error().Err(err).Msg("get all categories")
 		return nil, fmt.Errorf("get all categories: %w", err)
