@@ -116,7 +116,7 @@ func (e eventService) ReactOnEvent(ctx context.Context, eventName event, message
 
 	switch eventName {
 	case startEvent:
-		err := e.handlerService.HandleEventStart(messageData)
+		err := e.handlerService.HandleEventStart(ctx, messageData)
 		if err != nil {
 			logger.Error().Err(err).Msg("handle event start")
 			return fmt.Errorf("handle event start: %w", err)
@@ -137,7 +137,7 @@ func (e eventService) ReactOnEvent(ctx context.Context, eventName event, message
 		}
 
 	case listCategoryEvent:
-		err := e.handlerService.HanldeEventListCategories(ctx, messageData)
+		err := e.handlerService.HandleEventListCategories(ctx, messageData)
 		if err != nil {
 			logger.Error().Err(err).Msg("handle event list categories")
 			return fmt.Errorf("handle event list categories: %w", err)

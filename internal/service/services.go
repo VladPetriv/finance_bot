@@ -15,18 +15,19 @@ type Services struct {
 	HandlerService  HandlerService
 	EventService    EventService
 	CategoryService CategoryService
+	UserService     UserService
 }
 
 // HandlerService provides functionally for handling bot commands.
 type HandlerService interface {
 	// HandleEventStart is used to handle event start.
-	HandleEventStart(messageData []byte) error
+	HandleEventStart(ctx context.Context, messageData []byte) error
 	// HandleEventUnknown is used to handle event unknown.
 	HandleEventUnknown(messageData []byte) error
 	// HandleEventCategoryCreate is used to handle category created event.
 	HandleEventCategoryCreate(ctx context.Context, messageData []byte) error
-	// HanldeEventListCategories is used to handle lit categories event.
-	HanldeEventListCategories(ctx context.Context, messageData []byte) error
+	// HandleEventListCategories is used to handle lit categories event.
+	HandleEventListCategories(ctx context.Context, messageData []byte) error
 }
 
 // HandleEventStartMessage represents structure with all required info
@@ -158,6 +159,15 @@ var defaultKeyboardRows = []bot.KeyboardRow{
 		Buttons: []string{"/create_category", "/list-categories"},
 	},
 }
+
+// UserService provides business logic for work with users.
+type UserService interface {
+	// CreateUser is used to create user if it's not exists..
+	CreateUser(ctx context.Context, user *models.User) error
+}
+
+// ErrUserAlreadyExists happens when user already exists in system.
+var ErrUserAlreadyExists = errors.New("user already exists")
 
 // CategoryService provides business logic for processing categories.
 type CategoryService interface {

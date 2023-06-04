@@ -27,17 +27,20 @@ func Run(ctx context.Context, cfg *config.Config, logger *logger.Logger) {
 
 	stores := service.Stores{
 		Category: store.NewCategory(mongoDB),
+		User:     store.NewUserStore(mongoDB),
 	}
 
 	messageService := service.NewMessage(botAPI, logger)
 	keyboardService := service.NewKeyboard(botAPI, logger)
 	categoryService := service.NewCategory(logger, stores.Category)
+	userService := service.NewUser(logger, stores.User)
 
 	handlerService := service.NewHandler(&service.HandlerOptions{
 		Logger:          logger,
 		MessageService:  messageService,
 		KeyboardService: keyboardService,
 		CategoryService: categoryService,
+		UserService:     userService,
 	})
 	eventService := service.NewEvent(&service.EventOptions{
 		BotAPI:         botAPI,

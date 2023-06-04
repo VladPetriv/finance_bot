@@ -16,6 +16,7 @@ type handlerService struct {
 	messageService  MessageService
 	keyboardService KeyboardService
 	categoryService CategoryService
+	userService     UserService
 }
 
 var _ HandlerService = (*handlerService)(nil)
@@ -26,6 +27,7 @@ type HandlerOptions struct {
 	MessageService  MessageService
 	KeyboardService KeyboardService
 	CategoryService CategoryService
+	UserService     UserService
 }
 
 // NewHandler returns new instance of handler service.
@@ -35,10 +37,11 @@ func NewHandler(opts *HandlerOptions) *handlerService {
 		messageService:  opts.MessageService,
 		keyboardService: opts.KeyboardService,
 		categoryService: opts.CategoryService,
+		userService:     opts.UserService,
 	}
 }
 
-func (h handlerService) HandleEventStart(messageData []byte) error {
+func (h handlerService) HandleEventStart(ctx context.Context, messageData []byte) error {
 	logger := h.logger
 
 	var msg HandleEventStartMessage
@@ -50,9 +53,37 @@ func (h handlerService) HandleEventStart(messageData []byte) error {
 	}
 	logger.Debug().Interface("msg", msg).Msg("unmarshalled handle event start message")
 
+	welcomeMessage := fmt.Sprintf("Hello, @%s!\nWelcome to @FinanceTracking_bot!", msg.Message.From.Username)
+
+	err = h.userService.CreateUser(ctx, &models.User{
+		ID:       uuid.NewString(),
+		Username: msg.Message.From.Username,
+	})
+	if err != nil {
+		if errors.Is(err, ErrUserAlreadyExists) {
+			welcomeMessage = fmt.Sprintf("Happy to see you again @%s!", msg.Message.From.Username)
+
+			err = h.keyboardService.CreateKeyboard(&CreateKeyboardOptions{
+				ChatID:  msg.Message.Chat.ID,
+				Message: welcomeMessage,
+				Type:    keyboardTypeRow,
+				Rows:    defaultKeyboardRows,
+			})
+			if err != nil {
+				logger.Error().Err(err).Msg("create keyboard with message")
+				return fmt.Errorf("create keyboard: %w", err)
+			}
+
+			logger.Info().Msg("got already known user")
+			return nil
+		}
+		logger.Error().Err(err).Msg("create user")
+		return fmt.Errorf("create user: %w", err)
+	}
+
 	err = h.keyboardService.CreateKeyboard(&CreateKeyboardOptions{
 		ChatID:  msg.Message.Chat.ID,
-		Message: fmt.Sprintf("Hello, @%s!\nWelcome to @FinanceTracking_bot!", msg.Message.From.Username),
+		Message: welcomeMessage,
 		Type:    keyboardTypeRow,
 		Rows:    defaultKeyboardRows,
 	})
@@ -121,7 +152,7 @@ func (h handlerService) HandleEventCategoryCreate(ctx context.Context, messageDa
 	return nil
 }
 
-func (h handlerService) HanldeEventListCategories(ctx context.Context, messageData []byte) error {
+func (h handlerService) HandleEventListCategories(ctx context.Context, messageData []byte) error {
 	logger := h.logger
 
 	var msg HandleEventListCategories

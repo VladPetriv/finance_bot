@@ -11,6 +11,7 @@ type Stores struct {
 	Balance   BalanceStore
 	Operation OperationStore
 	Category  CategoryStore
+	User      UserStore
 }
 
 // UserStore provides functionality for work with users.
