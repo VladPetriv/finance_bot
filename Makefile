@@ -14,3 +14,6 @@ test:
 lint:
 	golangci-lint run ./...
 
+.PHONY: mock
+mock:
+	go generate ./...

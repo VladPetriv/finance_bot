@@ -1,4 +1,4 @@
-package service
+package service_test
 
 import (
 	"context"
@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/VladPetriv/finance_bot/internal/models"
+	"github.com/VladPetriv/finance_bot/internal/service"
 	"github.com/VladPetriv/finance_bot/internal/service/mocks"
 	"github.com/VladPetriv/finance_bot/pkg/logger"
 	"github.com/google/uuid"
@@ -49,7 +50,7 @@ func TestCategory_CreateCategory(t *testing.T) {
 				ID:    uuid.NewString(),
 				Title: "test",
 			},
-			expected: ErrCategoryAlreadyExists,
+			expected: service.ErrCategoryAlreadyExists,
 		},
 		{
 			name: "negative: got an error while get category by title",
@@ -87,7 +88,7 @@ func TestCategory_CreateCategory(t *testing.T) {
 			categoryStoreMock := mocks.NewCategoryStore(t)
 			tc.mock(categoryStoreMock)
 
-			categoryService := NewCategory(logger.New("debug", ""), categoryStoreMock)
+			categoryService := service.NewCategory(logger.New("debug", ""), categoryStoreMock)
 
 			got := categoryService.CreateCategory(ctx, tc.args)
 			assert.Equal(t, tc.expected, got)
@@ -100,10 +101,12 @@ func TestCategory_ListCategories(t *testing.T) {
 
 	ctx := context.TODO() //nolint: forbidigo
 	categories := []models.Category{
-		{ID: uuid.NewString()},
-		{ID: uuid.NewString()},
-		{ID: uuid.NewString()},
+		{ID: uuid.NewString(), UserID: "1"},
+		{ID: uuid.NewString(), UserID: "1"},
+		{ID: uuid.NewString(), UserID: "2"},
+		{ID: uuid.NewString(), UserID: "3"},
 	}
+	userID := "1"
 
 	type expected struct {
 		categories []models.Category
@@ -118,16 +121,20 @@ func TestCategory_ListCategories(t *testing.T) {
 		{
 			name: "positive: categories found",
 			mock: func(categoryStore *mocks.CategoryStore) {
-				categoryStore.On("GetAll", ctx).Return(categories, nil)
+				categoryStore.On("GetAll", ctx, &service.GetALlCategoriesFilter{
+					UserID: &userID,
+				}).Return(categories[:1], nil)
 			},
 			expected: expected{
-				categories: categories,
+				categories: categories[:1],
 			},
 		},
 		{
 			name: "negative: got an error while get all categories",
 			mock: func(categoryStore *mocks.CategoryStore) {
-				categoryStore.On("GetAll", ctx).Return(nil, fmt.Errorf("some error"))
+				categoryStore.On("GetAll", ctx, &service.GetALlCategoriesFilter{
+					UserID: &userID,
+				}).Return(nil, fmt.Errorf("some error"))
 			},
 			expected: expected{
 				err: fmt.Errorf("get all categories: %w", fmt.Errorf("some error")),
@@ -136,10 +143,12 @@ func TestCategory_ListCategories(t *testing.T) {
 		{
 			name: "negative: categories not found",
 			mock: func(categoryStore *mocks.CategoryStore) {
-				categoryStore.On("GetAll", ctx).Return(nil, nil)
+				categoryStore.On("GetAll", ctx, &service.GetALlCategoriesFilter{
+					UserID: &userID,
+				}).Return(nil, nil)
 			},
 			expected: expected{
-				err: ErrCategoriesNotFound,
+				err: service.ErrCategoriesNotFound,
 			},
 		},
 	}
@@ -151,9 +160,9 @@ func TestCategory_ListCategories(t *testing.T) {
 			categoryStoreMock := mocks.NewCategoryStore(t)
 			tc.mock(categoryStoreMock)
 
-			categoryService := NewCategory(logger.New("debug", ""), categoryStoreMock)
+			categoryService := service.NewCategory(logger.New("debug", ""), categoryStoreMock)
 
-			actual, err := categoryService.ListCategories(ctx)
+			actual, err := categoryService.ListCategories(ctx, userID)
 			assert.Equal(t, tc.expected.err, err)
 			assert.Equal(t, tc.expected.categories, actual)
 		})
