@@ -45,3 +45,20 @@ func (u userService) CreateUser(ctx context.Context, user *models.User) error {
 	logger.Info().Msg("user successfully created")
 	return nil
 }
+
+func (u userService) GetUserByUsername(ctx context.Context, username string) (*models.User, error) {
+	logger := u.logger
+
+	user, err := u.userStore.GetByUsername(ctx, username)
+	if err != nil {
+		logger.Error().Err(err).Msg("get user by username")
+		return nil, fmt.Errorf("get user by username: %w", err)
+	}
+	if user == nil {
+		logger.Info().Str("username", username).Msg("user not found")
+		return nil, ErrUserNotFound
+	}
+
+	logger.Info().Interface("user", user).Msg("successfully got user")
+	return user, nil
+}

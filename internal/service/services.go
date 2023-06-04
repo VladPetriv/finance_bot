@@ -53,6 +53,7 @@ type HandleEventCategoryCreate struct {
 	Message struct {
 		Chat     chat     `json:"chat"`
 		Entities []entity `json:"entities"`
+		From     from     `json:"from"`
 		Text     string   `json:"text"`
 	} `json:"message"`
 }
@@ -62,6 +63,7 @@ type HandleEventCategoryCreate struct {
 type HandleEventListCategories struct {
 	Message struct {
 		Chat chat `json:"chat"`
+		From from `json:"from"`
 	} `json:"message"`
 }
 
@@ -164,15 +166,21 @@ var defaultKeyboardRows = []bot.KeyboardRow{
 type UserService interface {
 	// CreateUser is used to create user if it's not exists..
 	CreateUser(ctx context.Context, user *models.User) error
+	// GetUserByUsername is used to get user by his username.
+	GetUserByUsername(ctx context.Context, username string) (*models.User, error)
 }
 
-// ErrUserAlreadyExists happens when user already exists in system.
-var ErrUserAlreadyExists = errors.New("user already exists")
+var (
+	// ErrUserAlreadyExists happens when user already exists in system.
+	ErrUserAlreadyExists = errors.New("user already exists")
+	// ErrUserNotFound happens when user not exists in system.
+	ErrUserNotFound = errors.New("user not found")
+)
 
 // CategoryService provides business logic for processing categories.
 type CategoryService interface {
 	CreateCategory(ctx context.Context, category *models.Category) error
-	ListCategories(ctx context.Context) ([]models.Category, error)
+	ListCategories(ctx context.Context, userID string) ([]models.Category, error)
 }
 
 var (
