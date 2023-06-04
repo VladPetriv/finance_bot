@@ -26,8 +26,14 @@ func NewCategory(db *database.MongoDB) *categoryStore {
 	}
 }
 
-func (c categoryStore) GetAll(ctx context.Context) ([]models.Category, error) {
-	cursor, err := c.DB.Collection(collectionCategory).Find(ctx, bson.M{})
+func (c categoryStore) GetAll(ctx context.Context, filters *service.GetALlCategoriesFilter) ([]models.Category, error) {
+	filter := bson.M{}
+
+	if filters.UserID != nil {
+		filter = bson.M{"userid": *filters.UserID}
+	}
+
+	cursor, err := c.DB.Collection(collectionCategory).Find(ctx, filter)
 	if err != nil {
 		return nil, err
 	}

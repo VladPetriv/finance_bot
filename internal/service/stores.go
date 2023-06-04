@@ -55,11 +55,16 @@ type OperationStore interface {
 //go:generate mockery --dir . --name CategoryStore --output ./mocks
 type CategoryStore interface {
 	// GetAll returns a list of all categories from store.
-	GetAll(ctx context.Context) ([]models.Category, error)
+	GetAll(ctx context.Context, filters *GetALlCategoriesFilter) ([]models.Category, error)
 	// GetByTitle returns a category by their title.
 	GetByTitle(ctx context.Context, title string) (*models.Category, error)
 	// Create creates new category model in store.
 	Create(ctx context.Context, category *models.Category) error
 	// Delete delete category from store by id.
 	Delete(ctx context.Context, categoryID string) error
+}
+
+// GetALlCategoriesFilter represents a filters for GetAll categories method.
+type GetALlCategoriesFilter struct {
+	UserID *string
 }
