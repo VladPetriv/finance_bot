@@ -16,8 +16,8 @@ import (
 )
 
 var (
-	amount3000 = float32(3000)
-	amount4000 = float32(4000)
+	amount300 = "300.00"
+	amount400 = "400.00"
 )
 
 func TestBalance_Get(t *testing.T) {
@@ -31,6 +31,7 @@ func TestBalance_Get(t *testing.T) {
 	balanceStore := store.NewBalance(db)
 
 	balanceID := uuid.NewString()
+	userID := uuid.NewString()
 
 	testCases := []struct {
 		desc          string
@@ -42,12 +43,14 @@ func TestBalance_Get(t *testing.T) {
 			desc: "positive: balance received",
 			preconditions: &models.Balance{
 				ID:     balanceID,
-				Amount: &amount3000,
+				UserID: userID,
+				Amount: amount300,
 			},
-			input: balanceID,
+			input: userID,
 			expected: &models.Balance{
 				ID:     balanceID,
-				Amount: &amount3000,
+				UserID: userID,
+				Amount: amount300,
 			},
 		},
 		{
@@ -102,7 +105,7 @@ func TestBalance_Create(t *testing.T) {
 			desc: "positive: balance craeted",
 			input: &models.Balance{
 				ID:     uuid.NewString(),
-				Amount: &amount3000,
+				Amount: amount300,
 			},
 		},
 		{
@@ -154,6 +157,9 @@ func TestBalance_Update(t *testing.T) {
 	balanceID1 := uuid.NewString()
 	balanceID2 := uuid.NewString()
 
+	userID1 := uuid.NewString()
+	userID2 := uuid.NewString()
+
 	testCases := []struct {
 		desc          string
 		preconditions *models.Balance
@@ -164,30 +170,36 @@ func TestBalance_Update(t *testing.T) {
 			desc: "positive: balance updated",
 			preconditions: &models.Balance{
 				ID:     balanceID1,
-				Amount: &amount3000,
+				UserID: userID1,
+				Amount: amount300,
 			},
 			input: &models.Balance{
 				ID:     balanceID1,
-				Amount: &amount4000,
+				UserID: userID1,
+				Amount: amount400,
 			},
 			expected: &models.Balance{
 				ID:     balanceID1,
-				Amount: &amount4000,
+				UserID: userID1,
+				Amount: amount400,
 			},
 		},
 		{
 			desc: "negative: balance not updated because of not existed id",
 			preconditions: &models.Balance{
 				ID:     balanceID2,
-				Amount: &amount3000,
+				UserID: userID2,
+				Amount: amount300,
 			},
 			input: &models.Balance{
 				ID:     uuid.NewString(),
-				Amount: &amount4000,
+				UserID: userID2,
+				Amount: amount400,
 			},
 			expected: &models.Balance{
 				ID:     balanceID2,
-				Amount: &amount3000,
+				UserID: userID2,
+				Amount: amount300,
 			},
 		},
 	}
@@ -209,7 +221,7 @@ func TestBalance_Update(t *testing.T) {
 			err = balanceStore.Update(ctx, tc.input)
 			assert.NoError(t, err)
 
-			got, err := balanceStore.Get(ctx, tc.preconditions.ID)
+			got, err := balanceStore.Get(ctx, tc.preconditions.UserID)
 			assert.NoError(t, err)
 			assert.Equal(t, tc.expected, got)
 		})
