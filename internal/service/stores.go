@@ -31,7 +31,7 @@ type BalanceStore interface {
 	// Create creates a new balance model in store.
 	Create(ctx context.Context, balance *models.Balance) error
 	// Get returns a balance from store by id.
-	Get(ctx context.Context, balanceID string) (*models.Balance, error)
+	Get(ctx context.Context, userID string) (*models.Balance, error)
 	// Update updates a current balance model in store.
 	Update(ctx context.Context, balance *models.Balance) error
 	// Delete deletes a balance from store by id.

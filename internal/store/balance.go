@@ -26,10 +26,10 @@ func NewBalance(db *database.MongoDB) *balanceStore {
 	}
 }
 
-func (b balanceStore) Get(ctx context.Context, balanceID string) (*models.Balance, error) {
+func (b balanceStore) Get(ctx context.Context, userID string) (*models.Balance, error) {
 	var balance models.Balance
 
-	err := b.DB.Collection(collectionBalance).FindOne(ctx, bson.M{"_id": balanceID}).Decode(&balance)
+	err := b.DB.Collection(collectionBalance).FindOne(ctx, bson.M{"userId": userID}).Decode(&balance)
 	if err != nil {
 		if errors.Is(err, mongo.ErrNoDocuments) {
 			return nil, nil
