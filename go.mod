@@ -7,6 +7,7 @@ require (
 	github.com/ilyakaznacheev/cleanenv v1.4.2
 	github.com/mymmrac/telego v0.22.0
 	github.com/rs/zerolog v1.29.0
+	github.com/shopspring/decimal v1.3.1
 	github.com/stretchr/testify v1.8.2
 	go.mongodb.org/mongo-driver v1.11.4
 	gopkg.in/natefinch/lumberjack.v2 v2.2.1
