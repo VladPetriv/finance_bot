@@ -17,7 +17,7 @@ type handlerService struct {
 	keyboardService KeyboardService
 	categoryService CategoryService
 	userService     UserService
-	balanceService  BalanceService
+	balanceStore    BalanceStore
 }
 
 var _ HandlerService = (*handlerService)(nil)
@@ -29,7 +29,7 @@ type HandlerOptions struct {
 	KeyboardService KeyboardService
 	CategoryService CategoryService
 	UserService     UserService
-	BalanceService  BalanceService
+	BalanceStore    BalanceStore
 }
 
 // NewHandler returns new instance of handler service.
@@ -40,7 +40,7 @@ func NewHandler(opts *HandlerOptions) *handlerService {
 		keyboardService: opts.KeyboardService,
 		categoryService: opts.CategoryService,
 		userService:     opts.UserService,
-		balanceService:  opts.BalanceService,
+		balanceStore:    opts.BalanceStore,
 	}
 }
 
@@ -86,7 +86,7 @@ func (h handlerService) HandleEventStart(ctx context.Context, messageData []byte
 		return fmt.Errorf("create user: %w", err)
 	}
 
-	err = h.balanceService.CreateBalance(ctx, &models.Balance{
+	err = h.balanceStore.Create(ctx, &models.Balance{
 		ID:     uuid.NewString(),
 		UserID: user.ID,
 		Amount: "0",
