@@ -16,6 +16,7 @@ type Services struct {
 	EventService    EventService
 	CategoryService CategoryService
 	UserService     UserService
+	BalanceService  BalanceService
 }
 
 // HandlerService provides functionally for handling bot commands.
@@ -189,3 +190,8 @@ var (
 	// ErrCategoriesNotFound happens when received zero categories from store.
 	ErrCategoriesNotFound = errors.New("categories not found")
 )
+
+// BalanceService provides business logic for processing balance.
+type BalanceService interface {
+	CreateBalance(ctx context.Context, balance *models.Balance) error
+}

@@ -17,6 +17,7 @@ type handlerService struct {
 	keyboardService KeyboardService
 	categoryService CategoryService
 	userService     UserService
+	balanceService  BalanceService
 }
 
 var _ HandlerService = (*handlerService)(nil)
@@ -28,6 +29,7 @@ type HandlerOptions struct {
 	KeyboardService KeyboardService
 	CategoryService CategoryService
 	UserService     UserService
+	BalanceService  BalanceService
 }
 
 // NewHandler returns new instance of handler service.
@@ -38,6 +40,7 @@ func NewHandler(opts *HandlerOptions) *handlerService {
 		keyboardService: opts.KeyboardService,
 		categoryService: opts.CategoryService,
 		userService:     opts.UserService,
+		balanceService:  opts.BalanceService,
 	}
 }
 
@@ -55,10 +58,12 @@ func (h handlerService) HandleEventStart(ctx context.Context, messageData []byte
 
 	welcomeMessage := fmt.Sprintf("Hello, @%s!\nWelcome to @FinanceTracking_bot!", msg.Message.From.Username)
 
-	err = h.userService.CreateUser(ctx, &models.User{
+	user := &models.User{
 		ID:       uuid.NewString(),
 		Username: msg.Message.From.Username,
-	})
+	}
+
+	err = h.userService.CreateUser(ctx, user)
 	if err != nil {
 		if errors.Is(err, ErrUserAlreadyExists) {
 			welcomeMessage = fmt.Sprintf("Happy to see you again @%s!", msg.Message.From.Username)
@@ -79,6 +84,16 @@ func (h handlerService) HandleEventStart(ctx context.Context, messageData []byte
 		}
 		logger.Error().Err(err).Msg("create user")
 		return fmt.Errorf("create user: %w", err)
+	}
+
+	err = h.balanceService.CreateBalance(ctx, &models.Balance{
+		ID:     uuid.NewString(),
+		UserID: user.ID,
+		Amount: "0",
+	})
+	if err != nil {
+		logger.Error().Err(err).Msg("create balance")
+		return fmt.Errorf("create balance: %w", err)
 	}
 
 	err = h.keyboardService.CreateKeyboard(&CreateKeyboardOptions{
