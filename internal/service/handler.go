@@ -8,6 +8,7 @@ import (
 
 	"github.com/VladPetriv/finance_bot/internal/models"
 	"github.com/VladPetriv/finance_bot/pkg/logger"
+	"github.com/VladPetriv/finance_bot/pkg/money"
 	"github.com/google/uuid"
 )
 
@@ -230,6 +231,79 @@ func (h handlerService) HandleEventListCategories(ctx context.Context, messageDa
 	}
 
 	logger.Info().Msg("successfully handle list categories event")
+	return nil
+}
+
+func (h handlerService) HandleEventUpdateBalance(ctx context.Context, messageData []byte) error {
+	logger := h.logger
+
+	var msg HandleEventUpdateBalance
+
+	err := json.Unmarshal(messageData, &msg)
+	if err != nil {
+		logger.Error().Err(err).Msg("unmarshal handle event update balance message")
+		return fmt.Errorf("unmarshal handle event update balance message: %w", err)
+	}
+
+	if len(msg.Message.Entities) != 0 && msg.Message.Entities[0].IsBotCommand() {
+		err = h.messageService.SendMessage(&SendMessageOptions{
+			ChatID: msg.Message.Chat.ID,
+			Text:   "Enter balance amount:",
+		})
+		if err != nil {
+			logger.Error().Err(err).Msg("send message")
+			return fmt.Errorf("send message: %w", err)
+		}
+
+		return nil
+	}
+
+	user, err := h.userService.GetUserByUsername(ctx, msg.Message.From.Username)
+	if err != nil {
+		logger.Error().Err(err).Msg("get user by username")
+		return fmt.Errorf("get user by username: %w", err)
+	}
+
+	balance, err := h.balanceStore.Get(ctx, user.ID)
+	if err != nil {
+		logger.Error().Err(err).Msg("get balance by user id")
+		return fmt.Errorf("get balance by user id")
+	}
+
+	price, err := money.NewFromString(msg.Message.Text)
+	if err != nil {
+		logger.Error().Err(err).Msg("convert string to money type")
+
+		err = h.messageService.SendMessage(&SendMessageOptions{
+			ChatID: msg.Message.Chat.ID,
+			Text:   "Please enter amount in the right format!\nExamples: 1000.12, 10.12, 35",
+		})
+		if err != nil {
+			logger.Error().Err(err).Msg("send message")
+			return fmt.Errorf("send message: %w", err)
+		}
+
+		return nil
+	}
+
+	balance.Amount = price.String()
+
+	err = h.balanceStore.Update(ctx, balance)
+	if err != nil {
+		logger.Error().Err(err).Msg("update balance")
+		return fmt.Errorf("update balance: %w", err)
+	}
+
+	err = h.messageService.SendMessage(&SendMessageOptions{
+		ChatID: msg.Message.Chat.ID,
+		Text:   "Balance successfully updated!",
+	})
+	if err != nil {
+		logger.Error().Err(err).Msg("send message")
+		return fmt.Errorf("send message: %w", err)
+	}
+
+	logger.Info().Msg("balance successfully updated")
 	return nil
 }
 

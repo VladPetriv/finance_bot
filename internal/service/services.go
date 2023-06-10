@@ -28,6 +28,8 @@ type HandlerService interface {
 	HandleEventCategoryCreate(ctx context.Context, messageData []byte) error
 	// HandleEventListCategories is used to handle lit categories event.
 	HandleEventListCategories(ctx context.Context, messageData []byte) error
+	// HandleEventListCategories is used to handle update balance event.
+	HandleEventUpdateBalance(ctx context.Context, messageData []byte) error
 }
 
 // HandleEventStartMessage represents structure with all required info
@@ -50,6 +52,17 @@ type HandleEventUnknownMessage struct {
 // HandleEventCategoryCreate represents structure with all required info
 // about message that needed for handling this event.
 type HandleEventCategoryCreate struct {
+	Message struct {
+		Chat     chat     `json:"chat"`
+		Entities []entity `json:"entities"`
+		From     from     `json:"from"`
+		Text     string   `json:"text"`
+	} `json:"message"`
+}
+
+// HandleEventUpdateBalance represents structure with all required info
+// about message that needed for handling this event.
+type HandleEventUpdateBalance struct {
 	Message struct {
 		Chat     chat     `json:"chat"`
 		Entities []entity `json:"entities"`
@@ -108,11 +121,13 @@ const (
 	startEvent          event = "start"
 	createCategoryEvent event = "create/category"
 	listCategoryEvent   event = "list/categories"
+	updateBalanceEvent  event = "update/balance"
 	unknownEvent        event = "unknown"
 )
 
 var eventsWithInput = map[event]bool{
 	createCategoryEvent: true,
+	updateBalanceEvent:  true,
 }
 
 // Commands that we can received from bot.
@@ -120,6 +135,7 @@ const (
 	botStartCommand          string = "/start"
 	botCreateCategoryCommand string = "/create_category"
 	botListCategoriesCommand string = "/list-categories"
+	botUpdateBalanceCommand  string = "/update-balance"
 )
 
 // MessageService provides functionally for sending messages.
@@ -159,6 +175,9 @@ const (
 var defaultKeyboardRows = []bot.KeyboardRow{
 	{
 		Buttons: []string{"/create_category", "/list-categories"},
+	},
+	{
+		Buttons: []string{"/update-balance"},
 	},
 }
 
