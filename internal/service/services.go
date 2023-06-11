@@ -8,16 +8,6 @@ import (
 	"github.com/VladPetriv/finance_bot/pkg/bot"
 )
 
-// Services contains all Services.
-type Services struct {
-	MessageService  MessageService
-	KeyboardService KeyboardService
-	HandlerService  HandlerService
-	EventService    EventService
-	CategoryService CategoryService
-	UserService     UserService
-}
-
 // HandlerService provides functionally for handling bot commands.
 type HandlerService interface {
 	// HandleEventStart is used to handle event start.

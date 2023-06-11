@@ -50,16 +50,8 @@ func Run(ctx context.Context, cfg *config.Config, logger *logger.Logger) {
 		HandlerService: handlerService,
 	})
 
-	services := service.Services{
-		MessageService:  messageService,
-		KeyboardService: keyboardService,
-		HandlerService:  handlerService,
-		EventService:    eventService,
-		CategoryService: categoryService,
-	}
-
 	errs := make(chan error)
 	updates := make(chan []byte)
 
-	services.EventService.Listen(ctx, updates, errs)
+	eventService.Listen(ctx, updates, errs)
 }
