@@ -5,6 +5,7 @@ type Operation struct {
 	ID         string        `bson:"_id,omitempty"`
 	Type       OperationType `bson:"type,ommitempty"`
 	CategoryID string        `bson:"categoryId,omitempty"`
+	BalanceID  string        `bson:"balanceId,omitempty"`
 	Amount     *float32      `bson:"amount,omitempty"`
 }
 
