@@ -89,32 +89,30 @@ func (e eventService) Listen(ctx context.Context, updates chan []byte, errs chan
 	}
 }
 
-// BotCommand represents the key used in a message to indicate that
-// it contains a command for the bot to execute.
-const botCommand = "bot_command"
-
 func (e eventService) getEventNameFromMsg(msg *BaseMessage) event {
 	if len(msg.Message.Entities) == 0 {
 		return unknownEvent
 	}
 
-	if msg.Message.Text == botStartCommand && msg.Message.Entities[0].IsBotCommand() {
-		return startEvent
-	}
-	if msg.Message.Text == botCreateCategoryCommand && msg.Message.Entities[0].IsBotCommand() {
-		return createCategoryEvent
-	}
-	if msg.Message.Text == botListCategoriesCommand && msg.Message.Entities[0].IsBotCommand() {
-		return listCategoryEvent
-	}
-	if msg.Message.Text == botUpdateBalanceCommand && msg.Message.Entities[0].IsBotCommand() {
-		return updateBalanceEvent
-	}
-	if msg.Message.Text == botGetBalanceCommand && msg.Message.Entities[0].IsBotCommand() {
-		return getBalanceEvent
+	// Got not a bot command
+	if !msg.Message.Entities[0].IsBotCommand() {
+		return ""
 	}
 
-	return unknownEvent
+	switch msg.Message.Text {
+	case botStartCommand:
+		return startEvent
+	case botCreateCategoryCommand:
+		return createCategoryEvent
+	case botListCategoriesCommand:
+		return listCategoryEvent
+	case botUpdateBalanceCommand:
+		return updateBalanceEvent
+	case botGetBalanceCommand:
+		return getBalanceEvent
+	default:
+		return unknownEvent
+	}
 }
 
 func (e eventService) ReactOnEvent(ctx context.Context, eventName event, messageData []byte) error {

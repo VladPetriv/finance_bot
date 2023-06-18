@@ -112,6 +112,10 @@ type entity struct {
 	Type string `json:"type"`
 }
 
+// BotCommand represents the key used in a message to indicate that
+// it contains a command for the bot to execute.
+const botCommand = "bot_command"
+
 func (e entity) IsBotCommand() bool {
 	return e.Type == botCommand
 }
