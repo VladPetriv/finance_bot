@@ -35,6 +35,7 @@ func Run(ctx context.Context, cfg *config.Config, logger *logger.Logger) {
 	keyboardService := service.NewKeyboard(botAPI, logger)
 	categoryService := service.NewCategory(logger, stores.Category)
 	userService := service.NewUser(logger, stores.User)
+	balanceService := service.NewBalance(logger, stores.Balance)
 
 	handlerService := service.NewHandler(&service.HandlerOptions{
 		Logger:          logger,
@@ -43,6 +44,7 @@ func Run(ctx context.Context, cfg *config.Config, logger *logger.Logger) {
 		CategoryService: categoryService,
 		UserService:     userService,
 		BalanceStore:    stores.Balance,
+		BalanceService:  balanceService,
 	})
 	eventService := service.NewEvent(&service.EventOptions{
 		BotAPI:         botAPI,

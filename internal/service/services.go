@@ -20,6 +20,8 @@ type HandlerService interface {
 	HandleEventListCategories(ctx context.Context, messageData []byte) error
 	// HandleEventListCategories is used to handle update balance event.
 	HandleEventUpdateBalance(ctx context.Context, messageData []byte) error
+	// HandleEventGetBalance is used to handle get balance event.
+	HandleEventGetBalance(ctx context.Context, messageData []byte) error
 }
 
 // HandleEventStartMessage represents structure with all required info
@@ -58,6 +60,15 @@ type HandleEventUpdateBalance struct {
 		Entities []entity `json:"entities"`
 		From     from     `json:"from"`
 		Text     string   `json:"text"`
+	} `json:"message"`
+}
+
+// HandleEventGetBalance represents structure with all required info
+// about message that needed for handling this event.
+type HandleEventGetBalance struct {
+	Message struct {
+		Chat chat `json:"chat"`
+		From from `json:"from"`
 	} `json:"message"`
 }
 
@@ -112,6 +123,7 @@ const (
 	createCategoryEvent event = "create/category"
 	listCategoryEvent   event = "list/categories"
 	updateBalanceEvent  event = "update/balance"
+	getBalanceEvent     event = "get/balance"
 	unknownEvent        event = "unknown"
 )
 
@@ -126,6 +138,7 @@ const (
 	botCreateCategoryCommand string = "/create_category"
 	botListCategoriesCommand string = "/list-categories"
 	botUpdateBalanceCommand  string = "/update-balance"
+	botGetBalanceCommand     string = "/get_balance_info"
 )
 
 // MessageService provides functionally for sending messages.
@@ -167,7 +180,7 @@ var defaultKeyboardRows = []bot.KeyboardRow{
 		Buttons: []string{"/create_category", "/list-categories"},
 	},
 	{
-		Buttons: []string{"/update-balance"},
+		Buttons: []string{"/get_balance_info", "/update-balance"},
 	},
 }
 

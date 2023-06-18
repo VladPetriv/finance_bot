@@ -19,6 +19,7 @@ type handlerService struct {
 	categoryService CategoryService
 	userService     UserService
 	balanceStore    BalanceStore
+	balanceService  BalanceService
 }
 
 var _ HandlerService = (*handlerService)(nil)
@@ -31,6 +32,7 @@ type HandlerOptions struct {
 	CategoryService CategoryService
 	UserService     UserService
 	BalanceStore    BalanceStore
+	BalanceService  BalanceService
 }
 
 // NewHandler returns new instance of handler service.
@@ -42,6 +44,7 @@ func NewHandler(opts *HandlerOptions) *handlerService {
 		categoryService: opts.CategoryService,
 		userService:     opts.UserService,
 		balanceStore:    opts.BalanceStore,
+		balanceService:  opts.BalanceService,
 	}
 }
 
@@ -304,6 +307,43 @@ func (h handlerService) HandleEventUpdateBalance(ctx context.Context, messageDat
 	}
 
 	logger.Info().Msg("balance successfully updated")
+	return nil
+}
+
+func (h handlerService) HandleEventGetBalance(ctx context.Context, messageData []byte) error {
+	logger := h.logger
+
+	var msg HandleEventGetBalance
+	err := json.Unmarshal(messageData, &msg)
+	if err != nil {
+		logger.Error().Err(err).Msg("unmarshal handle event get balance message")
+		return fmt.Errorf("unmarshal handle event get balance message: %w", err)
+	}
+
+	user, err := h.userService.GetUserByUsername(ctx, msg.Message.From.Username)
+	if err != nil {
+		logger.Error().Err(err).Msg("get user by usernmae")
+		return fmt.Errorf("get user by usernmae: %w", err)
+	}
+	logger.Debug().Interface("user", user).Msg("got user by username")
+
+	balanceInfo, err := h.balanceService.GetBalanceInfo(ctx, user.ID)
+	if err != nil {
+		logger.Error().Err(err).Msg("get balcne info by user id")
+		return fmt.Errorf("get balance info by user id")
+	}
+	logger.Debug().Interface("balanceInfo", balanceInfo).Msg("got balance info by user id")
+
+	err = h.messageService.SendMessage(&SendMessageOptions{
+		ChatID: msg.Message.Chat.ID,
+		Text:   fmt.Sprintf("Hello, @%s!\nYour current balance is: %v$!", user.Username, balanceInfo.Amount),
+	})
+	if err != nil {
+		logger.Error().Err(err).Msg("send message")
+		return fmt.Errorf("send message: %w", err)
+	}
+
+	logger.Info().Msg("successfully handled get balance event")
 	return nil
 }
 

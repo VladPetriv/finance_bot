@@ -110,6 +110,9 @@ func (e eventService) getEventNameFromMsg(msg *BaseMessage) event {
 	if msg.Message.Text == botUpdateBalanceCommand && msg.Message.Entities[0].IsBotCommand() {
 		return updateBalanceEvent
 	}
+	if msg.Message.Text == botGetBalanceCommand && msg.Message.Entities[0].IsBotCommand() {
+		return getBalanceEvent
+	}
 
 	return unknownEvent
 }
@@ -151,6 +154,13 @@ func (e eventService) ReactOnEvent(ctx context.Context, eventName event, message
 		if err != nil {
 			logger.Error().Err(err).Msg("handle event update balance")
 			return fmt.Errorf("handle event update balance: %w", err)
+		}
+
+	case getBalanceEvent:
+		err := e.handlerService.HandleEventGetBalance(ctx, messageData)
+		if err != nil {
+			logger.Error().Err(err).Msg("handle event get balance")
+			return fmt.Errorf("handle event get balance: %w", err)
 		}
 
 	default:
