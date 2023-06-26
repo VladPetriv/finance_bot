@@ -131,9 +131,9 @@ const (
 	unknownEvent        event = "unknown"
 )
 
-var eventsWithInput = map[event]bool{
-	createCategoryEvent: true,
-	updateBalanceEvent:  true,
+var eventsWithInput = map[event]int{
+	createCategoryEvent: 1,
+	updateBalanceEvent:  1,
 }
 
 // Commands that we can received from bot.

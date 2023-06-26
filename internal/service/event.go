@@ -39,8 +39,9 @@ func (e eventService) Listen(ctx context.Context, updates chan []byte, errs chan
 	go e.botAPI.ReadUpdates(updates, errs)
 
 	var eventName event
-	var previousEvent event
-	var previousEventWaitCount int
+	var previousEventName event
+	var previousEventInputCount int
+	var previousEventMaxInputCount int
 
 	for {
 		select {
@@ -55,34 +56,35 @@ func (e eventService) Listen(ctx context.Context, updates chan []byte, errs chan
 			}
 			logger.Debug().Interface("baseMessage", baseMessage).Msg("unmarshalled base message")
 
-			// event was processed 2 times, need to stop do it
-			if previousEventWaitCount > 1 {
-				previousEvent = ""
-				previousEventWaitCount = 0
+			//  Exceeded max input count, we need to reset all fields related to previous event
+			if previousEventInputCount == previousEventMaxInputCount+1 {
+				previousEventName = ""
+				previousEventInputCount = 0
+				previousEventMaxInputCount = 0
 			}
 
-			eventName = e.getEventNameFromMsg(&baseMessage)
-			logger.Debug().Interface("eventName", eventName).Msg("got event from message")
-
-			if eventsWithInput[eventName] {
-				previousEvent = eventName
+			// No need to get new event name if previous one was not processed to the end
+			if previousEventName == "" {
+				eventName = e.getEventNameFromMsg(&baseMessage)
+				logger.Debug().Interface("eventName", eventName).Msg("got event from message")
 			}
 
-			// need to send event one more time with input value
-			if previousEvent != "" && previousEventWaitCount == 1 {
-				eventName = previousEvent
+			eventMaxInputCount, ok := eventsWithInput[eventName]
+			if ok {
+				previousEventName = eventName
+				previousEventMaxInputCount = eventMaxInputCount
+			}
+
+			// Need to process all input for previous event
+			if previousEventName != "" && previousEventInputCount <= previousEventMaxInputCount {
+				eventName = previousEventName
+				previousEventInputCount++
 			}
 
 			err = e.ReactOnEvent(ctx, eventName, update)
 			if err != nil {
 				logger.Error().Err(err).Msg("react on event")
 			}
-
-			// increase wait count once event was processed
-			if previousEvent != "" {
-				previousEventWaitCount++
-			}
-
 		case err := <-errs:
 			logger.Error().Err(err).Msg("read updates")
 		}
