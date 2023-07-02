@@ -22,6 +22,8 @@ type HandlerService interface {
 	HandleEventUpdateBalance(ctx context.Context, eventName event, messageData []byte) error
 	// HandleEventGetBalance is used to handle get balance event.
 	HandleEventGetBalance(ctx context.Context, messageData []byte) error
+	// HandleEventBack is used to reset bot buttons to default mode.
+	HandleEventBack(ctx context.Context, messageData []byte) error
 }
 
 // HandleEventStartMessage represents structure with all required info
@@ -130,6 +132,7 @@ const (
 	updateBalanceAmountEvent   event = "update/balance/amount"
 	updateBalanceCurrencyEvent event = "update/balance/currency"
 	getBalanceEvent            event = "get/balance"
+	backEvent                  event = "back"
 	unknownEvent               event = "unknown"
 )
 
@@ -142,6 +145,7 @@ var eventsWithInput = map[event]int{
 // Commands that we can received from bot.
 const (
 	botStartCommand                 string = "/start"
+	botBackCommand                  string = "/back"
 	botCreateCategoryCommand        string = "/create_category"
 	botListCategoriesCommand        string = "/list-categories"
 	botUpdateBalanceCommand         string = "/update-balance"

@@ -119,6 +119,8 @@ func (e eventService) getEventNameFromMsg(msg *BaseMessage) event {
 		return updateBalanceCurrencyEvent
 	case botGetBalanceCommand:
 		return getBalanceEvent
+	case botBackCommand:
+		return backEvent
 	default:
 		return unknownEvent
 	}
@@ -161,6 +163,13 @@ func (e eventService) ReactOnEvent(ctx context.Context, eventName event, message
 		if err != nil {
 			logger.Error().Err(err).Msg("handle event update balance")
 			return fmt.Errorf("handle event update balance: %w", err)
+		}
+
+	case backEvent:
+		err := e.handlerService.HandleEventBack(ctx, messageData)
+		if err != nil {
+			logger.Error().Err(err).Msg("handle event back")
+			return fmt.Errorf("handle event back: %w", err)
 		}
 
 	case getBalanceEvent:

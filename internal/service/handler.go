@@ -258,6 +258,7 @@ func (h handlerService) HandleEventUpdateBalance(ctx context.Context, eventName 
 			Type:    keyboardTypeRow,
 			Rows: []bot.KeyboardRow{
 				{Buttons: []string{botUpdateBalanceAmountCommand, botUpdateBalanceCurrencyCommand}},
+				{Buttons: []string{botBackCommand}},
 			},
 		})
 		if err != nil {
@@ -452,6 +453,32 @@ func (h handlerService) HandleEventGetBalance(ctx context.Context, messageData [
 	}
 
 	logger.Info().Msg("successfully handled get balance event")
+	return nil
+}
+
+func (h handlerService) HandleEventBack(ctx context.Context, messageData []byte) error {
+	logger := h.logger
+
+	var msg HandleEventUnknownMessage
+
+	err := json.Unmarshal(messageData, &msg)
+	if err != nil {
+		logger.Error().Err(err).Msg("unmarshal handle event unknown message")
+		return fmt.Errorf("unmarshal event unknown message: %w", err)
+	}
+	logger.Debug().Interface("msg", msg).Msg("unmarshalled handle event unknown message")
+
+	err = h.keyboardService.CreateKeyboard(&CreateKeyboardOptions{
+		ChatID:  msg.Message.Chat.ID,
+		Message: "Please choose command to execute:",
+		Type:    keyboardTypeRow,
+		Rows:    defaultKeyboardRows,
+	})
+	if err != nil {
+		logger.Error().Err(err).Msg("create keyboard")
+		return fmt.Errorf("create keyboard: %w", err)
+	}
+
 	return nil
 }
 
