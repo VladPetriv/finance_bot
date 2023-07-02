@@ -19,7 +19,7 @@ type HandlerService interface {
 	// HandleEventListCategories is used to handle lit categories event.
 	HandleEventListCategories(ctx context.Context, messageData []byte) error
 	// HandleEventListCategories is used to handle update balance event.
-	HandleEventUpdateBalance(ctx context.Context, messageData []byte) error
+	HandleEventUpdateBalance(ctx context.Context, eventName event, messageData []byte) error
 	// HandleEventGetBalance is used to handle get balance event.
 	HandleEventGetBalance(ctx context.Context, messageData []byte) error
 }
@@ -123,26 +123,31 @@ func (e entity) IsBotCommand() bool {
 type event string
 
 const (
-	startEvent          event = "start"
-	createCategoryEvent event = "create/category"
-	listCategoryEvent   event = "list/categories"
-	updateBalanceEvent  event = "update/balance"
-	getBalanceEvent     event = "get/balance"
-	unknownEvent        event = "unknown"
+	startEvent                 event = "start"
+	createCategoryEvent        event = "create/category"
+	listCategoryEvent          event = "list/categories"
+	updateBalanceEvent         event = "update/balance"
+	updateBalanceAmountEvent   event = "update/balance/amount"
+	updateBalanceCurrencyEvent event = "update/balance/currency"
+	getBalanceEvent            event = "get/balance"
+	unknownEvent               event = "unknown"
 )
 
 var eventsWithInput = map[event]int{
-	createCategoryEvent: 1,
-	updateBalanceEvent:  1,
+	createCategoryEvent:        1,
+	updateBalanceAmountEvent:   1,
+	updateBalanceCurrencyEvent: 1,
 }
 
 // Commands that we can received from bot.
 const (
-	botStartCommand          string = "/start"
-	botCreateCategoryCommand string = "/create_category"
-	botListCategoriesCommand string = "/list-categories"
-	botUpdateBalanceCommand  string = "/update-balance"
-	botGetBalanceCommand     string = "/get_balance_info"
+	botStartCommand                 string = "/start"
+	botCreateCategoryCommand        string = "/create_category"
+	botListCategoriesCommand        string = "/list-categories"
+	botUpdateBalanceCommand         string = "/update-balance"
+	botUpdateBalanceAmountCommand   string = "/update_balance_amount"
+	botUpdateBalanceCurrencyCommand string = "/update_balance_currency"
+	botGetBalanceCommand            string = "/get_balance_info"
 )
 
 // MessageService provides functionally for sending messages.

@@ -58,6 +58,7 @@ func (e eventService) Listen(ctx context.Context, updates chan []byte, errs chan
 
 			//  Exceeded max input count, we need to reset all fields related to previous event
 			if previousEventInputCount == previousEventMaxInputCount+1 {
+				logger.Info().Msg("exceeded max input count, reset all related data to previous event")
 				previousEventName = ""
 				previousEventInputCount = 0
 				previousEventMaxInputCount = 0
@@ -71,12 +72,14 @@ func (e eventService) Listen(ctx context.Context, updates chan []byte, errs chan
 
 			eventMaxInputCount, ok := eventsWithInput[eventName]
 			if ok {
+				logger.Info().Msg("got event with input")
 				previousEventName = eventName
 				previousEventMaxInputCount = eventMaxInputCount
 			}
 
 			// Need to process all input for previous event
 			if previousEventName != "" && previousEventInputCount <= previousEventMaxInputCount {
+				logger.Info().Msg("increase process inputs for event")
 				eventName = previousEventName
 				previousEventInputCount++
 			}
@@ -110,6 +113,10 @@ func (e eventService) getEventNameFromMsg(msg *BaseMessage) event {
 		return listCategoryEvent
 	case botUpdateBalanceCommand:
 		return updateBalanceEvent
+	case botUpdateBalanceAmountCommand:
+		return updateBalanceAmountEvent
+	case botUpdateBalanceCurrencyCommand:
+		return updateBalanceCurrencyEvent
 	case botGetBalanceCommand:
 		return getBalanceEvent
 	default:
@@ -149,8 +156,8 @@ func (e eventService) ReactOnEvent(ctx context.Context, eventName event, message
 			return fmt.Errorf("handle event list categories: %w", err)
 		}
 
-	case updateBalanceEvent:
-		err := e.handlerService.HandleEventUpdateBalance(ctx, messageData)
+	case updateBalanceEvent, updateBalanceAmountEvent, updateBalanceCurrencyEvent:
+		err := e.handlerService.HandleEventUpdateBalance(ctx, eventName, messageData)
 		if err != nil {
 			logger.Error().Err(err).Msg("handle event update balance")
 			return fmt.Errorf("handle event update balance: %w", err)

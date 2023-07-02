@@ -7,6 +7,7 @@ import (
 	"fmt"
 
 	"github.com/VladPetriv/finance_bot/internal/models"
+	"github.com/VladPetriv/finance_bot/pkg/bot"
 	"github.com/VladPetriv/finance_bot/pkg/logger"
 	"github.com/VladPetriv/finance_bot/pkg/money"
 	"github.com/google/uuid"
@@ -237,7 +238,7 @@ func (h handlerService) HandleEventListCategories(ctx context.Context, messageDa
 	return nil
 }
 
-func (h handlerService) HandleEventUpdateBalance(ctx context.Context, messageData []byte) error {
+func (h handlerService) HandleEventUpdateBalance(ctx context.Context, eventName event, messageData []byte) error {
 	logger := h.logger
 
 	var msg HandleEventUpdateBalance
@@ -248,10 +249,16 @@ func (h handlerService) HandleEventUpdateBalance(ctx context.Context, messageDat
 		return fmt.Errorf("unmarshal handle event update balance message: %w", err)
 	}
 
-	if len(msg.Message.Entities) != 0 && msg.Message.Entities[0].IsBotCommand() {
-		err = h.messageService.SendMessage(&SendMessageOptions{
-			ChatID: msg.Message.Chat.ID,
-			Text:   "Enter balance amount:",
+	isBotCommand := len(msg.Message.Entities) != 0 && msg.Message.Entities[0].IsBotCommand()
+
+	if isBotCommand && eventName == updateBalanceEvent {
+		err = h.keyboardService.CreateKeyboard(&CreateKeyboardOptions{
+			ChatID:  msg.Message.Chat.ID,
+			Message: "Choose what you want to update in you balance:",
+			Type:    keyboardTypeRow,
+			Rows: []bot.KeyboardRow{
+				{Buttons: []string{botUpdateBalanceAmountCommand, botUpdateBalanceCurrencyCommand}},
+			},
 		})
 		if err != nil {
 			logger.Error().Err(err).Msg("send message")
@@ -273,12 +280,65 @@ func (h handlerService) HandleEventUpdateBalance(ctx context.Context, messageDat
 		return fmt.Errorf("get balance by user id")
 	}
 
-	price, err := money.NewFromString(msg.Message.Text)
+	if eventName == updateBalanceAmountEvent {
+		err = h.handleUpdateBalanceAmountEvent(ctx, updateBalanceAmountOptions{
+			balance:      balance,
+			chatID:       msg.Message.Chat.ID,
+			amount:       msg.Message.Text,
+			isBotCommand: isBotCommand,
+		})
+		if err != nil {
+			logger.Error().Err(err).Msg("handle update balance amount event")
+			return fmt.Errorf("handle update balance amount event: %w", err)
+		}
+	}
+	if eventName == updateBalanceCurrencyEvent {
+		err = h.handleUpdateBalanceCurrencyEvent(ctx, updateBalanceCurrencyOptions{
+			balance:      balance,
+			chatID:       msg.Message.Chat.ID,
+			currency:     msg.Message.Text,
+			isBotCommand: isBotCommand,
+		})
+		if err != nil {
+			logger.Error().Err(err).Msg("handle update balance currency event")
+			return fmt.Errorf("handle update balance currency event: %w", err)
+		}
+	}
+
+	logger.Info().Msg("balance successfully updated")
+	return nil
+}
+
+type updateBalanceAmountOptions struct {
+	balance      *models.Balance
+	chatID       int64
+	amount       string
+	isBotCommand bool
+}
+
+func (h handlerService) handleUpdateBalanceAmountEvent(ctx context.Context, opts updateBalanceAmountOptions) error {
+	logger := h.logger
+
+	if opts.isBotCommand {
+		fmt.Println("i'm here")
+		err := h.messageService.SendMessage(&SendMessageOptions{
+			ChatID: opts.chatID,
+			Text:   "Enter balance amount:",
+		})
+		if err != nil {
+			logger.Error().Err(err).Msg("send message")
+			return fmt.Errorf("send message: %w", err)
+		}
+
+		return nil
+	}
+
+	price, err := money.NewFromString(opts.amount)
 	if err != nil {
 		logger.Error().Err(err).Msg("convert string to money type")
 
 		err = h.messageService.SendMessage(&SendMessageOptions{
-			ChatID: msg.Message.Chat.ID,
+			ChatID: opts.chatID,
 			Text:   "Please enter amount in the right format!\nExamples: 1000.12, 10.12, 35",
 		})
 		if err != nil {
@@ -289,24 +349,69 @@ func (h handlerService) HandleEventUpdateBalance(ctx context.Context, messageDat
 		return nil
 	}
 
-	balance.Amount = price.String()
+	opts.balance.Amount = price.String()
 
-	err = h.balanceStore.Update(ctx, balance)
+	err = h.balanceStore.Update(ctx, opts.balance)
 	if err != nil {
 		logger.Error().Err(err).Msg("update balance")
 		return fmt.Errorf("update balance: %w", err)
 	}
 
 	err = h.messageService.SendMessage(&SendMessageOptions{
-		ChatID: msg.Message.Chat.ID,
-		Text:   "Balance successfully updated!",
+		ChatID: opts.chatID,
+		Text:   "Balance values successfully updated!",
 	})
 	if err != nil {
 		logger.Error().Err(err).Msg("send message")
 		return fmt.Errorf("send message: %w", err)
 	}
 
-	logger.Info().Msg("balance successfully updated")
+	logger.Info().Msg("balance amount successfully updated")
+	return nil
+}
+
+type updateBalanceCurrencyOptions struct {
+	balance      *models.Balance
+	chatID       int64
+	currency     string
+	isBotCommand bool
+}
+
+func (h handlerService) handleUpdateBalanceCurrencyEvent(ctx context.Context, opts updateBalanceCurrencyOptions) error {
+	logger := h.logger
+
+	if opts.isBotCommand {
+		fmt.Println("i'm here")
+		err := h.messageService.SendMessage(&SendMessageOptions{
+			ChatID: opts.chatID,
+			Text:   "Enter balance currency:",
+		})
+		if err != nil {
+			logger.Error().Err(err).Msg("send message")
+			return fmt.Errorf("send message: %w", err)
+		}
+
+		return nil
+	}
+
+	opts.balance.Currency = opts.currency
+
+	err := h.balanceStore.Update(ctx, opts.balance)
+	if err != nil {
+		logger.Error().Err(err).Msg("update balance")
+		return fmt.Errorf("update balance: %w", err)
+	}
+
+	err = h.messageService.SendMessage(&SendMessageOptions{
+		ChatID: opts.chatID,
+		Text:   "Balance currency successfully updated!",
+	})
+	if err != nil {
+		logger.Error().Err(err).Msg("send message")
+		return fmt.Errorf("send message: %w", err)
+	}
+
+	logger.Info().Msg("balance amount successfully updated")
 	return nil
 }
 
@@ -336,7 +441,10 @@ func (h handlerService) HandleEventGetBalance(ctx context.Context, messageData [
 
 	err = h.messageService.SendMessage(&SendMessageOptions{
 		ChatID: msg.Message.Chat.ID,
-		Text:   fmt.Sprintf("Hello, @%s!\nYour current balance is: %v$!", user.Username, balanceInfo.Amount),
+		Text: fmt.Sprintf(
+			"Hello, @%s!\nYour current balance is: %v%s!",
+			user.Username, balanceInfo.Amount, balanceInfo.Currency,
+		),
 	})
 	if err != nil {
 		logger.Error().Err(err).Msg("send message")
