@@ -24,8 +24,8 @@ func NewOperationStore(db *database.MongoDB) *operationStore {
 	}
 }
 
-func (o operationStore) GetAll(ctx context.Context) ([]models.Operation, error) {
-	cursor, err := o.DB.Collection(collectionOperation).Find(ctx, &bson.M{})
+func (o operationStore) GetAll(ctx context.Context, balanceID string) ([]models.Operation, error) {
+	cursor, err := o.DB.Collection(collectionOperation).Find(ctx, &bson.M{"balanceId": balanceID})
 	if err != nil {
 		return nil, err
 	}
@@ -45,6 +45,15 @@ func (o operationStore) GetAll(ctx context.Context) ([]models.Operation, error) 
 
 func (o operationStore) Create(ctx context.Context, operation *models.Operation) error {
 	_, err := o.DB.Collection(collectionOperation).InsertOne(ctx, operation)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (o operationStore) Update(ctx context.Context, operationID string, operation *models.Operation) error {
+	_, err := o.DB.Collection(collectionOperation).UpdateByID(ctx, operationID, bson.M{"$set": operation})
 	if err != nil {
 		return err
 	}

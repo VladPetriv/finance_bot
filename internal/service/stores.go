@@ -43,9 +43,11 @@ type BalanceStore interface {
 //go:generate mockery --dir . --name OperationStore --output ./mocks
 type OperationStore interface {
 	// GetAll returns all operations from store.
-	GetAll(ctx context.Context) ([]models.Operation, error)
+	GetAll(ctx context.Context, balanceID string) ([]models.Operation, error)
 	// Create creates a new operation.
 	Create(ctx context.Context, operation *models.Operation) error
+	// Update is used to update existed operation
+	Update(ctx context.Context, operationID string, operation *models.Operation) error
 	// Delete delete operation by his id.
 	Delete(ctx context.Context, operationID string) error
 }
