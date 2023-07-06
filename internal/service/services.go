@@ -3,7 +3,6 @@ package service
 import (
 	"context"
 	"errors"
-	"fmt"
 
 	"github.com/VladPetriv/finance_bot/internal/models"
 	"github.com/VladPetriv/finance_bot/pkg/bot"
@@ -119,22 +118,20 @@ type HandleEventOperationCreate struct {
 	} `json:"callback_query"`
 }
 
+// GetUsername is used to get user from message.
 func (h HandleEventOperationCreate) GetUsername() string {
-	fmt.Println("================================================")
-
 	if h.Message.From.Username != "" {
-		fmt.Println("default message")
 		return h.Message.From.Username
 	}
 
 	if h.CallbackQuery.From.Username != "" {
-		fmt.Println("call back ", h.Message.From.Username)
 		return h.CallbackQuery.From.Username
 	}
 
 	return ""
 }
 
+// GetChatID is used to get chat id from message.
 func (h HandleEventOperationCreate) GetChatID() int64 {
 	if h.Message.Chat.ID != 0 {
 		return h.Message.Chat.ID

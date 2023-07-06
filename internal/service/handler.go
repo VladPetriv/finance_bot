@@ -330,7 +330,6 @@ func (h handlerService) handleUpdateBalanceAmountEvent(ctx context.Context, opts
 	logger := h.logger
 
 	if opts.isBotCommand {
-		fmt.Println("i'm here")
 		err := h.messageService.SendMessage(&SendMessageOptions{
 			ChatID: opts.chatID,
 			Text:   "Enter balance amount:",
@@ -391,7 +390,6 @@ func (h handlerService) handleUpdateBalanceCurrencyEvent(ctx context.Context, op
 	logger := h.logger
 
 	if opts.isBotCommand {
-		fmt.Println("i'm here")
 		err := h.messageService.SendMessage(&SendMessageOptions{
 			ChatID: opts.chatID,
 			Text:   "Enter balance currency:",
