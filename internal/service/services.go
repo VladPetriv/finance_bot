@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 	"errors"
+	"fmt"
 
 	"github.com/VladPetriv/finance_bot/internal/models"
 	"github.com/VladPetriv/finance_bot/pkg/bot"
@@ -22,6 +23,11 @@ type HandlerService interface {
 	HandleEventUpdateBalance(ctx context.Context, eventName event, messageData []byte) error
 	// HandleEventGetBalance is used to handle get balance event.
 	HandleEventGetBalance(ctx context.Context, messageData []byte) error
+
+	HandleEventOperationCreate(ctc context.Context, eventName event, messageData []byte) error
+
+	HandleEventUpdateOperationAmount(ctx context.Context, messageData []byte) error
+
 	// HandleEventBack is used to reset bot buttons to default mode.
 	HandleEventBack(ctx context.Context, messageData []byte) error
 }
@@ -65,6 +71,17 @@ type HandleEventUpdateBalance struct {
 	} `json:"message"`
 }
 
+// HandleEventUpdateOperationAmount represents structure with all required info
+// about message that needed for handling this event.
+type HandleEventUpdateOperationAmount struct {
+	Message struct {
+		Chat     chat     `json:"chat"`
+		Entities []entity `json:"entities"`
+		From     from     `json:"from"`
+		Text     string   `json:"text"`
+	} `json:"message"`
+}
+
 // HandleEventGetBalance represents structure with all required info
 // about message that needed for handling this event.
 type HandleEventGetBalance struct {
@@ -83,6 +100,53 @@ type HandleEventListCategories struct {
 	} `json:"message"`
 }
 
+// HandleEventOperationCreate represents structure with all required info
+// about message that needed for handling this event.
+type HandleEventOperationCreate struct {
+	Message struct {
+		Chat     chat     `json:"chat"`
+		Entities []entity `json:"entities"`
+		From     from     `json:"from"`
+		Text     string   `json:"text"`
+	} `json:"message"`
+	CallbackQuery struct {
+		ID      string `json:"id"`
+		From    from   `json:"from"`
+		Message struct {
+			Chat chat `json:"chat"`
+		} `json:"message"`
+		Data string `json:"data"`
+	} `json:"callback_query"`
+}
+
+func (h HandleEventOperationCreate) GetUsername() string {
+	fmt.Println("================================================")
+
+	if h.Message.From.Username != "" {
+		fmt.Println("default message")
+		return h.Message.From.Username
+	}
+
+	if h.CallbackQuery.From.Username != "" {
+		fmt.Println("call back ", h.Message.From.Username)
+		return h.CallbackQuery.From.Username
+	}
+
+	return ""
+}
+
+func (h HandleEventOperationCreate) GetChatID() int64 {
+	if h.Message.Chat.ID != 0 {
+		return h.Message.Chat.ID
+	}
+
+	if h.CallbackQuery.Message.Chat.ID != 0 {
+		return h.CallbackQuery.Message.Chat.ID
+	}
+
+	return 0
+}
+
 // EventService provides functionally for receiving an updates from bot and reacting on it.
 type EventService interface {
 	// Listen is used to receive all updates from bot and react for them.
@@ -99,6 +163,9 @@ type BaseMessage struct {
 		Text     string   `json:"text"`
 		Entities []entity `json:"entities"`
 	} `json:"message"`
+	CallbackQuery struct {
+		Data string `json:"data"`
+	} `json:"callback_query"`
 }
 
 type chat struct {
@@ -125,33 +192,44 @@ func (e entity) IsBotCommand() bool {
 type event string
 
 const (
-	startEvent                 event = "start"
-	createCategoryEvent        event = "create/category"
-	listCategoryEvent          event = "list/categories"
-	updateBalanceEvent         event = "update/balance"
-	updateBalanceAmountEvent   event = "update/balance/amount"
-	updateBalanceCurrencyEvent event = "update/balance/currency"
-	getBalanceEvent            event = "get/balance"
-	backEvent                  event = "back"
-	unknownEvent               event = "unknown"
+	startEvent                   event = "start"
+	createCategoryEvent          event = "create/category"
+	listCategoryEvent            event = "list/categories"
+	updateBalanceEvent           event = "update/balance"
+	updateBalanceAmountEvent     event = "update/balance/amount"
+	updateBalanceCurrencyEvent   event = "update/balance/currency"
+	getBalanceEvent              event = "get/balance"
+	createOperationEvent         event = "create/operation"
+	createIncomingOperationEvent event = "create/incoming/operation"
+	createSpendingOperationEvent event = "create/spending/operation"
+	updateOperationAmountEvent   event = "update/operation/amount"
+	backEvent                    event = "back"
+	unknownEvent                 event = "unknown"
 )
 
 var eventsWithInput = map[event]int{
-	createCategoryEvent:        1,
-	updateBalanceAmountEvent:   1,
-	updateBalanceCurrencyEvent: 1,
+	createCategoryEvent:          1,
+	updateBalanceAmountEvent:     1,
+	updateBalanceCurrencyEvent:   1,
+	createIncomingOperationEvent: 1,
+	createSpendingOperationEvent: 1,
+	updateOperationAmountEvent:   1,
 }
 
 // Commands that we can received from bot.
 const (
-	botStartCommand                 string = "/start"
-	botBackCommand                  string = "/back"
-	botCreateCategoryCommand        string = "/create_category"
-	botListCategoriesCommand        string = "/list-categories"
-	botUpdateBalanceCommand         string = "/update-balance"
-	botUpdateBalanceAmountCommand   string = "/update_balance_amount"
-	botUpdateBalanceCurrencyCommand string = "/update_balance_currency"
-	botGetBalanceCommand            string = "/get_balance_info"
+	botStartCommand                   string = "/start"
+	botBackCommand                    string = "/back"
+	botCreateCategoryCommand          string = "/create_category"
+	botListCategoriesCommand          string = "/list-categories"
+	botUpdateBalanceCommand           string = "/update-balance"
+	botUpdateBalanceAmountCommand     string = "/update_balance_amount"
+	botUpdateBalanceCurrencyCommand   string = "/update_balance_currency"
+	botGetBalanceCommand              string = "/get_balance_info"
+	botCreateOperationCommand         string = "/create_operation"
+	botCreateIncomingOperationCommand string = "/create_incoming_operation"
+	botCreateSpendingOperationCommand string = "/create_spending_operation"
+	botUpdateOperationAmountCommand   string = "/update_operation_amount"
 )
 
 // MessageService provides functionally for sending messages.
@@ -195,6 +273,9 @@ var defaultKeyboardRows = []bot.KeyboardRow{
 	{
 		Buttons: []string{"/get_balance_info", "/update-balance"},
 	},
+	{
+		Buttons: []string{botCreateOperationCommand},
+	},
 }
 
 // UserService provides business logic for work with users.
@@ -223,6 +304,8 @@ var (
 	ErrCategoryAlreadyExists = errors.New("category already exist")
 	// ErrCategoriesNotFound happens when received zero categories from store.
 	ErrCategoriesNotFound = errors.New("categories not found")
+	// ErrCategoryNotFound happens when received not category from store.
+	ErrCategoryNotFound = errors.New("categoriy not found")
 )
 
 // BalanceService provides business logic for processing balance.
@@ -233,3 +316,18 @@ type BalanceService interface {
 
 // ErrBalanceNotFound happens when don't receive balance from store.
 var ErrBalanceNotFound = errors.New("balance not found")
+
+// OperationService provides business logic for work with balance operations.
+type OperationService interface {
+	// CreateOperation is used to create new operation with change of user balance amount.
+	CreateOperation(ctx context.Context, opts CreateOperationOptions) error
+}
+
+// CreateOperationOptions represents an input values for creating new operation.
+type CreateOperationOptions struct {
+	UserID    string
+	Operation *models.Operation
+}
+
+// ErrInvalidAmountFormat happens when use enters amount with invalid format
+var ErrInvalidAmountFormat = errors.New("invalid amount format")

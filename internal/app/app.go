@@ -26,9 +26,10 @@ func Run(ctx context.Context, cfg *config.Config, logger *logger.Logger) {
 	}
 
 	stores := service.Stores{
-		Category: store.NewCategory(mongoDB),
-		User:     store.NewUserStore(mongoDB),
-		Balance:  store.NewBalance(mongoDB),
+		Category:  store.NewCategory(mongoDB),
+		User:      store.NewUserStore(mongoDB),
+		Balance:   store.NewBalance(mongoDB),
+		Operation: store.NewOperationStore(mongoDB),
 	}
 
 	messageService := service.NewMessage(botAPI, logger)
@@ -36,15 +37,19 @@ func Run(ctx context.Context, cfg *config.Config, logger *logger.Logger) {
 	categoryService := service.NewCategory(logger, stores.Category)
 	userService := service.NewUser(logger, stores.User)
 	balanceService := service.NewBalance(logger, stores.Balance)
+	operationService := service.NewOperation(logger, stores.Operation, stores.Balance, stores.Category)
 
 	handlerService := service.NewHandler(&service.HandlerOptions{
-		Logger:          logger,
-		MessageService:  messageService,
-		KeyboardService: keyboardService,
-		CategoryService: categoryService,
-		UserService:     userService,
-		BalanceStore:    stores.Balance,
-		BalanceService:  balanceService,
+		Logger:           logger,
+		MessageService:   messageService,
+		KeyboardService:  keyboardService,
+		CategoryService:  categoryService,
+		UserService:      userService,
+		BalanceStore:     stores.Balance,
+		BalanceService:   balanceService,
+		OperationService: operationService,
+		OperationStore:   stores.Operation,
+		CategoryStore:    stores.Category,
 	})
 	eventService := service.NewEvent(&service.EventOptions{
 		BotAPI:         botAPI,

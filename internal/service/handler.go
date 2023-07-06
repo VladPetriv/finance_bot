@@ -14,38 +14,47 @@ import (
 )
 
 type handlerService struct {
-	logger          *logger.Logger
-	messageService  MessageService
-	keyboardService KeyboardService
-	categoryService CategoryService
-	userService     UserService
-	balanceStore    BalanceStore
-	balanceService  BalanceService
+	logger           *logger.Logger
+	messageService   MessageService
+	keyboardService  KeyboardService
+	categoryService  CategoryService
+	categoryStore    CategoryStore
+	userService      UserService
+	balanceStore     BalanceStore
+	balanceService   BalanceService
+	operationService OperationService
+	operationStore   OperationStore
 }
 
 var _ HandlerService = (*handlerService)(nil)
 
 // HandlerOptions represents input options for new instance of handler service.
 type HandlerOptions struct {
-	Logger          *logger.Logger
-	MessageService  MessageService
-	KeyboardService KeyboardService
-	CategoryService CategoryService
-	UserService     UserService
-	BalanceStore    BalanceStore
-	BalanceService  BalanceService
+	Logger           *logger.Logger
+	MessageService   MessageService
+	KeyboardService  KeyboardService
+	CategoryService  CategoryService
+	UserService      UserService
+	BalanceStore     BalanceStore
+	BalanceService   BalanceService
+	OperationService OperationService
+	OperationStore   OperationStore
+	CategoryStore    CategoryStore
 }
 
 // NewHandler returns new instance of handler service.
 func NewHandler(opts *HandlerOptions) *handlerService {
 	return &handlerService{
-		logger:          opts.Logger,
-		messageService:  opts.MessageService,
-		keyboardService: opts.KeyboardService,
-		categoryService: opts.CategoryService,
-		userService:     opts.UserService,
-		balanceStore:    opts.BalanceStore,
-		balanceService:  opts.BalanceService,
+		logger:           opts.Logger,
+		messageService:   opts.MessageService,
+		keyboardService:  opts.KeyboardService,
+		categoryService:  opts.CategoryService,
+		userService:      opts.UserService,
+		balanceStore:     opts.BalanceStore,
+		balanceService:   opts.BalanceService,
+		operationService: opts.OperationService,
+		operationStore:   opts.OperationStore,
+		categoryStore:    opts.CategoryStore,
 	}
 }
 
@@ -453,6 +462,222 @@ func (h handlerService) HandleEventGetBalance(ctx context.Context, messageData [
 	}
 
 	logger.Info().Msg("successfully handled get balance event")
+	return nil
+}
+
+func (h handlerService) HandleEventOperationCreate(ctx context.Context, eventName event, messageData []byte) error {
+	logger := h.logger
+
+	var msg HandleEventOperationCreate
+
+	err := json.Unmarshal(messageData, &msg)
+	if err != nil {
+		logger.Error().Err(err).Msg("unmarshal handle event update balance message")
+		return fmt.Errorf("unmarshal handle event update balance message: %w", err)
+	}
+
+	isBotCommand := len(msg.Message.Entities) != 0 && msg.Message.Entities[0].IsBotCommand()
+	if isBotCommand && eventName == createOperationEvent {
+		err = h.keyboardService.CreateKeyboard(&CreateKeyboardOptions{
+			ChatID:  msg.GetChatID(),
+			Message: "Choose operation type",
+			Type:    keyboardTypeInline,
+			Rows: []bot.KeyboardRow{
+				{Buttons: []string{botCreateIncomingOperationCommand, botCreateSpendingOperationCommand}},
+			},
+		})
+		if err != nil {
+			logger.Error().Err(err).Msg("create inline keyboard")
+			return fmt.Errorf("create inline keyboard: %w", err)
+		}
+
+		return nil
+	}
+
+	user, err := h.userService.GetUserByUsername(ctx, msg.GetUsername())
+	if err != nil {
+		logger.Error().Err(err).Msg("get user by username")
+		return fmt.Errorf("get user by username: %w", err)
+	}
+
+	balance, err := h.balanceStore.Get(ctx, user.ID)
+	if err != nil {
+		logger.Error().Err(err).Msg("get balance from storage")
+		return fmt.Errorf("get balance from storage: %w", err)
+	}
+
+	if msg.CallbackQuery.Data != "" && eventName == createIncomingOperationEvent || eventName == createSpendingOperationEvent {
+		categories, err := h.categoryService.ListCategories(ctx, user.ID)
+		if err != nil {
+			if errors.Is(err, ErrCategoriesNotFound) {
+				err = h.messageService.SendMessage(&SendMessageOptions{
+					ChatID: msg.GetChatID(),
+					Text:   "Please create a category before creating operation",
+				})
+				if err != nil {
+					logger.Error().Err(err).Msg("send message")
+					return fmt.Errorf("send message: %w", err)
+				}
+				return nil
+			}
+
+			logger.Error().Err(err).Msg("list categories")
+			return fmt.Errorf("list categories: %w", err)
+		}
+
+		keyboardRows := []bot.KeyboardRow{
+			{Buttons: []string{}},
+			{Buttons: []string{botBackCommand}},
+		}
+
+		for _, c := range categories {
+			keyboardRows[0].Buttons = append(keyboardRows[0].Buttons, c.Title)
+		}
+
+		err = h.keyboardService.CreateKeyboard(&CreateKeyboardOptions{
+			ChatID:  msg.GetChatID(),
+			Message: "Choose category",
+			Type:    keyboardTypeRow,
+			Rows:    keyboardRows,
+		})
+		if err != nil {
+			logger.Error().Err(err).Msg("create row keyboard")
+			return fmt.Errorf("create row keyboard: %w", err)
+		}
+
+		return nil
+	}
+
+	if msg.Message.Text != "" {
+		category, err := h.categoryStore.GetByTitle(ctx, msg.Message.Text)
+		if err != nil {
+			logger.Error().Err(err).Msg("get category by title from storage")
+			return fmt.Errorf("get category by title from storage: %w", err)
+		}
+		if category == nil {
+			err = h.messageService.SendMessage(&SendMessageOptions{
+				ChatID: msg.GetChatID(),
+				Text:   "Category not found please try again!",
+			})
+			if err != nil {
+				logger.Error().Err(err).Msg("send message")
+				return fmt.Errorf("send message: %w", err)
+			}
+			return nil
+		}
+
+		var operationType models.OperationType
+		if eventName == createIncomingOperationEvent {
+			operationType = models.OperationTypeIncoming
+		}
+		if eventName == createSpendingOperationEvent {
+			operationType = models.OperationTypeSpending
+		}
+		err = h.operationStore.Create(ctx, &models.Operation{
+			ID:         uuid.NewString(),
+			BalanceID:  balance.ID,
+			CategoryID: category.ID,
+			Type:       operationType,
+		})
+		if err != nil {
+			logger.Error().Err(err).Msg("create operation in storage")
+			return fmt.Errorf("create operation in storage: %w", err)
+		}
+
+		err = h.messageService.SendMessage(&SendMessageOptions{
+			ChatID: msg.GetChatID(),
+			Text:   botUpdateOperationAmountCommand,
+		})
+		if err != nil {
+			logger.Error().Err(err).Msg("send message")
+			return fmt.Errorf("send message: %w", err)
+		}
+	}
+
+	logger.Info().Msg("operation successfully created")
+	return nil
+}
+
+func (h handlerService) HandleEventUpdateOperationAmount(ctx context.Context, messageData []byte) error {
+	logger := h.logger
+
+	var msg HandleEventUpdateOperationAmount
+	err := json.Unmarshal(messageData, &msg)
+	if err != nil {
+		logger.Error().Err(err).Msg("unmarshal handle event get balance message")
+		return fmt.Errorf("unmarshal handle event get balance message: %w", err)
+	}
+
+	if len(msg.Message.Entities) != 0 && msg.Message.Entities[0].IsBotCommand() || msg.Message.Text == botUpdateOperationAmountCommand {
+		err = h.messageService.SendMessage(&SendMessageOptions{
+			ChatID: msg.Message.Chat.ID,
+			Text:   "Enter operation amount!",
+		})
+		if err != nil {
+			logger.Error().Err(err).Msg("send message")
+			return fmt.Errorf("send message: %w", err)
+		}
+
+		return nil
+	}
+
+	user, err := h.userService.GetUserByUsername(ctx, msg.Message.From.Username)
+	if err != nil {
+		logger.Error().Err(err).Msg("get user by usernmae")
+		return fmt.Errorf("get user by usernmae: %w", err)
+	}
+
+	balanceInfo, err := h.balanceService.GetBalanceInfo(ctx, user.ID)
+	if err != nil {
+		logger.Error().Err(err).Msg("get balcne info by user id")
+		return fmt.Errorf("get balance info by user id")
+	}
+
+	operations, err := h.operationStore.GetAll(ctx, balanceInfo.ID)
+	if err != nil {
+		logger.Error().Err(err).Msg("get operations from storage")
+		return fmt.Errorf("get operations from storage: %w", err)
+	}
+	if len(operations) == 0 {
+		err = h.messageService.SendMessage(&SendMessageOptions{
+			ChatID: msg.Message.Chat.ID,
+			Text:   "Operation not found please try again!",
+		})
+		if err != nil {
+			logger.Error().Err(err).Msg("send message")
+			return fmt.Errorf("send message: %w", err)
+		}
+	}
+
+	if operations[len(operations)-1].Amount == "" {
+		operations[len(operations)-1].Amount = msg.Message.Text
+		err := h.operationService.CreateOperation(ctx, CreateOperationOptions{
+			UserID:    user.ID,
+			Operation: &operations[len(operations)-1],
+		})
+		if err != nil {
+			logger.Error().Err(err).Msg("create operation")
+
+			err = h.messageService.SendMessage(&SendMessageOptions{
+				ChatID: msg.Message.Chat.ID,
+				Text:   "Can't create operation!",
+			})
+			if err != nil {
+				logger.Error().Err(err).Msg("send message")
+				return fmt.Errorf("send message: %w", err)
+			}
+		}
+	}
+
+	err = h.messageService.SendMessage(&SendMessageOptions{
+		ChatID: msg.Message.Chat.ID,
+		Text:   "Operation successfully created",
+	})
+	if err != nil {
+		logger.Error().Err(err).Msg("send message")
+		return fmt.Errorf("send message: %w", err)
+	}
+
 	return nil
 }
 

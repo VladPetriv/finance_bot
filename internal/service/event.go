@@ -95,16 +95,24 @@ func (e eventService) Listen(ctx context.Context, updates chan []byte, errs chan
 }
 
 func (e eventService) getEventNameFromMsg(msg *BaseMessage) event {
-	if len(msg.Message.Entities) == 0 {
+	if len(msg.Message.Entities) == 0 && msg.CallbackQuery.Data == "" {
 		return unknownEvent
 	}
 
-	// Got not a bot command
-	if !msg.Message.Entities[0].IsBotCommand() {
-		return ""
+	if msg.CallbackQuery.Data == "" {
+		// Got not a bot command
+		if !msg.Message.Entities[0].IsBotCommand() {
+			return ""
+		}
 	}
 
-	switch msg.Message.Text {
+	textToCheck := msg.Message.Text
+
+	if msg.CallbackQuery.Data != "" {
+		textToCheck = msg.CallbackQuery.Data
+	}
+
+	switch textToCheck {
 	case botStartCommand:
 		return startEvent
 	case botCreateCategoryCommand:
@@ -119,6 +127,14 @@ func (e eventService) getEventNameFromMsg(msg *BaseMessage) event {
 		return updateBalanceCurrencyEvent
 	case botGetBalanceCommand:
 		return getBalanceEvent
+	case botCreateOperationCommand:
+		return createOperationEvent
+	case botCreateIncomingOperationCommand:
+		return createIncomingOperationEvent
+	case botCreateSpendingOperationCommand:
+		return createSpendingOperationEvent
+	case botUpdateOperationAmountCommand:
+		return updateOperationAmountEvent
 	case botBackCommand:
 		return backEvent
 	default:
@@ -177,6 +193,20 @@ func (e eventService) ReactOnEvent(ctx context.Context, eventName event, message
 		if err != nil {
 			logger.Error().Err(err).Msg("handle event get balance")
 			return fmt.Errorf("handle event get balance: %w", err)
+		}
+
+	case createOperationEvent, createIncomingOperationEvent, createSpendingOperationEvent:
+		err := e.handlerService.HandleEventOperationCreate(ctx, eventName, messageData)
+		if err != nil {
+			logger.Error().Err(err).Msg("handle event create operation")
+			return fmt.Errorf("handle event create operation: %w", err)
+		}
+
+	case updateOperationAmountEvent:
+		err := e.handlerService.HandleEventUpdateOperationAmount(ctx, messageData)
+		if err != nil {
+			logger.Error().Err(err).Msg("handle event update operation amount event")
+			return fmt.Errorf("handle event update operation amount event: %w", err)
 		}
 
 	default:
