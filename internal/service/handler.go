@@ -613,13 +613,15 @@ func (h handlerService) HandleEventUpdateOperationAmount(ctx context.Context, me
 	}
 
 	if len(msg.Message.Entities) != 0 && msg.Message.Entities[0].IsBotCommand() || msg.Message.Text == botUpdateOperationAmountCommand {
-		err = h.messageService.SendMessage(&SendMessageOptions{
-			ChatID: msg.Message.Chat.ID,
-			Text:   "Enter operation amount!",
+		err = h.keyboardService.CreateKeyboard(&CreateKeyboardOptions{
+			ChatID:  msg.Message.Chat.ID,
+			Message: "Enter operation amount!",
+			Type:    keyboardTypeRow,
+			Rows:    defaultKeyboardRows,
 		})
 		if err != nil {
-			logger.Error().Err(err).Msg("send message")
-			return fmt.Errorf("send message: %w", err)
+			logger.Error().Err(err).Msg("create row keyboard")
+			return fmt.Errorf("create row keyboard: %w", err)
 		}
 
 		return nil
