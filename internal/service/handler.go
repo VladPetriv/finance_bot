@@ -504,7 +504,7 @@ func (h handlerService) HandleEventOperationCreate(ctx context.Context, eventNam
 		return fmt.Errorf("get balance from storage: %w", err)
 	}
 
-	if msg.CallbackQuery.Data != "" && eventName == createIncomingOperationEvent || eventName == createSpendingOperationEvent {
+	if msg.CallbackQuery.Data != "" && (eventName == createIncomingOperationEvent || eventName == createSpendingOperationEvent) {
 		categories, err := h.categoryService.ListCategories(ctx, user.ID)
 		if err != nil {
 			if errors.Is(err, ErrCategoriesNotFound) {
@@ -582,9 +582,15 @@ func (h handlerService) HandleEventOperationCreate(ctx context.Context, eventNam
 			return fmt.Errorf("create operation in storage: %w", err)
 		}
 
-		err = h.messageService.SendMessage(&SendMessageOptions{
-			ChatID: msg.GetChatID(),
-			Text:   botUpdateOperationAmountCommand,
+		err = h.keyboardService.CreateKeyboard(&CreateKeyboardOptions{
+			ChatID:  msg.GetChatID(),
+			Message: "Please click on the button bellow for entering operation amount!",
+			Type:    keyboardTypeRow,
+			Rows: []bot.KeyboardRow{
+				{
+					Buttons: []string{botUpdateOperationAmountCommand},
+				},
+			},
 		})
 		if err != nil {
 			logger.Error().Err(err).Msg("send message")
