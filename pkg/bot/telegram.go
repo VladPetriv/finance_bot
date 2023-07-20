@@ -27,7 +27,7 @@ func NewTelegramBot(token string) *bot {
 }
 
 func (b bot) NewAPI() (API, error) {
-	tgBot, err := telego.NewBot(b.token, telego.WithDefaultDebugLogger())
+	tgBot, err := telego.NewBot(b.token, telego.WithDefaultLogger(false, true))
 	if err != nil {
 		return nil, err
 	}
