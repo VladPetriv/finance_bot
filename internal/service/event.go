@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"strings"
 
 	"github.com/VladPetriv/finance_bot/pkg/bot"
 	"github.com/VladPetriv/finance_bot/pkg/logger"
@@ -95,15 +96,11 @@ func (e eventService) Listen(ctx context.Context, updates chan []byte, errs chan
 }
 
 func (e eventService) getEventNameFromMsg(msg *BaseMessage) event {
-	if len(msg.Message.Entities) == 0 && msg.CallbackQuery.Data == "" {
+	if !strings.Contains(strings.Join(availableCommands, " "), msg.Message.Text) {
 		return unknownEvent
 	}
-
-	if msg.CallbackQuery.Data == "" {
-		// Got not a bot command
-		if !msg.Message.Entities[0].IsBotCommand() {
-			return ""
-		}
+	if !strings.Contains(strings.Join(availableCommands, " "), msg.CallbackQuery.Data) {
+		return unknownEvent
 	}
 
 	textToCheck := msg.Message.Text
@@ -112,34 +109,15 @@ func (e eventService) getEventNameFromMsg(msg *BaseMessage) event {
 		textToCheck = msg.CallbackQuery.Data
 	}
 
-	switch textToCheck {
-	case botStartCommand:
-		return startEvent
-	case botCreateCategoryCommand:
-		return createCategoryEvent
-	case botListCategoriesCommand:
-		return listCategoryEvent
-	case botUpdateBalanceCommand:
-		return updateBalanceEvent
-	case botUpdateBalanceAmountCommand:
-		return updateBalanceAmountEvent
-	case botUpdateBalanceCurrencyCommand:
-		return updateBalanceCurrencyEvent
-	case botGetBalanceCommand:
-		return getBalanceEvent
-	case botCreateOperationCommand:
-		return createOperationEvent
-	case botCreateIncomingOperationCommand:
-		return createIncomingOperationEvent
-	case botCreateSpendingOperationCommand:
-		return createSpendingOperationEvent
-	case botUpdateOperationAmountCommand:
-		return updateOperationAmountEvent
-	case botBackCommand:
-		return backEvent
-	default:
-		return unknownEvent
+	for _, c := range availableCommands {
+		if strings.Contains(c, textToCheck) {
+			if eventFromCommand, ok := commandToEvent[c]; ok {
+				return eventFromCommand
+			}
+		}
 	}
+
+	return unknownEvent
 }
 
 func (e eventService) ReactOnEvent(ctx context.Context, eventName event, messageData []byte) error {
