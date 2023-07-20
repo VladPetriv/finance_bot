@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 	"errors"
+	"strings"
 
 	"github.com/VladPetriv/finance_bot/internal/models"
 	"github.com/VladPetriv/finance_bot/pkg/bot"
@@ -199,18 +200,45 @@ var eventsWithInput = map[event]int{
 // Commands that we can received from bot.
 const (
 	botStartCommand                   string = "/start"
-	botBackCommand                    string = "/back"
-	botCreateCategoryCommand          string = "/create_category"
-	botListCategoriesCommand          string = "/list-categories"
-	botUpdateBalanceCommand           string = "/update-balance"
-	botUpdateBalanceAmountCommand     string = "/update_balance_amount"
-	botUpdateBalanceCurrencyCommand   string = "/update_balance_currency"
-	botGetBalanceCommand              string = "/get_balance_info"
-	botCreateOperationCommand         string = "/create_operation"
-	botCreateIncomingOperationCommand string = "/create_incoming_operation"
-	botCreateSpendingOperationCommand string = "/create_spending_operation"
-	botUpdateOperationAmountCommand   string = "/update_operation_amount"
+	botBackCommand                    string = "Back ❌"
+	botCreateCategoryCommand          string = "Create Category 📊"
+	botListCategoriesCommand          string = "List Categories 🗂️"
+	botUpdateBalanceCommand           string = "Update Balance 💲"
+	botUpdateBalanceAmountCommand     string = "Update Balance Amount 💵"
+	botUpdateBalanceCurrencyCommand   string = "Update Balance Currency 💱"
+	botGetBalanceCommand              string = "Get Balance Info 🏦"
+	botCreateOperationCommand         string = "Create Operation 🤔"
+	botCreateIncomingOperationCommand string = "Create Incoming Operation 🤑"
+	botCreateSpendingOperationCommand string = "Create Spending Operation 💸"
+	botUpdateOperationAmountCommand   string = "Update Operation Amount"
 )
+
+var availableCommands = []string{
+	botStartCommand, botBackCommand, botCreateCategoryCommand,
+	botListCategoriesCommand, botUpdateBalanceCommand, botUpdateBalanceAmountCommand,
+	botCreateOperationCommand, botUpdateBalanceCurrencyCommand, botGetBalanceCommand, botCreateIncomingOperationCommand,
+	botCreateIncomingOperationCommand, botCreateSpendingOperationCommand, botUpdateOperationAmountCommand,
+}
+
+// IsBotCommand is used to determine if incoming text a bot command or not.
+func IsBotCommand(command string) bool {
+	return strings.Contains(strings.Join(availableCommands, " "), command)
+}
+
+var commandToEvent = map[string]event{
+	botStartCommand:                   startEvent,
+	botBackCommand:                    backEvent,
+	botCreateCategoryCommand:          createCategoryEvent,
+	botListCategoriesCommand:          listCategoryEvent,
+	botUpdateBalanceCommand:           updateBalanceEvent,
+	botUpdateBalanceAmountCommand:     updateBalanceAmountEvent,
+	botUpdateBalanceCurrencyCommand:   updateBalanceCurrencyEvent,
+	botGetBalanceCommand:              getBalanceEvent,
+	botCreateOperationCommand:         createOperationEvent,
+	botCreateIncomingOperationCommand: createIncomingOperationEvent,
+	botCreateSpendingOperationCommand: createSpendingOperationEvent,
+	botUpdateOperationAmountCommand:   updateOperationAmountEvent,
+}
 
 // MessageService provides functionally for sending messages.
 type MessageService interface {
@@ -248,10 +276,10 @@ const (
 
 var defaultKeyboardRows = []bot.KeyboardRow{
 	{
-		Buttons: []string{"/create_category", "/list-categories"},
+		Buttons: []string{botCreateCategoryCommand, botListCategoriesCommand},
 	},
 	{
-		Buttons: []string{"/get_balance_info", "/update-balance"},
+		Buttons: []string{botGetBalanceCommand, botUpdateBalanceCommand},
 	},
 	{
 		Buttons: []string{botCreateOperationCommand},
