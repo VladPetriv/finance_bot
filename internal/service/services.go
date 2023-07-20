@@ -52,10 +52,9 @@ type HandleEventUnknownMessage struct {
 // about message that needed for handling this event.
 type HandleEventCategoryCreate struct {
 	Message struct {
-		Chat     chat     `json:"chat"`
-		Entities []entity `json:"entities"`
-		From     from     `json:"from"`
-		Text     string   `json:"text"`
+		Chat chat   `json:"chat"`
+		From from   `json:"from"`
+		Text string `json:"text"`
 	} `json:"message"`
 }
 
@@ -63,10 +62,9 @@ type HandleEventCategoryCreate struct {
 // about message that needed for handling this event.
 type HandleEventUpdateBalance struct {
 	Message struct {
-		Chat     chat     `json:"chat"`
-		Entities []entity `json:"entities"`
-		From     from     `json:"from"`
-		Text     string   `json:"text"`
+		Chat chat   `json:"chat"`
+		From from   `json:"from"`
+		Text string `json:"text"`
 	} `json:"message"`
 }
 
@@ -74,10 +72,9 @@ type HandleEventUpdateBalance struct {
 // about message that needed for handling this event.
 type HandleEventUpdateOperationAmount struct {
 	Message struct {
-		Chat     chat     `json:"chat"`
-		Entities []entity `json:"entities"`
-		From     from     `json:"from"`
-		Text     string   `json:"text"`
+		Chat chat   `json:"chat"`
+		From from   `json:"from"`
+		Text string `json:"text"`
 	} `json:"message"`
 }
 
@@ -103,10 +100,9 @@ type HandleEventListCategories struct {
 // about message that needed for handling this event.
 type HandleEventOperationCreate struct {
 	Message struct {
-		Chat     chat     `json:"chat"`
-		Entities []entity `json:"entities"`
-		From     from     `json:"from"`
-		Text     string   `json:"text"`
+		Chat chat   `json:"chat"`
+		From from   `json:"from"`
+		Text string `json:"text"`
 	} `json:"message"`
 	CallbackQuery struct {
 		ID      string `json:"id"`
@@ -156,9 +152,8 @@ type EventService interface {
 // BaseMessage is used to determine which command to do.
 type BaseMessage struct {
 	Message struct {
-		Chat     chat     `json:"chat"`
-		Text     string   `json:"text"`
-		Entities []entity `json:"entities"`
+		Chat chat   `json:"chat"`
+		Text string `json:"text"`
 	} `json:"message"`
 	CallbackQuery struct {
 		Data string `json:"data"`
@@ -172,18 +167,6 @@ type chat struct {
 type from struct {
 	ID       int    `json:"id"`
 	Username string `json:"username"`
-}
-
-type entity struct {
-	Type string `json:"type"`
-}
-
-// BotCommand represents the key used in a message to indicate that
-// it contains a command for the bot to execute.
-const botCommand = "bot_command"
-
-func (e entity) IsBotCommand() bool {
-	return e.Type == botCommand
 }
 
 type event string
