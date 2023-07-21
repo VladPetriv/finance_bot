@@ -6,7 +6,7 @@ import (
 	"github.com/VladPetriv/finance_bot/internal/models"
 )
 
-// Stores represents all Storages.
+// Stores represents all stores.
 type Stores struct {
 	Balance   BalanceStore
 	Operation OperationStore
@@ -14,45 +14,45 @@ type Stores struct {
 	User      UserStore
 }
 
-// UserStore provides functionality for work with users.
+// UserStore provides functionality for work with users store.
 //
 //go:generate mockery --dir . --name UserStore --output ./mocks
 type UserStore interface {
-	// Create creates a new user model in store.
+	// Create creates a new user in store.
 	Create(ctx context.Context, user *models.User) error
 	// GetByUsername returns a user from store by username.
 	GetByUsername(ctx context.Context, username string) (*models.User, error)
 }
 
-// BalanceStore provides functionality for work with balance.
+// BalanceStore provides functionality for work with balance store.
 //
 //go:generate mockery --dir . --name BalanceStore --output ./mocks
 type BalanceStore interface {
-	// Create creates a new balance model in store.
+	// Create creates a new balance in store.
 	Create(ctx context.Context, balance *models.Balance) error
-	// Get returns a balance from store by id.
+	// Get returns a balance from store by user id.
 	Get(ctx context.Context, userID string) (*models.Balance, error)
-	// Update updates a current balance model in store.
+	// Update updates balance model in store.
 	Update(ctx context.Context, balance *models.Balance) error
-	// Delete deletes a balance from store by id.
+	// Delete deletes balance from store.
 	Delete(ctx context.Context, balanceID string) error
 }
 
-// OperationStore provides functionality for work with operation.
+// OperationStore provides functionality for work with operation store.
 //
 //go:generate mockery --dir . --name OperationStore --output ./mocks
 type OperationStore interface {
-	// GetAll returns all operations from store.
-	GetAll(ctx context.Context, balanceID string) ([]models.Operation, error)
 	// Create creates a new operation.
 	Create(ctx context.Context, operation *models.Operation) error
-	// Update is used to update existed operation
+	// GetAll returns all operations from store by balance id.
+	GetAll(ctx context.Context, balanceID string) ([]models.Operation, error)
+	// Update updates an operation in store.
 	Update(ctx context.Context, operationID string, operation *models.Operation) error
 	// Delete delete operation by his id.
 	Delete(ctx context.Context, operationID string) error
 }
 
-// CategoryStore provides functionality for work with categories.
+// CategoryStore provides functionality for work with categories store.
 //
 //go:generate mockery --dir . --name CategoryStore --output ./mocks
 type CategoryStore interface {
@@ -60,13 +60,13 @@ type CategoryStore interface {
 	GetAll(ctx context.Context, filters *GetALlCategoriesFilter) ([]models.Category, error)
 	// GetByTitle returns a category by their title.
 	GetByTitle(ctx context.Context, title string) (*models.Category, error)
-	// Create creates new category model in store.
+	// Create creates new category in store.
 	Create(ctx context.Context, category *models.Category) error
-	// Delete delete category from store by id.
+	// Delete delete category from store.
 	Delete(ctx context.Context, categoryID string) error
 }
 
-// GetALlCategoriesFilter represents a filters for GetAll categories method.
+// GetALlCategoriesFilter represents a filters for GetAll method.
 type GetALlCategoriesFilter struct {
 	UserID *string
 }

@@ -16,7 +16,7 @@ type operationService struct {
 	categoryStore  CategoryStore
 }
 
-// NewOperation is used to create a new instance of the operation service.
+// NewOperation returns new instance of operation service.
 func NewOperation(logger *logger.Logger, operationStore OperationStore, balanceStore BalanceStore, categoryStore CategoryStore) *operationService {
 	return &operationService{
 		logger:         logger,
@@ -65,7 +65,7 @@ func (o operationService) handleIncomingOperationType(ctx context.Context, balan
 	if err != nil {
 		logger.Error().Err(err).Msg("convert operation string amount to money type")
 		// TODO: return custom error
-		return fmt.Errorf("chmo")
+		return fmt.Errorf("should be customer error here")
 	}
 
 	balanceAmount, err := money.NewFromString(balance.Amount)

@@ -13,7 +13,7 @@ type balanceService struct {
 	balanceStore BalanceStore
 }
 
-// NewBalance is used to create a new instance of the balance service.
+// NewBalance returns new instance of balance service.
 func NewBalance(logger *logger.Logger, balanceStore BalanceStore) *balanceService {
 	return &balanceService{
 		logger:       logger,

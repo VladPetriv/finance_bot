@@ -18,7 +18,7 @@ type eventService struct {
 
 var _ EventService = (*eventService)(nil)
 
-// EventOptions represents input options for new instance of event service.
+// EventOptions represents an input options for creating new instance of event service.
 type EventOptions struct {
 	BotAPI         bot.API
 	Logger         *logger.Logger
