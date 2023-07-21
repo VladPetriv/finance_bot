@@ -27,9 +27,9 @@ func Run(ctx context.Context, cfg *config.Config, logger *logger.Logger) {
 
 	stores := service.Stores{
 		Category:  store.NewCategory(mongoDB),
-		User:      store.NewUserStore(mongoDB),
+		User:      store.NewUser(mongoDB),
 		Balance:   store.NewBalance(mongoDB),
-		Operation: store.NewOperationStore(mongoDB),
+		Operation: store.NewOperation(mongoDB),
 	}
 
 	messageService := service.NewMessage(botAPI, logger)

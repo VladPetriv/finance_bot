@@ -19,7 +19,7 @@ var _ service.CategoryStore = (*categoryStore)(nil)
 
 var collectionCategory = "Category"
 
-// NewCategory returns a new instance of the category store.
+// NewCategory returns a new instance of category store.
 func NewCategory(db *database.MongoDB) *categoryStore {
 	return &categoryStore{
 		db,

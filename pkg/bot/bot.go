@@ -6,15 +6,15 @@ type Bot interface {
 	NewAPI() (API, error)
 }
 
-// API provides funtionally to work with bot API.
+// API provides functionally to work with bot API.
 type API interface {
-	// ReadUpdates is used to get all user actions.
+	// ReadUpdates reads incoming updates from bot API and write them to channel.
 	ReadUpdates(result chan []byte, errors chan error)
-	// Send is used to send information to user.
+	// Send sends any information to the user(messages, keyboards).
 	Send(opts *SendOptions) error
 }
 
-// SendOptions represents input structure for Send method.
+// SendOptions represents an input structure for Send method.
 type SendOptions struct {
 	ChatID         int64
 	Message        string

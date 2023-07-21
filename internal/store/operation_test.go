@@ -23,7 +23,7 @@ func TestOperation_Create(t *testing.T) {
 
 	db, err := database.NewMongoDB(ctx, cfg.MongoDB.URI, cfg.MongoDB.Database)
 	require.NoError(t, err)
-	operationStore := store.NewOperationStore(db)
+	operationStore := store.NewOperation(db)
 
 	operationID := uuid.NewString()
 
@@ -85,7 +85,7 @@ func TestOperation_Delete(t *testing.T) {
 
 	db, err := database.NewMongoDB(ctx, cfg.MongoDB.URI, cfg.MongoDB.Database)
 	require.NoError(t, err)
-	operationStore := store.NewOperationStore(db)
+	operationStore := store.NewOperation(db)
 
 	operationID := uuid.NewString()
 

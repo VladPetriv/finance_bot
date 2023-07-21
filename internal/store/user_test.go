@@ -23,7 +23,7 @@ func TestUser_Create(t *testing.T) {
 
 	db, err := database.NewMongoDB(ctx, cfg.MongoDB.URI, cfg.MongoDB.Database)
 	require.NoError(t, err)
-	userStore := store.NewUserStore(db)
+	userStore := store.NewUser(db)
 
 	userID := uuid.NewString()
 
@@ -84,7 +84,7 @@ func TestUser_GetByUsername(t *testing.T) {
 
 	db, err := database.NewMongoDB(ctx, cfg.MongoDB.URI, cfg.MongoDB.Database)
 	require.NoError(t, err)
-	userStore := store.NewUserStore(db)
+	userStore := store.NewUser(db)
 
 	userID := uuid.NewString()
 

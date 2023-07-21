@@ -17,8 +17,8 @@ var _ service.OperationStore = (*operationStore)(nil)
 
 var collectionOperation = "Operation"
 
-// NewOperationStore returns new instance of operations store.
-func NewOperationStore(db *database.MongoDB) *operationStore {
+// NewOperation returns new instance of operation store.
+func NewOperation(db *database.MongoDB) *operationStore {
 	return &operationStore{
 		db,
 	}

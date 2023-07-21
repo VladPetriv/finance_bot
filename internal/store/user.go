@@ -19,8 +19,8 @@ var _ service.UserStore = (*userStore)(nil)
 
 var collectionUser = "User"
 
-// NewUserStore returns new instance of user store.
-func NewUserStore(db *database.MongoDB) *userStore {
+// NewUser returns new instance of user store.
+func NewUser(db *database.MongoDB) *userStore {
 	return &userStore{
 		db,
 	}
