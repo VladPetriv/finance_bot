@@ -23,11 +23,10 @@ type HandlerService interface {
 	HandleEventUpdateBalance(ctx context.Context, eventName event, messageData []byte) error
 	// HandleEventGetBalance is used to handle get balance event.
 	HandleEventGetBalance(ctx context.Context, messageData []byte) error
-
+	// HandleEventOperationCreate is used to create an operation without amount.
 	HandleEventOperationCreate(ctc context.Context, eventName event, messageData []byte) error
-
+	// HandleEventUpdateOperationAmount get last transaction with empty amount from db and update his amount with user one.
 	HandleEventUpdateOperationAmount(ctx context.Context, messageData []byte) error
-
 	// HandleEventBack is used to reset bot buttons to default mode.
 	HandleEventBack(ctx context.Context, messageData []byte) error
 }
