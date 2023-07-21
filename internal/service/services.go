@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 	"errors"
+	"strings"
 
 	"github.com/VladPetriv/finance_bot/internal/models"
 	"github.com/VladPetriv/finance_bot/pkg/bot"
@@ -52,10 +53,9 @@ type HandleEventUnknownMessage struct {
 // about message that needed for handling this event.
 type HandleEventCategoryCreate struct {
 	Message struct {
-		Chat     chat     `json:"chat"`
-		Entities []entity `json:"entities"`
-		From     from     `json:"from"`
-		Text     string   `json:"text"`
+		Chat chat   `json:"chat"`
+		From from   `json:"from"`
+		Text string `json:"text"`
 	} `json:"message"`
 }
 
@@ -63,10 +63,9 @@ type HandleEventCategoryCreate struct {
 // about message that needed for handling this event.
 type HandleEventUpdateBalance struct {
 	Message struct {
-		Chat     chat     `json:"chat"`
-		Entities []entity `json:"entities"`
-		From     from     `json:"from"`
-		Text     string   `json:"text"`
+		Chat chat   `json:"chat"`
+		From from   `json:"from"`
+		Text string `json:"text"`
 	} `json:"message"`
 }
 
@@ -74,10 +73,9 @@ type HandleEventUpdateBalance struct {
 // about message that needed for handling this event.
 type HandleEventUpdateOperationAmount struct {
 	Message struct {
-		Chat     chat     `json:"chat"`
-		Entities []entity `json:"entities"`
-		From     from     `json:"from"`
-		Text     string   `json:"text"`
+		Chat chat   `json:"chat"`
+		From from   `json:"from"`
+		Text string `json:"text"`
 	} `json:"message"`
 }
 
@@ -103,10 +101,9 @@ type HandleEventListCategories struct {
 // about message that needed for handling this event.
 type HandleEventOperationCreate struct {
 	Message struct {
-		Chat     chat     `json:"chat"`
-		Entities []entity `json:"entities"`
-		From     from     `json:"from"`
-		Text     string   `json:"text"`
+		Chat chat   `json:"chat"`
+		From from   `json:"from"`
+		Text string `json:"text"`
 	} `json:"message"`
 	CallbackQuery struct {
 		ID      string `json:"id"`
@@ -156,9 +153,8 @@ type EventService interface {
 // BaseMessage is used to determine which command to do.
 type BaseMessage struct {
 	Message struct {
-		Chat     chat     `json:"chat"`
-		Text     string   `json:"text"`
-		Entities []entity `json:"entities"`
+		Chat chat   `json:"chat"`
+		Text string `json:"text"`
 	} `json:"message"`
 	CallbackQuery struct {
 		Data string `json:"data"`
@@ -172,18 +168,6 @@ type chat struct {
 type from struct {
 	ID       int    `json:"id"`
 	Username string `json:"username"`
-}
-
-type entity struct {
-	Type string `json:"type"`
-}
-
-// BotCommand represents the key used in a message to indicate that
-// it contains a command for the bot to execute.
-const botCommand = "bot_command"
-
-func (e entity) IsBotCommand() bool {
-	return e.Type == botCommand
 }
 
 type event string
@@ -216,18 +200,45 @@ var eventsWithInput = map[event]int{
 // Commands that we can received from bot.
 const (
 	botStartCommand                   string = "/start"
-	botBackCommand                    string = "/back"
-	botCreateCategoryCommand          string = "/create_category"
-	botListCategoriesCommand          string = "/list-categories"
-	botUpdateBalanceCommand           string = "/update-balance"
-	botUpdateBalanceAmountCommand     string = "/update_balance_amount"
-	botUpdateBalanceCurrencyCommand   string = "/update_balance_currency"
-	botGetBalanceCommand              string = "/get_balance_info"
-	botCreateOperationCommand         string = "/create_operation"
-	botCreateIncomingOperationCommand string = "/create_incoming_operation"
-	botCreateSpendingOperationCommand string = "/create_spending_operation"
-	botUpdateOperationAmountCommand   string = "/update_operation_amount"
+	botBackCommand                    string = "Back ❌"
+	botCreateCategoryCommand          string = "Create Category 📊"
+	botListCategoriesCommand          string = "List Categories 🗂️"
+	botUpdateBalanceCommand           string = "Update Balance 💲"
+	botUpdateBalanceAmountCommand     string = "Update Balance Amount 💵"
+	botUpdateBalanceCurrencyCommand   string = "Update Balance Currency 💱"
+	botGetBalanceCommand              string = "Get Balance Info 🏦"
+	botCreateOperationCommand         string = "Create Operation 🤔"
+	botCreateIncomingOperationCommand string = "Create Incoming Operation 🤑"
+	botCreateSpendingOperationCommand string = "Create Spending Operation 💸"
+	botUpdateOperationAmountCommand   string = "Update Operation Amount"
 )
+
+var availableCommands = []string{
+	botStartCommand, botBackCommand, botCreateCategoryCommand,
+	botListCategoriesCommand, botUpdateBalanceCommand, botUpdateBalanceAmountCommand,
+	botCreateOperationCommand, botUpdateBalanceCurrencyCommand, botGetBalanceCommand, botCreateIncomingOperationCommand,
+	botCreateIncomingOperationCommand, botCreateSpendingOperationCommand, botUpdateOperationAmountCommand,
+}
+
+// IsBotCommand is used to determine if incoming text a bot command or not.
+func IsBotCommand(command string) bool {
+	return strings.Contains(strings.Join(availableCommands, " "), command)
+}
+
+var commandToEvent = map[string]event{
+	botStartCommand:                   startEvent,
+	botBackCommand:                    backEvent,
+	botCreateCategoryCommand:          createCategoryEvent,
+	botListCategoriesCommand:          listCategoryEvent,
+	botUpdateBalanceCommand:           updateBalanceEvent,
+	botUpdateBalanceAmountCommand:     updateBalanceAmountEvent,
+	botUpdateBalanceCurrencyCommand:   updateBalanceCurrencyEvent,
+	botGetBalanceCommand:              getBalanceEvent,
+	botCreateOperationCommand:         createOperationEvent,
+	botCreateIncomingOperationCommand: createIncomingOperationEvent,
+	botCreateSpendingOperationCommand: createSpendingOperationEvent,
+	botUpdateOperationAmountCommand:   updateOperationAmountEvent,
+}
 
 // MessageService provides functionally for sending messages.
 type MessageService interface {
@@ -265,10 +276,10 @@ const (
 
 var defaultKeyboardRows = []bot.KeyboardRow{
 	{
-		Buttons: []string{"/create_category", "/list-categories"},
+		Buttons: []string{botCreateCategoryCommand, botListCategoriesCommand},
 	},
 	{
-		Buttons: []string{"/get_balance_info", "/update-balance"},
+		Buttons: []string{botGetBalanceCommand, botUpdateBalanceCommand},
 	},
 	{
 		Buttons: []string{botCreateOperationCommand},

@@ -136,7 +136,7 @@ func (h handlerService) HandleEventCategoryCreate(ctx context.Context, messageDa
 	}
 	logger.Debug().Interface("msg", msg).Msg("unmarshalled handle event category create message")
 
-	if len(msg.Message.Entities) != 0 && msg.Message.Entities[0].IsBotCommand() {
+	if IsBotCommand(msg.Message.Text) {
 		err = h.messageService.SendMessage(&SendMessageOptions{
 			ChatID: msg.Message.Chat.ID,
 			Text:   "Enter category name!",
@@ -258,7 +258,7 @@ func (h handlerService) HandleEventUpdateBalance(ctx context.Context, eventName 
 		return fmt.Errorf("unmarshal handle event update balance message: %w", err)
 	}
 
-	isBotCommand := len(msg.Message.Entities) != 0 && msg.Message.Entities[0].IsBotCommand()
+	isBotCommand := IsBotCommand(msg.Message.Text)
 
 	if isBotCommand && eventName == updateBalanceEvent {
 		err = h.keyboardService.CreateKeyboard(&CreateKeyboardOptions{
@@ -474,7 +474,7 @@ func (h handlerService) HandleEventOperationCreate(ctx context.Context, eventNam
 		return fmt.Errorf("unmarshal handle event update balance message: %w", err)
 	}
 
-	isBotCommand := len(msg.Message.Entities) != 0 && msg.Message.Entities[0].IsBotCommand()
+	isBotCommand := IsBotCommand(msg.Message.Text) || IsBotCommand(msg.CallbackQuery.Data)
 	if isBotCommand && eventName == createOperationEvent {
 		err = h.keyboardService.CreateKeyboard(&CreateKeyboardOptions{
 			ChatID:  msg.GetChatID(),
@@ -612,7 +612,7 @@ func (h handlerService) HandleEventUpdateOperationAmount(ctx context.Context, me
 		return fmt.Errorf("unmarshal handle event get balance message: %w", err)
 	}
 
-	if len(msg.Message.Entities) != 0 && msg.Message.Entities[0].IsBotCommand() || msg.Message.Text == botUpdateOperationAmountCommand {
+	if IsBotCommand(msg.Message.Text) || msg.Message.Text == botUpdateOperationAmountCommand {
 		err = h.keyboardService.CreateKeyboard(&CreateKeyboardOptions{
 			ChatID:  msg.Message.Chat.ID,
 			Message: "Enter operation amount!",
