@@ -9,7 +9,7 @@ import (
 	"github.com/VladPetriv/finance_bot/pkg/bot"
 )
 
-// HandlerService provides functionally for handling bot commands.
+// HandlerService provides functionally for handling events.
 type HandlerService interface {
 	// HandleEventStart is used to handle event start.
 	HandleEventStart(ctx context.Context, messageData []byte) error
@@ -114,7 +114,7 @@ type HandleEventOperationCreate struct {
 	} `json:"callback_query"`
 }
 
-// GetUsername is used to get user from message.
+// GetUsername is used to get actual username from message.
 func (h HandleEventOperationCreate) GetUsername() string {
 	if h.Message.From.Username != "" {
 		return h.Message.From.Username
@@ -127,7 +127,7 @@ func (h HandleEventOperationCreate) GetUsername() string {
 	return ""
 }
 
-// GetChatID is used to get chat id from message.
+// GetChatID is used to get actual chat id from message.
 func (h HandleEventOperationCreate) GetChatID() int64 {
 	if h.Message.Chat.ID != 0 {
 		return h.Message.Chat.ID
@@ -142,9 +142,9 @@ func (h HandleEventOperationCreate) GetChatID() int64 {
 
 // EventService provides functionally for receiving an updates from bot and reacting on it.
 type EventService interface {
-	// Listen is used to receive all updates from bot and react for them.
+	// Listen is used to receive all updates from bot.
 	Listen(ctx context.Context, updates chan []byte, errs chan error)
-	// ReactOnEven is used to
+	// ReactOnEven is used to react on event by his name.
 	ReactOnEvent(ctx context.Context, eventName event, messageData []byte) error
 }
 
@@ -287,7 +287,7 @@ var defaultKeyboardRows = []bot.KeyboardRow{
 
 // UserService provides business logic for work with users.
 type UserService interface {
-	// CreateUser is used to create user if it's not exists..
+	// CreateUser is used to create user if it's not exists.
 	CreateUser(ctx context.Context, user *models.User) error
 	// GetUserByUsername is used to get user by his username.
 	GetUserByUsername(ctx context.Context, username string) (*models.User, error)
@@ -302,7 +302,9 @@ var (
 
 // CategoryService provides business logic for processing categories.
 type CategoryService interface {
+	// CreateCategory creates a new category.
 	CreateCategory(ctx context.Context, category *models.Category) error
+	// ListCategories fetches a list of categories for the specified user ID.
 	ListCategories(ctx context.Context, userID string) ([]models.Category, error)
 }
 
