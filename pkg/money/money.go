@@ -27,22 +27,10 @@ func NewFromString(s string) (Money, error) {
 	return Money{d}, nil
 }
 
-// NewFromFloat returns decimal from floating-point number.
-// Returns truncated off amount always with precision=2.
-func NewFromFloat(f float64) Money {
-	d := decimal.NewFromFloat(f)
-	return Money{d}
-}
-
 // NewFromInt returns decimal from integer number.
 func NewFromInt(i int64) Money {
 	d := decimal.NewFromInt(i)
 	return Money{d}
-}
-
-// Add returns left + right amounts.
-func (m Money) Add(right Money) Money {
-	return Money{m.decimal.Add(right.decimal)}
 }
 
 // Sub returns left - right amounts.
@@ -54,12 +42,6 @@ func (m Money) Sub(right Money) Money {
 // Same as left = left + right; left+=right
 func (m *Money) Inc(right Money) {
 	m.decimal = m.decimal.Add(right.decimal)
-}
-
-// Dec decrements left amount by right.
-// Same as left = left - right; left-=right
-func (m *Money) Dec(right Money) {
-	m.decimal = m.decimal.Sub(right.decimal)
 }
 
 // String returns string representation of float with 2 places after digit.

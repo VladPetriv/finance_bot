@@ -14,18 +14,18 @@ type Config struct {
 	Logger   Logger
 }
 
-// Telegram represents Telegram bot configuration.
+// Telegram represents a telegram bot configuration.
 type Telegram struct {
 	BotToken string `env:"BOT_TOKEN"`
 }
 
-// MongoDB represents MongoDB database configuration.
+// MongoDB represents a mongoDB database configuration.
 type MongoDB struct {
 	URI      string `env:"MONGODB_URI" env-default:"mongodb://localhost:27017"`
 	Database string `env:"MONGODB_DATABASE" env-default:"api"`
 }
 
-// Logger represents Logger configuration.
+// Logger represents a logger configuration.
 type Logger struct {
 	LogLevel    string `env:"LOG_LEVEL" env-default:"debug"`
 	LogFilename string `env:"LOG_FILENAME" env-default:""`
@@ -36,7 +36,7 @@ var (
 	once   sync.Once
 )
 
-// Get returns a Config.
+// Get returns a new config.
 func Get() *Config {
 	once.Do(func() {
 		err := cleanenv.ReadEnv(&config)
