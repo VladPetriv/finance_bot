@@ -1,6 +1,6 @@
 package models
 
-// Operation represents a financial transaction or event.
+// Operation represent a financial operation.
 type Operation struct {
 	ID         string        `bson:"_id,omitempty"`
 	Type       OperationType `bson:"type,ommitempty"`

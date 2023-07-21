@@ -1,6 +1,6 @@
 package models
 
-// Balance represents a Balance model.
+// Balance represents a balance model.
 type Balance struct {
 	ID       string `bson:"_id,omitempty"`
 	UserID   string `bson:"userId,omitempty"`
