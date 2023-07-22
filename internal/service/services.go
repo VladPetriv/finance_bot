@@ -31,74 +31,18 @@ type HandlerService interface {
 	HandleEventBack(ctx context.Context, messageData []byte) error
 }
 
-// HandleEventStartMessage represents structure with all required info
-// about message that needed for handling this event.
-type HandleEventStartMessage struct {
-	Message struct {
-		Chat chat `json:"chat"`
-		From from `json:"from"`
-	} `json:"message"`
-}
-
-// HandleEventUnknownMessage represents structure with all required info
-// about message that needed for handling this event.
-type HandleEventUnknownMessage struct {
-	Message struct {
-		Chat chat `json:"chat"`
-	} `json:"message"`
-}
-
-// HandleEventCategoryCreate represents structure with all required info
-// about message that needed for handling this event.
-type HandleEventCategoryCreate struct {
-	Message struct {
-		Chat chat   `json:"chat"`
-		From from   `json:"from"`
-		Text string `json:"text"`
-	} `json:"message"`
-}
-
-// HandleEventUpdateBalance represents structure with all required info
-// about message that needed for handling this event.
-type HandleEventUpdateBalance struct {
-	Message struct {
-		Chat chat   `json:"chat"`
-		From from   `json:"from"`
-		Text string `json:"text"`
-	} `json:"message"`
-}
-
-// HandleEventUpdateOperationAmount represents structure with all required info
-// about message that needed for handling this event.
-type HandleEventUpdateOperationAmount struct {
-	Message struct {
-		Chat chat   `json:"chat"`
-		From from   `json:"from"`
-		Text string `json:"text"`
-	} `json:"message"`
-}
-
-// HandleEventGetBalance represents structure with all required info
-// about message that needed for handling this event.
-type HandleEventGetBalance struct {
-	Message struct {
-		Chat chat `json:"chat"`
-		From from `json:"from"`
-	} `json:"message"`
-}
-
-// HandleEventListCategories represents structure with all required info
-// about message that needed for handling this event.
-type HandleEventListCategories struct {
-	Message struct {
-		Chat chat `json:"chat"`
-		From from `json:"from"`
-	} `json:"message"`
-}
-
 // HandleEventOperationCreate represents structure with all required info
 // about message that needed for handling this event.
-type HandleEventOperationCreate struct {
+
+// EventService provides functionally for receiving an updates from bot and reacting on it.
+type EventService interface {
+	// Listen is used to receive all updates from bot.
+	Listen(ctx context.Context, updates chan []byte, errs chan error)
+	// ReactOnEven is used to react on event by his name.
+	ReactOnEvent(ctx context.Context, eventName event, messageData []byte) error
+}
+
+type botMessage struct {
 	Message struct {
 		Chat chat   `json:"chat"`
 		From from   `json:"from"`
@@ -115,7 +59,7 @@ type HandleEventOperationCreate struct {
 }
 
 // GetUsername is used to get actual username from message.
-func (h HandleEventOperationCreate) GetUsername() string {
+func (h botMessage) GetUsername() string {
 	if h.Message.From.Username != "" {
 		return h.Message.From.Username
 	}
@@ -128,7 +72,7 @@ func (h HandleEventOperationCreate) GetUsername() string {
 }
 
 // GetChatID is used to get actual chat id from message.
-func (h HandleEventOperationCreate) GetChatID() int64 {
+func (h botMessage) GetChatID() int64 {
 	if h.Message.Chat.ID != 0 {
 		return h.Message.Chat.ID
 	}
@@ -138,26 +82,6 @@ func (h HandleEventOperationCreate) GetChatID() int64 {
 	}
 
 	return 0
-}
-
-// EventService provides functionally for receiving an updates from bot and reacting on it.
-type EventService interface {
-	// Listen is used to receive all updates from bot.
-	Listen(ctx context.Context, updates chan []byte, errs chan error)
-	// ReactOnEven is used to react on event by his name.
-	ReactOnEvent(ctx context.Context, eventName event, messageData []byte) error
-}
-
-// BaseMessage represents a message with not detailed information.
-// BaseMessage is used to determine which command to do.
-type BaseMessage struct {
-	Message struct {
-		Chat chat   `json:"chat"`
-		Text string `json:"text"`
-	} `json:"message"`
-	CallbackQuery struct {
-		Data string `json:"data"`
-	} `json:"callback_query"`
 }
 
 type chat struct {

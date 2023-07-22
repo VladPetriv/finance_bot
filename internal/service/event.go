@@ -47,15 +47,15 @@ func (e eventService) Listen(ctx context.Context, updates chan []byte, errs chan
 	for {
 		select {
 		case update := <-updates:
-			var baseMessage BaseMessage
+			var botMessage botMessage
 
-			err := json.Unmarshal(update, &baseMessage)
+			err := json.Unmarshal(update, &botMessage)
 			if err != nil {
 				logger.Error().Err(err).Msg("unmarshalled update data")
 
 				continue
 			}
-			logger.Debug().Interface("baseMessage", baseMessage).Msg("unmarshalled base message")
+			logger.Debug().Interface("botMessage", botMessage).Msg("unmarshalled base message")
 
 			//  Exceeded max input count, we need to reset all fields related to previous event
 			if previousEventInputCount == previousEventMaxInputCount+1 {
@@ -67,7 +67,7 @@ func (e eventService) Listen(ctx context.Context, updates chan []byte, errs chan
 
 			// No need to get new event name if previous one was not processed to the end
 			if previousEventName == "" {
-				eventName = e.getEventNameFromMsg(&baseMessage)
+				eventName = e.getEventNameFromMsg(&botMessage)
 				logger.Debug().Interface("eventName", eventName).Msg("got event from message")
 			}
 
@@ -95,7 +95,7 @@ func (e eventService) Listen(ctx context.Context, updates chan []byte, errs chan
 	}
 }
 
-func (e eventService) getEventNameFromMsg(msg *BaseMessage) event {
+func (e eventService) getEventNameFromMsg(msg *botMessage) event {
 	if !strings.Contains(strings.Join(availableCommands, " "), msg.Message.Text) {
 		return unknownEvent
 	}

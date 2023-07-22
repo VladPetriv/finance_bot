@@ -61,7 +61,7 @@ func NewHandler(opts *HandlerOptions) *handlerService {
 func (h handlerService) HandleEventStart(ctx context.Context, messageData []byte) error {
 	logger := h.logger
 
-	var msg HandleEventStartMessage
+	var msg botMessage
 
 	err := json.Unmarshal(messageData, &msg)
 	if err != nil {
@@ -127,7 +127,7 @@ func (h handlerService) HandleEventStart(ctx context.Context, messageData []byte
 func (h handlerService) HandleEventCategoryCreate(ctx context.Context, messageData []byte) error {
 	logger := h.logger
 
-	var msg HandleEventCategoryCreate
+	var msg botMessage
 
 	err := json.Unmarshal(messageData, &msg)
 	if err != nil {
@@ -192,7 +192,7 @@ func (h handlerService) HandleEventCategoryCreate(ctx context.Context, messageDa
 func (h handlerService) HandleEventListCategories(ctx context.Context, messageData []byte) error {
 	logger := h.logger
 
-	var msg HandleEventListCategories
+	var msg botMessage
 
 	err := json.Unmarshal(messageData, &msg)
 	if err != nil {
@@ -250,7 +250,7 @@ func (h handlerService) HandleEventListCategories(ctx context.Context, messageDa
 func (h handlerService) HandleEventUpdateBalance(ctx context.Context, eventName event, messageData []byte) error {
 	logger := h.logger
 
-	var msg HandleEventUpdateBalance
+	var msg botMessage
 
 	err := json.Unmarshal(messageData, &msg)
 	if err != nil {
@@ -426,7 +426,7 @@ func (h handlerService) handleUpdateBalanceCurrencyEvent(ctx context.Context, op
 func (h handlerService) HandleEventGetBalance(ctx context.Context, messageData []byte) error {
 	logger := h.logger
 
-	var msg HandleEventGetBalance
+	var msg botMessage
 	err := json.Unmarshal(messageData, &msg)
 	if err != nil {
 		logger.Error().Err(err).Msg("unmarshal handle event get balance message")
@@ -466,7 +466,7 @@ func (h handlerService) HandleEventGetBalance(ctx context.Context, messageData [
 func (h handlerService) HandleEventOperationCreate(ctx context.Context, eventName event, messageData []byte) error {
 	logger := h.logger
 
-	var msg HandleEventOperationCreate
+	var msg botMessage
 
 	err := json.Unmarshal(messageData, &msg)
 	if err != nil {
@@ -605,7 +605,7 @@ func (h handlerService) HandleEventOperationCreate(ctx context.Context, eventNam
 func (h handlerService) HandleEventUpdateOperationAmount(ctx context.Context, messageData []byte) error {
 	logger := h.logger
 
-	var msg HandleEventUpdateOperationAmount
+	var msg botMessage
 	err := json.Unmarshal(messageData, &msg)
 	if err != nil {
 		logger.Error().Err(err).Msg("unmarshal handle event get balance message")
@@ -690,7 +690,7 @@ func (h handlerService) HandleEventUpdateOperationAmount(ctx context.Context, me
 func (h handlerService) HandleEventBack(ctx context.Context, messageData []byte) error {
 	logger := h.logger
 
-	var msg HandleEventUnknownMessage
+	var msg botMessage
 
 	err := json.Unmarshal(messageData, &msg)
 	if err != nil {
@@ -716,7 +716,7 @@ func (h handlerService) HandleEventBack(ctx context.Context, messageData []byte)
 func (h handlerService) HandleEventUnknown(messageData []byte) error {
 	logger := h.logger
 
-	var msg HandleEventUnknownMessage
+	var msg botMessage
 
 	err := json.Unmarshal(messageData, &msg)
 	if err != nil {
