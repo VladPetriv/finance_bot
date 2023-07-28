@@ -123,65 +123,74 @@ func (e eventService) getEventNameFromMsg(msg *botMessage) event {
 func (e eventService) ReactOnEvent(ctx context.Context, eventName event, messageData []byte) error {
 	logger := e.logger
 
+	var msg botMessage
+
+	err := json.Unmarshal(messageData, &msg)
+	if err != nil {
+		logger.Error().Err(err).Msg("unmarshal bot message")
+		return fmt.Errorf("unmarshal bot message: %w", err)
+	}
+	logger.Debug().Interface("msg", msg).Msg("unmarshalled bot message")
+
 	switch eventName {
 	case startEvent:
-		err := e.handlerService.HandleEventStart(ctx, messageData)
+		err := e.handlerService.HandleEventStart(ctx, msg)
 		if err != nil {
 			logger.Error().Err(err).Msg("handle event start")
 			return fmt.Errorf("handle event start: %w", err)
 		}
 
 	case unknownEvent:
-		err := e.handlerService.HandleEventUnknown(messageData)
+		err := e.handlerService.HandleEventUnknown(msg)
 		if err != nil {
 			logger.Error().Err(err).Msg("handle event start")
 			return fmt.Errorf("handle event start: %w", err)
 		}
 
 	case createCategoryEvent:
-		err := e.handlerService.HandleEventCategoryCreate(ctx, messageData)
+		err := e.handlerService.HandleEventCategoryCreate(ctx, msg)
 		if err != nil {
 			logger.Error().Err(err).Msg("handle event create category")
 			return fmt.Errorf("handle event create category: %w", err)
 		}
 
 	case listCategoryEvent:
-		err := e.handlerService.HandleEventListCategories(ctx, messageData)
+		err := e.handlerService.HandleEventListCategories(ctx, msg)
 		if err != nil {
 			logger.Error().Err(err).Msg("handle event list categories")
 			return fmt.Errorf("handle event list categories: %w", err)
 		}
 
 	case updateBalanceEvent, updateBalanceAmountEvent, updateBalanceCurrencyEvent:
-		err := e.handlerService.HandleEventUpdateBalance(ctx, eventName, messageData)
+		err := e.handlerService.HandleEventUpdateBalance(ctx, eventName, msg)
 		if err != nil {
 			logger.Error().Err(err).Msg("handle event update balance")
 			return fmt.Errorf("handle event update balance: %w", err)
 		}
 
 	case backEvent:
-		err := e.handlerService.HandleEventBack(ctx, messageData)
+		err := e.handlerService.HandleEventBack(ctx, msg)
 		if err != nil {
 			logger.Error().Err(err).Msg("handle event back")
 			return fmt.Errorf("handle event back: %w", err)
 		}
 
 	case getBalanceEvent:
-		err := e.handlerService.HandleEventGetBalance(ctx, messageData)
+		err := e.handlerService.HandleEventGetBalance(ctx, msg)
 		if err != nil {
 			logger.Error().Err(err).Msg("handle event get balance")
 			return fmt.Errorf("handle event get balance: %w", err)
 		}
 
 	case createOperationEvent, createIncomingOperationEvent, createSpendingOperationEvent:
-		err := e.handlerService.HandleEventOperationCreate(ctx, eventName, messageData)
+		err := e.handlerService.HandleEventOperationCreate(ctx, eventName, msg)
 		if err != nil {
 			logger.Error().Err(err).Msg("handle event create operation")
 			return fmt.Errorf("handle event create operation: %w", err)
 		}
 
 	case updateOperationAmountEvent:
-		err := e.handlerService.HandleEventUpdateOperationAmount(ctx, messageData)
+		err := e.handlerService.HandleEventUpdateOperationAmount(ctx, msg)
 		if err != nil {
 			logger.Error().Err(err).Msg("handle event update operation amount event")
 			return fmt.Errorf("handle event update operation amount event: %w", err)

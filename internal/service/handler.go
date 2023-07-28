@@ -2,7 +2,6 @@ package service
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
 
@@ -58,17 +57,8 @@ func NewHandler(opts *HandlerOptions) *handlerService {
 	}
 }
 
-func (h handlerService) HandleEventStart(ctx context.Context, messageData []byte) error {
+func (h handlerService) HandleEventStart(ctx context.Context, msg botMessage) error {
 	logger := h.logger
-
-	var msg botMessage
-
-	err := json.Unmarshal(messageData, &msg)
-	if err != nil {
-		logger.Error().Err(err).Msg("unmarshal handle event start message")
-		return fmt.Errorf("unmarshal event start message: %w", err)
-	}
-	logger.Debug().Interface("msg", msg).Msg("unmarshalled handle event start message")
 
 	welcomeMessage := fmt.Sprintf("Hello, @%s!\nWelcome to @FinanceTracking_bot!", msg.Message.From.Username)
 
@@ -77,7 +67,7 @@ func (h handlerService) HandleEventStart(ctx context.Context, messageData []byte
 		Username: msg.Message.From.Username,
 	}
 
-	err = h.userService.CreateUser(ctx, user)
+	err := h.userService.CreateUser(ctx, user)
 	if err != nil {
 		if errors.Is(err, ErrUserAlreadyExists) {
 			welcomeMessage = fmt.Sprintf("Happy to see you again @%s!", msg.Message.From.Username)
@@ -124,20 +114,11 @@ func (h handlerService) HandleEventStart(ctx context.Context, messageData []byte
 	return nil
 }
 
-func (h handlerService) HandleEventCategoryCreate(ctx context.Context, messageData []byte) error {
+func (h handlerService) HandleEventCategoryCreate(ctx context.Context, msg botMessage) error {
 	logger := h.logger
 
-	var msg botMessage
-
-	err := json.Unmarshal(messageData, &msg)
-	if err != nil {
-		logger.Error().Err(err).Msg("unmarshal handle event category create message")
-		return fmt.Errorf("unmarshal event category create message: %w", err)
-	}
-	logger.Debug().Interface("msg", msg).Msg("unmarshalled handle event category create message")
-
 	if IsBotCommand(msg.Message.Text) {
-		err = h.messageService.SendMessage(&SendMessageOptions{
+		err := h.messageService.SendMessage(&SendMessageOptions{
 			ChatID: msg.Message.Chat.ID,
 			Text:   "Enter category name!",
 		})
@@ -189,17 +170,8 @@ func (h handlerService) HandleEventCategoryCreate(ctx context.Context, messageDa
 	return nil
 }
 
-func (h handlerService) HandleEventListCategories(ctx context.Context, messageData []byte) error {
+func (h handlerService) HandleEventListCategories(ctx context.Context, msg botMessage) error {
 	logger := h.logger
-
-	var msg botMessage
-
-	err := json.Unmarshal(messageData, &msg)
-	if err != nil {
-		logger.Error().Err(err).Msg("unmarshal handle event list categories message")
-		return fmt.Errorf("unmarshal event list categories message: %w", err)
-	}
-	logger.Debug().Interface("msg", msg).Msg("unmarshalled handle event list categories message")
 
 	user, err := h.userService.GetUserByUsername(ctx, msg.Message.From.Username)
 	if err != nil {
@@ -247,21 +219,13 @@ func (h handlerService) HandleEventListCategories(ctx context.Context, messageDa
 	return nil
 }
 
-func (h handlerService) HandleEventUpdateBalance(ctx context.Context, eventName event, messageData []byte) error {
+func (h handlerService) HandleEventUpdateBalance(ctx context.Context, eventName event, msg botMessage) error {
 	logger := h.logger
-
-	var msg botMessage
-
-	err := json.Unmarshal(messageData, &msg)
-	if err != nil {
-		logger.Error().Err(err).Msg("unmarshal handle event update balance message")
-		return fmt.Errorf("unmarshal handle event update balance message: %w", err)
-	}
 
 	isBotCommand := IsBotCommand(msg.Message.Text)
 
 	if isBotCommand && eventName == updateBalanceEvent {
-		err = h.keyboardService.CreateKeyboard(&CreateKeyboardOptions{
+		err := h.keyboardService.CreateKeyboard(&CreateKeyboardOptions{
 			ChatID:  msg.Message.Chat.ID,
 			Message: "Choose what you want to update in you balance:",
 			Type:    keyboardTypeRow,
@@ -423,15 +387,8 @@ func (h handlerService) handleUpdateBalanceCurrencyEvent(ctx context.Context, op
 	return nil
 }
 
-func (h handlerService) HandleEventGetBalance(ctx context.Context, messageData []byte) error {
+func (h handlerService) HandleEventGetBalance(ctx context.Context, msg botMessage) error {
 	logger := h.logger
-
-	var msg botMessage
-	err := json.Unmarshal(messageData, &msg)
-	if err != nil {
-		logger.Error().Err(err).Msg("unmarshal handle event get balance message")
-		return fmt.Errorf("unmarshal handle event get balance message: %w", err)
-	}
 
 	user, err := h.userService.GetUserByUsername(ctx, msg.Message.From.Username)
 	if err != nil {
@@ -463,20 +420,13 @@ func (h handlerService) HandleEventGetBalance(ctx context.Context, messageData [
 	return nil
 }
 
-func (h handlerService) HandleEventOperationCreate(ctx context.Context, eventName event, messageData []byte) error {
+func (h handlerService) HandleEventOperationCreate(ctx context.Context, eventName event, msg botMessage) error {
 	logger := h.logger
 
-	var msg botMessage
-
-	err := json.Unmarshal(messageData, &msg)
-	if err != nil {
-		logger.Error().Err(err).Msg("unmarshal handle event update balance message")
-		return fmt.Errorf("unmarshal handle event update balance message: %w", err)
-	}
-
 	isBotCommand := IsBotCommand(msg.Message.Text) || IsBotCommand(msg.CallbackQuery.Data)
+
 	if isBotCommand && eventName == createOperationEvent {
-		err = h.keyboardService.CreateKeyboard(&CreateKeyboardOptions{
+		err := h.keyboardService.CreateKeyboard(&CreateKeyboardOptions{
 			ChatID:  msg.GetChatID(),
 			Message: "Choose operation type",
 			Type:    keyboardTypeInline,
@@ -602,18 +552,11 @@ func (h handlerService) HandleEventOperationCreate(ctx context.Context, eventNam
 	return nil
 }
 
-func (h handlerService) HandleEventUpdateOperationAmount(ctx context.Context, messageData []byte) error {
+func (h handlerService) HandleEventUpdateOperationAmount(ctx context.Context, msg botMessage) error {
 	logger := h.logger
 
-	var msg botMessage
-	err := json.Unmarshal(messageData, &msg)
-	if err != nil {
-		logger.Error().Err(err).Msg("unmarshal handle event get balance message")
-		return fmt.Errorf("unmarshal handle event get balance message: %w", err)
-	}
-
 	if IsBotCommand(msg.Message.Text) || msg.Message.Text == botUpdateOperationAmountCommand {
-		err = h.keyboardService.CreateKeyboard(&CreateKeyboardOptions{
+		err := h.keyboardService.CreateKeyboard(&CreateKeyboardOptions{
 			ChatID:  msg.Message.Chat.ID,
 			Message: "Enter operation amount!",
 			Type:    keyboardTypeRow,
@@ -687,19 +630,10 @@ func (h handlerService) HandleEventUpdateOperationAmount(ctx context.Context, me
 	return nil
 }
 
-func (h handlerService) HandleEventBack(ctx context.Context, messageData []byte) error {
+func (h handlerService) HandleEventBack(ctx context.Context, msg botMessage) error {
 	logger := h.logger
 
-	var msg botMessage
-
-	err := json.Unmarshal(messageData, &msg)
-	if err != nil {
-		logger.Error().Err(err).Msg("unmarshal handle event unknown message")
-		return fmt.Errorf("unmarshal event unknown message: %w", err)
-	}
-	logger.Debug().Interface("msg", msg).Msg("unmarshalled handle event unknown message")
-
-	err = h.keyboardService.CreateKeyboard(&CreateKeyboardOptions{
+	err := h.keyboardService.CreateKeyboard(&CreateKeyboardOptions{
 		ChatID:  msg.Message.Chat.ID,
 		Message: "Please choose command to execute:",
 		Type:    keyboardTypeRow,
@@ -713,19 +647,10 @@ func (h handlerService) HandleEventBack(ctx context.Context, messageData []byte)
 	return nil
 }
 
-func (h handlerService) HandleEventUnknown(messageData []byte) error {
+func (h handlerService) HandleEventUnknown(msg botMessage) error {
 	logger := h.logger
 
-	var msg botMessage
-
-	err := json.Unmarshal(messageData, &msg)
-	if err != nil {
-		logger.Error().Err(err).Msg("unmarshal handle event unknown message")
-		return fmt.Errorf("unmarshal event unknown message: %w", err)
-	}
-	logger.Debug().Interface("msg", msg).Msg("unmarshalled handle event unknown message")
-
-	err = h.messageService.SendMessage(&SendMessageOptions{
+	err := h.messageService.SendMessage(&SendMessageOptions{
 		ChatID: msg.Message.Chat.ID,
 		Text:   "Didn't understand you!\nCould you please check available commands!",
 	})
