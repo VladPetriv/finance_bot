@@ -63,6 +63,7 @@ func (o operationService) CreateOperation(ctx context.Context, opts CreateOperat
 
 func (o operationService) handleIncomingOperationType(ctx context.Context, balance *models.Balance, operation *models.Operation) error {
 	logger := o.logger
+
 	logger.Debug().
 		Interface("balance", balance).
 		Interface("operation", operation).
