@@ -39,23 +39,21 @@ func (e eventService) Listen(ctx context.Context, updates chan []byte, errs chan
 
 	go e.botAPI.ReadUpdates(updates, errs)
 
-	var eventName event
-	var previousEventName event
-	var previousEventInputCount int
-	var previousEventMaxInputCount int
+	var eventName, previousEventName event
+	var previousEventInputCount, previousEventMaxInputCount int
 
 	for {
 		select {
 		case update := <-updates:
-			var botMessage botMessage
+			var msg botMessage
 
-			err := json.Unmarshal(update, &botMessage)
+			err := json.Unmarshal(update, &msg)
 			if err != nil {
-				logger.Error().Err(err).Msg("unmarshalled update data")
+				logger.Error().Err(err).Msg("unmarshal incoming update data")
 
 				continue
 			}
-			logger.Debug().Interface("botMessage", botMessage).Msg("unmarshalled base message")
+			logger.Debug().Interface("msg", msg).Msg("unmarshalled incoming update data")
 
 			//  Exceeded max input count, we need to reset all fields related to previous event
 			if previousEventInputCount == previousEventMaxInputCount+1 {
@@ -67,25 +65,25 @@ func (e eventService) Listen(ctx context.Context, updates chan []byte, errs chan
 
 			// No need to get new event name if previous one was not processed to the end
 			if previousEventName == "" {
-				eventName = e.getEventNameFromMsg(&botMessage)
-				logger.Debug().Interface("eventName", eventName).Msg("got event from message")
+				eventName = e.getEventNameFromMsg(&msg)
+				logger.Info().Interface("eventName", eventName).Msg("got event from message")
 			}
 
 			eventMaxInputCount, ok := eventsWithInput[eventName]
 			if ok {
-				logger.Info().Msg("got event with input")
+				logger.Info().Interface("eventName", eventName).Msg("got event with input")
 				previousEventName = eventName
 				previousEventMaxInputCount = eventMaxInputCount
 			}
 
 			// Need to process all input for previous event
 			if previousEventName != "" && previousEventInputCount <= previousEventMaxInputCount {
-				logger.Info().Msg("increase process inputs for event")
+				logger.Info().Msg("increase input count for previous event")
 				eventName = previousEventName
 				previousEventInputCount++
 			}
 
-			err = e.ReactOnEvent(ctx, eventName, update)
+			err = e.ReactOnEvent(ctx, eventName, msg)
 			if err != nil {
 				logger.Error().Err(err).Msg("react on event")
 			}
@@ -120,17 +118,12 @@ func (e eventService) getEventNameFromMsg(msg *botMessage) event {
 	return unknownEvent
 }
 
-func (e eventService) ReactOnEvent(ctx context.Context, eventName event, messageData []byte) error {
+func (e eventService) ReactOnEvent(ctx context.Context, eventName event, msg botMessage) error {
 	logger := e.logger
-
-	var msg botMessage
-
-	err := json.Unmarshal(messageData, &msg)
-	if err != nil {
-		logger.Error().Err(err).Msg("unmarshal bot message")
-		return fmt.Errorf("unmarshal bot message: %w", err)
-	}
-	logger.Debug().Interface("msg", msg).Msg("unmarshalled bot message")
+	logger.Debug().
+		Interface("eventName", eventName).
+		Interface("msg", msg).
+		Msg("got args")
 
 	switch eventName {
 	case startEvent:
@@ -143,15 +136,22 @@ func (e eventService) ReactOnEvent(ctx context.Context, eventName event, message
 	case unknownEvent:
 		err := e.handlerService.HandleEventUnknown(msg)
 		if err != nil {
-			logger.Error().Err(err).Msg("handle event start")
-			return fmt.Errorf("handle event start: %w", err)
+			logger.Error().Err(err).Msg("handle event unknown")
+			return fmt.Errorf("handle event event unknown: %w", err)
+		}
+
+	case backEvent:
+		err := e.handlerService.HandleEventBack(ctx, msg)
+		if err != nil {
+			logger.Error().Err(err).Msg("handle event back")
+			return fmt.Errorf("handle event back: %w", err)
 		}
 
 	case createCategoryEvent:
 		err := e.handlerService.HandleEventCategoryCreate(ctx, msg)
 		if err != nil {
-			logger.Error().Err(err).Msg("handle event create category")
-			return fmt.Errorf("handle event create category: %w", err)
+			logger.Error().Err(err).Msg("handle event category create")
+			return fmt.Errorf("handle event category create: %w", err)
 		}
 
 	case listCategoryEvent:
@@ -168,13 +168,6 @@ func (e eventService) ReactOnEvent(ctx context.Context, eventName event, message
 			return fmt.Errorf("handle event update balance: %w", err)
 		}
 
-	case backEvent:
-		err := e.handlerService.HandleEventBack(ctx, msg)
-		if err != nil {
-			logger.Error().Err(err).Msg("handle event back")
-			return fmt.Errorf("handle event back: %w", err)
-		}
-
 	case getBalanceEvent:
 		err := e.handlerService.HandleEventGetBalance(ctx, msg)
 		if err != nil {
@@ -185,20 +178,20 @@ func (e eventService) ReactOnEvent(ctx context.Context, eventName event, message
 	case createOperationEvent, createIncomingOperationEvent, createSpendingOperationEvent:
 		err := e.handlerService.HandleEventOperationCreate(ctx, eventName, msg)
 		if err != nil {
-			logger.Error().Err(err).Msg("handle event create operation")
-			return fmt.Errorf("handle event create operation: %w", err)
+			logger.Error().Err(err).Msg("handle event operation create")
+			return fmt.Errorf("handle event operation create: %w", err)
 		}
 
 	case updateOperationAmountEvent:
 		err := e.handlerService.HandleEventUpdateOperationAmount(ctx, msg)
 		if err != nil {
-			logger.Error().Err(err).Msg("handle event update operation amount event")
-			return fmt.Errorf("handle event update operation amount event: %w", err)
+			logger.Error().Err(err).Msg("handle event update operation amount")
+			return fmt.Errorf("handle event update operation amount: %w", err)
 		}
 
 	default:
-		logger.Warn().Interface("eventName", eventName).Msg("didn't react on event")
-		return nil
+		logger.Warn().Interface("eventName", eventName).Msg("receive unexpected event")
+		return fmt.Errorf("receive unexpected event: %v", eventName)
 	}
 
 	return nil
