@@ -62,7 +62,7 @@ func TestCategory_CreateCategory(t *testing.T) {
 				ID:    uuid.NewString(),
 				Title: "test",
 			},
-			expected: fmt.Errorf("get category by title: %w", fmt.Errorf("some error")),
+			expected: fmt.Errorf("get category from store: %w", fmt.Errorf("some error")),
 		},
 		{
 			name: "negative: got an error while create category",
@@ -137,7 +137,7 @@ func TestCategory_ListCategories(t *testing.T) {
 				}).Return(nil, fmt.Errorf("some error"))
 			},
 			expected: expected{
-				err: fmt.Errorf("get all categories: %w", fmt.Errorf("some error")),
+				err: fmt.Errorf("get all categories from store: %w", fmt.Errorf("some error")),
 			},
 		},
 		{
