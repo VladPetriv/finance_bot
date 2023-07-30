@@ -47,7 +47,7 @@ func New(logLevel, logFilename string) *Logger {
 
 		multiWriters := io.MultiWriter(writers...)
 
-		zeroLogger := zerolog.New(multiWriters).With().Timestamp().Logger()
+		zeroLogger := zerolog.New(multiWriters).With().Caller().Timestamp().Logger()
 
 		logger = Logger{&zeroLogger}
 	})

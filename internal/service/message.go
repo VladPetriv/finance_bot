@@ -24,16 +24,17 @@ func NewMessage(botAPI bot.API, logger *logger.Logger) *messageService {
 
 func (m messageService) SendMessage(opts *SendMessageOptions) error {
 	logger := m.logger
+	logger.Debug().Interface("opts", opts).Msg("got args")
 
 	err := m.botAPI.Send(&bot.SendOptions{
 		ChatID:  opts.ChatID,
 		Message: opts.Text,
 	})
 	if err != nil {
-		logger.Error().Err(err).Msg("send message via bot api")
-		return fmt.Errorf("send message via bot api: %w", err)
+		logger.Error().Err(err).Msg("send message using botAPI")
+		return fmt.Errorf("send message using botAPI: %w", err)
 	}
 
-	logger.Info().Msg("successfully sent message")
+	logger.Info().Msg("sent message")
 	return nil
 }

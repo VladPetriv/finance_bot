@@ -59,15 +59,16 @@ func NewHandler(opts *HandlerOptions) *handlerService {
 
 func (h handlerService) HandleEventStart(ctx context.Context, msg botMessage) error {
 	logger := h.logger
+	logger.Debug().Interface("msg", msg).Msg("got args")
 
 	welcomeMessage := fmt.Sprintf("Hello, @%s!\nWelcome to @FinanceTracking_bot!", msg.Message.From.Username)
 
-	user := &models.User{
-		ID:       uuid.NewString(),
-		Username: msg.Message.From.Username,
-	}
+	userID := uuid.NewString()
 
-	err := h.userService.CreateUser(ctx, user)
+	err := h.userService.CreateUser(ctx, &models.User{
+		ID:       userID,
+		Username: msg.Message.From.Username,
+	})
 	if err != nil {
 		if errors.Is(err, ErrUserAlreadyExists) {
 			welcomeMessage = fmt.Sprintf("Happy to see you again @%s!", msg.Message.From.Username)
@@ -79,25 +80,26 @@ func (h handlerService) HandleEventStart(ctx context.Context, msg botMessage) er
 				Rows:    defaultKeyboardRows,
 			})
 			if err != nil {
-				logger.Error().Err(err).Msg("create keyboard with message")
-				return fmt.Errorf("create keyboard: %w", err)
+				logger.Error().Err(err).Msg("create keyboard with welcome message")
+				return fmt.Errorf("create keyboard with welcome message: %w", err)
 			}
 
-			logger.Info().Msg("got already known user")
+			logger.Info().Msg("user already exists")
 			return nil
 		}
-		logger.Error().Err(err).Msg("create user")
-		return fmt.Errorf("create user: %w", err)
+
+		logger.Error().Err(err).Msg("create user in store")
+		return fmt.Errorf("create user in store: %w", err)
 	}
 
 	err = h.balanceStore.Create(ctx, &models.Balance{
 		ID:     uuid.NewString(),
-		UserID: user.ID,
+		UserID: userID,
 		Amount: "0",
 	})
 	if err != nil {
-		logger.Error().Err(err).Msg("create balance")
-		return fmt.Errorf("create balance: %w", err)
+		logger.Error().Err(err).Msg("create balance in store")
+		return fmt.Errorf("create balance in store: %w", err)
 	}
 
 	err = h.keyboardService.CreateKeyboard(&CreateKeyboardOptions{
@@ -107,15 +109,17 @@ func (h handlerService) HandleEventStart(ctx context.Context, msg botMessage) er
 		Rows:    defaultKeyboardRows,
 	})
 	if err != nil {
-		logger.Error().Err(err).Msg("create keyboard with message")
-		return fmt.Errorf("create keyboard: %w", err)
+		logger.Error().Err(err).Msg("create keyboard with welcome message")
+		return fmt.Errorf("create keyboard with welcome message: %w", err)
 	}
 
+	logger.Info().Msg("handled event start")
 	return nil
 }
 
 func (h handlerService) HandleEventCategoryCreate(ctx context.Context, msg botMessage) error {
 	logger := h.logger
+	logger.Debug().Interface("msg", msg).Msg("got args")
 
 	if IsBotCommand(msg.Message.Text) {
 		err := h.messageService.SendMessage(&SendMessageOptions{
@@ -127,14 +131,14 @@ func (h handlerService) HandleEventCategoryCreate(ctx context.Context, msg botMe
 			return fmt.Errorf("send message: %w", err)
 		}
 
+		logger.Info().Msg("handled command input")
 		return nil
 	}
 
 	user, err := h.userService.GetUserByUsername(ctx, msg.Message.From.Username)
 	if err != nil {
-		// TODO: What if user not found?
-		logger.Error().Err(err).Msg("get user by username")
-		return fmt.Errorf("get user by username: %w", err)
+		logger.Error().Err(err).Msg("get user from store")
+		return fmt.Errorf("get user from store: %w", err)
 	}
 
 	err = h.categoryService.CreateCategory(ctx, &models.Category{
@@ -152,8 +156,12 @@ func (h handlerService) HandleEventCategoryCreate(ctx context.Context, msg botMe
 				logger.Error().Err(err).Msg("send message")
 				return fmt.Errorf("send message: %w", err)
 			}
+
+			logger.Info().Msg("category already exists")
+			return nil
 		}
 
+		logger.Error().Err(err).Msg("send message")
 		return fmt.Errorf("send message: %w", err)
 	}
 
@@ -166,21 +174,20 @@ func (h handlerService) HandleEventCategoryCreate(ctx context.Context, msg botMe
 		return fmt.Errorf("send message: %w", err)
 	}
 
-	logger.Info().Msg("successfully handle create category event")
+	logger.Info().Msg("handled create category event")
 	return nil
 }
 
 func (h handlerService) HandleEventListCategories(ctx context.Context, msg botMessage) error {
 	logger := h.logger
+	logger.Debug().Interface("msg", msg).Msg("got args")
 
 	user, err := h.userService.GetUserByUsername(ctx, msg.Message.From.Username)
 	if err != nil {
-		// TODO: What if user not found?
-		logger.Error().Err(err).Msg("get user by username")
-		return fmt.Errorf("get user by username: %w", err)
+		logger.Error().Err(err).Msg("get user from store")
+		return fmt.Errorf("get user from store: %w", err)
 	}
 
-	// TODO: Pass context into all handler functions.
 	categories, err := h.categoryService.ListCategories(ctx, user.ID)
 	if err != nil {
 		if errors.Is(err, ErrCategoriesNotFound) {
@@ -193,10 +200,11 @@ func (h handlerService) HandleEventListCategories(ctx context.Context, msg botMe
 				return fmt.Errorf("send message: %w", err)
 			}
 
+			logger.Info().Msg("categories not found")
 			return nil
 		}
-		logger.Error().Err(err).Msg("get list of categories")
-		return fmt.Errorf("get list of categories: %w", err)
+		logger.Error().Err(err).Msg("get list of categories from store")
+		return fmt.Errorf("get list of categories from store: %w", err)
 	}
 
 	outputMessage := "Categories: \n"
@@ -205,6 +213,7 @@ func (h handlerService) HandleEventListCategories(ctx context.Context, msg botMe
 		i++
 		outputMessage += fmt.Sprintf("%v. %s\n", i, c.Title)
 	}
+	logger.Debug().Interface("outputMessage", outputMessage).Msg("built output message")
 
 	err = h.messageService.SendMessage(&SendMessageOptions{
 		ChatID: msg.Message.Chat.ID,
@@ -215,12 +224,13 @@ func (h handlerService) HandleEventListCategories(ctx context.Context, msg botMe
 		return fmt.Errorf("send message: %w", err)
 	}
 
-	logger.Info().Msg("successfully handle list categories event")
+	logger.Info().Msg("handled list categories event")
 	return nil
 }
 
 func (h handlerService) HandleEventUpdateBalance(ctx context.Context, eventName event, msg botMessage) error {
 	logger := h.logger
+	logger.Debug().Interface("msg", msg).Msg("got args")
 
 	isBotCommand := IsBotCommand(msg.Message.Text)
 
@@ -235,23 +245,24 @@ func (h handlerService) HandleEventUpdateBalance(ctx context.Context, eventName 
 			},
 		})
 		if err != nil {
-			logger.Error().Err(err).Msg("send message")
-			return fmt.Errorf("send message: %w", err)
+			logger.Error().Err(err).Msg("create keyboard")
+			return fmt.Errorf("create keyboard: %w", err)
 		}
 
+		logger.Info().Msg("handled command input")
 		return nil
 	}
 
 	user, err := h.userService.GetUserByUsername(ctx, msg.Message.From.Username)
 	if err != nil {
-		logger.Error().Err(err).Msg("get user by username")
-		return fmt.Errorf("get user by username: %w", err)
+		logger.Error().Err(err).Msg("get user from store")
+		return fmt.Errorf("get user from store: %w", err)
 	}
 
 	balance, err := h.balanceStore.Get(ctx, user.ID)
 	if err != nil {
-		logger.Error().Err(err).Msg("get balance by user id")
-		return fmt.Errorf("get balance by user id")
+		logger.Error().Err(err).Msg("get balance from store")
+		return fmt.Errorf("get balance from store: %w", err)
 	}
 
 	if eventName == updateBalanceAmountEvent {
@@ -265,6 +276,9 @@ func (h handlerService) HandleEventUpdateBalance(ctx context.Context, eventName 
 			logger.Error().Err(err).Msg("handle update balance amount event")
 			return fmt.Errorf("handle update balance amount event: %w", err)
 		}
+
+		logger.Info().Msg("handled update balance amount")
+		return nil
 	}
 	if eventName == updateBalanceCurrencyEvent {
 		err = h.handleUpdateBalanceCurrencyEvent(ctx, updateBalanceCurrencyOptions{
@@ -277,9 +291,12 @@ func (h handlerService) HandleEventUpdateBalance(ctx context.Context, eventName 
 			logger.Error().Err(err).Msg("handle update balance currency event")
 			return fmt.Errorf("handle update balance currency event: %w", err)
 		}
+
+		logger.Info().Msg("handled update currency amount")
+		return nil
 	}
 
-	logger.Info().Msg("balance successfully updated")
+	logger.Info().Msg("handled update balance")
 	return nil
 }
 
@@ -292,6 +309,7 @@ type updateBalanceAmountOptions struct {
 
 func (h handlerService) handleUpdateBalanceAmountEvent(ctx context.Context, opts updateBalanceAmountOptions) error {
 	logger := h.logger
+	logger.Debug().Interface("opts", opts).Msg("got args")
 
 	if opts.isBotCommand {
 		err := h.messageService.SendMessage(&SendMessageOptions{
@@ -303,12 +321,13 @@ func (h handlerService) handleUpdateBalanceAmountEvent(ctx context.Context, opts
 			return fmt.Errorf("send message: %w", err)
 		}
 
+		logger.Info().Msg("handled command input")
 		return nil
 	}
 
 	price, err := money.NewFromString(opts.amount)
 	if err != nil {
-		logger.Error().Err(err).Msg("convert string to money type")
+		logger.Error().Err(err).Msg("convert option amount to money type")
 
 		err = h.messageService.SendMessage(&SendMessageOptions{
 			ChatID: opts.chatID,
@@ -323,11 +342,12 @@ func (h handlerService) handleUpdateBalanceAmountEvent(ctx context.Context, opts
 	}
 
 	opts.balance.Amount = price.String()
+	logger.Debug().Interface("opts.balance.Amount", opts.balance.Amount).Msg("calculated balance amount")
 
 	err = h.balanceStore.Update(ctx, opts.balance)
 	if err != nil {
-		logger.Error().Err(err).Msg("update balance")
-		return fmt.Errorf("update balance: %w", err)
+		logger.Error().Err(err).Msg("update balance in store")
+		return fmt.Errorf("update balance in store: %w", err)
 	}
 
 	err = h.messageService.SendMessage(&SendMessageOptions{
@@ -339,7 +359,7 @@ func (h handlerService) handleUpdateBalanceAmountEvent(ctx context.Context, opts
 		return fmt.Errorf("send message: %w", err)
 	}
 
-	logger.Info().Msg("balance amount successfully updated")
+	logger.Info().Msg("handled case update balance amount")
 	return nil
 }
 
@@ -352,6 +372,7 @@ type updateBalanceCurrencyOptions struct {
 
 func (h handlerService) handleUpdateBalanceCurrencyEvent(ctx context.Context, opts updateBalanceCurrencyOptions) error {
 	logger := h.logger
+	logger.Debug().Interface("opts", opts).Msg("got args")
 
 	if opts.isBotCommand {
 		err := h.messageService.SendMessage(&SendMessageOptions{
@@ -363,6 +384,7 @@ func (h handlerService) handleUpdateBalanceCurrencyEvent(ctx context.Context, op
 			return fmt.Errorf("send message: %w", err)
 		}
 
+		logger.Info().Msg("handled command input")
 		return nil
 	}
 
@@ -370,8 +392,8 @@ func (h handlerService) handleUpdateBalanceCurrencyEvent(ctx context.Context, op
 
 	err := h.balanceStore.Update(ctx, opts.balance)
 	if err != nil {
-		logger.Error().Err(err).Msg("update balance")
-		return fmt.Errorf("update balance: %w", err)
+		logger.Error().Err(err).Msg("update balance in store")
+		return fmt.Errorf("update balance in store: %w", err)
 	}
 
 	err = h.messageService.SendMessage(&SendMessageOptions{
@@ -383,26 +405,25 @@ func (h handlerService) handleUpdateBalanceCurrencyEvent(ctx context.Context, op
 		return fmt.Errorf("send message: %w", err)
 	}
 
-	logger.Info().Msg("balance amount successfully updated")
+	logger.Info().Msg("handled case update balance currency")
 	return nil
 }
 
 func (h handlerService) HandleEventGetBalance(ctx context.Context, msg botMessage) error {
 	logger := h.logger
+	logger.Debug().Interface("msg", msg).Msg("got args")
 
 	user, err := h.userService.GetUserByUsername(ctx, msg.Message.From.Username)
 	if err != nil {
-		logger.Error().Err(err).Msg("get user by usernmae")
-		return fmt.Errorf("get user by usernmae: %w", err)
+		logger.Error().Err(err).Msg("get user from store")
+		return fmt.Errorf("get user from store: %w", err)
 	}
-	logger.Debug().Interface("user", user).Msg("got user by username")
 
 	balanceInfo, err := h.balanceService.GetBalanceInfo(ctx, user.ID)
 	if err != nil {
-		logger.Error().Err(err).Msg("get balcne info by user id")
-		return fmt.Errorf("get balance info by user id")
+		logger.Error().Err(err).Msg("get balance info")
+		return fmt.Errorf("get balance info: %w", err)
 	}
-	logger.Debug().Interface("balanceInfo", balanceInfo).Msg("got balance info by user id")
 
 	err = h.messageService.SendMessage(&SendMessageOptions{
 		ChatID: msg.Message.Chat.ID,
@@ -416,7 +437,7 @@ func (h handlerService) HandleEventGetBalance(ctx context.Context, msg botMessag
 		return fmt.Errorf("send message: %w", err)
 	}
 
-	logger.Info().Msg("successfully handled get balance event")
+	logger.Info().Msg("handled event get balance")
 	return nil
 }
 
@@ -439,6 +460,7 @@ func (h handlerService) HandleEventOperationCreate(ctx context.Context, eventNam
 			return fmt.Errorf("create inline keyboard: %w", err)
 		}
 
+		logger.Info().Msg("handle command input")
 		return nil
 	}
 
@@ -450,8 +472,8 @@ func (h handlerService) HandleEventOperationCreate(ctx context.Context, eventNam
 
 	balance, err := h.balanceStore.Get(ctx, user.ID)
 	if err != nil {
-		logger.Error().Err(err).Msg("get balance from storage")
-		return fmt.Errorf("get balance from storage: %w", err)
+		logger.Error().Err(err).Msg("get balance from store")
+		return fmt.Errorf("get balance from store: %w", err)
 	}
 
 	if msg.CallbackQuery.Data != "" && (eventName == createIncomingOperationEvent || eventName == createSpendingOperationEvent) {
@@ -466,11 +488,13 @@ func (h handlerService) HandleEventOperationCreate(ctx context.Context, eventNam
 					logger.Error().Err(err).Msg("send message")
 					return fmt.Errorf("send message: %w", err)
 				}
+
+				logger.Info().Msg("categories not found")
 				return nil
 			}
 
-			logger.Error().Err(err).Msg("list categories")
-			return fmt.Errorf("list categories: %w", err)
+			logger.Error().Err(err).Msg("get list of categories from store")
+			return fmt.Errorf("get list of categories from store: %w", err)
 		}
 
 		keyboardRows := []bot.KeyboardRow{
@@ -493,14 +517,15 @@ func (h handlerService) HandleEventOperationCreate(ctx context.Context, eventNam
 			return fmt.Errorf("create row keyboard: %w", err)
 		}
 
+		logger.Info().Msg("handled second command input")
 		return nil
 	}
 
 	if msg.Message.Text != "" {
 		category, err := h.categoryStore.GetByTitle(ctx, msg.Message.Text)
 		if err != nil {
-			logger.Error().Err(err).Msg("get category by title from storage")
-			return fmt.Errorf("get category by title from storage: %w", err)
+			logger.Error().Err(err).Msg("get category store")
+			return fmt.Errorf("get category store: %w", err)
 		}
 		if category == nil {
 			err = h.messageService.SendMessage(&SendMessageOptions{
@@ -511,6 +536,8 @@ func (h handlerService) HandleEventOperationCreate(ctx context.Context, eventNam
 				logger.Error().Err(err).Msg("send message")
 				return fmt.Errorf("send message: %w", err)
 			}
+
+			logger.Info().Msg("category not found")
 			return nil
 		}
 
@@ -521,6 +548,7 @@ func (h handlerService) HandleEventOperationCreate(ctx context.Context, eventNam
 		if eventName == createSpendingOperationEvent {
 			operationType = models.OperationTypeSpending
 		}
+
 		err = h.operationStore.Create(ctx, &models.Operation{
 			ID:         uuid.NewString(),
 			BalanceID:  balance.ID,
@@ -528,8 +556,8 @@ func (h handlerService) HandleEventOperationCreate(ctx context.Context, eventNam
 			Type:       operationType,
 		})
 		if err != nil {
-			logger.Error().Err(err).Msg("create operation in storage")
-			return fmt.Errorf("create operation in storage: %w", err)
+			logger.Error().Err(err).Msg("create operation in store")
+			return fmt.Errorf("create operation in store: %w", err)
 		}
 
 		err = h.keyboardService.CreateKeyboard(&CreateKeyboardOptions{
@@ -543,17 +571,18 @@ func (h handlerService) HandleEventOperationCreate(ctx context.Context, eventNam
 			},
 		})
 		if err != nil {
-			logger.Error().Err(err).Msg("send message")
-			return fmt.Errorf("send message: %w", err)
+			logger.Error().Err(err).Msg("create row keyboard")
+			return fmt.Errorf("create row keyboard: %w", err)
 		}
 	}
 
-	logger.Info().Msg("operation successfully created")
+	logger.Info().Msg("handle event operation create")
 	return nil
 }
 
 func (h handlerService) HandleEventUpdateOperationAmount(ctx context.Context, msg botMessage) error {
 	logger := h.logger
+	logger.Debug().Interface("msg", msg).Msg("got args")
 
 	if IsBotCommand(msg.Message.Text) || msg.Message.Text == botUpdateOperationAmountCommand {
 		err := h.keyboardService.CreateKeyboard(&CreateKeyboardOptions{
@@ -567,25 +596,26 @@ func (h handlerService) HandleEventUpdateOperationAmount(ctx context.Context, ms
 			return fmt.Errorf("create row keyboard: %w", err)
 		}
 
+		logger.Info().Msg("handle command input")
 		return nil
 	}
 
 	user, err := h.userService.GetUserByUsername(ctx, msg.Message.From.Username)
 	if err != nil {
-		logger.Error().Err(err).Msg("get user by usernmae")
-		return fmt.Errorf("get user by usernmae: %w", err)
+		logger.Error().Err(err).Msg("get user from store")
+		return fmt.Errorf("get user from store: %w", err)
 	}
 
 	balanceInfo, err := h.balanceService.GetBalanceInfo(ctx, user.ID)
 	if err != nil {
 		logger.Error().Err(err).Msg("get balcne info by user id")
-		return fmt.Errorf("get balance info by user id")
+		return fmt.Errorf("get balance info by user id: %w", err)
 	}
 
 	operations, err := h.operationStore.GetAll(ctx, balanceInfo.ID)
 	if err != nil {
-		logger.Error().Err(err).Msg("get operations from storage")
-		return fmt.Errorf("get operations from storage: %w", err)
+		logger.Error().Err(err).Msg("get all operations from store")
+		return fmt.Errorf("get all operations from store: %w", err)
 	}
 	if len(operations) == 0 {
 		err = h.messageService.SendMessage(&SendMessageOptions{
@@ -596,6 +626,9 @@ func (h handlerService) HandleEventUpdateOperationAmount(ctx context.Context, ms
 			logger.Error().Err(err).Msg("send message")
 			return fmt.Errorf("send message: %w", err)
 		}
+
+		logger.Info().Msg("operations not found")
+		return nil
 	}
 
 	if operations[len(operations)-1].Amount == "" {
@@ -605,8 +638,6 @@ func (h handlerService) HandleEventUpdateOperationAmount(ctx context.Context, ms
 			Operation: &operations[len(operations)-1],
 		})
 		if err != nil {
-			logger.Error().Err(err).Msg("create operation")
-
 			err = h.messageService.SendMessage(&SendMessageOptions{
 				ChatID: msg.Message.Chat.ID,
 				Text:   "Can't create operation!",
@@ -615,6 +646,9 @@ func (h handlerService) HandleEventUpdateOperationAmount(ctx context.Context, ms
 				logger.Error().Err(err).Msg("send message")
 				return fmt.Errorf("send message: %w", err)
 			}
+
+			logger.Error().Err(err).Msg("create operation in store")
+			return fmt.Errorf("create operation in store: %w", err)
 		}
 	}
 
@@ -627,11 +661,13 @@ func (h handlerService) HandleEventUpdateOperationAmount(ctx context.Context, ms
 		return fmt.Errorf("send message: %w", err)
 	}
 
+	logger.Info().Msg("handled event update operation amount")
 	return nil
 }
 
 func (h handlerService) HandleEventBack(ctx context.Context, msg botMessage) error {
 	logger := h.logger
+	logger.Debug().Interface("msg", msg).Msg("got args")
 
 	err := h.keyboardService.CreateKeyboard(&CreateKeyboardOptions{
 		ChatID:  msg.Message.Chat.ID,
@@ -640,15 +676,17 @@ func (h handlerService) HandleEventBack(ctx context.Context, msg botMessage) err
 		Rows:    defaultKeyboardRows,
 	})
 	if err != nil {
-		logger.Error().Err(err).Msg("create keyboard")
-		return fmt.Errorf("create keyboard: %w", err)
+		logger.Error().Err(err).Msg("create row keyboard")
+		return fmt.Errorf("create row keyboard: %w", err)
 	}
 
+	logger.Info().Msg("handled event back")
 	return nil
 }
 
 func (h handlerService) HandleEventUnknown(msg botMessage) error {
 	logger := h.logger
+	logger.Debug().Interface("msg", msg).Msg("got args")
 
 	err := h.messageService.SendMessage(&SendMessageOptions{
 		ChatID: msg.Message.Chat.ID,
@@ -659,5 +697,6 @@ func (h handlerService) HandleEventUnknown(msg botMessage) error {
 		return fmt.Errorf("send message: %w", err)
 	}
 
+	logger.Info().Msg("handled event back")
 	return nil
 }

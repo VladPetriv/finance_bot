@@ -25,11 +25,12 @@ func NewCategory(logger *logger.Logger, categoryStore CategoryStore) *categorySe
 
 func (c categoryService) CreateCategory(ctx context.Context, category *models.Category) error {
 	logger := c.logger
+	logger.Debug().Interface("category", category).Msg("got args")
 
 	candidate, err := c.categoryStore.GetByTitle(ctx, category.Title)
 	if err != nil {
-		logger.Error().Err(err).Msg("get category by title")
-		return fmt.Errorf("get category by title: %w", err)
+		logger.Error().Err(err).Msg("get category from store")
+		return fmt.Errorf("get category from store: %w", err)
 	}
 	if candidate != nil {
 		logger.Info().Interface("candidate", candidate).Msgf("category with %s title already exist", category.Title)
@@ -42,25 +43,26 @@ func (c categoryService) CreateCategory(ctx context.Context, category *models.Ca
 		return fmt.Errorf("create category: %w", err)
 	}
 
-	logger.Info().Interface("category", category).Msg("category successfully created")
+	logger.Info().Interface("category", category).Msg("category created")
 	return nil
 }
 
 func (c categoryService) ListCategories(ctx context.Context, userID string) ([]models.Category, error) {
 	logger := c.logger
+	logger.Debug().Interface("userID", userID).Msg("got args")
 
 	categories, err := c.categoryStore.GetAll(ctx, &GetALlCategoriesFilter{
 		UserID: &userID,
 	})
 	if err != nil {
-		logger.Error().Err(err).Msg("get all categories")
-		return nil, fmt.Errorf("get all categories: %w", err)
+		logger.Error().Err(err).Msg("get all categories from store")
+		return nil, fmt.Errorf("get all categories from store: %w", err)
 	}
-
 	if len(categories) == 0 {
 		logger.Info().Msg("categories not found")
 		return nil, ErrCategoriesNotFound
 	}
 
+	logger.Info().Interface("categories", categories).Msg("got categories")
 	return categories, nil
 }

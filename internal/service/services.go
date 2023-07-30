@@ -39,7 +39,7 @@ type EventService interface {
 	// Listen is used to receive all updates from bot.
 	Listen(ctx context.Context, updates chan []byte, errs chan error)
 	// ReactOnEven is used to react on event by his name.
-	ReactOnEvent(ctx context.Context, eventName event, messageData []byte) error
+	ReactOnEvent(ctx context.Context, eventName event, msg botMessage) error
 }
 
 type botMessage struct {
