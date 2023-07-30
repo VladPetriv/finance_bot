@@ -25,11 +25,12 @@ func NewUser(logger *logger.Logger, userStore UserStore) *userService {
 
 func (u userService) CreateUser(ctx context.Context, user *models.User) error {
 	logger := u.logger
+	logger.Debug().Interface("user", user).Msg("got args")
 
 	candidate, err := u.userStore.GetByUsername(ctx, user.Username)
 	if err != nil {
-		logger.Error().Err(err).Msg("get user by username")
-		return fmt.Errorf("get user by username %w", err)
+		logger.Error().Err(err).Msg("get user from store")
+		return fmt.Errorf("get user from store: %w", err)
 	}
 	if candidate != nil {
 		logger.Info().Interface("candidate", candidate).Msg("user already exists")
@@ -38,27 +39,28 @@ func (u userService) CreateUser(ctx context.Context, user *models.User) error {
 
 	err = u.userStore.Create(ctx, user)
 	if err != nil {
-		logger.Error().Err(err).Msg("create user")
-		return fmt.Errorf("create user: %w", err)
+		logger.Error().Err(err).Msg("create user in store")
+		return fmt.Errorf("create user in store: %w", err)
 	}
 
-	logger.Info().Msg("user successfully created")
+	logger.Info().Msg("user created")
 	return nil
 }
 
 func (u userService) GetUserByUsername(ctx context.Context, username string) (*models.User, error) {
 	logger := u.logger
+	logger.Debug().Interface("username", username).Msg("got args")
 
 	user, err := u.userStore.GetByUsername(ctx, username)
 	if err != nil {
-		logger.Error().Err(err).Msg("get user by username")
-		return nil, fmt.Errorf("get user by username: %w", err)
+		logger.Error().Err(err).Msg("get user from store")
+		return nil, fmt.Errorf("get user from store: %w", err)
 	}
 	if user == nil {
-		logger.Info().Str("username", username).Msg("user not found")
+		logger.Info().Msg("user not found")
 		return nil, ErrUserNotFound
 	}
 
-	logger.Info().Interface("user", user).Msg("successfully got user")
+	logger.Info().Interface("user", user).Msg("got user")
 	return user, nil
 }
