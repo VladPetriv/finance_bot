@@ -23,18 +23,18 @@ func NewBalance(logger *logger.Logger, balanceStore BalanceStore) *balanceServic
 
 func (b balanceService) GetBalanceInfo(ctx context.Context, userID string) (*models.Balance, error) {
 	logger := b.logger
+	logger.Debug().Interface("userID", userID).Msg("got args")
 
 	balance, err := b.balanceStore.Get(ctx, userID)
 	if err != nil {
-		logger.Error().Err(err).Msg("get balance by user id")
-		return nil, fmt.Errorf("get balance by user id: %w", err)
+		logger.Error().Err(err).Msg("get balance from store")
+		return nil, fmt.Errorf("get balance from store: %w", err)
 	}
 	if balance == nil {
-		logger.Info().Str("userID", userID).Msg("balance not found")
+		logger.Info().Msg("balance not found")
 		return nil, ErrBalanceNotFound
 	}
-	logger.Debug().Interface("balance", balance).Msg("got balance")
 
-	logger.Info().Msg("successfully got balance info")
+	logger.Info().Interface("balance", balance).Msg("got balance info")
 	return balance, nil
 }
