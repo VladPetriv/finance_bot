@@ -133,7 +133,7 @@ const (
 	botCreateOperationCommand         string = "Create Operation 🤔"
 	botCreateIncomingOperationCommand string = "Create Incoming Operation 🤑"
 	botCreateSpendingOperationCommand string = "Create Spending Operation 💸"
-	botUpdateOperationAmountCommand   string = "Update Operation Amount"
+	botUpdateOperationAmountCommand   string = "Update Operation Amount 💵"
 )
 
 var availableCommands = []string{
