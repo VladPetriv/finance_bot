@@ -2,6 +2,7 @@ package store
 
 import (
 	"context"
+	"time"
 
 	"github.com/VladPetriv/finance_bot/internal/models"
 	"github.com/VladPetriv/finance_bot/internal/service"
@@ -24,8 +25,18 @@ func NewOperation(db *database.MongoDB) *operationStore {
 	}
 }
 
-func (o operationStore) GetAll(ctx context.Context, balanceID string) ([]models.Operation, error) {
-	cursor, err := o.DB.Collection(collectionOperation).Find(ctx, &bson.M{"balanceId": balanceID})
+func (o operationStore) GetAll(ctx context.Context, balanceID string, filters service.GetAllOperationsFilter) ([]models.Operation, error) {
+	request := bson.M{"balanceId": balanceID}
+
+	if filters.CreationPeriod != nil {
+		startDate, endDate := calculateTimeRange(*filters.CreationPeriod)
+		request["createdAt"] = bson.M{
+			"$gte": startDate,
+			"$lte": endDate,
+		}
+	}
+
+	cursor, err := o.DB.Collection(collectionOperation).Find(ctx, request)
 	if err != nil {
 		return nil, err
 	}
@@ -41,6 +52,25 @@ func (o operationStore) GetAll(ctx context.Context, balanceID string) ([]models.
 	}
 
 	return operations, nil
+}
+
+// calculateTimeRange is used to calculate start and end times based on a given period
+func calculateTimeRange(period models.CreationPeriod) (startTime, endTime time.Time) {
+	now := time.Now()
+	endTime = now
+
+	switch period {
+	case models.CreationPeriodDay:
+		startTime = now.Add(-24 * time.Hour)
+	case models.CreationPeriodWeek:
+		startTime = now.Add(-7 * 24 * time.Hour)
+	case models.CreationPeriodMonth:
+		startTime = now.Add(-30 * 24 * time.Hour)
+	case models.CreationPeriodYear:
+		startTime = now.Add(-365 * 24 * time.Hour)
+	}
+
+	return startTime, endTime
 }
 
 func (o operationStore) Create(ctx context.Context, operation *models.Operation) error {

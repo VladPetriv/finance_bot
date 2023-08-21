@@ -614,7 +614,7 @@ func (h handlerService) HandleEventUpdateOperationAmount(ctx context.Context, ms
 		return fmt.Errorf("get balance info by user id: %w", err)
 	}
 
-	operations, err := h.operationStore.GetAll(ctx, balanceInfo.ID)
+	operations, err := h.operationStore.GetAll(ctx, balanceInfo.ID, GetAllOperationsFilter{})
 	if err != nil {
 		logger.Error().Err(err).Msg("get all operations from store")
 		return fmt.Errorf("get all operations from store: %w", err)
