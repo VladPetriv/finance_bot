@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"time"
 
 	"github.com/VladPetriv/finance_bot/internal/models"
 	"github.com/VladPetriv/finance_bot/pkg/bot"
@@ -554,6 +555,7 @@ func (h handlerService) HandleEventOperationCreate(ctx context.Context, eventNam
 			BalanceID:  balance.ID,
 			CategoryID: category.ID,
 			Type:       operationType,
+			CreatedAt:  time.Now(),
 		})
 		if err != nil {
 			logger.Error().Err(err).Msg("create operation in store")
