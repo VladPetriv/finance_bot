@@ -21,3 +21,17 @@ const (
 	// OperationTypeSpending represents a spending operation.
 	OperationTypeSpending OperationType = "spending"
 )
+
+// CreationPeriod defines constants representing different time periods for creation operations.
+type CreationPeriod string
+
+var (
+	// CreationPeriodDay represents a daily time period.
+	CreationPeriodDay CreationPeriod = "day"
+	// CreationPeriodWeek represents a weekly time period.
+	CreationPeriodWeek CreationPeriod = "week"
+	// CreationPeriodMonth represents a monthly time period.
+	CreationPeriodMonth CreationPeriod = "month"
+	// CreationPeriodYear represents a yearly time period.
+	CreationPeriodYear CreationPeriod = "year"
+)
