@@ -238,7 +238,7 @@ var (
 	// ErrCategoriesNotFound happens when received zero categories from store.
 	ErrCategoriesNotFound = errors.New("categories not found")
 	// ErrCategoryNotFound happens when received not category from store.
-	ErrCategoryNotFound = errors.New("categoriy not found")
+	ErrCategoryNotFound = errors.New("category not found")
 )
 
 // BalanceService provides business logic for processing balance.
