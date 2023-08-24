@@ -635,7 +635,7 @@ func (h handlerService) HandleEventUpdateOperationAmount(ctx context.Context, ms
 
 	if operations[len(operations)-1].Amount == "" {
 		operations[len(operations)-1].Amount = msg.Message.Text
-		err := h.operationService.CreateOperation(ctx, CreateOperationOptions{
+		err = h.operationService.CreateOperation(ctx, CreateOperationOptions{
 			UserID:    user.ID,
 			Operation: &operations[len(operations)-1],
 		})
