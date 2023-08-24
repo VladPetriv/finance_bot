@@ -27,12 +27,13 @@ type HandlerService interface {
 	HandleEventOperationCreate(ctc context.Context, eventName event, msg botMessage) error
 	// HandleEventUpdateOperationAmount get last transaction with empty amount from db and update his amount with user one.
 	HandleEventUpdateOperationAmount(ctx context.Context, msg botMessage) error
+	// HandleEventGetOperationsHistory ...
+	HandleEventGetOperationsHistory(ctx context.Context, msg botMessage) error
+	// HandleEventChooseCreationPeriodForOperationsHistory ...
+	HandleEventChooseCreationPeriodForOperationsHistory(ctx context.Context, msg botMessage) error
 	// HandleEventBack is used to reset bot buttons to default mode.
 	HandleEventBack(ctx context.Context, msg botMessage) error
 }
-
-// HandleEventOperationCreate represents structure with all required info
-// about message that needed for handling this event.
 
 // EventService provides functionally for receiving an updates from bot and reacting on it.
 type EventService interface {
@@ -107,6 +108,7 @@ const (
 	createIncomingOperationEvent event = "create/incoming/operation"
 	createSpendingOperationEvent event = "create/spending/operation"
 	updateOperationAmountEvent   event = "update/operation/amount"
+	getOperationsHistoryEvent    event = "get/operations/history"
 	backEvent                    event = "back"
 	unknownEvent                 event = "unknown"
 )
@@ -122,18 +124,20 @@ var eventsWithInput = map[event]int{
 
 // Commands that we can received from bot.
 const (
-	botStartCommand                   string = "/start"
-	botBackCommand                    string = "Back ❌"
-	botCreateCategoryCommand          string = "Create Category 📊"
-	botListCategoriesCommand          string = "List Categories 🗂️"
-	botUpdateBalanceCommand           string = "Update Balance 💲"
-	botUpdateBalanceAmountCommand     string = "Update Balance Amount 💵"
-	botUpdateBalanceCurrencyCommand   string = "Update Balance Currency 💱"
-	botGetBalanceCommand              string = "Get Balance Info 🏦"
-	botCreateOperationCommand         string = "Create Operation 🤔"
-	botCreateIncomingOperationCommand string = "Create Incoming Operation 🤑"
-	botCreateSpendingOperationCommand string = "Create Spending Operation 💸"
-	botUpdateOperationAmountCommand   string = "Update Operation Amount 💵"
+	botStartCommand                             string = "/start"
+	botBackCommand                              string = "Back ❌"
+	botCreateCategoryCommand                    string = "Create Category 📊"
+	botListCategoriesCommand                    string = "List Categories 🗂️"
+	botUpdateBalanceCommand                     string = "Update Balance 💲"
+	botUpdateBalanceAmountCommand               string = "Update Balance Amount 💵"
+	botUpdateBalanceCurrencyCommand             string = "Update Balance Currency 💱"
+	botGetBalanceCommand                        string = "Get Balance Info 🏦"
+	botCreateOperationCommand                   string = "Create Operation 🤔"
+	botCreateIncomingOperationCommand           string = "Create Incoming Operation 🤑"
+	botCreateSpendingOperationCommand           string = "Create Spending Operation 💸"
+	botUpdateOperationAmountCommand             string = "Update Operation Amount 💵"
+	botGetOperationsHistory                     string = "Get Operations History 📖"
+	botChooseCreationPeriodForOperationsHistory string = "Choose the creation period for operations history"
 )
 
 var availableCommands = []string{
@@ -141,6 +145,7 @@ var availableCommands = []string{
 	botListCategoriesCommand, botUpdateBalanceCommand, botUpdateBalanceAmountCommand,
 	botCreateOperationCommand, botUpdateBalanceCurrencyCommand, botGetBalanceCommand, botCreateIncomingOperationCommand,
 	botCreateIncomingOperationCommand, botCreateSpendingOperationCommand, botUpdateOperationAmountCommand,
+	botGetOperationsHistory,
 }
 
 // IsBotCommand is used to determine if incoming text a bot command or not.
@@ -161,6 +166,7 @@ var commandToEvent = map[string]event{
 	botCreateIncomingOperationCommand: createIncomingOperationEvent,
 	botCreateSpendingOperationCommand: createSpendingOperationEvent,
 	botUpdateOperationAmountCommand:   updateOperationAmountEvent,
+	botGetOperationsHistory:           getOperationsHistoryEvent,
 }
 
 // MessageService provides functionally for sending messages.
@@ -205,7 +211,7 @@ var defaultKeyboardRows = []bot.KeyboardRow{
 		Buttons: []string{botGetBalanceCommand, botUpdateBalanceCommand},
 	},
 	{
-		Buttons: []string{botCreateOperationCommand},
+		Buttons: []string{botCreateOperationCommand, botGetOperationsHistory},
 	},
 }
 

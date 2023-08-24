@@ -667,6 +667,41 @@ func (h handlerService) HandleEventUpdateOperationAmount(ctx context.Context, ms
 	return nil
 }
 
+func (h handlerService) HandleEventGetOperationsHistory(ctx context.Context, msg botMessage) error {
+	logger := h.logger
+	logger.Debug().Interface("msg", msg).Msg("got args")
+
+	err := h.keyboardService.CreateKeyboard(&CreateKeyboardOptions{
+		ChatID:  msg.GetChatID(),
+		Message: "Please select a period for operation history!",
+		Type:    keyboardTypeRow,
+		Rows: []bot.KeyboardRow{
+			{
+				Buttons: []string{
+					string(models.CreationPeriodDay),
+					string(models.CreationPeriodWeek),
+					string(models.CreationPeriodMonth),
+					string(models.CreationPeriodYear),
+				},
+			},
+			{
+				Buttons: []string{botBackCommand},
+			},
+		},
+	})
+	if err != nil {
+		logger.Error().Err(err).Msg("create row keyboard")
+		return fmt.Errorf("create row keyboard: %w", err)
+	}
+
+	logger.Info().Msg("handled event get operations history")
+	return nil
+}
+
+func (h handlerService) HandleEventChooseCreationPeriodForOperationsHistory(ctx context.Context, msg botMessage) error {
+	return nil
+}
+
 func (h handlerService) HandleEventBack(ctx context.Context, msg botMessage) error {
 	logger := h.logger
 	logger.Debug().Interface("msg", msg).Msg("got args")
