@@ -738,7 +738,7 @@ func (h handlerService) HandleEventGetOperationsHistory(ctx context.Context, msg
 		}
 	}
 
-	resultMessage := fmt.Sprintf("Balance Amount: %v%s\nPeriod: %v\n", balanceInfo.Amount,balanceInfo.Currency,*creationPeriod)
+	resultMessage := fmt.Sprintf("Balance Amount: %v%s\nPeriod: %v\n", balanceInfo.Amount, balanceInfo.Currency, *creationPeriod)
 
 	for _, o := range operations {
 		resultMessage += fmt.Sprintf(
