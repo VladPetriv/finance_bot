@@ -29,8 +29,6 @@ type HandlerService interface {
 	HandleEventUpdateOperationAmount(ctx context.Context, msg botMessage) error
 	// HandleEventGetOperationsHistory ...
 	HandleEventGetOperationsHistory(ctx context.Context, msg botMessage) error
-	// HandleEventChooseCreationPeriodForOperationsHistory ...
-	HandleEventChooseCreationPeriodForOperationsHistory(ctx context.Context, msg botMessage) error
 	// HandleEventBack is used to reset bot buttons to default mode.
 	HandleEventBack(ctx context.Context, msg botMessage) error
 }
@@ -120,24 +118,24 @@ var eventsWithInput = map[event]int{
 	createIncomingOperationEvent: 1,
 	createSpendingOperationEvent: 1,
 	updateOperationAmountEvent:   1,
+	getOperationsHistoryEvent:    1,
 }
 
 // Commands that we can received from bot.
 const (
-	botStartCommand                             string = "/start"
-	botBackCommand                              string = "Back ❌"
-	botCreateCategoryCommand                    string = "Create Category 📊"
-	botListCategoriesCommand                    string = "List Categories 🗂️"
-	botUpdateBalanceCommand                     string = "Update Balance 💲"
-	botUpdateBalanceAmountCommand               string = "Update Balance Amount 💵"
-	botUpdateBalanceCurrencyCommand             string = "Update Balance Currency 💱"
-	botGetBalanceCommand                        string = "Get Balance Info 🏦"
-	botCreateOperationCommand                   string = "Create Operation 🤔"
-	botCreateIncomingOperationCommand           string = "Create Incoming Operation 🤑"
-	botCreateSpendingOperationCommand           string = "Create Spending Operation 💸"
-	botUpdateOperationAmountCommand             string = "Update Operation Amount 💵"
-	botGetOperationsHistory                     string = "Get Operations History 📖"
-	botChooseCreationPeriodForOperationsHistory string = "Choose the creation period for operations history"
+	botStartCommand                   string = "/start"
+	botBackCommand                    string = "Back ❌"
+	botCreateCategoryCommand          string = "Create Category 📊"
+	botListCategoriesCommand          string = "List Categories 🗂️"
+	botUpdateBalanceCommand           string = "Update Balance 💲"
+	botUpdateBalanceAmountCommand     string = "Update Balance Amount 💵"
+	botUpdateBalanceCurrencyCommand   string = "Update Balance Currency 💱"
+	botGetBalanceCommand              string = "Get Balance Info 🏦"
+	botCreateOperationCommand         string = "Create Operation 🤔"
+	botCreateIncomingOperationCommand string = "Create Incoming Operation 🤑"
+	botCreateSpendingOperationCommand string = "Create Spending Operation 💸"
+	botUpdateOperationAmountCommand   string = "Update Operation Amount 💵"
+	botGetOperationsHistory           string = "Get Operations History 📖"
 )
 
 var availableCommands = []string{

@@ -671,34 +671,94 @@ func (h handlerService) HandleEventGetOperationsHistory(ctx context.Context, msg
 	logger := h.logger
 	logger.Debug().Interface("msg", msg).Msg("got args")
 
-	err := h.keyboardService.CreateKeyboard(&CreateKeyboardOptions{
-		ChatID:  msg.GetChatID(),
-		Message: "Please select a period for operation history!",
-		Type:    keyboardTypeRow,
-		Rows: []bot.KeyboardRow{
-			{
-				Buttons: []string{
-					string(models.CreationPeriodDay),
-					string(models.CreationPeriodWeek),
-					string(models.CreationPeriodMonth),
-					string(models.CreationPeriodYear),
+	if IsBotCommand(msg.Message.Text) {
+		err := h.keyboardService.CreateKeyboard(&CreateKeyboardOptions{
+			ChatID:  msg.GetChatID(),
+			Message: "Please select a period for operation history!",
+			Type:    keyboardTypeRow,
+			Rows: []bot.KeyboardRow{
+				{
+					Buttons: []string{
+						string(models.CreationPeriodDay),
+						string(models.CreationPeriodWeek),
+						string(models.CreationPeriodMonth),
+						string(models.CreationPeriodYear),
+					},
+				},
+				{
+					Buttons: []string{botBackCommand},
 				},
 			},
-			{
-				Buttons: []string{botBackCommand},
-			},
-		},
+		})
+		if err != nil {
+			logger.Error().Err(err).Msg("create row keyboard")
+			return fmt.Errorf("create row keyboard: %w", err)
+		}
+
+		return nil
+	}
+
+	user, err := h.userService.GetUserByUsername(ctx, msg.Message.From.Username)
+	if err != nil {
+		logger.Error().Err(err).Msg("get user from store")
+		return fmt.Errorf("get user from store: %w", err)
+	}
+
+	balanceInfo, err := h.balanceService.GetBalanceInfo(ctx, user.ID)
+	if err != nil {
+		logger.Error().Err(err).Msg("get balcne info by user id")
+		return fmt.Errorf("get balance info by user id: %w", err)
+	}
+
+	creationPeriod := models.GetCreationPeriodFromText(msg.Message.Text)
+	if creationPeriod == nil {
+		logger.Error().Msgf("message text is not creation period, text: %s", msg.Message.Text)
+		return fmt.Errorf("message text is not creation period")
+	}
+
+	operations, err := h.operationStore.GetAll(ctx, balanceInfo.ID, GetAllOperationsFilter{
+		CreationPeriod: creationPeriod,
 	})
 	if err != nil {
-		logger.Error().Err(err).Msg("create row keyboard")
-		return fmt.Errorf("create row keyboard: %w", err)
+		logger.Error().Err(err).Msg("get all operations from store")
+		return fmt.Errorf("get all operations from store: %w", err)
+	}
+	if operations == nil {
+		logger.Info().Msg("operations not found")
+
+		err = h.keyboardService.CreateKeyboard(&CreateKeyboardOptions{
+			ChatID:  msg.GetChatID(),
+			Type:    keyboardTypeRow,
+			Rows:    defaultKeyboardRows,
+			Message: "Operations during that period of time not found!",
+		})
+		if err != nil {
+			logger.Error().Err(err).Msg("send message")
+			return fmt.Errorf("send message: %w", err)
+		}
+	}
+
+	resultMessage := fmt.Sprintf("Balance Amount: %v%s\nPeriod: %v\n", balanceInfo.Amount,balanceInfo.Currency,*creationPeriod)
+
+	for _, o := range operations {
+		resultMessage += fmt.Sprintf(
+			"\nOperation: %s\nCategory: %s\nAmount: %v%s\nCreation date: %v\n- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -",
+			o.Type, o.CategoryID, o.Amount, balanceInfo.Currency, o.CreatedAt.Format(time.ANSIC),
+		)
+	}
+
+	err = h.keyboardService.CreateKeyboard(&CreateKeyboardOptions{
+		ChatID:  msg.GetChatID(),
+		Type:    keyboardTypeRow,
+		Rows:    defaultKeyboardRows,
+		Message: resultMessage,
+	})
+	if err != nil {
+		logger.Error().Err(err).Msg("send message")
+		return fmt.Errorf("send message: %w", err)
 	}
 
 	logger.Info().Msg("handled event get operations history")
-	return nil
-}
-
-func (h handlerService) HandleEventChooseCreationPeriodForOperationsHistory(ctx context.Context, msg botMessage) error {
 	return nil
 }
 
