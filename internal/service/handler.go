@@ -736,6 +736,8 @@ func (h handlerService) HandleEventGetOperationsHistory(ctx context.Context, msg
 			logger.Error().Err(err).Msg("send message")
 			return fmt.Errorf("send message: %w", err)
 		}
+
+		return nil
 	}
 
 	resultMessage := fmt.Sprintf("Balance Amount: %v%s\nPeriod: %v\n", balanceInfo.Amount, balanceInfo.Currency, *creationPeriod)
