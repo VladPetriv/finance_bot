@@ -45,11 +45,16 @@ type OperationStore interface {
 	// Create creates a new operation.
 	Create(ctx context.Context, operation *models.Operation) error
 	// GetAll returns all operations from store by balance id.
-	GetAll(ctx context.Context, balanceID string) ([]models.Operation, error)
+	GetAll(ctx context.Context, balanceID string, filters GetAllOperationsFilter) ([]models.Operation, error)
 	// Update updates an operation in store.
 	Update(ctx context.Context, operationID string, operation *models.Operation) error
 	// Delete delete operation by his id.
 	Delete(ctx context.Context, operationID string) error
+}
+
+// GetAllOperationsFilter represents filters for getting all operations from store.
+type GetAllOperationsFilter struct {
+	CreationPeriod *models.CreationPeriod
 }
 
 // CategoryStore provides functionality for work with categories store.

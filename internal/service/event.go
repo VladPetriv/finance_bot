@@ -189,6 +189,13 @@ func (e eventService) ReactOnEvent(ctx context.Context, eventName event, msg bot
 			return fmt.Errorf("handle event update operation amount: %w", err)
 		}
 
+	case getOperationsHistoryEvent:
+		err := e.handlerService.HandleEventGetOperationsHistory(ctx, msg)
+		if err != nil {
+			logger.Error().Err(err).Msg("handle event get operations history")
+			return fmt.Errorf("handle event get operations history: %w", err)
+		}
+
 	default:
 		logger.Warn().Interface("eventName", eventName).Msg("receive unexpected event")
 		return fmt.Errorf("receive unexpected event: %v", eventName)

@@ -27,12 +27,11 @@ type HandlerService interface {
 	HandleEventOperationCreate(ctc context.Context, eventName event, msg botMessage) error
 	// HandleEventUpdateOperationAmount get last transaction with empty amount from db and update his amount with user one.
 	HandleEventUpdateOperationAmount(ctx context.Context, msg botMessage) error
+	// HandleEventGetOperationsHistory is used to return all user operation that was made during specific period of time.
+	HandleEventGetOperationsHistory(ctx context.Context, msg botMessage) error
 	// HandleEventBack is used to reset bot buttons to default mode.
 	HandleEventBack(ctx context.Context, msg botMessage) error
 }
-
-// HandleEventOperationCreate represents structure with all required info
-// about message that needed for handling this event.
 
 // EventService provides functionally for receiving an updates from bot and reacting on it.
 type EventService interface {
@@ -107,6 +106,7 @@ const (
 	createIncomingOperationEvent event = "create/incoming/operation"
 	createSpendingOperationEvent event = "create/spending/operation"
 	updateOperationAmountEvent   event = "update/operation/amount"
+	getOperationsHistoryEvent    event = "get/operations/history"
 	backEvent                    event = "back"
 	unknownEvent                 event = "unknown"
 )
@@ -118,6 +118,7 @@ var eventsWithInput = map[event]int{
 	createIncomingOperationEvent: 1,
 	createSpendingOperationEvent: 1,
 	updateOperationAmountEvent:   1,
+	getOperationsHistoryEvent:    1,
 }
 
 // Commands that we can received from bot.
@@ -133,7 +134,8 @@ const (
 	botCreateOperationCommand         string = "Create Operation 🤔"
 	botCreateIncomingOperationCommand string = "Create Incoming Operation 🤑"
 	botCreateSpendingOperationCommand string = "Create Spending Operation 💸"
-	botUpdateOperationAmountCommand   string = "Update Operation Amount"
+	botUpdateOperationAmountCommand   string = "Update Operation Amount 💵"
+	botGetOperationsHistory           string = "Get Operations History 📖"
 )
 
 var availableCommands = []string{
@@ -141,6 +143,7 @@ var availableCommands = []string{
 	botListCategoriesCommand, botUpdateBalanceCommand, botUpdateBalanceAmountCommand,
 	botCreateOperationCommand, botUpdateBalanceCurrencyCommand, botGetBalanceCommand, botCreateIncomingOperationCommand,
 	botCreateIncomingOperationCommand, botCreateSpendingOperationCommand, botUpdateOperationAmountCommand,
+	botGetOperationsHistory,
 }
 
 // IsBotCommand is used to determine if incoming text a bot command or not.
@@ -161,6 +164,7 @@ var commandToEvent = map[string]event{
 	botCreateIncomingOperationCommand: createIncomingOperationEvent,
 	botCreateSpendingOperationCommand: createSpendingOperationEvent,
 	botUpdateOperationAmountCommand:   updateOperationAmountEvent,
+	botGetOperationsHistory:           getOperationsHistoryEvent,
 }
 
 // MessageService provides functionally for sending messages.
@@ -205,7 +209,7 @@ var defaultKeyboardRows = []bot.KeyboardRow{
 		Buttons: []string{botGetBalanceCommand, botUpdateBalanceCommand},
 	},
 	{
-		Buttons: []string{botCreateOperationCommand},
+		Buttons: []string{botCreateOperationCommand, botGetOperationsHistory},
 	},
 }
 
@@ -238,7 +242,7 @@ var (
 	// ErrCategoriesNotFound happens when received zero categories from store.
 	ErrCategoriesNotFound = errors.New("categories not found")
 	// ErrCategoryNotFound happens when received not category from store.
-	ErrCategoryNotFound = errors.New("categoriy not found")
+	ErrCategoryNotFound = errors.New("category not found")
 )
 
 // BalanceService provides business logic for processing balance.
