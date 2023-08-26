@@ -86,6 +86,11 @@ func (e eventService) Listen(ctx context.Context, updates chan []byte, errs chan
 			err = e.ReactOnEvent(ctx, eventName, msg)
 			if err != nil {
 				logger.Error().Err(err).Msg("react on event")
+
+				handleErr := e.handlerService.HandleError(ctx, msg)
+				if handleErr != nil {
+					logger.Error().Err(err).Msg("react on event")
+				}
 			}
 		case err := <-errs:
 			logger.Error().Err(err).Msg("read updates")

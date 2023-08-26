@@ -31,6 +31,8 @@ type HandlerService interface {
 	HandleEventGetOperationsHistory(ctx context.Context, msg botMessage) error
 	// HandleEventBack is used to reset bot buttons to default mode.
 	HandleEventBack(ctx context.Context, msg botMessage) error
+	// HandleError is used to send the user a message that something went wrong while processing the command.
+	HandleError(ctx context.Context, msg botMessage) error
 }
 
 // EventService provides functionally for receiving an updates from bot and reacting on it.

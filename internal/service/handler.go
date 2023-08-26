@@ -799,3 +799,20 @@ func (h handlerService) HandleEventUnknown(msg botMessage) error {
 	logger.Info().Msg("handled event back")
 	return nil
 }
+
+func (h handlerService) HandleError(ctx context.Context, msg botMessage) error {
+	logger := h.logger
+	logger.Debug().Interface("msg", msg).Msg("got args")
+
+	err := h.messageService.SendMessage(&SendMessageOptions{
+		ChatID: msg.GetChatID(),
+		Text:   "Something went wrong!\nPlease try again later!",
+	})
+	if err != nil {
+		logger.Error().Err(err).Msg("send message")
+		return fmt.Errorf("send message: %w", err)
+	}
+
+	logger.Info().Msg("handled error")
+	return nil
+}
