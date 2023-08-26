@@ -27,7 +27,7 @@ type HandlerService interface {
 	HandleEventOperationCreate(ctc context.Context, eventName event, msg botMessage) error
 	// HandleEventUpdateOperationAmount get last transaction with empty amount from db and update his amount with user one.
 	HandleEventUpdateOperationAmount(ctx context.Context, msg botMessage) error
-	// HandleEventGetOperationsHistory ...
+	// HandleEventGetOperationsHistory is used to return all user operation that was made during specific period of time.
 	HandleEventGetOperationsHistory(ctx context.Context, msg botMessage) error
 	// HandleEventBack is used to reset bot buttons to default mode.
 	HandleEventBack(ctx context.Context, msg botMessage) error

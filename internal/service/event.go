@@ -95,7 +95,6 @@ func (e eventService) Listen(ctx context.Context, updates chan []byte, errs chan
 
 func (e eventService) getEventNameFromMsg(msg *botMessage) event {
 	if !strings.Contains(strings.Join(availableCommands, " "), msg.Message.Text) {
-		fmt.Println("i'm here")
 		return unknownEvent
 	}
 	if !strings.Contains(strings.Join(availableCommands, " "), msg.CallbackQuery.Data) {
