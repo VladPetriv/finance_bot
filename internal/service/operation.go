@@ -72,7 +72,6 @@ func (o operationService) handleIncomingOperationType(ctx context.Context, balan
 	operationAmount, err := money.NewFromString(operation.Amount)
 	if err != nil {
 		logger.Error().Err(err).Msg("convert operation amount to money type")
-		// TODO: Handled this error in handlers
 		return ErrInvalidAmountFormat
 	}
 	logger.Debug().Interface("operationAmount", operationAmount).Msg("converted operation amount to money type")
@@ -114,7 +113,6 @@ func (o operationService) handleSpendingOperationType(ctx context.Context, balan
 	operationAmount, err := money.NewFromString(operation.Amount)
 	if err != nil {
 		logger.Error().Err(err).Msg("convert operation amount to money type")
-		// TODO: Handled this error in handlers
 		return ErrInvalidAmountFormat
 	}
 	logger.Debug().Interface("operationAmount", operationAmount).Msg("converted operation amount to money type")

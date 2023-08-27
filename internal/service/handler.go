@@ -640,13 +640,17 @@ func (h handlerService) HandleEventUpdateOperationAmount(ctx context.Context, ms
 			Operation: &operations[len(operations)-1],
 		})
 		if err != nil {
-			err = h.messageService.SendMessage(&SendMessageOptions{
-				ChatID: msg.Message.Chat.ID,
-				Text:   "Can't create operation!",
-			})
-			if err != nil {
-				logger.Error().Err(err).Msg("send message")
-				return fmt.Errorf("send message: %w", err)
+			if errors.Is(err, ErrInvalidAmountFormat) {
+				err = h.messageService.SendMessage(&SendMessageOptions{
+					ChatID: msg.GetChatID(),
+					Text:   "Please enter amount in the right format!\nExamples: 1000.12, 10.12, 35",
+				})
+				if err != nil {
+					logger.Error().Err(err).Msg("send message")
+					return fmt.Errorf("send message: %w", err)
+				}
+
+				return nil
 			}
 
 			logger.Error().Err(err).Msg("create operation in store")
