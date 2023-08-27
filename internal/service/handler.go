@@ -238,7 +238,7 @@ func (h handlerService) HandleEventUpdateBalance(ctx context.Context, eventName 
 	if isBotCommand && eventName == updateBalanceEvent {
 		err := h.keyboardService.CreateKeyboard(&CreateKeyboardOptions{
 			ChatID:  msg.Message.Chat.ID,
-			Message: "Choose what you want to update in you balance:",
+			Message: "Choose what you want to update in your balance:",
 			Type:    keyboardTypeRow,
 			Rows: []bot.KeyboardRow{
 				{Buttons: []string{botUpdateBalanceAmountCommand, botUpdateBalanceCurrencyCommand}},
