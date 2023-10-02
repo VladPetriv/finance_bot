@@ -51,10 +51,18 @@ func (c categoryStore) GetAll(ctx context.Context, filters *service.GetALlCatego
 	return categories, nil
 }
 
-func (c categoryStore) GetByTitle(ctx context.Context, title string) (*models.Category, error) {
-	var category models.Category
+func (c categoryStore) Get(ctx context.Context, filter service.GetCategoryFilter) (*models.Category, error) {
+	request := bson.M{}
 
-	err := c.DB.Collection(collectionCategory).FindOne(ctx, bson.M{"title": title}).Decode(&category)
+	if filter.ID != nil {
+		request["_id"] = *filter.ID
+	}
+	if filter.Title != nil {
+		request["title"] = *filter.Title
+	}
+
+	var category models.Category
+	err := c.DB.Collection(collectionCategory).FindOne(ctx, request).Decode(&category)
 	if err != nil {
 		if errors.Is(err, mongo.ErrNoDocuments) {
 			return nil, nil

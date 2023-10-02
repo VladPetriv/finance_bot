@@ -27,7 +27,9 @@ func (c categoryService) CreateCategory(ctx context.Context, category *models.Ca
 	logger := c.logger
 	logger.Debug().Interface("category", category).Msg("got args")
 
-	candidate, err := c.categoryStore.GetByTitle(ctx, category.Title)
+	candidate, err := c.categoryStore.Get(ctx, GetCategoryFilter{
+		Title: &category.Title,
+	})
 	if err != nil {
 		logger.Error().Err(err).Msg("get category from store")
 		return fmt.Errorf("get category from store: %w", err)

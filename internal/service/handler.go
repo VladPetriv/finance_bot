@@ -523,7 +523,9 @@ func (h handlerService) HandleEventOperationCreate(ctx context.Context, eventNam
 	}
 
 	if msg.Message.Text != "" {
-		category, err := h.categoryStore.GetByTitle(ctx, msg.Message.Text)
+		category, err := h.categoryStore.Get(ctx, GetCategoryFilter{
+			Title: &msg.Message.Text,
+		})
 		if err != nil {
 			logger.Error().Err(err).Msg("get category store")
 			return fmt.Errorf("get category store: %w", err)
