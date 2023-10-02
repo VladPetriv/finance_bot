@@ -18,6 +18,7 @@ func TestCategory_CreateCategory(t *testing.T) {
 
 	ctx := context.TODO() //nolint: forbidigo
 	categoryID := uuid.NewString()
+	title := "test"
 
 	testCases := []struct {
 		name     string
@@ -28,7 +29,7 @@ func TestCategory_CreateCategory(t *testing.T) {
 		{
 			name: "positive: category created",
 			mock: func(categoryStore *mocks.CategoryStore) {
-				categoryStore.On("GetByTitle", ctx, "test").Return(nil, nil)
+				categoryStore.On("Get", ctx, service.GetCategoryFilter{Title: &title}).Return(nil, nil)
 				categoryStore.On("Create", ctx, &models.Category{
 					ID:    categoryID,
 					Title: "test",
@@ -43,7 +44,7 @@ func TestCategory_CreateCategory(t *testing.T) {
 		{
 			name: "negative: category already exists",
 			mock: func(categoryStore *mocks.CategoryStore) {
-				categoryStore.On("GetByTitle", ctx, "test").
+				categoryStore.On("Get", ctx, service.GetCategoryFilter{Title: &title}).
 					Return(&models.Category{ID: uuid.NewString(), Title: "test"}, nil)
 			},
 			args: &models.Category{
@@ -55,7 +56,7 @@ func TestCategory_CreateCategory(t *testing.T) {
 		{
 			name: "negative: got an error while get category by title",
 			mock: func(categoryStore *mocks.CategoryStore) {
-				categoryStore.On("GetByTitle", ctx, "test").
+				categoryStore.On("Get", ctx, service.GetCategoryFilter{Title: &title}).
 					Return(nil, fmt.Errorf("some error"))
 			},
 			args: &models.Category{
@@ -67,7 +68,7 @@ func TestCategory_CreateCategory(t *testing.T) {
 		{
 			name: "negative: got an error while create category",
 			mock: func(categoryStore *mocks.CategoryStore) {
-				categoryStore.On("GetByTitle", ctx, "test").Return(nil, nil)
+				categoryStore.On("Get", ctx, service.GetCategoryFilter{Title: &title}).Return(nil, nil)
 				categoryStore.On("Create", ctx, &models.Category{
 					ID:    categoryID,
 					Title: "test",

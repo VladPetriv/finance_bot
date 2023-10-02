@@ -6,6 +6,7 @@ import (
 
 	"github.com/VladPetriv/finance_bot/config"
 	"github.com/VladPetriv/finance_bot/internal/models"
+	"github.com/VladPetriv/finance_bot/internal/service"
 	"github.com/VladPetriv/finance_bot/internal/store"
 	"github.com/VladPetriv/finance_bot/pkg/database"
 	"github.com/google/uuid"
@@ -76,7 +77,7 @@ func TestCategory_Create(t *testing.T) {
 	}
 }
 
-func TestCategory_GetByTitle(t *testing.T) {
+func TestCategory_Get(t *testing.T) {
 	t.Parallel()
 
 	ctx := context.TODO() //nolint: forbidigo
@@ -86,29 +87,55 @@ func TestCategory_GetByTitle(t *testing.T) {
 	require.NoError(t, err)
 	categoryStore := store.NewCategory(db)
 
-	categoryID := uuid.NewString()
+	categoryID1, categoryID2 := uuid.NewString(), uuid.NewString()
+	title := "test_get"
 
 	testCases := []struct {
 		desc          string
 		preconditions *models.Category
-		input         string
+		input         service.GetCategoryFilter
 		expected      *models.Category
 	}{
 		{
-			desc: "positive: returned category by Title",
+			desc: "positive: returned category by title",
 			preconditions: &models.Category{
-				ID:    categoryID,
+				ID:    categoryID1,
+				Title: title,
+			},
+			input: service.GetCategoryFilter{
+				Title: &title,
+			},
+			expected: &models.Category{
+				ID:    categoryID1,
+				Title: title,
+			},
+		},
+		{
+			desc: "positive: returned category by id",
+			preconditions: &models.Category{
+				ID:    categoryID2,
 				Title: "test_get",
 			},
-			input: "test_get",
+			input: service.GetCategoryFilter{
+				ID: &categoryID2,
+			},
 			expected: &models.Category{
-				ID:    categoryID,
+				ID:    categoryID2,
 				Title: "test_get",
 			},
 		},
 		{
-			desc:     "negative: category not found",
-			input:    "not_found",
+			desc: "negative: category not found (by title)",
+			input: service.GetCategoryFilter{
+				Title: &categoryID1,
+			},
+			expected: nil,
+		},
+		{
+			desc: "negative: category not found (by id)",
+			input: service.GetCategoryFilter{
+				ID: &title,
+			},
 			expected: nil,
 		},
 	}
@@ -129,7 +156,7 @@ func TestCategory_GetByTitle(t *testing.T) {
 				}
 			})
 
-			got, err := categoryStore.GetByTitle(ctx, tc.input)
+			got, err := categoryStore.Get(ctx, tc.input)
 			assert.NoError(t, err)
 			assert.Equal(t, tc.expected, got)
 		})
