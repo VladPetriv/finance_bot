@@ -16,7 +16,8 @@ type Config struct {
 
 // Telegram represents a telegram bot configuration.
 type Telegram struct {
-	BotToken string `env:"BOT_TOKEN"`
+	BotToken   string `env:"BOT_TOKEN"`
+	WebhookURL string `env:"WEBHOOK_URL"`
 }
 
 // MongoDB represents a mongoDB database configuration.
