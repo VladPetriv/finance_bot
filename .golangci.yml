@@ -13,7 +13,6 @@ linters:
     #- depguard
     - errcheck
     - errname
-    - exportloopref
     - forbidigo
     - gci
     # We use both gofmt and gofumpt because gofumpt doesn't seem to be linting
@@ -25,7 +24,6 @@ linters:
     - govet
     - ineffassign
     - makezero
-    - megacheck
     - misspell
     - noctx
     - nolintlint
@@ -119,7 +117,7 @@ linters-settings:
   stylecheck:
     # ST1000 checks for missing package comments. We don't use these for most
     # packages, so let's disable this check.
-    checks: [ "all", "-ST1000" ]
+    checks: ["all", "-ST1000"]
   thelper:
     test:
       # The following linter would check whether we always call `t.Helper()` in
@@ -133,7 +131,7 @@ linters-settings:
       begin: false
     tb:
       begin: false
-  
+
 issues:
   exclude-use-default: false
   exclude-rules:
