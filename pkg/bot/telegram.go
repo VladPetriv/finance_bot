@@ -2,27 +2,33 @@ package bot
 
 import (
 	"encoding/json"
+	"fmt"
 
+	"github.com/fasthttp/router"
 	"github.com/mymmrac/telego"
 	"github.com/mymmrac/telego/telegoutil"
+	"github.com/valyala/fasthttp"
 )
 
 type bot struct {
-	token string
+	token      string
+	webhookURL string
 }
 
 var _ Bot = (*bot)(nil)
 
 type botAPI struct {
-	api *telego.Bot
+	api        *telego.Bot
+	webhookURL string
 }
 
 var _ API = (*botAPI)(nil)
 
 // NewTelegramBot creates a new instance of telegram bot.
-func NewTelegramBot(token string) *bot {
+func NewTelegramBot(token, webhookURL string) Bot {
 	return &bot{
-		token: token,
+		token:      token,
+		webhookURL: webhookURL,
 	}
 }
 
@@ -32,29 +38,52 @@ func (b bot) NewAPI() (API, error) {
 		return nil, err
 	}
 
+	err = tgBot.SetWebhook(&telego.SetWebhookParams{
+		URL: b.webhookURL + "/bot",
+	})
+	if err != nil {
+		return nil, err
+	}
+
 	return &botAPI{
-		api: tgBot,
+		api:        tgBot,
+		webhookURL: b.webhookURL,
 	}, nil
 }
 
 func (b botAPI) ReadUpdates(result chan []byte, errors chan error) {
-	updates, err := b.api.UpdatesViaLongPolling(nil)
+	updates, err := b.api.UpdatesViaWebhook("/bot",
+		telego.WithWebhookServer(telego.FastHTTPWebhookServer{
+			Logger: b.api.Logger(),
+			Server: &fasthttp.Server{},
+			Router: router.New(),
+		}),
+	)
 	if err != nil {
-		errors <- err
+		errors <- fmt.Errorf("register teelgram updates receiver: %w", err)
+
+		return
 	}
 
-	defer b.api.StopLongPolling()
+	go func() {
+		err := b.api.StartWebhook(b.webhookURL)
+		fmt.Printf("err: %v\n", err)
+	}()
 
-	for u := range updates {
-		updatedData, err := json.Marshal(u)
+	for update := range updates {
+		rawUpdateData, err := json.Marshal(update)
 		if err != nil {
-			errors <- err
+			errors <- fmt.Errorf("marshal telegram update: %w", err)
 
 			continue
 		}
 
-		result <- updatedData
+		result <- rawUpdateData
 	}
+}
+
+func (b botAPI) Close() error {
+	return b.api.StopWebhook()
 }
 
 func (b botAPI) Send(opts *SendOptions) error {

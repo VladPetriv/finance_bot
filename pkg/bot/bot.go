@@ -12,6 +12,8 @@ type API interface {
 	ReadUpdates(result chan []byte, errors chan error)
 	// Send sends any information to the user(messages, keyboards).
 	Send(opts *SendOptions) error
+	// Close closes the connection with the bot API.
+	Close() error
 }
 
 // SendOptions represents an input structure for Send method.

@@ -13,12 +13,18 @@ import (
 
 // Run is used to start the application.
 func Run(ctx context.Context, cfg *config.Config, logger *logger.Logger) {
-	b := bot.NewTelegramBot(cfg.Telegram.BotToken)
+	b := bot.NewTelegramBot(cfg.Telegram.BotToken, cfg.Telegram.WebhookURL)
 
 	botAPI, err := b.NewAPI()
 	if err != nil {
 		logger.Fatal().Err(err).Msg("create new bot api")
 	}
+	defer func() {
+		err := botAPI.Close()
+		if err != nil {
+			logger.Error().Err(err).Msg("close bot connection")
+		}
+	}()
 
 	mongoDB, err := database.NewMongoDB(ctx, cfg.MongoDB.URI, cfg.MongoDB.Database)
 	if err != nil {
