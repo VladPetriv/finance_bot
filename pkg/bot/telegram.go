@@ -13,22 +13,24 @@ import (
 type bot struct {
 	token      string
 	webhookURL string
+	srvAddr    string
 }
 
 var _ Bot = (*bot)(nil)
 
 type botAPI struct {
-	api        *telego.Bot
-	webhookURL string
+	api     *telego.Bot
+	srvAddr string
 }
 
 var _ API = (*botAPI)(nil)
 
 // NewTelegramBot creates a new instance of telegram bot.
-func NewTelegramBot(token, webhookURL string) Bot {
+func NewTelegramBot(token, webhookURL string, srvAddr string) Bot {
 	return &bot{
 		token:      token,
 		webhookURL: webhookURL,
+		srvAddr:    srvAddr,
 	}
 }
 
@@ -46,8 +48,8 @@ func (b bot) NewAPI() (API, error) {
 	}
 
 	return &botAPI{
-		api:        tgBot,
-		webhookURL: b.webhookURL,
+		api:     tgBot,
+		srvAddr: b.srvAddr,
 	}, nil
 }
 
@@ -66,8 +68,10 @@ func (b botAPI) ReadUpdates(result chan []byte, errors chan error) {
 	}
 
 	go func() {
-		err := b.api.StartWebhook(b.webhookURL)
-		fmt.Printf("err: %v\n", err)
+		err := b.api.StartWebhook(b.srvAddr)
+		if err != nil {
+			fmt.Printf("err: %v\n", err)
+		}
 	}()
 
 	for update := range updates {
