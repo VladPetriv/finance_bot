@@ -2,6 +2,9 @@ package app
 
 import (
 	"context"
+	"os"
+	"os/signal"
+	"syscall"
 
 	"github.com/VladPetriv/finance_bot/config"
 	"github.com/VladPetriv/finance_bot/internal/service"
@@ -60,5 +63,23 @@ func Run(ctx context.Context, cfg *config.Config, logger *logger.Logger) {
 	errs := make(chan error)
 	updates := make(chan []byte)
 
-	eventService.Listen(ctx, updates, errs)
+	go eventService.Listen(ctx, updates, errs)
+	logger.Info().Msg("application started")
+
+	signals := make(chan os.Signal, 1)
+	signal.Notify(signals, syscall.SIGINT, syscall.SIGTERM)
+
+	<-signals
+
+	err = botAPI.Close()
+	if err != nil {
+		logger.Error().Err(err).Msg("close telegram bot connection")
+	}
+
+	err = mongoDB.Close()
+	if err != nil {
+		logger.Error().Err(err).Msg("close mongodb connection")
+	}
+
+	logger.Info().Msg("application stopped")
 }
