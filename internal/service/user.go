@@ -27,7 +27,9 @@ func (u userService) CreateUser(ctx context.Context, user *models.User) error {
 	logger := u.logger
 	logger.Debug().Interface("user", user).Msg("got args")
 
-	candidate, err := u.userStore.GetByUsername(ctx, user.Username)
+	candidate, err := u.userStore.Get(ctx, GetUserFilter{
+		Username: user.Username,
+	})
 	if err != nil {
 		logger.Error().Err(err).Msg("get user from store")
 		return fmt.Errorf("get user from store: %w", err)
@@ -51,7 +53,9 @@ func (u userService) GetUserByUsername(ctx context.Context, username string) (*m
 	logger := u.logger
 	logger.Debug().Interface("username", username).Msg("got args")
 
-	user, err := u.userStore.GetByUsername(ctx, username)
+	user, err := u.userStore.Get(ctx, GetUserFilter{
+		Username: username,
+	})
 	if err != nil {
 		logger.Error().Err(err).Msg("get user from store")
 		return nil, fmt.Errorf("get user from store: %w", err)
