@@ -9,6 +9,17 @@ import (
 	"github.com/VladPetriv/finance_bot/pkg/bot"
 )
 
+type Services struct {
+	Event     EventService
+	Handler   HandlerService
+	Message   MessageService
+	Keyboard  KeyboardService
+	User      UserService
+	Balance   BalanceService
+	Category  CategoryService
+	Operation OperationService
+}
+
 // HandlerService provides functionally for handling events.
 type HandlerService interface {
 	// HandleEventStart is used to handle event start.

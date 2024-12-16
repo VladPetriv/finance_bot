@@ -42,18 +42,21 @@ func Run(ctx context.Context, cfg *config.Config, logger *logger.Logger) {
 	balanceService := service.NewBalance(logger, stores.Balance)
 	operationService := service.NewOperation(logger, stores.Operation, stores.Balance, stores.Category)
 
+	services := service.Services{
+		Message:   messageService,
+		Keyboard:  keyboardService,
+		Category:  categoryService,
+		User:      userService,
+		Balance:   balanceService,
+		Operation: operationService,
+	}
+
 	handlerService := service.NewHandler(&service.HandlerOptions{
-		Logger:           logger,
-		MessageService:   messageService,
-		KeyboardService:  keyboardService,
-		CategoryService:  categoryService,
-		UserService:      userService,
-		BalanceStore:     stores.Balance,
-		BalanceService:   balanceService,
-		OperationService: operationService,
-		OperationStore:   stores.Operation,
-		CategoryStore:    stores.Category,
+		Logger:   logger,
+		Services: services,
+		Stores:   stores,
 	})
+
 	eventService := service.NewEvent(&service.EventOptions{
 		BotAPI:         botAPI,
 		Logger:         logger,
