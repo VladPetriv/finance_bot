@@ -50,7 +50,7 @@ type HandlerService interface {
 // EventService provides functionally for receiving an updates from bot and reacting on it.
 type EventService interface {
 	// Listen is used to receive all updates from bot.
-	Listen(ctx context.Context, updates chan []byte, errs chan error)
+	Listen(ctx context.Context)
 	// ReactOnEven is used to react on event by his name.
 	ReactOnEvent(ctx context.Context, eventName event, msg botMessage) error
 }

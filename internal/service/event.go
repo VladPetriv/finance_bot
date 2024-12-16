@@ -34,17 +34,20 @@ func NewEvent(opts *EventOptions) *eventService {
 	}
 }
 
-func (e eventService) Listen(ctx context.Context, updates chan []byte, errs chan error) {
+func (e eventService) Listen(ctx context.Context) {
 	logger := e.logger
 
-	go e.botAPI.ReadUpdates(updates, errs)
+	updatesCH := make(chan []byte)
+	errorsCH := make(chan error)
+
+	go e.botAPI.ReadUpdates(updatesCH, errorsCH)
 
 	var eventName, previousEventName event
 	var previousEventInputCount, previousEventMaxInputCount int
 
 	for {
 		select {
-		case update := <-updates:
+		case update := <-updatesCH:
 			var msg botMessage
 
 			err := json.Unmarshal(update, &msg)
@@ -92,7 +95,7 @@ func (e eventService) Listen(ctx context.Context, updates chan []byte, errs chan
 					logger.Error().Err(err).Msg("react on event")
 				}
 			}
-		case err := <-errs:
+		case err := <-errorsCH:
 			logger.Error().Err(err).Msg("read updates")
 		}
 	}

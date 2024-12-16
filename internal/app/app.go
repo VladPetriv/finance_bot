@@ -63,10 +63,7 @@ func Run(ctx context.Context, cfg *config.Config, logger *logger.Logger) {
 		HandlerService: handlerService,
 	})
 
-	errs := make(chan error)
-	updates := make(chan []byte)
-
-	go eventService.Listen(ctx, updates, errs)
+	go eventService.Listen(ctx)
 	logger.Info().Msg("application started")
 
 	signals := make(chan os.Signal, 1)
