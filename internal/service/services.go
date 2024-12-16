@@ -9,6 +9,7 @@ import (
 	"github.com/VladPetriv/finance_bot/pkg/bot"
 )
 
+// Services represents structure with all services.
 type Services struct {
 	Event     EventService
 	Handler   HandlerService
