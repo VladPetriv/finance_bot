@@ -12,6 +12,7 @@ type Stores struct {
 	Operation OperationStore
 	Category  CategoryStore
 	User      UserStore
+	State     StateStore
 }
 
 // UserStore provides functionality for work with users store.
@@ -87,4 +88,19 @@ type GetALlCategoriesFilter struct {
 type GetCategoryFilter struct {
 	Title *string
 	ID    *string
+}
+
+// StateStore represents a store for user states.
+type StateStore interface {
+	// Create creates a new state in store.
+	Create(ctx context.Context, state *models.State) error
+	// Get returns a state from store by user id.
+	Get(ctx context.Context, filter GetStateFilter) (*models.State, error)
+	// Update updates state model in store.
+	Update(ctx context.Context, state *models.State) (*models.State, error)
+}
+
+// GetStateFilter represents a filters for StateStore.Get method.
+type GetStateFilter struct {
+	UserID string
 }
