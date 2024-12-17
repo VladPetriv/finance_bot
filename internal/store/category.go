@@ -17,7 +17,7 @@ type categoryStore struct {
 
 var _ service.CategoryStore = (*categoryStore)(nil)
 
-var collectionCategory = "Category"
+var collectionCategory = "Categories"
 
 // NewCategory returns a new instance of category store.
 func NewCategory(db *database.MongoDB) *categoryStore {

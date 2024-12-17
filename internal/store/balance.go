@@ -17,7 +17,7 @@ type balanceStore struct {
 
 var _ service.BalanceStore = (*balanceStore)(nil)
 
-var collectionBalance = "Balance"
+var collectionBalance = "Balances"
 
 // NewBalance returns new instance of balance store.
 func NewBalance(db *database.MongoDB) *balanceStore {

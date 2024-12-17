@@ -17,7 +17,7 @@ type userStore struct {
 
 var _ service.UserStore = (*userStore)(nil)
 
-var collectionUser = "User"
+var collectionUser = "Users"
 
 // NewUser returns new instance of user store.
 func NewUser(db *database.MongoDB) *userStore {

@@ -282,7 +282,7 @@ func TestBalance_Delete(t *testing.T) {
 			if tc.preconditions.ID != tc.input {
 				var balance models.Balance
 
-				err := db.DB.Collection("Balance").
+				err := db.DB.Collection("Balances").
 					FindOne(ctx, bson.M{"_id": tc.preconditions.ID}).
 					Decode(&balance)
 

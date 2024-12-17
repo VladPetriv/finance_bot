@@ -63,7 +63,7 @@ func TestUser_Create(t *testing.T) {
 			}
 
 			t.Cleanup(func() {
-				_, err := userStore.DB.Collection("User").DeleteOne(ctx, bson.M{"_id": tc.input.ID})
+				_, err := userStore.DB.Collection("Users").DeleteOne(ctx, bson.M{"_id": tc.input.ID})
 				assert.NoError(t, err)
 			})
 
@@ -169,7 +169,7 @@ func TestUser_Get(t *testing.T) {
 
 			t.Cleanup(func() {
 				if tc.preconditions != nil {
-					_, err := userStore.DB.Collection("User").DeleteOne(ctx, bson.M{"_id": tc.preconditions.ID})
+					_, err := userStore.DB.Collection("Users").DeleteOne(ctx, bson.M{"_id": tc.preconditions.ID})
 					assert.NoError(t, err)
 
 					if len(tc.preconditions.Balances) != 0 {
