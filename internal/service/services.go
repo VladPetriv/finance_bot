@@ -15,26 +15,35 @@ type Services struct {
 	Handler   HandlerService
 	Message   MessageService
 	Keyboard  KeyboardService
-	User      UserService
 	Balance   BalanceService
 	Category  CategoryService
 	Operation OperationService
+	State     StateService
 }
 
 // HandlerService provides functionally for handling events.
 type HandlerService interface {
-	// HandleEventStart is used to handle event start.
-	HandleEventStart(ctx context.Context, msg botMessage) error
+	// HandleError is used to send the user a message that something went wrong while processing the command.
+	HandleError(ctx context.Context, msg botMessage) error
 	// HandleEventUnknown is used to handle event unknown.
 	HandleEventUnknown(msg botMessage) error
-	// HandleEventCategoryCreate is used to handle category created event.
-	HandleEventCategoryCreate(ctx context.Context, msg botMessage) error
-	// HandleEventListCategories is used to handle lit categories event.
-	HandleEventListCategories(ctx context.Context, msg botMessage) error
+
+	// HandleEventStart is used to handle event start.
+	HandleEventStart(ctx context.Context, msg botMessage) error
+
+	// HandleEventBalanceCreated is used to handle update balance event.
+	HandleEventBalanceCreated(ctx context.Context, msg botMessage) error
+
 	// HandleEventListCategories is used to handle update balance event.
 	HandleEventUpdateBalance(ctx context.Context, eventName event, msg botMessage) error
 	// HandleEventGetBalance is used to handle get balance event.
 	HandleEventGetBalance(ctx context.Context, msg botMessage) error
+
+	// HandleEventCategoryCreate is used to handle category created event.
+	HandleEventCategoryCreate(ctx context.Context, msg botMessage) error
+	// HandleEventListCategories is used to handle lit categories event.
+	HandleEventListCategories(ctx context.Context, msg botMessage) error
+
 	// HandleEventOperationCreate is used to create an operation without amount.
 	HandleEventOperationCreate(ctc context.Context, eventName event, msg botMessage) error
 	// HandleEventUpdateOperationAmount get last transaction with empty amount from db and update his amount with user one.
@@ -43,8 +52,6 @@ type HandlerService interface {
 	HandleEventGetOperationsHistory(ctx context.Context, msg botMessage) error
 	// HandleEventBack is used to reset bot buttons to default mode.
 	HandleEventBack(ctx context.Context, msg botMessage) error
-	// HandleError is used to send the user a message that something went wrong while processing the command.
-	HandleError(ctx context.Context, msg botMessage) error
 }
 
 // EventService provides functionally for receiving an updates from bot and reacting on it.
@@ -52,7 +59,7 @@ type EventService interface {
 	// Listen is used to receive all updates from bot.
 	Listen(ctx context.Context)
 	// ReactOnEven is used to react on event by his name.
-	ReactOnEvent(ctx context.Context, eventName event, msg botMessage) error
+	ReactOnEvent(ctx context.Context, eventName models.Event, msg botMessage) error
 }
 
 type botMessage struct {
@@ -125,16 +132,6 @@ const (
 	unknownEvent                 event = "unknown"
 )
 
-var eventsWithInput = map[event]int{
-	createCategoryEvent:          1,
-	updateBalanceAmountEvent:     1,
-	updateBalanceCurrencyEvent:   1,
-	createIncomingOperationEvent: 1,
-	createSpendingOperationEvent: 1,
-	updateOperationAmountEvent:   1,
-	getOperationsHistoryEvent:    1,
-}
-
 // Commands that we can received from bot.
 const (
 	botStartCommand                   string = "/start"
@@ -152,33 +149,9 @@ const (
 	botGetOperationsHistory           string = "Get Operations History 📖"
 )
 
-var availableCommands = []string{
-	botStartCommand, botBackCommand, botCreateCategoryCommand,
-	botListCategoriesCommand, botUpdateBalanceCommand, botUpdateBalanceAmountCommand,
-	botCreateOperationCommand, botUpdateBalanceCurrencyCommand, botGetBalanceCommand, botCreateIncomingOperationCommand,
-	botCreateIncomingOperationCommand, botCreateSpendingOperationCommand, botUpdateOperationAmountCommand,
-	botGetOperationsHistory,
-}
-
 // IsBotCommand is used to determine if incoming text a bot command or not.
 func IsBotCommand(command string) bool {
-	return strings.Contains(strings.Join(availableCommands, " "), command)
-}
-
-var commandToEvent = map[string]event{
-	botStartCommand:                   startEvent,
-	botBackCommand:                    backEvent,
-	botCreateCategoryCommand:          createCategoryEvent,
-	botListCategoriesCommand:          listCategoryEvent,
-	botUpdateBalanceCommand:           updateBalanceEvent,
-	botUpdateBalanceAmountCommand:     updateBalanceAmountEvent,
-	botUpdateBalanceCurrencyCommand:   updateBalanceCurrencyEvent,
-	botGetBalanceCommand:              getBalanceEvent,
-	botCreateOperationCommand:         createOperationEvent,
-	botCreateIncomingOperationCommand: createIncomingOperationEvent,
-	botCreateSpendingOperationCommand: createSpendingOperationEvent,
-	botUpdateOperationAmountCommand:   updateOperationAmountEvent,
-	botGetOperationsHistory:           getOperationsHistoryEvent,
+	return strings.Contains(strings.Join(models.AvailableCommands, " "), command)
 }
 
 // MessageService provides functionally for sending messages.
@@ -217,22 +190,17 @@ const (
 
 var defaultKeyboardRows = []bot.KeyboardRow{
 	{
-		Buttons: []string{botCreateCategoryCommand, botListCategoriesCommand},
+		Buttons: []string{models.BotCreateCategoryCommand, models.BotListCategoriesCommand},
 	},
 	{
-		Buttons: []string{botGetBalanceCommand, botUpdateBalanceCommand},
+		Buttons: []string{models.BotGetBalanceCommand, models.BotUpdateBalanceCommand},
 	},
 	{
-		Buttons: []string{botCreateOperationCommand, botGetOperationsHistory},
+		Buttons: []string{models.BotCreateOperationCommand, models.BotGetOperationsHistory},
 	},
-}
-
-// UserService provides business logic for work with users.
-type UserService interface {
-	// CreateUser is used to create user if it's not exists.
-	CreateUser(ctx context.Context, user *models.User) error
-	// GetUserByUsername is used to get user by his username.
-	GetUserByUsername(ctx context.Context, username string) (*models.User, error)
+	{
+		Buttons: []string{models.BotCreateBalanceCommand},
+	},
 }
 
 var (
@@ -282,3 +250,14 @@ type CreateOperationOptions struct {
 
 // ErrInvalidAmountFormat happens when use enters amount with invalid format
 var ErrInvalidAmountFormat = errors.New("invalid amount format")
+
+// StateService represents a service for managing and handling complex bot flow using statesstates.
+type StateService interface {
+	HandleState(ctx context.Context, message botMessage) (*HandleStateOutput, error)
+}
+
+// HandleStateOutput represents an output structure for StateService.HandleState method.
+type HandleStateOutput struct {
+	State *models.State
+	Event models.Event
+}

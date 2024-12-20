@@ -28,7 +28,7 @@ func TestState_Create(t *testing.T) {
 	stateStore := store.NewState(db)
 
 	stateID := uuid.NewString()
-	now := time.Now().Unix()
+	now := time.Now()
 
 	testCases := []struct {
 		desc                 string
@@ -42,7 +42,7 @@ func TestState_Create(t *testing.T) {
 				ID:        uuid.NewString(),
 				UserID:    uuid.NewString(),
 				Flow:      models.StartFlow,
-				Steps:     []string{"step1", "step2"},
+				Steps:     []models.FlowStep{models.StartFlowStep, models.CreateInitialBalanceFlowStep},
 				CreatedAt: now,
 				UpdatedAt: now,
 			},
@@ -53,7 +53,7 @@ func TestState_Create(t *testing.T) {
 				ID:        stateID,
 				UserID:    uuid.NewString(),
 				Flow:      models.StartFlow,
-				Steps:     []string{"step1"},
+				Steps:     []models.FlowStep{models.StartFlowStep},
 				CreatedAt: now,
 				UpdatedAt: now,
 			},
@@ -99,7 +99,7 @@ func TestState_Get(t *testing.T) {
 	require.NoError(t, err)
 	stateStore := store.NewState(db)
 
-	now := time.Now().Unix()
+	now := time.Now()
 
 	testCases := []struct {
 		desc          string
@@ -113,7 +113,7 @@ func TestState_Get(t *testing.T) {
 				ID:        uuid.NewString(),
 				UserID:    "user123",
 				Flow:      models.StartFlow,
-				Steps:     []string{"step1", "step2"},
+				Steps:     []models.FlowStep{models.StartFlowStep, models.CreateInitialBalanceFlowStep},
 				CreatedAt: now,
 				UpdatedAt: now,
 			},
@@ -124,7 +124,7 @@ func TestState_Get(t *testing.T) {
 				ID:        uuid.NewString(),
 				UserID:    "user123",
 				Flow:      models.StartFlow,
-				Steps:     []string{"step1", "step2"},
+				Steps:     []models.FlowStep{models.StartFlowStep, models.CreateInitialBalanceFlowStep},
 				CreatedAt: now,
 				UpdatedAt: now,
 			},
@@ -180,7 +180,7 @@ func TestState_Update(t *testing.T) {
 	require.NoError(t, err)
 	stateStore := store.NewState(db)
 
-	now := time.Now().Unix()
+	now := time.Now()
 	stateID := uuid.NewString()
 
 	testCases := []struct {
@@ -195,7 +195,7 @@ func TestState_Update(t *testing.T) {
 				ID:        stateID,
 				UserID:    "user123",
 				Flow:      models.StartFlow,
-				Steps:     []string{"step1"},
+				Steps:     []models.FlowStep{models.StartFlowStep},
 				CreatedAt: now,
 				UpdatedAt: now,
 			},
@@ -203,17 +203,17 @@ func TestState_Update(t *testing.T) {
 				ID:        stateID,
 				UserID:    "user123",
 				Flow:      models.StartFlow,
-				Steps:     []string{"step1", "step2"},
+				Steps:     []models.FlowStep{models.StartFlowStep, models.CreateInitialBalanceFlowStep},
 				CreatedAt: now,
-				UpdatedAt: now + 100,
+				UpdatedAt: now.Add(1 * time.Minute),
 			},
 			expected: &models.State{
 				ID:        stateID,
 				UserID:    "user123",
 				Flow:      models.StartFlow,
-				Steps:     []string{"step1", "step2"},
+				Steps:     []models.FlowStep{models.StartFlowStep, models.CreateInitialBalanceFlowStep},
 				CreatedAt: now,
-				UpdatedAt: now + 100,
+				UpdatedAt: now.Add(1 * time.Minute),
 			},
 		},
 		{

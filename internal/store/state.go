@@ -81,3 +81,12 @@ func (s stateStore) Update(ctx context.Context, state *models.State) (*models.St
 
 	return &updatedState, nil
 }
+
+func (s stateStore) Delete(ctx context.Context, ID string) error {
+	_, err := s.DB.Collection(collectionState).DeleteOne(ctx, bson.M{"_id": ID})
+	if err != nil {
+		return err
+	}
+
+	return nil
+}

@@ -33,22 +33,26 @@ func Run(ctx context.Context, cfg *config.Config, logger *logger.Logger) {
 		User:      store.NewUser(mongoDB),
 		Balance:   store.NewBalance(mongoDB),
 		Operation: store.NewOperation(mongoDB),
+		State:     store.NewState(mongoDB),
 	}
 
 	messageService := service.NewMessage(botAPI, logger)
 	keyboardService := service.NewKeyboard(botAPI, logger)
 	categoryService := service.NewCategory(logger, stores.Category)
-	userService := service.NewUser(logger, stores.User)
 	balanceService := service.NewBalance(logger, stores.Balance)
+	stateService := service.NewState(&service.StateOptions{
+		Logger: logger,
+		Stores: stores,
+	})
 	operationService := service.NewOperation(logger, stores.Operation, stores.Balance, stores.Category)
 
 	services := service.Services{
 		Message:   messageService,
 		Keyboard:  keyboardService,
 		Category:  categoryService,
-		User:      userService,
 		Balance:   balanceService,
 		Operation: operationService,
+		State:     stateService,
 	}
 
 	handlerService := service.NewHandler(&service.HandlerOptions{
@@ -61,6 +65,7 @@ func Run(ctx context.Context, cfg *config.Config, logger *logger.Logger) {
 		BotAPI:         botAPI,
 		Logger:         logger,
 		HandlerService: handlerService,
+		StateService:   stateService,
 	})
 
 	go eventService.Listen(ctx)

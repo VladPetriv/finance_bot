@@ -38,11 +38,16 @@ type BalanceStore interface {
 	// Create creates a new balance in store.
 	Create(ctx context.Context, balance *models.Balance) error
 	// Get returns a balance from store by user id.
-	Get(ctx context.Context, userID string) (*models.Balance, error)
+	Get(ctx context.Context, filter GetBalanceFilter) (*models.Balance, error)
 	// Update updates balance model in store.
 	Update(ctx context.Context, balance *models.Balance) error
 	// Delete deletes balance from store.
 	Delete(ctx context.Context, balanceID string) error
+}
+
+type GetBalanceFilter struct {
+	UserID    string
+	BalanceID string
 }
 
 // OperationStore provides functionality for work with operation store.
@@ -98,6 +103,8 @@ type StateStore interface {
 	Get(ctx context.Context, filter GetStateFilter) (*models.State, error)
 	// Update updates state model in store.
 	Update(ctx context.Context, state *models.State) (*models.State, error)
+	//Delete deletes state from store.
+	Delete(ctx context.Context, ID string) error
 }
 
 // GetStateFilter represents a filters for StateStore.Get method.

@@ -30,7 +30,9 @@ func (o operationService) CreateOperation(ctx context.Context, opts CreateOperat
 	logger := o.logger
 	logger.Debug().Interface("opts", opts).Msg("got args")
 
-	balance, err := o.balanceStore.Get(ctx, opts.UserID)
+	balance, err := o.balanceStore.Get(ctx, GetBalanceFilter{
+		UserID: opts.UserID,
+	})
 	if err != nil {
 		logger.Error().Err(err).Msg("get balance from store")
 		return fmt.Errorf("get balance from store: %w", err)
