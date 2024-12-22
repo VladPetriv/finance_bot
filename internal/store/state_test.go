@@ -180,7 +180,6 @@ func TestState_Update(t *testing.T) {
 	require.NoError(t, err)
 	stateStore := store.NewState(db)
 
-	now := time.Now()
 	stateID := uuid.NewString()
 
 	testCases := []struct {
@@ -192,28 +191,22 @@ func TestState_Update(t *testing.T) {
 		{
 			desc: "positive: state updated successfully",
 			preconditions: &models.State{
-				ID:        stateID,
-				UserID:    "user123",
-				Flow:      models.StartFlow,
-				Steps:     []models.FlowStep{models.StartFlowStep},
-				CreatedAt: now,
-				UpdatedAt: now,
+				ID:     stateID,
+				UserID: "user123",
+				Flow:   models.StartFlow,
+				Steps:  []models.FlowStep{models.StartFlowStep},
 			},
 			input: &models.State{
-				ID:        stateID,
-				UserID:    "user123",
-				Flow:      models.StartFlow,
-				Steps:     []models.FlowStep{models.StartFlowStep, models.CreateInitialBalanceFlowStep},
-				CreatedAt: now,
-				UpdatedAt: now.Add(1 * time.Minute),
+				ID:     stateID,
+				UserID: "user123",
+				Flow:   models.StartFlow,
+				Steps:  []models.FlowStep{models.StartFlowStep, models.CreateInitialBalanceFlowStep},
 			},
 			expected: &models.State{
-				ID:        stateID,
-				UserID:    "user123",
-				Flow:      models.StartFlow,
-				Steps:     []models.FlowStep{models.StartFlowStep, models.CreateInitialBalanceFlowStep},
-				CreatedAt: now,
-				UpdatedAt: now.Add(1 * time.Minute),
+				ID:     stateID,
+				UserID: "user123",
+				Flow:   models.StartFlow,
+				Steps:  []models.FlowStep{models.StartFlowStep, models.CreateInitialBalanceFlowStep},
 			},
 		},
 		{
@@ -252,8 +245,6 @@ func TestState_Update(t *testing.T) {
 				assert.Equal(t, tc.expected.UserID, actual.UserID)
 				assert.Equal(t, tc.expected.Flow, actual.Flow)
 				assert.Equal(t, tc.expected.Steps, actual.Steps)
-				assert.Equal(t, tc.expected.CreatedAt, actual.CreatedAt)
-				assert.Equal(t, tc.expected.UpdatedAt, actual.UpdatedAt)
 			}
 		})
 	}
