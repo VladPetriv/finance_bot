@@ -16,7 +16,7 @@ type operationStore struct {
 
 var _ service.OperationStore = (*operationStore)(nil)
 
-var collectionOperation = "Operation"
+var collectionOperation = "Operations"
 
 // NewOperation returns new instance of operation store.
 func NewOperation(db *database.MongoDB) *operationStore {

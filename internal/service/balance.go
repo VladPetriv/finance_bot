@@ -25,7 +25,9 @@ func (b balanceService) GetBalanceInfo(ctx context.Context, userID string) (*mod
 	logger := b.logger
 	logger.Debug().Interface("userID", userID).Msg("got args")
 
-	balance, err := b.balanceStore.Get(ctx, userID)
+	balance, err := b.balanceStore.Get(ctx, GetBalanceFilter{
+		UserID: userID,
+	})
 	if err != nil {
 		logger.Error().Err(err).Msg("get balance from store")
 		return nil, fmt.Errorf("get balance from store: %w", err)

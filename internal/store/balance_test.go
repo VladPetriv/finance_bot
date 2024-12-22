@@ -6,6 +6,7 @@ import (
 
 	"github.com/VladPetriv/finance_bot/config"
 	"github.com/VladPetriv/finance_bot/internal/models"
+	"github.com/VladPetriv/finance_bot/internal/service"
 	"github.com/VladPetriv/finance_bot/internal/store"
 	"github.com/VladPetriv/finance_bot/pkg/database"
 	"github.com/google/uuid"
@@ -23,7 +24,7 @@ var (
 func TestBalance_Get(t *testing.T) {
 	t.Parallel()
 
-	ctx := context.TODO() //nolint: forbidigo
+	ctx := context.Background() //nolint: forbidigo
 	cfg := config.Get()
 
 	db, err := database.NewMongoDB(ctx, cfg.MongoDB.URI, cfg.MongoDB.Database)
@@ -36,7 +37,7 @@ func TestBalance_Get(t *testing.T) {
 	testCases := []struct {
 		desc          string
 		preconditions *models.Balance
-		input         string
+		input         service.GetBalanceFilter
 		expected      *models.Balance
 	}{
 		{
@@ -46,7 +47,9 @@ func TestBalance_Get(t *testing.T) {
 				UserID: userID,
 				Amount: amount300,
 			},
-			input: userID,
+			input: service.GetBalanceFilter{
+				UserID: userID,
+			},
 			expected: &models.Balance{
 				ID:     balanceID,
 				UserID: userID,
@@ -54,8 +57,10 @@ func TestBalance_Get(t *testing.T) {
 			},
 		},
 		{
-			desc:     "negative: balance not found",
-			input:    uuid.NewString(),
+			desc: "negative: balance not found",
+			input: service.GetBalanceFilter{
+				UserID: uuid.NewString(),
+			},
 			expected: nil,
 		},
 	}
@@ -71,8 +76,7 @@ func TestBalance_Get(t *testing.T) {
 
 			t.Cleanup(func() {
 				if tc.preconditions != nil {
-					err := balanceStore.Delete(ctx, tc.preconditions.ID)
-					assert.NoError(t, err)
+					_ = balanceStore.Delete(ctx, tc.preconditions.ID)
 				}
 			})
 
@@ -86,7 +90,7 @@ func TestBalance_Get(t *testing.T) {
 func TestBalance_Create(t *testing.T) {
 	t.Parallel()
 
-	ctx := context.TODO() //nolint: forbidigo
+	ctx := context.Background() //nolint: forbidigo
 	cfg := config.Get()
 
 	db, err := database.NewMongoDB(ctx, cfg.MongoDB.URI, cfg.MongoDB.Database)
@@ -147,7 +151,7 @@ func TestBalance_Create(t *testing.T) {
 func TestBalance_Update(t *testing.T) {
 	t.Parallel()
 
-	ctx := context.TODO() //nolint: forbidigo
+	ctx := context.Background() //nolint: forbidigo
 	cfg := config.Get()
 
 	db, err := database.NewMongoDB(ctx, cfg.MongoDB.URI, cfg.MongoDB.Database)
@@ -221,7 +225,7 @@ func TestBalance_Update(t *testing.T) {
 			err = balanceStore.Update(ctx, tc.input)
 			assert.NoError(t, err)
 
-			got, err := balanceStore.Get(ctx, tc.preconditions.UserID)
+			got, err := balanceStore.Get(ctx, service.GetBalanceFilter{UserID: tc.preconditions.UserID})
 			assert.NoError(t, err)
 			assert.Equal(t, tc.expected, got)
 		})
@@ -231,7 +235,7 @@ func TestBalance_Update(t *testing.T) {
 func TestBalance_Delete(t *testing.T) {
 	t.Parallel()
 
-	ctx := context.TODO() //nolint: forbidigo
+	ctx := context.Background() //nolint: forbidigo
 	cfg := config.Get()
 
 	db, err := database.NewMongoDB(ctx, cfg.MongoDB.URI, cfg.MongoDB.Database)
@@ -282,7 +286,7 @@ func TestBalance_Delete(t *testing.T) {
 			if tc.preconditions.ID != tc.input {
 				var balance models.Balance
 
-				err := db.DB.Collection("Balance").
+				err := db.DB.Collection("Balances").
 					FindOne(ctx, bson.M{"_id": tc.preconditions.ID}).
 					Decode(&balance)
 

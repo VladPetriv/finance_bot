@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/VladPetriv/finance_bot/internal/models"
 	"github.com/VladPetriv/finance_bot/pkg/bot"
 	"github.com/VladPetriv/finance_bot/pkg/logger"
 )
@@ -14,6 +15,7 @@ type eventService struct {
 	botAPI         bot.API
 	logger         *logger.Logger
 	handlerService HandlerService
+	stateService   StateService
 }
 
 var _ EventService = (*eventService)(nil)
@@ -23,6 +25,7 @@ type EventOptions struct {
 	BotAPI         bot.API
 	Logger         *logger.Logger
 	HandlerService HandlerService
+	StateService   StateService
 }
 
 // NewEvent returns new instance of event service.
@@ -31,20 +34,21 @@ func NewEvent(opts *EventOptions) *eventService {
 		botAPI:         opts.BotAPI,
 		logger:         opts.Logger,
 		handlerService: opts.HandlerService,
+		stateService:   opts.StateService,
 	}
 }
 
-func (e eventService) Listen(ctx context.Context, updates chan []byte, errs chan error) {
-	logger := e.logger
+func (e eventService) Listen(ctx context.Context) {
+	logger := e.logger.With().Str("name", "eventService.Listen").Logger()
 
-	go e.botAPI.ReadUpdates(updates, errs)
+	updatesCH := make(chan []byte)
+	errorsCH := make(chan error)
 
-	var eventName, previousEventName event
-	var previousEventInputCount, previousEventMaxInputCount int
+	go e.botAPI.ReadUpdates(updatesCH, errorsCH)
 
 	for {
 		select {
-		case update := <-updates:
+		case update := <-updatesCH:
 			var msg botMessage
 
 			err := json.Unmarshal(update, &msg)
@@ -55,35 +59,15 @@ func (e eventService) Listen(ctx context.Context, updates chan []byte, errs chan
 			}
 			logger.Debug().Interface("msg", msg).Msg("unmarshalled incoming update data")
 
-			//  Exceeded max input count, we need to reset all fields related to previous event
-			if previousEventInputCount == previousEventMaxInputCount+1 {
-				logger.Info().Msg("exceeded max input count, reset all related data to previous event")
-				previousEventName = ""
-				previousEventInputCount = 0
-				previousEventMaxInputCount = 0
+			stateOutput, err := e.stateService.HandleState(ctx, msg)
+			if err != nil {
+				logger.Error().Err(err).Msg("handle state")
+
+				continue
 			}
 
-			// No need to get new event name if previous one was not processed to the end
-			if previousEventName == "" {
-				eventName = e.getEventNameFromMsg(&msg)
-				logger.Info().Interface("eventName", eventName).Msg("got event from message")
-			}
-
-			eventMaxInputCount, ok := eventsWithInput[eventName]
-			if ok {
-				logger.Info().Interface("eventName", eventName).Msg("got event with input")
-				previousEventName = eventName
-				previousEventMaxInputCount = eventMaxInputCount
-			}
-
-			// Need to process all input for previous event
-			if previousEventName != "" && previousEventInputCount <= previousEventMaxInputCount {
-				logger.Info().Msg("increase input count for previous event")
-				eventName = previousEventName
-				previousEventInputCount++
-			}
-
-			err = e.ReactOnEvent(ctx, eventName, msg)
+			ctx = context.WithValue(ctx, contextFieldNameState, stateOutput.State)
+			err = e.ReactOnEvent(ctx, stateOutput.Event, msg)
 			if err != nil {
 				logger.Error().Err(err).Msg("react on event")
 
@@ -92,18 +76,18 @@ func (e eventService) Listen(ctx context.Context, updates chan []byte, errs chan
 					logger.Error().Err(err).Msg("react on event")
 				}
 			}
-		case err := <-errs:
+		case err := <-errorsCH:
 			logger.Error().Err(err).Msg("read updates")
 		}
 	}
 }
 
-func (e eventService) getEventNameFromMsg(msg *botMessage) event {
-	if !strings.Contains(strings.Join(availableCommands, " "), msg.Message.Text) {
-		return unknownEvent
+func getEventFromMsg(msg *botMessage) models.Event {
+	if !strings.Contains(strings.Join(models.AvailableCommands, " "), msg.Message.Text) {
+		return models.UnknownEvent
 	}
-	if !strings.Contains(strings.Join(availableCommands, " "), msg.CallbackQuery.Data) {
-		return unknownEvent
+	if !strings.Contains(strings.Join(models.AvailableCommands, " "), msg.CallbackQuery.Data) {
+		return models.UnknownEvent
 	}
 
 	textToCheck := msg.Message.Text
@@ -112,98 +96,105 @@ func (e eventService) getEventNameFromMsg(msg *botMessage) event {
 		textToCheck = msg.CallbackQuery.Data
 	}
 
-	for _, c := range availableCommands {
+	for _, c := range models.AvailableCommands {
 		if strings.Contains(c, textToCheck) {
-			if eventFromCommand, ok := commandToEvent[c]; ok {
+			if eventFromCommand, ok := models.CommandToEvent[c]; ok {
 				return eventFromCommand
 			}
 		}
 	}
 
-	return unknownEvent
+	return models.UnknownEvent
 }
 
-func (e eventService) ReactOnEvent(ctx context.Context, eventName event, msg botMessage) error {
+func (e eventService) ReactOnEvent(ctx context.Context, event models.Event, msg botMessage) error {
 	logger := e.logger
 	logger.Debug().
-		Interface("eventName", eventName).
+		Interface("event", event).
 		Interface("msg", msg).
 		Msg("got args")
 
-	switch eventName {
-	case startEvent:
+	switch event {
+	case models.StartEvent:
 		err := e.handlerService.HandleEventStart(ctx, msg)
 		if err != nil {
 			logger.Error().Err(err).Msg("handle event start")
 			return fmt.Errorf("handle event start: %w", err)
 		}
 
-	case unknownEvent:
+	case models.CreateBalanceEvent:
+		err := e.handlerService.HandleEventBalanceCreated(ctx, msg)
+		if err != nil {
+			logger.Error().Err(err).Msg("handle event balance created")
+			return fmt.Errorf("handle event balance created: %w", err)
+		}
+
+	case models.UnknownEvent:
 		err := e.handlerService.HandleEventUnknown(msg)
 		if err != nil {
 			logger.Error().Err(err).Msg("handle event unknown")
 			return fmt.Errorf("handle event event unknown: %w", err)
 		}
 
-	case backEvent:
-		err := e.handlerService.HandleEventBack(ctx, msg)
-		if err != nil {
-			logger.Error().Err(err).Msg("handle event back")
-			return fmt.Errorf("handle event back: %w", err)
-		}
+	// case models.BackEvent:
+	// 	err := e.handlerService.HandleEventBack(ctx, msg)
+	// 	if err != nil {
+	// 		logger.Error().Err(err).Msg("handle event back")
+	// 		return fmt.Errorf("handle event back: %w", err)
+	// 	}
 
-	case createCategoryEvent:
-		err := e.handlerService.HandleEventCategoryCreate(ctx, msg)
-		if err != nil {
-			logger.Error().Err(err).Msg("handle event category create")
-			return fmt.Errorf("handle event category create: %w", err)
-		}
+	// case createCategoryEvent:
+	// 	err := e.handlerService.HandleEventCategoryCreate(ctx, msg)
+	// 	if err != nil {
+	// 		logger.Error().Err(err).Msg("handle event category create")
+	// 		return fmt.Errorf("handle event category create: %w", err)
+	// 	}
 
-	case listCategoryEvent:
-		err := e.handlerService.HandleEventListCategories(ctx, msg)
-		if err != nil {
-			logger.Error().Err(err).Msg("handle event list categories")
-			return fmt.Errorf("handle event list categories: %w", err)
-		}
+	// case listCategoryEvent:
+	// 	err := e.handlerService.HandleEventListCategories(ctx, msg)
+	// 	if err != nil {
+	// 		logger.Error().Err(err).Msg("handle event list categories")
+	// 		return fmt.Errorf("handle event list categories: %w", err)
+	// 	}
 
-	case updateBalanceEvent, updateBalanceAmountEvent, updateBalanceCurrencyEvent:
-		err := e.handlerService.HandleEventUpdateBalance(ctx, eventName, msg)
-		if err != nil {
-			logger.Error().Err(err).Msg("handle event update balance")
-			return fmt.Errorf("handle event update balance: %w", err)
-		}
+	// case updateBalanceEvent, updateBalanceAmountEvent, updateBalanceCurrencyEvent:
+	// 	err := e.handlerService.HandleEventUpdateBalance(ctx, eventName, msg)
+	// 	if err != nil {
+	// 		logger.Error().Err(err).Msg("handle event update balance")
+	// 		return fmt.Errorf("handle event update balance: %w", err)
+	// 	}
 
-	case getBalanceEvent:
-		err := e.handlerService.HandleEventGetBalance(ctx, msg)
-		if err != nil {
-			logger.Error().Err(err).Msg("handle event get balance")
-			return fmt.Errorf("handle event get balance: %w", err)
-		}
+	// case getBalanceEvent:
+	// 	err := e.handlerService.HandleEventGetBalance(ctx, msg)
+	// 	if err != nil {
+	// 		logger.Error().Err(err).Msg("handle event get balance")
+	// 		return fmt.Errorf("handle event get balance: %w", err)
+	// 	}
 
-	case createOperationEvent, createIncomingOperationEvent, createSpendingOperationEvent:
-		err := e.handlerService.HandleEventOperationCreate(ctx, eventName, msg)
-		if err != nil {
-			logger.Error().Err(err).Msg("handle event operation create")
-			return fmt.Errorf("handle event operation create: %w", err)
-		}
+	// case createOperationEvent, createIncomingOperationEvent, createSpendingOperationEvent:
+	// 	err := e.handlerService.HandleEventOperationCreate(ctx, eventName, msg)
+	// 	if err != nil {
+	// 		logger.Error().Err(err).Msg("handle event operation create")
+	// 		return fmt.Errorf("handle event operation create: %w", err)
+	// 	}
 
-	case updateOperationAmountEvent:
-		err := e.handlerService.HandleEventUpdateOperationAmount(ctx, msg)
-		if err != nil {
-			logger.Error().Err(err).Msg("handle event update operation amount")
-			return fmt.Errorf("handle event update operation amount: %w", err)
-		}
+	// case updateOperationAmountEvent:
+	// 	err := e.handlerService.HandleEventUpdateOperationAmount(ctx, msg)
+	// 	if err != nil {
+	// 		logger.Error().Err(err).Msg("handle event update operation amount")
+	// 		return fmt.Errorf("handle event update operation amount: %w", err)
+	// 	}
 
-	case getOperationsHistoryEvent:
-		err := e.handlerService.HandleEventGetOperationsHistory(ctx, msg)
-		if err != nil {
-			logger.Error().Err(err).Msg("handle event get operations history")
-			return fmt.Errorf("handle event get operations history: %w", err)
-		}
+	// case getOperationsHistoryEvent:
+	// 	err := e.handlerService.HandleEventGetOperationsHistory(ctx, msg)
+	// 	if err != nil {
+	// 		logger.Error().Err(err).Msg("handle event get operations history")
+	// 		return fmt.Errorf("handle event get operations history: %w", err)
+	// 	}
 
 	default:
-		logger.Warn().Interface("eventName", eventName).Msg("receive unexpected event")
-		return fmt.Errorf("receive unexpected event: %v", eventName)
+		logger.Warn().Interface("event", event).Msg("receive unexpected event")
+		return fmt.Errorf("receive unexpected event: %v", event)
 	}
 
 	return nil

@@ -6,6 +6,7 @@ import (
 
 	"github.com/VladPetriv/finance_bot/config"
 	"github.com/VladPetriv/finance_bot/internal/models"
+	"github.com/VladPetriv/finance_bot/internal/service"
 	"github.com/VladPetriv/finance_bot/internal/store"
 	"github.com/VladPetriv/finance_bot/pkg/database"
 	"github.com/google/uuid"
@@ -62,7 +63,7 @@ func TestUser_Create(t *testing.T) {
 			}
 
 			t.Cleanup(func() {
-				_, err := userStore.DB.Collection("User").DeleteOne(ctx, bson.M{"_id": tc.input.ID})
+				_, err := userStore.DB.Collection("Users").DeleteOne(ctx, bson.M{"_id": tc.input.ID})
 				assert.NoError(t, err)
 			})
 
@@ -76,7 +77,7 @@ func TestUser_Create(t *testing.T) {
 	}
 }
 
-func TestUser_GetByUsername(t *testing.T) {
+func TestUser_Get(t *testing.T) {
 	t.Parallel()
 
 	ctx := context.Background() //nolint: forbidigo
@@ -85,30 +86,66 @@ func TestUser_GetByUsername(t *testing.T) {
 	db, err := database.NewMongoDB(ctx, cfg.MongoDB.URI, cfg.MongoDB.Database)
 	require.NoError(t, err)
 	userStore := store.NewUser(db)
+	balanceStore := store.NewBalance(db)
 
-	userID := uuid.NewString()
+	userID, userID2, balanceID := uuid.NewString(), uuid.NewString(), uuid.NewString()
 
 	testCases := []struct {
 		desc          string
 		preconditions *models.User
-		input         string
+		input         service.GetUserFilter
 		expected      *models.User
 	}{
 		{
-			desc: "positive: user found",
+			desc: "positive: user by username found",
 			preconditions: &models.User{
 				ID:       userID,
 				Username: "test",
 			},
-			input: "test",
+			input: service.GetUserFilter{
+				Username: "test",
+			},
 			expected: &models.User{
 				ID:       userID,
 				Username: "test",
 			},
 		},
 		{
-			desc:     "negative: user not found",
-			input:    "not_found",
+			desc: "positive: user with balance preload by username found",
+			preconditions: &models.User{
+				ID:       userID2,
+				Username: "test2",
+				Balances: []models.Balance{
+					{
+						ID:       balanceID,
+						UserID:   userID2,
+						Amount:   "10",
+						Currency: "$",
+					},
+				},
+			},
+			input: service.GetUserFilter{
+				Username:        "test2",
+				PreloadBalances: true,
+			},
+			expected: &models.User{
+				ID:       userID2,
+				Username: "test2",
+				Balances: []models.Balance{
+					{
+						ID:       balanceID,
+						UserID:   userID2,
+						Amount:   "10",
+						Currency: "$",
+					},
+				},
+			},
+		},
+		{
+			desc: "negative: user not found",
+			input: service.GetUserFilter{
+				Username: "not_found_user_test",
+			},
 			expected: nil,
 		},
 	}
@@ -120,18 +157,47 @@ func TestUser_GetByUsername(t *testing.T) {
 			if tc.preconditions != nil {
 				err := userStore.Create(ctx, tc.preconditions)
 				assert.NoError(t, err)
+
+				if len(tc.preconditions.Balances) != 0 {
+					for _, balance := range tc.preconditions.Balances {
+						balance.UserID = tc.preconditions.ID
+						err = balanceStore.Create(ctx, &balance)
+						require.NoError(t, err)
+					}
+				}
 			}
 
 			t.Cleanup(func() {
 				if tc.preconditions != nil {
-					_, err := userStore.DB.Collection("User").DeleteOne(ctx, bson.M{"_id": tc.preconditions.ID})
+					_, err := userStore.DB.Collection("Users").DeleteOne(ctx, bson.M{"_id": tc.preconditions.ID})
 					assert.NoError(t, err)
+
+					if len(tc.preconditions.Balances) != 0 {
+						for _, balance := range tc.preconditions.Balances {
+							_, err := balanceStore.DB.Collection("Balance").DeleteOne(ctx, bson.M{"_id": balance.ID})
+							assert.NoError(t, err)
+						}
+					}
 				}
 			})
 
-			actual, err := userStore.GetByUsername(ctx, tc.input)
+			actual, err := userStore.Get(ctx, tc.input)
 			assert.NoError(t, err)
-			assert.Equal(t, tc.expected, actual)
+
+			if tc.preconditions != nil {
+				assert.Equal(t, tc.expected.ID, actual.ID)
+				assert.Equal(t, tc.expected.Username, actual.Username)
+
+				// NOTE: We don't care about balances order, since in all test cases we have only one balance.
+				for i := 0; i < len(tc.expected.Balances); i++ {
+					assert.Equal(t, tc.expected.Balances[i].ID, actual.Balances[i].ID)
+					assert.Equal(t, tc.expected.Balances[i].UserID, actual.Balances[i].UserID)
+					assert.Equal(t, tc.expected.Balances[i].Amount, actual.Balances[i].Amount)
+					assert.Equal(t, tc.expected.Balances[i].Currency, actual.Balances[i].Currency)
+				}
+			} else {
+				assert.Nil(t, actual)
+			}
 		})
 	}
 }

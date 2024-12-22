@@ -66,8 +66,10 @@ func TestOperation_Create(t *testing.T) {
 			}
 
 			t.Cleanup(func() {
-				err = operationStore.Delete(ctx, tc.input.ID)
-				assert.NoError(t, err)
+				if tc.preconditions != nil {
+					err = operationStore.Delete(ctx, tc.input.ID)
+					assert.NoError(t, err)
+				}
 			})
 
 			err := operationStore.Create(ctx, tc.input)
@@ -212,7 +214,7 @@ func TestOperation_GetAll(t *testing.T) {
 			}
 
 			t.Cleanup(func() {
-				_, err := operationStore.DB.Collection("Operation").DeleteMany(ctx, bson.M{"balanceId": tc.input.balanceID})
+				_, err := operationStore.DB.Collection("Operations").DeleteMany(ctx, bson.M{"balanceId": tc.input.balanceID})
 				assert.NoError(t, err)
 			})
 
@@ -289,7 +291,7 @@ func TestOperation_Delete(t *testing.T) {
 			if tc.preconditions.ID != tc.input {
 				var operation models.Operation
 
-				err := db.DB.Collection("Operation").
+				err := db.DB.Collection("Operations").
 					FindOne(ctx, bson.M{"_id": tc.preconditions.ID}).
 					Decode(&operation)
 

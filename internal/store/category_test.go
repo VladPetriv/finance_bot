@@ -217,7 +217,7 @@ func TestCategory_Delete(t *testing.T) {
 			if tc.preconditions.ID != tc.input {
 				var category models.Category
 
-				err := db.DB.Collection("Category").
+				err := db.DB.Collection("Categories").
 					FindOne(ctx, bson.M{"_id": tc.preconditions.ID}).
 					Decode(&category)
 

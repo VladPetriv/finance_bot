@@ -2,7 +2,7 @@ package store
 
 import (
 	"context"
-	"errors"
+	"fmt"
 
 	"github.com/VladPetriv/finance_bot/internal/models"
 	"github.com/VladPetriv/finance_bot/internal/service"
@@ -17,7 +17,7 @@ type userStore struct {
 
 var _ service.UserStore = (*userStore)(nil)
 
-var collectionUser = "User"
+var collectionUser = "Users"
 
 // NewUser returns new instance of user store.
 func NewUser(db *database.MongoDB) *userStore {
@@ -35,17 +35,51 @@ func (u userStore) Create(ctx context.Context, user *models.User) error {
 	return nil
 }
 
-func (u userStore) GetByUsername(ctx context.Context, username string) (*models.User, error) {
-	var user models.User
+func (u userStore) Get(ctx context.Context, filter service.GetUserFilter) (*models.User, error) {
+	stmt := bson.M{}
 
-	err := u.DB.Collection(collectionUser).FindOne(ctx, bson.M{"username": username}).Decode(&user)
+	if filter.Username != "" {
+		stmt["username"] = filter.Username
+	}
+
+	pipeLine := mongo.Pipeline{
+		bson.D{{Key: "$match", Value: stmt}},
+	}
+
+	if filter.PreloadBalances {
+		pipeLine = append(pipeLine, bson.D{
+			{
+				Key: "$lookup",
+				Value: bson.M{
+					"from":         collectionBalance,
+					"localField":   "_id",
+					"foreignField": "userId",
+					"as":           "balances",
+				},
+			},
+		})
+	}
+
+	cursor, err := u.DB.Collection(collectionUser).Aggregate(ctx, pipeLine)
 	if err != nil {
-		if errors.Is(err, mongo.ErrNoDocuments) {
-			return nil, nil
+		return nil, err
+	}
+	defer func() {
+		err := cursor.Close(ctx)
+		if err != nil {
+			fmt.Printf("error closing cursor: %v", err)
 		}
+	}()
 
+	var matches []models.User
+	err = cursor.All(ctx, &matches)
+	if err != nil {
 		return nil, err
 	}
 
-	return &user, nil
+	if len(matches) == 0 {
+		return nil, nil
+	}
+
+	return &matches[0], nil
 }

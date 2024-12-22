@@ -33,37 +33,42 @@ func Run(ctx context.Context, cfg *config.Config, logger *logger.Logger) {
 		User:      store.NewUser(mongoDB),
 		Balance:   store.NewBalance(mongoDB),
 		Operation: store.NewOperation(mongoDB),
+		State:     store.NewState(mongoDB),
 	}
 
 	messageService := service.NewMessage(botAPI, logger)
 	keyboardService := service.NewKeyboard(botAPI, logger)
 	categoryService := service.NewCategory(logger, stores.Category)
-	userService := service.NewUser(logger, stores.User)
 	balanceService := service.NewBalance(logger, stores.Balance)
+	stateService := service.NewState(&service.StateOptions{
+		Logger: logger,
+		Stores: stores,
+	})
 	operationService := service.NewOperation(logger, stores.Operation, stores.Balance, stores.Category)
 
+	services := service.Services{
+		Message:   messageService,
+		Keyboard:  keyboardService,
+		Category:  categoryService,
+		Balance:   balanceService,
+		Operation: operationService,
+		State:     stateService,
+	}
+
 	handlerService := service.NewHandler(&service.HandlerOptions{
-		Logger:           logger,
-		MessageService:   messageService,
-		KeyboardService:  keyboardService,
-		CategoryService:  categoryService,
-		UserService:      userService,
-		BalanceStore:     stores.Balance,
-		BalanceService:   balanceService,
-		OperationService: operationService,
-		OperationStore:   stores.Operation,
-		CategoryStore:    stores.Category,
+		Logger:   logger,
+		Services: services,
+		Stores:   stores,
 	})
+
 	eventService := service.NewEvent(&service.EventOptions{
 		BotAPI:         botAPI,
 		Logger:         logger,
 		HandlerService: handlerService,
+		StateService:   stateService,
 	})
 
-	errs := make(chan error)
-	updates := make(chan []byte)
-
-	go eventService.Listen(ctx, updates, errs)
+	go eventService.Listen(ctx)
 	logger.Info().Msg("application started")
 
 	signals := make(chan os.Signal, 1)

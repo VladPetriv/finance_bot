@@ -12,6 +12,7 @@ type Stores struct {
 	Operation OperationStore
 	Category  CategoryStore
 	User      UserStore
+	State     StateStore
 }
 
 // UserStore provides functionality for work with users store.
@@ -21,7 +22,13 @@ type UserStore interface {
 	// Create creates a new user in store.
 	Create(ctx context.Context, user *models.User) error
 	// GetByUsername returns a user from store by username.
-	GetByUsername(ctx context.Context, username string) (*models.User, error)
+	Get(ctx context.Context, filtera GetUserFilter) (*models.User, error)
+}
+
+// GetUserFilter represents a filters for GetUser method.
+type GetUserFilter struct {
+	Username        string
+	PreloadBalances bool
 }
 
 // BalanceStore provides functionality for work with balance store.
@@ -31,11 +38,17 @@ type BalanceStore interface {
 	// Create creates a new balance in store.
 	Create(ctx context.Context, balance *models.Balance) error
 	// Get returns a balance from store by user id.
-	Get(ctx context.Context, userID string) (*models.Balance, error)
+	Get(ctx context.Context, filter GetBalanceFilter) (*models.Balance, error)
 	// Update updates balance model in store.
 	Update(ctx context.Context, balance *models.Balance) error
 	// Delete deletes balance from store.
 	Delete(ctx context.Context, balanceID string) error
+}
+
+// GetBalanceFilter represents a filters for GetBalance method.
+type GetBalanceFilter struct {
+	UserID    string
+	BalanceID string
 }
 
 // OperationStore provides functionality for work with operation store.
@@ -81,4 +94,21 @@ type GetALlCategoriesFilter struct {
 type GetCategoryFilter struct {
 	Title *string
 	ID    *string
+}
+
+// StateStore represents a store for user states.
+type StateStore interface {
+	// Create creates a new state in store.
+	Create(ctx context.Context, state *models.State) error
+	// Get returns a state from store by user id.
+	Get(ctx context.Context, filter GetStateFilter) (*models.State, error)
+	// Update updates state model in store.
+	Update(ctx context.Context, state *models.State) (*models.State, error)
+	// Delete deletes state from store.
+	Delete(ctx context.Context, ID string) error
+}
+
+// GetStateFilter represents a filters for StateStore.Get method.
+type GetStateFilter struct {
+	UserID string
 }
