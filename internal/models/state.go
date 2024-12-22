@@ -4,6 +4,7 @@ import (
 	"time"
 )
 
+// State represents the current state of a user's interaction with the bot
 type State struct {
 	ID     string `bson:"_id"`
 	UserID string `bson:"userId"`
@@ -17,16 +18,19 @@ type State struct {
 	UpdatedAt time.Time `bson:"updatedAt"`
 }
 
+// GetCurrentStep returns the current step in the flow
 func (s *State) GetCurrentStep() FlowStep {
 	return s.Steps[len(s.Steps)-1]
 }
 
+// IsFlowFinished checks if the current flow has reached its end
 func (s *State) IsFlowFinished() bool {
 	return s.Steps[len(s.Steps)-1] == EndFlowStep
 }
 
 const indexOfInitialFlowStep = 1
 
+// GetEvent determines the current event based on the flow state
 func (s *State) GetEvent() Event {
 	if len(s.Steps) < 2 {
 		return UnknownEvent
@@ -45,24 +49,33 @@ func (s *State) GetEvent() Event {
 	}
 }
 
+// Flow represents the type of interaction flow currently active
 type Flow string
 
 const (
-	StartFlow         Flow = "start"
+	// StartFlow represents the initial flow when starting the bot
+	StartFlow Flow = "start"
+	// CreateBalanceFlow represents the flow for creating a new balance
 	CreateBalanceFlow Flow = "create_balance"
 )
 
+// FlowStep represents a specific step within a flow
 type FlowStep string
 
 const (
-	// Common flow steps
+	// StartFlowStep represents the initial step of any flow
 	StartFlowStep FlowStep = "start"
-	EndFlowStep   FlowStep = "end"
+	// EndFlowStep represents the final step of any flow
+	EndFlowStep FlowStep = "end"
 
-	// Balance flow steps
+	// CreateInitialBalanceFlowStep represents the step for creating the first balance
 	CreateInitialBalanceFlowStep FlowStep = "create_initial_balance"
-	CreateBalanceFlowStep        FlowStep = "create_balance"
-	EnterBalanceNameFlowStep     FlowStep = "enter_balance_name"
+	// CreateBalanceFlowStep represents the step for creating additional balances
+	CreateBalanceFlowStep FlowStep = "create_balance"
+	// EnterBalanceNameFlowStep represents the step for entering balance name
+	EnterBalanceNameFlowStep FlowStep = "enter_balance_name"
+	// EnterBalanceCurrencyFlowStep represents the step for entering balance currency
 	EnterBalanceCurrencyFlowStep FlowStep = "enter_balance_currency"
-	EnterBalanceAmountFlowStep   FlowStep = "enter_balance_amount"
+	// EnterBalanceAmountFlowStep represents the step for entering balance amount
+	EnterBalanceAmountFlowStep FlowStep = "enter_balance_amount"
 )

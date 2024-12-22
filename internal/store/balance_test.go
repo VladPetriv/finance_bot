@@ -24,7 +24,7 @@ var (
 func TestBalance_Get(t *testing.T) {
 	t.Parallel()
 
-	ctx := context.TODO()
+	ctx := context.Background() //nolint: forbidigo
 	cfg := config.Get()
 
 	db, err := database.NewMongoDB(ctx, cfg.MongoDB.URI, cfg.MongoDB.Database)
@@ -86,10 +86,11 @@ func TestBalance_Get(t *testing.T) {
 		})
 	}
 }
+
 func TestBalance_Create(t *testing.T) {
 	t.Parallel()
 
-	ctx := context.TODO() //nolint: forbidigo
+	ctx := context.Background() //nolint: forbidigo
 	cfg := config.Get()
 
 	db, err := database.NewMongoDB(ctx, cfg.MongoDB.URI, cfg.MongoDB.Database)
@@ -150,7 +151,7 @@ func TestBalance_Create(t *testing.T) {
 func TestBalance_Update(t *testing.T) {
 	t.Parallel()
 
-	ctx := context.TODO() //nolint: forbidigo
+	ctx := context.Background() //nolint: forbidigo
 	cfg := config.Get()
 
 	db, err := database.NewMongoDB(ctx, cfg.MongoDB.URI, cfg.MongoDB.Database)
@@ -234,7 +235,7 @@ func TestBalance_Update(t *testing.T) {
 func TestBalance_Delete(t *testing.T) {
 	t.Parallel()
 
-	ctx := context.TODO() //nolint: forbidigo
+	ctx := context.Background() //nolint: forbidigo
 	cfg := config.Get()
 
 	db, err := database.NewMongoDB(ctx, cfg.MongoDB.URI, cfg.MongoDB.Database)

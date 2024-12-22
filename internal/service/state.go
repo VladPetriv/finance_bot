@@ -17,11 +17,13 @@ type stateService struct {
 
 var _ StateService = (*stateService)(nil)
 
+// StateOptions represents input options for creating new instance of state service.
 type StateOptions struct {
 	Logger *logger.Logger
 	Stores Stores
 }
 
+// NewState returns new instance of state service.
 func NewState(opts *StateOptions) *stateService {
 	return &stateService{
 		logger: opts.Logger,
@@ -74,7 +76,6 @@ func (s stateService) HandleState(ctx context.Context, message botMessage) (*Han
 	// If we're not able to define the event based on message text and flow is not finished yet
 	// we should return the same state, since current flow is not finished and myabe we process other steps.
 	if event == models.UnknownEvent && !state.IsFlowFinished() {
-		logger.Debug().Msg("got throught first case")
 		return &HandleStateOutput{
 			State: state,
 			Event: state.GetEvent(),
@@ -84,8 +85,6 @@ func (s stateService) HandleState(ctx context.Context, message botMessage) (*Han
 	// Received from database state is with finished flow and event that was received from message is not uknown.
 	// We should delete current stateand create new one with initial flow step.
 	if event != models.UnknownEvent && state.IsFlowFinished() {
-
-		logger.Debug().Msg("got throught second case")
 		err := s.stores.State.Delete(ctx, state.ID)
 		if err != nil {
 			logger.Error().Err(err).Msg("delete state from store")

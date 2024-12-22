@@ -45,6 +45,7 @@ type BalanceStore interface {
 	Delete(ctx context.Context, balanceID string) error
 }
 
+// GetBalanceFilter represents a filters for GetBalance method.
 type GetBalanceFilter struct {
 	UserID    string
 	BalanceID string
@@ -103,7 +104,7 @@ type StateStore interface {
 	Get(ctx context.Context, filter GetStateFilter) (*models.State, error)
 	// Update updates state model in store.
 	Update(ctx context.Context, state *models.State) (*models.State, error)
-	//Delete deletes state from store.
+	// Delete deletes state from store.
 	Delete(ctx context.Context, ID string) error
 }
 

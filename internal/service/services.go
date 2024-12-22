@@ -62,6 +62,10 @@ type EventService interface {
 	ReactOnEvent(ctx context.Context, eventName models.Event, msg botMessage) error
 }
 
+type contextFieldName string
+
+const contextFieldNameState contextFieldName = "state"
+
 type botMessage struct {
 	Message struct {
 		Chat chat   `json:"chat"`

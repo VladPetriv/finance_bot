@@ -43,7 +43,7 @@ func (h handlerService) HandleEventStart(ctx context.Context, msg botMessage) er
 
 	var nextStep models.FlowStep
 	defer func() {
-		state := ctx.Value("state").(*models.State)
+		state := ctx.Value(contextFieldNameState).(*models.State)
 		state.Steps = append(state.Steps, nextStep)
 		updatedState, err := h.stores.State.Update(ctx, state)
 		if err != nil {
@@ -122,10 +122,9 @@ func (h handlerService) HandleEventBalanceCreated(ctx context.Context, msg botMe
 	logger.Debug().Interface("msg", msg).Msg("got args")
 
 	var nextStep models.FlowStep
-
-	stateMetaData := ctx.Value("state").(*models.State).Metedata
+	stateMetaData := ctx.Value(contextFieldNameState).(*models.State).Metedata
 	defer func() {
-		state := ctx.Value("state").(*models.State)
+		state := ctx.Value(contextFieldNameState).(*models.State)
 		state.Steps = append(state.Steps, nextStep)
 		state.Metedata = stateMetaData
 		updatedState, err := h.stores.State.Update(ctx, state)
@@ -136,7 +135,7 @@ func (h handlerService) HandleEventBalanceCreated(ctx context.Context, msg botMe
 		logger.Debug().Interface("updatedState", updatedState).Msg("updated state in store")
 	}()
 
-	currentStep := ctx.Value("state").(*models.State).GetCurrentStep()
+	currentStep := ctx.Value(contextFieldNameState).(*models.State).GetCurrentStep()
 
 	user, err := h.stores.User.Get(ctx, GetUserFilter{
 		Username: msg.GetUsername(),
@@ -296,7 +295,6 @@ func (h handlerService) updateBalance(ctx context.Context, opts updateBalanceOpt
 	}
 
 	return nil
-
 }
 
 func (h handlerService) HandleEventCategoryCreate(ctx context.Context, msg botMessage) error {

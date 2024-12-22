@@ -66,7 +66,7 @@ func (e eventService) Listen(ctx context.Context) {
 				continue
 			}
 
-			ctx = context.WithValue(ctx, "state", stateOutput.State)
+			ctx = context.WithValue(ctx, contextFieldNameState, stateOutput.State)
 			err = e.ReactOnEvent(ctx, stateOutput.Event, msg)
 			if err != nil {
 				logger.Error().Err(err).Msg("react on event")

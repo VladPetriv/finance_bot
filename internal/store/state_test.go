@@ -20,7 +20,7 @@ import (
 func TestState_Create(t *testing.T) {
 	t.Parallel()
 
-	ctx := context.Background()
+	ctx := context.Background() //nolint: forbidigo
 	cfg := config.Get()
 
 	db, err := database.NewMongoDB(ctx, cfg.MongoDB.URI, cfg.MongoDB.Database)
@@ -92,7 +92,7 @@ func TestState_Create(t *testing.T) {
 func TestState_Get(t *testing.T) {
 	t.Parallel()
 
-	ctx := context.Background()
+	ctx := context.Background() //nolint: forbidigo
 	cfg := config.Get()
 
 	db, err := database.NewMongoDB(ctx, cfg.MongoDB.URI, cfg.MongoDB.Database)
@@ -173,7 +173,7 @@ func TestState_Get(t *testing.T) {
 func TestState_Update(t *testing.T) {
 	t.Parallel()
 
-	ctx := context.Background()
+	ctx := context.Background() //nolint: forbidigo
 	cfg := config.Get()
 
 	db, err := database.NewMongoDB(ctx, cfg.MongoDB.URI, cfg.MongoDB.Database)
