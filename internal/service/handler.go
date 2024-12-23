@@ -228,13 +228,33 @@ func (h *handlerService) handleCreateBalanceFlowStep(ctx context.Context, opts h
 		return fmt.Errorf("create balance in store: %w", err)
 	}
 
-	var outputText string
+	var (
+		outputText          string
+		sendDefaultKeyboard bool
+	)
+
 	switch opts.isInitial {
 	case true:
 		outputText = "Initial balance successfully created!"
+		sendDefaultKeyboard = true
 	case false:
 		outputText = "Please enter balance name!"
 		opts.metadata["balanceID"] = balanceID
+	}
+
+	if sendDefaultKeyboard {
+		err = h.services.Keyboard.CreateKeyboard(&CreateKeyboardOptions{
+			ChatID:  opts.msg.GetChatID(),
+			Message: outputText,
+			Type:    keyboardTypeRow,
+			Rows:    defaultKeyboardRows,
+		})
+		if err != nil {
+			logger.Error().Err(err).Msg("create keyboard with welcome message")
+			return fmt.Errorf("create keyboard with welcome message: %w", err)
+		}
+
+		return nil
 	}
 
 	err = h.services.Message.SendMessage(&SendMessageOptions{
