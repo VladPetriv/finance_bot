@@ -65,6 +65,7 @@ func (e eventService) Listen(ctx context.Context) {
 
 				continue
 			}
+			logger.Debug().Any("stateOutput", stateOutput).Msg("handled request state")
 
 			ctx = context.WithValue(ctx, contextFieldNameState, stateOutput.State)
 			err = e.ReactOnEvent(ctx, stateOutput.Event, msg)
@@ -108,11 +109,7 @@ func getEventFromMsg(msg *botMessage) models.Event {
 }
 
 func (e eventService) ReactOnEvent(ctx context.Context, event models.Event, msg botMessage) error {
-	logger := e.logger
-	logger.Debug().
-		Interface("event", event).
-		Interface("msg", msg).
-		Msg("got args")
+	logger := e.logger.With().Str("name", "eventService.ReactOnEvent").Logger()
 
 	switch event {
 	case models.StartEvent:
