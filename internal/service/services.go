@@ -29,9 +29,10 @@ type HandlerService interface {
 
 	// HandleEventStart is used to handle event start.
 	HandleEventStart(ctx context.Context, msg botMessage) error
-
 	// HandleEventBalanceCreated is used to handle update balance event.
 	HandleEventBalanceCreated(ctx context.Context, msg botMessage) error
+	// HandleEventBalanceUpdated is used to handle update balance event.
+	HandleEventBalanceUpdated(ctx context.Context, msg botMessage) error
 
 	// HandleEventListCategories is used to handle update balance event.
 	HandleEventUpdateBalance(ctx context.Context, eventName event, msg botMessage) error
@@ -193,16 +194,7 @@ const (
 
 var defaultKeyboardRows = []bot.KeyboardRow{
 	{
-		Buttons: []string{models.BotCreateCategoryCommand, models.BotListCategoriesCommand},
-	},
-	{
-		Buttons: []string{models.BotGetBalanceCommand, models.BotUpdateBalanceCommand},
-	},
-	{
-		Buttons: []string{models.BotCreateOperationCommand, models.BotGetOperationsHistory},
-	},
-	{
-		Buttons: []string{models.BotCreateBalanceCommand},
+		Buttons: []string{models.BotCreateBalanceCommand, models.BotUpdateBalanceCommand},
 	},
 }
 

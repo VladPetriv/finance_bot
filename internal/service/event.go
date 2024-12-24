@@ -126,6 +126,13 @@ func (e eventService) ReactOnEvent(ctx context.Context, event models.Event, msg 
 			return fmt.Errorf("handle event balance created: %w", err)
 		}
 
+	case models.UpdateBalanceEvent:
+		err := e.handlerService.HandleEventBalanceUpdated(ctx, msg)
+		if err != nil {
+			logger.Error().Err(err).Msg("handle event balance created")
+			return fmt.Errorf("handle event balance created: %w", err)
+		}
+
 	case models.UnknownEvent:
 		err := e.handlerService.HandleEventUnknown(msg)
 		if err != nil {
