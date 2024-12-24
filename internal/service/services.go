@@ -15,7 +15,6 @@ type Services struct {
 	Handler   HandlerService
 	Message   MessageService
 	Keyboard  KeyboardService
-	Balance   BalanceService
 	Category  CategoryService
 	Operation OperationService
 	State     StateService
@@ -230,12 +229,6 @@ var (
 	// ErrCategoryNotFound happens when received not category from store.
 	ErrCategoryNotFound = errors.New("category not found")
 )
-
-// BalanceService provides business logic for processing balance.
-type BalanceService interface {
-	// 	GetBalanceInfo is used to get all balance related information by user id.
-	GetBalanceInfo(ctx context.Context, userID string) (*models.Balance, error)
-}
 
 // ErrBalanceNotFound happens when don't receive balance from store.
 var ErrBalanceNotFound = errors.New("balance not found")
