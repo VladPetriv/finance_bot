@@ -7,3 +7,13 @@ type User struct {
 
 	Balances []Balance `bson:"balances,omitempty"`
 }
+
+func (u *User) GetBalance(name string) *Balance {
+	for _, balance := range u.Balances {
+		if balance.Name == name {
+			return &balance
+		}
+	}
+
+	return nil
+}
