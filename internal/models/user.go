@@ -8,6 +8,7 @@ type User struct {
 	Balances []Balance `bson:"balances,omitempty"`
 }
 
+// GetBalance returns the balance by the given name.
 func (u *User) GetBalance(name string) *Balance {
 	for _, balance := range u.Balances {
 		if balance.Name == name {
