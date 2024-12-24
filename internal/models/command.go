@@ -6,6 +6,8 @@ const (
 	BotStartCommand string = "/start"
 	// BotCreateBalanceCommand represents the command to create a new balance
 	BotCreateBalanceCommand string = "Create Balance 💲"
+	// BotUpdateBalanceCommand represents the command to update balance
+	BotUpdateBalanceCommand string = "Update Balance 💲"
 
 	// BotBackCommand represents the command to go back to previous state
 	BotBackCommand string = "Back ❌"
@@ -13,8 +15,6 @@ const (
 	BotCreateCategoryCommand string = "Create Category 📊"
 	// BotListCategoriesCommand represents the command to list all categories
 	BotListCategoriesCommand string = "List Categories 🗂️"
-	// BotUpdateBalanceCommand represents the command to update balance
-	BotUpdateBalanceCommand string = "Update Balance 💲"
 	// BotUpdateBalanceAmountCommand represents the command to update balance amount
 	BotUpdateBalanceAmountCommand string = "Update Balance Amount 💵"
 	// BotUpdateBalanceCurrencyCommand represents the command to update balance currency
@@ -46,9 +46,11 @@ var AvailableCommands = []string{
 var CommandToEvent = map[string]Event{
 	BotStartCommand:         StartEvent,
 	BotCreateBalanceCommand: CreateBalanceEvent,
+	BotUpdateBalanceCommand: UpdateBalanceEvent,
 }
 
 // CommadToFistFlowStep maps commands to their initial flow steps
 var CommadToFistFlowStep = map[string]FlowStep{
 	BotCreateBalanceCommand: CreateBalanceFlowStep,
+	BotUpdateBalanceCommand: UpdateBalanceFlowStep,
 }

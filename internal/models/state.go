@@ -32,10 +32,6 @@ const indexOfInitialFlowStep = 1
 
 // GetEvent determines the current event based on the flow state
 func (s *State) GetEvent() Event {
-	if len(s.Steps) < 2 {
-		return UnknownEvent
-	}
-
 	if s.Flow == CreateBalanceFlow && len(s.Steps) == 1 {
 		return CreateBalanceEvent
 	}
@@ -45,6 +41,8 @@ func (s *State) GetEvent() Event {
 		return CreateBalanceEvent
 	case CreateBalanceFlowStep:
 		return CreateBalanceEvent
+	case UpdateBalanceFlowStep:
+		return UpdateBalanceEvent
 	default:
 		return UnknownEvent
 	}
@@ -58,6 +56,8 @@ const (
 	StartFlow Flow = "start"
 	// CreateBalanceFlow represents the flow for creating a new balance
 	CreateBalanceFlow Flow = "create_balance"
+	// UpdateBalanceFlow represents the flow for updating a balance
+	UpdateBalanceFlow Flow = "update_balance"
 )
 
 // FlowStep represents a specific step within a flow
@@ -73,6 +73,10 @@ const (
 	CreateInitialBalanceFlowStep FlowStep = "create_initial_balance"
 	// CreateBalanceFlowStep represents the step for creating additional balances
 	CreateBalanceFlowStep FlowStep = "create_balance"
+	// UpdateBalanceFlowStep represents the step for updating a balance
+	UpdateBalanceFlowStep FlowStep = "update_balance"
+	// ChooseBalanceToUpdateFlowStep represents the step for choosing balance to update
+	ChooseBalanceToUpdateFlowStep FlowStep = "choose_balance_to_update"
 	// EnterBalanceNameFlowStep represents the step for entering balance name
 	EnterBalanceNameFlowStep FlowStep = "enter_balance_name"
 	// EnterBalanceCurrencyFlowStep represents the step for entering balance currency

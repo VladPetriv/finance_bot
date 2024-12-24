@@ -10,10 +10,13 @@ const (
 	UnknownEvent Event = "unknown"
 	// CreateBalanceEvent represents the event for creating a new balance
 	CreateBalanceEvent Event = "balance/create"
+	// UpdateBalanceEvent represents the event for updating a balance
+	UpdateBalanceEvent Event = "balance/update"
 )
 
 // EventToFlow maps events to their corresponding flows
 var EventToFlow = map[Event]Flow{
 	StartEvent:         StartFlow,
 	CreateBalanceEvent: CreateBalanceFlow,
+	UpdateBalanceEvent: UpdateBalanceFlow,
 }
