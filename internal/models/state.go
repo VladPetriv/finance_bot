@@ -45,6 +45,10 @@ func (s *State) GetEvent() Event {
 		return UpdateBalanceEvent
 	case GetBalanceFlowStep:
 		return GetBalanceEvent
+	case CreateCategoryFlowStep:
+		return CreateCategoryEvent
+	case ListCategoriesFlowStep:
+		return ListCategoriesEvent
 	default:
 		return UnknownEvent
 	}
@@ -62,16 +66,24 @@ const (
 	UpdateBalanceFlow Flow = "update_balance"
 	// GetBalanceFlow represents the flow for getting a balance
 	GetBalanceFlow Flow = "get_balance"
+	// CreateCategoryFlow represents the flow for creating a new category
+	CreateCategoryFlow Flow = "create_category"
+	// ListCategoriesFlow represents the flow for listing all categories
+	ListCategoriesFlow Flow = "list_categories"
 )
 
 // FlowStep represents a specific step within a flow
 type FlowStep string
 
 const (
+	// General steps
+
 	// StartFlowStep represents the initial step of any flow
 	StartFlowStep FlowStep = "start"
 	// EndFlowStep represents the final step of any flow
 	EndFlowStep FlowStep = "end"
+
+	// Steps that are relad for balance
 
 	// CreateInitialBalanceFlowStep represents the step for creating the first balance
 	CreateInitialBalanceFlowStep FlowStep = "create_initial_balance"
@@ -89,4 +101,13 @@ const (
 	EnterBalanceCurrencyFlowStep FlowStep = "enter_balance_currency"
 	// EnterBalanceAmountFlowStep represents the step for entering balance amount
 	EnterBalanceAmountFlowStep FlowStep = "enter_balance_amount"
+
+	// Steps that are relad for category
+
+	// CreateCategoryFlowStep represents the step for creating a new category
+	CreateCategoryFlowStep FlowStep = "create_category"
+	// EnterCategoryNameFlowStep represents the step for entering category name
+	EnterCategoryNameFlowStep FlowStep = "enter_category_name"
+	// ListCategoriesFlowStep represents the step for listing all categories
+	ListCategoriesFlowStep FlowStep = "list_categories"
 )

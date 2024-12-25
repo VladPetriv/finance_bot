@@ -10,13 +10,13 @@ const (
 	BotUpdateBalanceCommand string = "Update Balance 📈"
 	// BotGetBalanceCommand represents the command to get information about specific balance
 	BotGetBalanceCommand string = "Get Balance Info 📊"
+	// BotCreateCategoryCommand represents the command to create a new category
+	BotCreateCategoryCommand string = "Create Category ✨"
+	// BotListCategoriesCommand represents the command to list all categories
+	BotListCategoriesCommand string = "List Categories 📋"
 
 	// BotBackCommand represents the command to go back to previous state
 	BotBackCommand string = "Back ❌"
-	// BotCreateCategoryCommand represents the command to create a new category
-	BotCreateCategoryCommand string = "Create Category 📊"
-	// BotListCategoriesCommand represents the command to list all categories
-	BotListCategoriesCommand string = "List Categories 🗂️"
 	// BotUpdateBalanceAmountCommand represents the command to update balance amount
 	BotUpdateBalanceAmountCommand string = "Update Balance Amount 💵"
 	// BotUpdateBalanceCurrencyCommand represents the command to update balance currency
@@ -37,19 +37,24 @@ const (
 var AvailableCommands = []string{
 	BotStartCommand,
 	BotGetBalanceCommand, BotCreateBalanceCommand, BotUpdateBalanceCommand,
+	BotCreateCategoryCommand, BotListCategoriesCommand,
 }
 
 // CommandToEvent maps bot commands to their corresponding events
 var CommandToEvent = map[string]Event{
-	BotStartCommand:         StartEvent,
-	BotCreateBalanceCommand: CreateBalanceEvent,
-	BotUpdateBalanceCommand: UpdateBalanceEvent,
-	BotGetBalanceCommand:    GetBalanceEvent,
+	BotStartCommand:          StartEvent,
+	BotCreateBalanceCommand:  CreateBalanceEvent,
+	BotUpdateBalanceCommand:  UpdateBalanceEvent,
+	BotGetBalanceCommand:     GetBalanceEvent,
+	BotCreateCategoryCommand: CreateCategoryEvent,
+	BotListCategoriesCommand: ListCategoriesEvent,
 }
 
 // CommadToFistFlowStep maps commands to their initial flow steps
 var CommadToFistFlowStep = map[string]FlowStep{
-	BotCreateBalanceCommand: CreateBalanceFlowStep,
-	BotUpdateBalanceCommand: UpdateBalanceFlowStep,
-	BotGetBalanceCommand:    GetBalanceFlowStep,
+	BotCreateBalanceCommand:  CreateBalanceFlowStep,
+	BotUpdateBalanceCommand:  UpdateBalanceFlowStep,
+	BotGetBalanceCommand:     GetBalanceFlowStep,
+	BotCreateCategoryCommand: CreateCategoryFlowStep,
+	BotListCategoriesCommand: ListCategoriesFlowStep,
 }

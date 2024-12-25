@@ -14,12 +14,18 @@ const (
 	UpdateBalanceEvent Event = "balance/update"
 	// GetBalanceEvent represents the event for getting a balance
 	GetBalanceEvent Event = "balance/get"
+	// CreateCategoryEvent represents the event for creating a new category
+	CreateCategoryEvent Event = "category/create"
+	// ListCategoriesEvent represents the event for listing all categories
+	ListCategoriesEvent Event = "category/list"
 )
 
 // EventToFlow maps events to their corresponding flows
 var EventToFlow = map[Event]Flow{
-	StartEvent:         StartFlow,
-	CreateBalanceEvent: CreateBalanceFlow,
-	UpdateBalanceEvent: UpdateBalanceFlow,
-	GetBalanceEvent:    GetBalanceFlow,
+	StartEvent:          StartFlow,
+	CreateBalanceEvent:  CreateBalanceFlow,
+	UpdateBalanceEvent:  UpdateBalanceFlow,
+	GetBalanceEvent:     GetBalanceFlow,
+	CreateCategoryEvent: CreateCategoryFlow,
+	ListCategoriesEvent: ListCategoriesFlow,
 }
