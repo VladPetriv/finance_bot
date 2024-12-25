@@ -43,6 +43,8 @@ func (s *State) GetEvent() Event {
 		return CreateBalanceEvent
 	case UpdateBalanceFlowStep:
 		return UpdateBalanceEvent
+	case GetBalanceFlowStep:
+		return GetBalanceEvent
 	default:
 		return UnknownEvent
 	}
@@ -58,6 +60,8 @@ const (
 	CreateBalanceFlow Flow = "create_balance"
 	// UpdateBalanceFlow represents the flow for updating a balance
 	UpdateBalanceFlow Flow = "update_balance"
+	// GetBalanceFlow represents the flow for getting a balance
+	GetBalanceFlow Flow = "get_balance"
 )
 
 // FlowStep represents a specific step within a flow
@@ -75,8 +79,10 @@ const (
 	CreateBalanceFlowStep FlowStep = "create_balance"
 	// UpdateBalanceFlowStep represents the step for updating a balance
 	UpdateBalanceFlowStep FlowStep = "update_balance"
-	// ChooseBalanceToUpdateFlowStep represents the step for choosing balance to update
-	ChooseBalanceToUpdateFlowStep FlowStep = "choose_balance_to_update"
+	// GetBalanceFlowStep represents the step for getting a balance
+	GetBalanceFlowStep FlowStep = "get_balance"
+	// ChooseBalanceFlowStep represents the step for choosing balance that will be used for an action
+	ChooseBalanceFlowStep FlowStep = "choose_balance"
 	// EnterBalanceNameFlowStep represents the step for entering balance name
 	EnterBalanceNameFlowStep FlowStep = "enter_balance_name"
 	// EnterBalanceCurrencyFlowStep represents the step for entering balance currency

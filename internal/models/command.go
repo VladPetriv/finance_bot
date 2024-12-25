@@ -5,9 +5,11 @@ const (
 	// BotStartCommand represents the command to start the bot
 	BotStartCommand string = "/start"
 	// BotCreateBalanceCommand represents the command to create a new balance
-	BotCreateBalanceCommand string = "Create Balance 💲"
+	BotCreateBalanceCommand string = "Create Balance 💰"
 	// BotUpdateBalanceCommand represents the command to update balance
-	BotUpdateBalanceCommand string = "Update Balance 💲"
+	BotUpdateBalanceCommand string = "Update Balance 📈"
+	// BotGetBalanceCommand represents the command to get information about specific balance
+	BotGetBalanceCommand string = "Get Balance Info 📊"
 
 	// BotBackCommand represents the command to go back to previous state
 	BotBackCommand string = "Back ❌"
@@ -19,8 +21,6 @@ const (
 	BotUpdateBalanceAmountCommand string = "Update Balance Amount 💵"
 	// BotUpdateBalanceCurrencyCommand represents the command to update balance currency
 	BotUpdateBalanceCurrencyCommand string = "Update Balance Currency 💱"
-	// BotGetBalanceCommand represents the command to get balance information
-	BotGetBalanceCommand string = "Get Balance Info 🏦"
 	// BotCreateOperationCommand represents the command to create a new operation
 	BotCreateOperationCommand string = "Create Operation 🤔"
 	// BotCreateIncomingOperationCommand represents the command to create an incoming operation
@@ -35,11 +35,8 @@ const (
 
 // AvailableCommands is a list of all available bot commands.
 var AvailableCommands = []string{
-	BotStartCommand, BotBackCommand, BotCreateCategoryCommand,
-	BotListCategoriesCommand, BotUpdateBalanceCommand, BotUpdateBalanceAmountCommand,
-	BotCreateOperationCommand, BotUpdateBalanceCurrencyCommand, BotGetBalanceCommand,
-	BotCreateIncomingOperationCommand, BotCreateIncomingOperationCommand, BotCreateSpendingOperationCommand,
-	BotUpdateOperationAmountCommand, BotGetOperationsHistory, BotCreateBalanceCommand,
+	BotStartCommand,
+	BotGetBalanceCommand, BotCreateBalanceCommand, BotUpdateBalanceCommand,
 }
 
 // CommandToEvent maps bot commands to their corresponding events
@@ -53,4 +50,5 @@ var CommandToEvent = map[string]Event{
 var CommadToFistFlowStep = map[string]FlowStep{
 	BotCreateBalanceCommand: CreateBalanceFlowStep,
 	BotUpdateBalanceCommand: UpdateBalanceFlowStep,
+	BotGetBalanceCommand:    GetBalanceFlowStep,
 }

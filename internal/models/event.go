@@ -12,6 +12,8 @@ const (
 	CreateBalanceEvent Event = "balance/create"
 	// UpdateBalanceEvent represents the event for updating a balance
 	UpdateBalanceEvent Event = "balance/update"
+	// GetBalanceEvent represents the event for getting a balance
+	GetBalanceEvent Event = "balance/get"
 )
 
 // EventToFlow maps events to their corresponding flows
@@ -19,4 +21,5 @@ var EventToFlow = map[Event]Flow{
 	StartEvent:         StartFlow,
 	CreateBalanceEvent: CreateBalanceFlow,
 	UpdateBalanceEvent: UpdateBalanceFlow,
+	GetBalanceEvent:    GetBalanceFlow,
 }

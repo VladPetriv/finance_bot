@@ -209,9 +209,9 @@ func (h handlerService) HandleEventBalanceUpdated(ctx context.Context, msg botMe
 			return fmt.Errorf("handle update balance flow step: %w", err)
 		}
 
-		nextStep = models.ChooseBalanceToUpdateFlowStep
+		nextStep = models.ChooseBalanceFlowStep
 
-	case models.ChooseBalanceToUpdateFlowStep:
+	case models.ChooseBalanceFlowStep:
 		balance := user.GetBalance(msg.Message.Text)
 		if balance == nil {
 			logger.Info().Msg("balance not found")
