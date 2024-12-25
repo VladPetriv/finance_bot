@@ -38,7 +38,6 @@ func Run(ctx context.Context, cfg *config.Config, logger *logger.Logger) {
 
 	messageService := service.NewMessage(botAPI, logger)
 	keyboardService := service.NewKeyboard(botAPI, logger)
-	categoryService := service.NewCategory(logger, stores.Category)
 	stateService := service.NewState(&service.StateOptions{
 		Logger: logger,
 		Stores: stores,
@@ -48,7 +47,6 @@ func Run(ctx context.Context, cfg *config.Config, logger *logger.Logger) {
 	services := service.Services{
 		Message:   messageService,
 		Keyboard:  keyboardService,
-		Category:  categoryService,
 		Operation: operationService,
 		State:     stateService,
 	}

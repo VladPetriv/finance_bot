@@ -15,7 +15,6 @@ type Services struct {
 	Handler   HandlerService
 	Message   MessageService
 	Keyboard  KeyboardService
-	Category  CategoryService
 	Operation OperationService
 	State     StateService
 }
@@ -202,14 +201,6 @@ var (
 	// ErrUserNotFound happens when user not exists in system.
 	ErrUserNotFound = errors.New("user not found")
 )
-
-// CategoryService provides business logic for processing categories.
-type CategoryService interface {
-	// CreateCategory creates a new category.
-	CreateCategory(ctx context.Context, category *models.Category) error
-	// ListCategories fetches a list of categories for the specified user ID.
-	ListCategories(ctx context.Context, userID string) ([]models.Category, error)
-}
 
 var (
 	// ErrCategoryAlreadyExists happens when try to create category that already exists.
