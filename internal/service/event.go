@@ -65,6 +65,7 @@ func (e eventService) Listen(ctx context.Context) {
 
 				continue
 			}
+			logger.Debug().Any("stateOutput", stateOutput).Msg("handled request state")
 
 			ctx = context.WithValue(ctx, contextFieldNameState, stateOutput.State)
 			err = e.ReactOnEvent(ctx, stateOutput.Event, msg)
@@ -108,11 +109,7 @@ func getEventFromMsg(msg *botMessage) models.Event {
 }
 
 func (e eventService) ReactOnEvent(ctx context.Context, event models.Event, msg botMessage) error {
-	logger := e.logger
-	logger.Debug().
-		Interface("event", event).
-		Interface("msg", msg).
-		Msg("got args")
+	logger := e.logger.With().Str("name", "eventService.ReactOnEvent").Logger()
 
 	switch event {
 	case models.StartEvent:
@@ -127,6 +124,20 @@ func (e eventService) ReactOnEvent(ctx context.Context, event models.Event, msg 
 		if err != nil {
 			logger.Error().Err(err).Msg("handle event balance created")
 			return fmt.Errorf("handle event balance created: %w", err)
+		}
+
+	case models.UpdateBalanceEvent:
+		err := e.handlerService.HandleEventBalanceUpdated(ctx, msg)
+		if err != nil {
+			logger.Error().Err(err).Msg("handle event balance created")
+			return fmt.Errorf("handle event balance created: %w", err)
+		}
+
+	case models.GetBalanceEvent:
+		err := e.handlerService.HandleEventGetBalance(ctx, msg)
+		if err != nil {
+			logger.Error().Err(err).Msg("handle event get balance")
+			return fmt.Errorf("handle event get balance: %w", err)
 		}
 
 	case models.UnknownEvent:

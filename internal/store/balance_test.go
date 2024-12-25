@@ -31,8 +31,8 @@ func TestBalance_Get(t *testing.T) {
 	require.NoError(t, err)
 	balanceStore := store.NewBalance(db)
 
-	balanceID := uuid.NewString()
-	userID := uuid.NewString()
+	balanceID1, balanceID2, balanceID3 := uuid.NewString(), uuid.NewString(), uuid.NewString()
+	userID1, userID2, userID3 := uuid.NewString(), uuid.NewString(), uuid.NewString()
 
 	testCases := []struct {
 		desc          string
@@ -41,18 +41,52 @@ func TestBalance_Get(t *testing.T) {
 		expected      *models.Balance
 	}{
 		{
-			desc: "positive: balance received",
+			desc: "positive: balance received by user id",
 			preconditions: &models.Balance{
-				ID:     balanceID,
-				UserID: userID,
+				ID:     balanceID1,
+				UserID: userID1,
 				Amount: amount300,
 			},
 			input: service.GetBalanceFilter{
-				UserID: userID,
+				UserID: userID1,
 			},
 			expected: &models.Balance{
-				ID:     balanceID,
-				UserID: userID,
+				ID:     balanceID1,
+				UserID: userID1,
+				Amount: amount300,
+			},
+		},
+		{
+			desc: "positive: balance received by id",
+			preconditions: &models.Balance{
+				ID:     balanceID2,
+				UserID: userID2,
+				Amount: amount300,
+			},
+			input: service.GetBalanceFilter{
+				BalanceID: balanceID2,
+			},
+			expected: &models.Balance{
+				ID:     balanceID2,
+				UserID: userID2,
+				Amount: amount300,
+			},
+		},
+		{
+			desc: "positive: balance received by name",
+			preconditions: &models.Balance{
+				ID:     balanceID3,
+				Name:   "test_x3",
+				UserID: userID3,
+				Amount: amount300,
+			},
+			input: service.GetBalanceFilter{
+				Name: "test_x3",
+			},
+			expected: &models.Balance{
+				ID:     balanceID3,
+				Name:   "test_x3",
+				UserID: userID3,
 				Amount: amount300,
 			},
 		},

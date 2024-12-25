@@ -15,7 +15,6 @@ type Services struct {
 	Handler   HandlerService
 	Message   MessageService
 	Keyboard  KeyboardService
-	Balance   BalanceService
 	Category  CategoryService
 	Operation OperationService
 	State     StateService
@@ -30,20 +29,19 @@ type HandlerService interface {
 
 	// HandleEventStart is used to handle event start.
 	HandleEventStart(ctx context.Context, msg botMessage) error
-
 	// HandleEventBalanceCreated is used to handle update balance event.
 	HandleEventBalanceCreated(ctx context.Context, msg botMessage) error
-
-	// HandleEventListCategories is used to handle update balance event.
-	HandleEventUpdateBalance(ctx context.Context, eventName event, msg botMessage) error
+	// HandleEventBalanceUpdated is used to handle update balance event.
+	HandleEventBalanceUpdated(ctx context.Context, msg botMessage) error
 	// HandleEventGetBalance is used to handle get balance event.
 	HandleEventGetBalance(ctx context.Context, msg botMessage) error
 
+	// HandleEventListCategories is used to handle update balance event.
+	HandleEventUpdateBalance(ctx context.Context, eventName event, msg botMessage) error
 	// HandleEventCategoryCreate is used to handle category created event.
 	HandleEventCategoryCreate(ctx context.Context, msg botMessage) error
 	// HandleEventListCategories is used to handle lit categories event.
 	HandleEventListCategories(ctx context.Context, msg botMessage) error
-
 	// HandleEventOperationCreate is used to create an operation without amount.
 	HandleEventOperationCreate(ctc context.Context, eventName event, msg botMessage) error
 	// HandleEventUpdateOperationAmount get last transaction with empty amount from db and update his amount with user one.
@@ -194,16 +192,7 @@ const (
 
 var defaultKeyboardRows = []bot.KeyboardRow{
 	{
-		Buttons: []string{models.BotCreateCategoryCommand, models.BotListCategoriesCommand},
-	},
-	{
-		Buttons: []string{models.BotGetBalanceCommand, models.BotUpdateBalanceCommand},
-	},
-	{
-		Buttons: []string{models.BotCreateOperationCommand, models.BotGetOperationsHistory},
-	},
-	{
-		Buttons: []string{models.BotCreateBalanceCommand},
+		Buttons: []string{models.BotGetBalanceCommand, models.BotCreateBalanceCommand, models.BotUpdateBalanceCommand},
 	},
 }
 
@@ -230,12 +219,6 @@ var (
 	// ErrCategoryNotFound happens when received not category from store.
 	ErrCategoryNotFound = errors.New("category not found")
 )
-
-// BalanceService provides business logic for processing balance.
-type BalanceService interface {
-	// 	GetBalanceInfo is used to get all balance related information by user id.
-	GetBalanceInfo(ctx context.Context, userID string) (*models.Balance, error)
-}
 
 // ErrBalanceNotFound happens when don't receive balance from store.
 var ErrBalanceNotFound = errors.New("balance not found")

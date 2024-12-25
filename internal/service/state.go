@@ -33,7 +33,7 @@ func NewState(opts *StateOptions) *stateService {
 
 func (s stateService) HandleState(ctx context.Context, message botMessage) (*HandleStateOutput, error) {
 	logger := s.logger.With().Str("name", "stateService.HandleState").Logger()
-	logger.Debug().Interface("message", message).Msg("got args")
+	logger.Debug().Any("message", message).Msg("got args")
 
 	state, err := s.stores.State.Get(ctx, GetStateFilter{
 		UserID: message.GetUsername(),
@@ -50,7 +50,7 @@ func (s stateService) HandleState(ctx context.Context, message botMessage) (*Han
 	if state == nil {
 		flow := models.EventToFlow[event]
 
-		startForCreate := &models.State{
+		stateForCreate := &models.State{
 			ID:        uuid.NewString(),
 			UserID:    message.GetUsername(),
 			Flow:      flow,
@@ -60,18 +60,28 @@ func (s stateService) HandleState(ctx context.Context, message botMessage) (*Han
 			UpdatedAt: time.Now(),
 		}
 
-		err := s.stores.State.Create(ctx, startForCreate)
+		if IsBotCommand(message.Message.Text) {
+			firstFlowStep := models.CommadToFistFlowStep[message.Message.Text]
+
+			// NOTE: We handle here only flows that require more than two step.
+			if firstFlowStep != "" {
+				stateForCreate.Steps = append(stateForCreate.Steps, firstFlowStep)
+			}
+		}
+
+		err := s.stores.State.Create(ctx, stateForCreate)
 		if err != nil {
 			logger.Error().Err(err).Msg("create state in store")
 			return nil, fmt.Errorf("create state in store: %w", err)
 		}
 
-		logger.Info().Any("state", startForCreate).Msg("created new state")
+		logger.Info().Any("state", stateForCreate).Msg("created new state")
 		return &HandleStateOutput{
-			State: startForCreate,
+			State: stateForCreate,
 			Event: event,
 		}, nil
 	}
+	logger.Debug().Any("state", state).Msg("got state from store")
 
 	// If we're not able to define the event based on message text and flow is not finished yet
 	// we should return the same state, since current flow is not finished and myabe we process other steps.
