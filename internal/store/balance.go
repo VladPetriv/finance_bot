@@ -32,6 +32,9 @@ func (b balanceStore) Get(ctx context.Context, filter service.GetBalanceFilter) 
 	if filter.BalanceID != "" {
 		stmt["_id"] = filter.BalanceID
 	}
+	if filter.Name != "" {
+		stmt["name"] = filter.Name
+	}
 	if filter.UserID != "" {
 		stmt["userId"] = filter.UserID
 	}

@@ -47,6 +47,7 @@ type BalanceStore interface {
 
 // GetBalanceFilter represents a filters for GetBalance method.
 type GetBalanceFilter struct {
+	Name      string
 	UserID    string
 	BalanceID string
 }
