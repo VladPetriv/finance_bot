@@ -140,6 +140,20 @@ func (e eventService) ReactOnEvent(ctx context.Context, event models.Event, msg 
 			return fmt.Errorf("handle event get balance: %w", err)
 		}
 
+	case models.CreateCategoryEvent:
+		err := e.handlerService.HandleEventCategoryCreated(ctx, msg)
+		if err != nil {
+			logger.Error().Err(err).Msg("handle event category created")
+			return fmt.Errorf("handle event category created: %w", err)
+		}
+
+	case models.ListCategoriesEvent:
+		err := e.handlerService.HandleEventListCategories(ctx, msg)
+		if err != nil {
+			logger.Error().Err(err).Msg("handle event list categories")
+			return fmt.Errorf("handle event list categories: %w", err)
+		}
+
 	case models.UnknownEvent:
 		err := e.handlerService.HandleEventUnknown(msg)
 		if err != nil {
@@ -152,34 +166,6 @@ func (e eventService) ReactOnEvent(ctx context.Context, event models.Event, msg 
 	// 	if err != nil {
 	// 		logger.Error().Err(err).Msg("handle event back")
 	// 		return fmt.Errorf("handle event back: %w", err)
-	// 	}
-
-	// case createCategoryEvent:
-	// 	err := e.handlerService.HandleEventCategoryCreate(ctx, msg)
-	// 	if err != nil {
-	// 		logger.Error().Err(err).Msg("handle event category create")
-	// 		return fmt.Errorf("handle event category create: %w", err)
-	// 	}
-
-	// case listCategoryEvent:
-	// 	err := e.handlerService.HandleEventListCategories(ctx, msg)
-	// 	if err != nil {
-	// 		logger.Error().Err(err).Msg("handle event list categories")
-	// 		return fmt.Errorf("handle event list categories: %w", err)
-	// 	}
-
-	// case updateBalanceEvent, updateBalanceAmountEvent, updateBalanceCurrencyEvent:
-	// 	err := e.handlerService.HandleEventUpdateBalance(ctx, eventName, msg)
-	// 	if err != nil {
-	// 		logger.Error().Err(err).Msg("handle event update balance")
-	// 		return fmt.Errorf("handle event update balance: %w", err)
-	// 	}
-
-	// case getBalanceEvent:
-	// 	err := e.handlerService.HandleEventGetBalance(ctx, msg)
-	// 	if err != nil {
-	// 		logger.Error().Err(err).Msg("handle event get balance")
-	// 		return fmt.Errorf("handle event get balance: %w", err)
 	// 	}
 
 	// case createOperationEvent, createIncomingOperationEvent, createSpendingOperationEvent:
