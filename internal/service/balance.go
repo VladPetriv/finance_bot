@@ -199,14 +199,15 @@ func (h handlerService) HandleEventBalanceUpdated(ctx context.Context, msg botMe
 
 	switch currentStep {
 	case models.UpdateBalanceFlowStep:
-		err := h.handleUpdateBalanceFlowStep(handleUpdateBalanceFlowStepOptions{
-			msg:      msg,
-			user:     user,
-			metadata: stateMetaData,
+		err := h.services.Keyboard.CreateKeyboard(&CreateKeyboardOptions{
+			ChatID:  msg.GetChatID(),
+			Message: "Choose balance to update:",
+			Type:    keyboardTypeRow,
+			Rows:    convertBalancesToKeyboardRows(user.Balances),
 		})
 		if err != nil {
-			logger.Error().Err(err).Msg("handle update balance flow step")
-			return fmt.Errorf("handle update balance flow step: %w", err)
+			logger.Error().Err(err).Msg("create keyboard with welcome message")
+			return fmt.Errorf("create keyboard with welcome message: %w", err)
 		}
 
 		nextStep = models.ChooseBalanceFlowStep
@@ -246,46 +247,6 @@ func (h handlerService) HandleEventBalanceUpdated(ctx context.Context, msg botMe
 	}
 
 	logger.Info().Msg("handled event balance updated")
-	return nil
-}
-
-type handleUpdateBalanceFlowStepOptions struct {
-	user     *models.User
-	msg      botMessage
-	metadata map[string]any
-}
-
-const maxBalancesPerRow = 3
-
-func (h handlerService) handleUpdateBalanceFlowStep(opts handleUpdateBalanceFlowStepOptions) error {
-	logger := h.logger.With().Str("name", "handlerService.handleUpdateBalanceFlowStep").Logger()
-	logger.Debug().Interface("opts", opts).Msg("got args")
-
-	keyboardRows := make([]bot.KeyboardRow, 0)
-
-	var currentRow bot.KeyboardRow
-	for i, balance := range opts.user.Balances {
-		currentRow.Buttons = append(currentRow.Buttons, balance.Name)
-
-		// When row is full or we're at the last balance item, append row
-		if len(currentRow.Buttons) == maxBalancesPerRow || i == len(opts.user.Balances)-1 {
-			keyboardRows = append(keyboardRows, currentRow)
-			currentRow = bot.KeyboardRow{} // Reset current row
-		}
-	}
-
-	err := h.services.Keyboard.CreateKeyboard(&CreateKeyboardOptions{
-		ChatID:  opts.msg.GetChatID(),
-		Message: "Choose balance to update:",
-		Type:    keyboardTypeRow,
-		Rows:    keyboardRows,
-	})
-	if err != nil {
-		logger.Error().Err(err).Msg("create keyboard with welcome message")
-		return fmt.Errorf("create keyboard with welcome message: %w", err)
-	}
-
-	logger.Info().Msg("handled update balance flow step")
 	return nil
 }
 
@@ -402,4 +363,117 @@ func (h handlerService) updateBalance(ctx context.Context, opts updateBalanceOpt
 	}
 
 	return balance, nil
+}
+
+func (h handlerService) HandleEventGetBalance(ctx context.Context, msg botMessage) error {
+	logger := h.logger.With().Str("name", "handlerService.HandleEventGetBalance").Logger()
+	logger.Debug().Any("msg", msg).Msg("got args")
+
+	var nextStep models.FlowStep
+	defer func() {
+		state := ctx.Value(contextFieldNameState).(*models.State)
+		state.Steps = append(state.Steps, nextStep)
+		updatedState, err := h.stores.State.Update(ctx, state)
+		if err != nil {
+			logger.Error().Err(err).Msg("update state in store")
+			return
+		}
+		logger.Debug().Interface("updatedState", updatedState).Msg("updated state in store")
+	}()
+
+	currentStep := ctx.Value(contextFieldNameState).(*models.State).GetCurrentStep()
+	logger.Debug().Any("currentStep", currentStep).Msg("got current step on create balance flow")
+
+	user, err := h.stores.User.Get(ctx, GetUserFilter{
+		Username:        msg.GetUsername(),
+		PreloadBalances: true,
+	})
+	if err != nil {
+		logger.Error().Err(err).Msg("get user from store")
+		return fmt.Errorf("get user from store: %w", err)
+	}
+	if user == nil {
+		logger.Info().Msg("user not found")
+		return ErrUserNotFound
+	}
+	logger.Debug().Any("user", user).Msg("got user from store")
+
+	switch currentStep {
+	case models.GetBalanceFlowStep:
+		err := h.services.Keyboard.CreateKeyboard(&CreateKeyboardOptions{
+			ChatID:  msg.GetChatID(),
+			Message: "Select a balance to view information:",
+			Type:    keyboardTypeRow,
+			Rows:    convertBalancesToKeyboardRows(user.Balances),
+		})
+		if err != nil {
+			logger.Error().Err(err).Msg("create keyboard with welcome message")
+			return fmt.Errorf("create keyboard with welcome message: %w", err)
+		}
+
+		nextStep = models.ChooseBalanceFlowStep
+	case models.ChooseBalanceFlowStep:
+		err := h.processGetBalanceInfo(ctx, msg)
+		if err != nil {
+			logger.Error().Err(err).Msg("process get balance info")
+			return fmt.Errorf("process get balance info: %w", err)
+		}
+
+		nextStep = models.EndFlowStep
+	}
+
+	logger.Info().Msg("handled event get balance")
+	return nil
+}
+
+func (h handlerService) processGetBalanceInfo(ctx context.Context, msg botMessage) error {
+	logger := h.logger.With().Str("name", "handlerService.getBalanceInfo").Logger()
+	logger.Debug().Any("msg", msg).Msg("got args")
+
+	balance, err := h.stores.Balance.Get(ctx, GetBalanceFilter{
+		Name: msg.Message.Text,
+	})
+	if err != nil {
+		logger.Error().Err(err).Msg("get balance from store")
+		return fmt.Errorf("get balance from store: %w", err)
+	}
+	if balance == nil {
+		logger.Info().Msg("balance not found")
+		return ErrBalanceNotFound
+	}
+	logger.Debug().Any("balance", balance).Msg("got balance from store")
+	// TODO: In the feature it would be great to add some statistics about operations on this balance.
+
+	err = h.services.Message.SendMessage(&SendMessageOptions{
+		ChatID: msg.GetChatID(),
+		Text: fmt.Sprintf(
+			"Balance info(%s):\n - Amount: %v\n - Currency: %s",
+			balance.Name, balance.Amount, balance.Currency,
+		),
+	})
+	if err != nil {
+		logger.Error().Err(err).Msg("send message")
+		return fmt.Errorf("send message: %w", err)
+	}
+
+	return nil
+}
+
+const maxBalancesPerRow = 3
+
+func convertBalancesToKeyboardRows(balances []models.Balance) []bot.KeyboardRow {
+	keyboardRows := make([]bot.KeyboardRow, 0)
+
+	var currentRow bot.KeyboardRow
+	for i, balance := range balances {
+		currentRow.Buttons = append(currentRow.Buttons, balance.Name)
+
+		// When row is full or we're at the last balance item, append row
+		if len(currentRow.Buttons) == maxBalancesPerRow || i == len(balances)-1 {
+			keyboardRows = append(keyboardRows, currentRow)
+			currentRow = bot.KeyboardRow{} // Reset current row
+		}
+	}
+
+	return keyboardRows
 }

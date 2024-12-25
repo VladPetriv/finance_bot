@@ -33,17 +33,15 @@ type HandlerService interface {
 	HandleEventBalanceCreated(ctx context.Context, msg botMessage) error
 	// HandleEventBalanceUpdated is used to handle update balance event.
 	HandleEventBalanceUpdated(ctx context.Context, msg botMessage) error
-
-	// HandleEventListCategories is used to handle update balance event.
-	HandleEventUpdateBalance(ctx context.Context, eventName event, msg botMessage) error
 	// HandleEventGetBalance is used to handle get balance event.
 	HandleEventGetBalance(ctx context.Context, msg botMessage) error
 
+	// HandleEventListCategories is used to handle update balance event.
+	HandleEventUpdateBalance(ctx context.Context, eventName event, msg botMessage) error
 	// HandleEventCategoryCreate is used to handle category created event.
 	HandleEventCategoryCreate(ctx context.Context, msg botMessage) error
 	// HandleEventListCategories is used to handle lit categories event.
 	HandleEventListCategories(ctx context.Context, msg botMessage) error
-
 	// HandleEventOperationCreate is used to create an operation without amount.
 	HandleEventOperationCreate(ctc context.Context, eventName event, msg botMessage) error
 	// HandleEventUpdateOperationAmount get last transaction with empty amount from db and update his amount with user one.
@@ -194,7 +192,7 @@ const (
 
 var defaultKeyboardRows = []bot.KeyboardRow{
 	{
-		Buttons: []string{models.BotCreateBalanceCommand, models.BotUpdateBalanceCommand},
+		Buttons: []string{models.BotGetBalanceCommand, models.BotCreateBalanceCommand, models.BotUpdateBalanceCommand},
 	},
 }
 

@@ -417,37 +417,6 @@ func (h handlerService) handleUpdateBalanceCurrencyEvent(ctx context.Context, op
 	return nil
 }
 
-func (h handlerService) HandleEventGetBalance(ctx context.Context, msg botMessage) error {
-	logger := h.logger
-	logger.Debug().Interface("msg", msg).Msg("got args")
-
-	user, err := h.stores.User.Get(ctx, GetUserFilter{
-		Username: msg.GetUsername(),
-	})
-	if err != nil {
-		logger.Error().Err(err).Msg("get user from store")
-		return fmt.Errorf("get user from store: %w", err)
-	}
-
-	// TODO: Replace with store call
-	var balanceInfo *models.Balance
-
-	err = h.services.Message.SendMessage(&SendMessageOptions{
-		ChatID: msg.Message.Chat.ID,
-		Text: fmt.Sprintf(
-			"Hello, @%s!\nYour current balance is: %v%s!",
-			user.Username, balanceInfo.Amount, balanceInfo.Currency,
-		),
-	})
-	if err != nil {
-		logger.Error().Err(err).Msg("send message")
-		return fmt.Errorf("send message: %w", err)
-	}
-
-	logger.Info().Msg("handled event get balance")
-	return nil
-}
-
 func (h handlerService) HandleEventOperationCreate(ctx context.Context, eventName event, msg botMessage) error {
 	logger := h.logger
 

@@ -44,6 +44,7 @@ var CommandToEvent = map[string]Event{
 	BotStartCommand:         StartEvent,
 	BotCreateBalanceCommand: CreateBalanceEvent,
 	BotUpdateBalanceCommand: UpdateBalanceEvent,
+	BotGetBalanceCommand:    GetBalanceEvent,
 }
 
 // CommadToFistFlowStep maps commands to their initial flow steps
