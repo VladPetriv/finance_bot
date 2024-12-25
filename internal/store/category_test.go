@@ -103,7 +103,7 @@ func TestCategory_Get(t *testing.T) {
 				Title: title,
 			},
 			input: service.GetCategoryFilter{
-				Title: &title,
+				Title: title,
 			},
 			expected: &models.Category{
 				ID:    categoryID1,
@@ -117,7 +117,7 @@ func TestCategory_Get(t *testing.T) {
 				Title: "test_get",
 			},
 			input: service.GetCategoryFilter{
-				ID: &categoryID2,
+				ID: categoryID2,
 			},
 			expected: &models.Category{
 				ID:    categoryID2,
@@ -127,14 +127,14 @@ func TestCategory_Get(t *testing.T) {
 		{
 			desc: "negative: category not found (by title)",
 			input: service.GetCategoryFilter{
-				Title: &categoryID1,
+				Title: categoryID1,
 			},
 			expected: nil,
 		},
 		{
 			desc: "negative: category not found (by id)",
 			input: service.GetCategoryFilter{
-				ID: &title,
+				ID: title,
 			},
 			expected: nil,
 		},

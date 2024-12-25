@@ -9,7 +9,6 @@ import (
 	"github.com/VladPetriv/finance_bot/internal/models"
 	"github.com/VladPetriv/finance_bot/pkg/bot"
 	"github.com/VladPetriv/finance_bot/pkg/logger"
-	"github.com/VladPetriv/finance_bot/pkg/money"
 	"github.com/google/uuid"
 )
 
@@ -117,306 +116,6 @@ func (h handlerService) HandleEventStart(ctx context.Context, msg botMessage) er
 	return nil
 }
 
-func (h handlerService) HandleEventCategoryCreate(ctx context.Context, msg botMessage) error {
-	logger := h.logger
-	logger.Debug().Interface("msg", msg).Msg("got args")
-
-	if IsBotCommand(msg.Message.Text) {
-		err := h.services.Message.SendMessage(&SendMessageOptions{
-			ChatID: msg.Message.Chat.ID,
-			Text:   "Enter category name!",
-		})
-		if err != nil {
-			logger.Error().Err(err).Msg("send message")
-			return fmt.Errorf("send message: %w", err)
-		}
-
-		logger.Info().Msg("handled command input")
-		return nil
-	}
-
-	user, err := h.stores.User.Get(ctx, GetUserFilter{
-		Username: msg.GetUsername(),
-	})
-	if err != nil {
-		logger.Error().Err(err).Msg("get user from store")
-		return fmt.Errorf("get user from store: %w", err)
-	}
-
-	err = h.services.Category.CreateCategory(ctx, &models.Category{
-		ID:     uuid.NewString(),
-		UserID: user.ID,
-		Title:  msg.Message.Text,
-	})
-	if err != nil {
-		if errors.Is(err, ErrCategoryAlreadyExists) {
-			err = h.services.Message.SendMessage(&SendMessageOptions{
-				ChatID: msg.Message.Chat.ID,
-				Text:   fmt.Sprintf("Category with name '%s' already exists!", msg.Message.Text),
-			})
-			if err != nil {
-				logger.Error().Err(err).Msg("send message")
-				return fmt.Errorf("send message: %w", err)
-			}
-
-			logger.Info().Msg("category already exists")
-			return nil
-		}
-
-		logger.Error().Err(err).Msg("send message")
-		return fmt.Errorf("send message: %w", err)
-	}
-
-	err = h.services.Message.SendMessage(&SendMessageOptions{
-		ChatID: msg.Message.Chat.ID,
-		Text:   "Category successfully created!",
-	})
-	if err != nil {
-		logger.Error().Err(err).Msg("send message")
-		return fmt.Errorf("send message: %w", err)
-	}
-
-	logger.Info().Msg("handled create category event")
-	return nil
-}
-
-func (h handlerService) HandleEventListCategories(ctx context.Context, msg botMessage) error {
-	logger := h.logger
-	logger.Debug().Interface("msg", msg).Msg("got args")
-
-	user, err := h.stores.User.Get(ctx, GetUserFilter{
-		Username: msg.GetUsername(),
-	})
-	if err != nil {
-		logger.Error().Err(err).Msg("get user from store")
-		return fmt.Errorf("get user from store: %w", err)
-	}
-
-	categories, err := h.services.Category.ListCategories(ctx, user.ID)
-	if err != nil {
-		if errors.Is(err, ErrCategoriesNotFound) {
-			err = h.services.Message.SendMessage(&SendMessageOptions{
-				ChatID: msg.Message.Chat.ID,
-				Text:   "Categories not found!",
-			})
-			if err != nil {
-				logger.Error().Err(err).Msg("send message")
-				return fmt.Errorf("send message: %w", err)
-			}
-
-			logger.Info().Msg("categories not found")
-			return nil
-		}
-		logger.Error().Err(err).Msg("get list of categories from store")
-		return fmt.Errorf("get list of categories from store: %w", err)
-	}
-
-	outputMessage := "Categories: \n"
-
-	for i, c := range categories {
-		i++
-		outputMessage += fmt.Sprintf("%v. %s\n", i, c.Title)
-	}
-	logger.Debug().Interface("outputMessage", outputMessage).Msg("built output message")
-
-	err = h.services.Message.SendMessage(&SendMessageOptions{
-		ChatID: msg.Message.Chat.ID,
-		Text:   outputMessage,
-	})
-	if err != nil {
-		logger.Error().Err(err).Msg("send message")
-		return fmt.Errorf("send message: %w", err)
-	}
-
-	logger.Info().Msg("handled list categories event")
-	return nil
-}
-
-func (h handlerService) HandleEventUpdateBalance(ctx context.Context, eventName event, msg botMessage) error {
-	logger := h.logger
-	logger.Debug().Interface("msg", msg).Msg("got args")
-
-	isBotCommand := IsBotCommand(msg.Message.Text)
-
-	if isBotCommand && eventName == updateBalanceEvent {
-		err := h.services.Keyboard.CreateKeyboard(&CreateKeyboardOptions{
-			ChatID:  msg.Message.Chat.ID,
-			Message: "Choose what you want to update in your balance:",
-			Type:    keyboardTypeRow,
-			Rows: []bot.KeyboardRow{
-				{Buttons: []string{botUpdateBalanceAmountCommand, botUpdateBalanceCurrencyCommand}},
-				{Buttons: []string{botBackCommand}},
-			},
-		})
-		if err != nil {
-			logger.Error().Err(err).Msg("create keyboard")
-			return fmt.Errorf("create keyboard: %w", err)
-		}
-
-		logger.Info().Msg("handled command input")
-		return nil
-	}
-
-	user, err := h.stores.User.Get(ctx, GetUserFilter{
-		Username: msg.GetUsername(),
-	})
-	if err != nil {
-		logger.Error().Err(err).Msg("get user from store")
-		return fmt.Errorf("get user from store: %w", err)
-	}
-
-	balance, err := h.stores.Balance.Get(ctx, GetBalanceFilter{
-		UserID: user.ID,
-	})
-	if err != nil {
-		logger.Error().Err(err).Msg("get balance from store")
-		return fmt.Errorf("get balance from store: %w", err)
-	}
-
-	if eventName == updateBalanceAmountEvent {
-		err = h.handleUpdateBalanceAmountEvent(ctx, updateBalanceAmountOptions{
-			balance:      balance,
-			chatID:       msg.Message.Chat.ID,
-			amount:       msg.Message.Text,
-			isBotCommand: isBotCommand,
-		})
-		if err != nil {
-			logger.Error().Err(err).Msg("handle update balance amount event")
-			return fmt.Errorf("handle update balance amount event: %w", err)
-		}
-
-		logger.Info().Msg("handled update balance amount")
-		return nil
-	}
-	if eventName == updateBalanceCurrencyEvent {
-		err = h.handleUpdateBalanceCurrencyEvent(ctx, updateBalanceCurrencyOptions{
-			balance:      balance,
-			chatID:       msg.Message.Chat.ID,
-			currency:     msg.Message.Text,
-			isBotCommand: isBotCommand,
-		})
-		if err != nil {
-			logger.Error().Err(err).Msg("handle update balance currency event")
-			return fmt.Errorf("handle update balance currency event: %w", err)
-		}
-
-		logger.Info().Msg("handled update currency amount")
-		return nil
-	}
-
-	logger.Info().Msg("handled update balance")
-	return nil
-}
-
-type updateBalanceAmountOptions struct {
-	balance      *models.Balance
-	chatID       int64
-	amount       string
-	isBotCommand bool
-}
-
-func (h handlerService) handleUpdateBalanceAmountEvent(ctx context.Context, opts updateBalanceAmountOptions) error {
-	logger := h.logger
-	logger.Debug().Interface("opts", opts).Msg("got args")
-
-	if opts.isBotCommand {
-		err := h.services.Message.SendMessage(&SendMessageOptions{
-			ChatID: opts.chatID,
-			Text:   "Enter balance amount:",
-		})
-		if err != nil {
-			logger.Error().Err(err).Msg("send message")
-			return fmt.Errorf("send message: %w", err)
-		}
-
-		logger.Info().Msg("handled command input")
-		return nil
-	}
-
-	price, err := money.NewFromString(opts.amount)
-	if err != nil {
-		logger.Error().Err(err).Msg("convert option amount to money type")
-
-		err = h.services.Message.SendMessage(&SendMessageOptions{
-			ChatID: opts.chatID,
-			Text:   "Please enter amount in the right format!\nExamples: 1000.12, 10.12, 35",
-		})
-		if err != nil {
-			logger.Error().Err(err).Msg("send message")
-			return fmt.Errorf("send message: %w", err)
-		}
-
-		return nil
-	}
-
-	opts.balance.Amount = price.String()
-	logger.Debug().Interface("opts.balance.Amount", opts.balance.Amount).Msg("calculated balance amount")
-
-	err = h.stores.Balance.Update(ctx, opts.balance)
-	if err != nil {
-		logger.Error().Err(err).Msg("update balance in store")
-		return fmt.Errorf("update balance in store: %w", err)
-	}
-
-	err = h.services.Message.SendMessage(&SendMessageOptions{
-		ChatID: opts.chatID,
-		Text:   "Balance values successfully updated!",
-	})
-	if err != nil {
-		logger.Error().Err(err).Msg("send message")
-		return fmt.Errorf("send message: %w", err)
-	}
-
-	logger.Info().Msg("handled case update balance amount")
-	return nil
-}
-
-type updateBalanceCurrencyOptions struct {
-	balance      *models.Balance
-	chatID       int64
-	currency     string
-	isBotCommand bool
-}
-
-func (h handlerService) handleUpdateBalanceCurrencyEvent(ctx context.Context, opts updateBalanceCurrencyOptions) error {
-	logger := h.logger
-	logger.Debug().Interface("opts", opts).Msg("got args")
-
-	if opts.isBotCommand {
-		err := h.services.Message.SendMessage(&SendMessageOptions{
-			ChatID: opts.chatID,
-			Text:   "Enter balance currency:",
-		})
-		if err != nil {
-			logger.Error().Err(err).Msg("send message")
-			return fmt.Errorf("send message: %w", err)
-		}
-
-		logger.Info().Msg("handled command input")
-		return nil
-	}
-
-	opts.balance.Currency = opts.currency
-
-	err := h.stores.Balance.Update(ctx, opts.balance)
-	if err != nil {
-		logger.Error().Err(err).Msg("update balance in store")
-		return fmt.Errorf("update balance in store: %w", err)
-	}
-
-	err = h.services.Message.SendMessage(&SendMessageOptions{
-		ChatID: opts.chatID,
-		Text:   "Balance currency successfully updated!",
-	})
-	if err != nil {
-		logger.Error().Err(err).Msg("send message")
-		return fmt.Errorf("send message: %w", err)
-	}
-
-	logger.Info().Msg("handled case update balance currency")
-	return nil
-}
-
 func (h handlerService) HandleEventOperationCreate(ctx context.Context, eventName event, msg botMessage) error {
 	logger := h.logger
 
@@ -457,34 +156,34 @@ func (h handlerService) HandleEventOperationCreate(ctx context.Context, eventNam
 	}
 
 	if msg.CallbackQuery.Data != "" && (eventName == createIncomingOperationEvent || eventName == createSpendingOperationEvent) {
-		categories, err := h.services.Category.ListCategories(ctx, user.ID)
-		if err != nil {
-			if errors.Is(err, ErrCategoriesNotFound) {
-				err = h.services.Message.SendMessage(&SendMessageOptions{
-					ChatID: msg.GetChatID(),
-					Text:   "Please create a category before creating operation",
-				})
-				if err != nil {
-					logger.Error().Err(err).Msg("send message")
-					return fmt.Errorf("send message: %w", err)
-				}
+		// categories, err := h.services.Category.ListCategories(ctx, user.ID)
+		// if err != nil {
+		// 	if errors.Is(err, ErrCategoriesNotFound) {
+		// 		err = h.services.Message.SendMessage(&SendMessageOptions{
+		// 			ChatID: msg.GetChatID(),
+		// 			Text:   "Please create a category before creating operation",
+		// 		})
+		// 		if err != nil {
+		// 			logger.Error().Err(err).Msg("send message")
+		// 			return fmt.Errorf("send message: %w", err)
+		// 		}
 
-				logger.Info().Msg("categories not found")
-				return nil
-			}
+		// 		logger.Info().Msg("categories not found")
+		// 		return nil
+		// 	}
 
-			logger.Error().Err(err).Msg("get list of categories from store")
-			return fmt.Errorf("get list of categories from store: %w", err)
-		}
+		// 	logger.Error().Err(err).Msg("get list of categories from store")
+		// 	return fmt.Errorf("get list of categories from store: %w", err)
+		// }
 
 		keyboardRows := []bot.KeyboardRow{
 			{Buttons: []string{}},
 			{Buttons: []string{botBackCommand}},
 		}
 
-		for _, c := range categories {
-			keyboardRows[0].Buttons = append(keyboardRows[0].Buttons, c.Title)
-		}
+		// for _, c := range categories {
+		// 	keyboardRows[0].Buttons = append(keyboardRows[0].Buttons, c.Title)
+		// }
 
 		err = h.services.Keyboard.CreateKeyboard(&CreateKeyboardOptions{
 			ChatID:  msg.GetChatID(),
@@ -503,7 +202,7 @@ func (h handlerService) HandleEventOperationCreate(ctx context.Context, eventNam
 
 	if msg.Message.Text != "" {
 		category, err := h.stores.Category.Get(ctx, GetCategoryFilter{
-			Title: &msg.Message.Text,
+			Title: msg.Message.Text,
 		})
 		if err != nil {
 			logger.Error().Err(err).Msg("get category store")

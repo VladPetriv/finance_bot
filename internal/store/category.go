@@ -26,25 +26,26 @@ func NewCategory(db *database.MongoDB) *categoryStore {
 	}
 }
 
-func (c categoryStore) GetAll(ctx context.Context, filters *service.GetALlCategoriesFilter) ([]models.Category, error) {
-	filter := bson.M{}
+func (c categoryStore) List(ctx context.Context, filter *service.ListCategoriesFilter) ([]models.Category, error) {
+	stmt := bson.M{}
 
-	if filters.UserID != nil {
-		filter = bson.M{"userid": *filters.UserID}
+	if filter.UserID != "" {
+		stmt = bson.M{"userid": filter.UserID}
 	}
 
-	cursor, err := c.DB.Collection(collectionCategory).Find(ctx, filter)
+	cursor, err := c.DB.Collection(collectionCategory).Find(ctx, stmt)
 	if err != nil {
 		return nil, err
 	}
 
 	var categories []models.Category
-
-	if err := cursor.All(ctx, &categories); err != nil {
+	err = cursor.All(ctx, &categories)
+	if err != nil {
 		return nil, err
 	}
 
-	if err := cursor.Close(ctx); err != nil {
+	err = cursor.Close(ctx)
+	if err != nil {
 		return nil, err
 	}
 
@@ -54,11 +55,11 @@ func (c categoryStore) GetAll(ctx context.Context, filters *service.GetALlCatego
 func (c categoryStore) Get(ctx context.Context, filter service.GetCategoryFilter) (*models.Category, error) {
 	request := bson.M{}
 
-	if filter.ID != nil {
-		request["_id"] = *filter.ID
+	if filter.ID != "" {
+		request["_id"] = filter.ID
 	}
-	if filter.Title != nil {
-		request["title"] = *filter.Title
+	if filter.Title != "" {
+		request["title"] = filter.Title
 	}
 
 	var category models.Category

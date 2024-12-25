@@ -15,7 +15,6 @@ type Services struct {
 	Handler   HandlerService
 	Message   MessageService
 	Keyboard  KeyboardService
-	Category  CategoryService
 	Operation OperationService
 	State     StateService
 }
@@ -35,13 +34,11 @@ type HandlerService interface {
 	HandleEventBalanceUpdated(ctx context.Context, msg botMessage) error
 	// HandleEventGetBalance is used to handle get balance event.
 	HandleEventGetBalance(ctx context.Context, msg botMessage) error
-
-	// HandleEventListCategories is used to handle update balance event.
-	HandleEventUpdateBalance(ctx context.Context, eventName event, msg botMessage) error
 	// HandleEventCategoryCreate is used to handle category created event.
-	HandleEventCategoryCreate(ctx context.Context, msg botMessage) error
+	HandleEventCategoryCreated(ctx context.Context, msg botMessage) error
 	// HandleEventListCategories is used to handle lit categories event.
 	HandleEventListCategories(ctx context.Context, msg botMessage) error
+
 	// HandleEventOperationCreate is used to create an operation without amount.
 	HandleEventOperationCreate(ctc context.Context, eventName event, msg botMessage) error
 	// HandleEventUpdateOperationAmount get last transaction with empty amount from db and update his amount with user one.
@@ -194,6 +191,9 @@ var defaultKeyboardRows = []bot.KeyboardRow{
 	{
 		Buttons: []string{models.BotGetBalanceCommand, models.BotCreateBalanceCommand, models.BotUpdateBalanceCommand},
 	},
+	{
+		Buttons: []string{models.BotCreateCategoryCommand, models.BotListCategoriesCommand},
+	},
 }
 
 var (
@@ -202,14 +202,6 @@ var (
 	// ErrUserNotFound happens when user not exists in system.
 	ErrUserNotFound = errors.New("user not found")
 )
-
-// CategoryService provides business logic for processing categories.
-type CategoryService interface {
-	// CreateCategory creates a new category.
-	CreateCategory(ctx context.Context, category *models.Category) error
-	// ListCategories fetches a list of categories for the specified user ID.
-	ListCategories(ctx context.Context, userID string) ([]models.Category, error)
-}
 
 var (
 	// ErrCategoryAlreadyExists happens when try to create category that already exists.
