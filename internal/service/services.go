@@ -38,6 +38,8 @@ type HandlerService interface {
 	HandleEventListCategories(ctx context.Context, msg botMessage) error
 	// HandleEventOperationCreated is used to create an operation.
 	HandleEventOperationCreated(ctc context.Context, msg botMessage) error
+	// HandleEventGetOperationsHistory is used to get operations history.
+	HandleEventGetOperationsHistory(ctx context.Context, msg botMessage) error
 
 	// HandleEventBack is used to reset bot buttons to default mode.
 	HandleEventBack(ctx context.Context, msg botMessage) error
@@ -142,13 +144,13 @@ const (
 
 var defaultKeyboardRows = []bot.KeyboardRow{
 	{
-		Buttons: []string{models.BotGetBalanceCommand, models.BotCreateBalanceCommand, models.BotUpdateBalanceCommand},
+		Buttons: []string{models.BotCreateBalanceCommand, models.BotUpdateBalanceCommand, models.BotGetBalanceCommand},
 	},
 	{
 		Buttons: []string{models.BotCreateCategoryCommand, models.BotListCategoriesCommand},
 	},
 	{
-		Buttons: []string{models.BotCreateOperationCommand},
+		Buttons: []string{models.BotCreateOperationCommand, models.BotGetOperationsHistory},
 	},
 }
 
@@ -167,6 +169,9 @@ var (
 
 	// ErrBalanceNotFound happens when don't receive balance from store.
 	ErrBalanceNotFound = errors.New("balance not found")
+
+	// ErrOperationsNotFound happens when don't receive operations from store.
+	ErrOperationsNotFound = errors.New("operations not found")
 
 	// ErrInvalidAmountFormat happens when use enters amount with invalid format
 	ErrInvalidAmountFormat = errors.New("invalid amount format")

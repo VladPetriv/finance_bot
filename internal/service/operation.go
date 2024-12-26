@@ -238,3 +238,147 @@ func (h handlerService) handleEnterOperationAmountFlowStep(ctx context.Context, 
 
 	return nil
 }
+
+func (h handlerService) HandleEventGetOperationsHistory(ctx context.Context, msg botMessage) error {
+	logger := h.logger.With().Str("name", "handlerService.HandleEventGetOperationsHistory").Logger()
+	logger.Debug().Any("msg", msg).Msg("got args")
+
+	var nextStep models.FlowStep
+	stateMetaData := ctx.Value(contextFieldNameState).(*models.State).Metedata
+	logger.Debug().Any("stateMetaData", stateMetaData).Msg("got state metadata")
+
+	defer func() {
+		state := ctx.Value(contextFieldNameState).(*models.State)
+		state.Steps = append(state.Steps, nextStep)
+		state.Metedata = stateMetaData
+		updatedState, err := h.stores.State.Update(ctx, state)
+		if err != nil {
+			logger.Error().Err(err).Msg("update state in store")
+			return
+		}
+		logger.Debug().Interface("updatedState", updatedState).Msg("updated state in store")
+	}()
+
+	user, err := h.stores.User.Get(ctx, GetUserFilter{
+		Username:        msg.GetUsername(),
+		PreloadBalances: true,
+	})
+	if err != nil {
+		logger.Error().Err(err).Msg("get user from store")
+		return fmt.Errorf("get user from store: %w", err)
+	}
+	if user == nil {
+		logger.Info().Msg("user not found")
+		return ErrUserNotFound
+	}
+	logger.Debug().Any("user", user).Msg("got user from store")
+
+	currentStep := ctx.Value(contextFieldNameState).(*models.State).GetCurrentStep()
+	logger.Debug().Any("currentStep", currentStep).Msg("got current step")
+
+	switch currentStep {
+	case models.GetOperationsHistoryFlowStep:
+		err := h.services.Keyboard.CreateKeyboard(&CreateKeyboardOptions{
+			ChatID:  msg.GetChatID(),
+			Message: "Select a balance to view information:",
+			Type:    keyboardTypeRow,
+			Rows:    convertSliceToKeyboardRows(user.Balances),
+		})
+		if err != nil {
+			logger.Error().Err(err).Msg("create row keyboard")
+			return fmt.Errorf("create row keyboard: %w", err)
+		}
+
+		nextStep = models.ChooseBalanceFlowStep
+	case models.ChooseBalanceFlowStep:
+		stateMetaData["balanceName"] = msg.Message.Text
+		err := h.services.Keyboard.CreateKeyboard(&CreateKeyboardOptions{
+			ChatID:  msg.GetChatID(),
+			Message: "Please select a period for operation history!",
+			Type:    keyboardTypeRow,
+			Rows: []bot.KeyboardRow{
+				{
+					Buttons: []string{
+						string(models.CreationPeriodDay),
+						string(models.CreationPeriodWeek),
+						string(models.CreationPeriodMonth),
+						string(models.CreationPeriodYear),
+					},
+				},
+			},
+		})
+		if err != nil {
+			logger.Error().Err(err).Msg("create row keyboard")
+			return fmt.Errorf("create row keyboard: %w", err)
+		}
+
+		nextStep = models.ChooseTimePeriodForOperationsHistoryFlowStep
+	case models.ChooseTimePeriodForOperationsHistoryFlowStep:
+		err := h.handlerChooseTimePeriodForOperationsHistoryFlowStep(ctx, handlerChooseTimePeriodForOperationsHistoryFlowStepOptions{
+			user:     user,
+			metaData: stateMetaData,
+			msg:      msg,
+		})
+		if err != nil {
+			logger.Error().Err(err).Msg("handle choose time period for operations history flow step")
+			return fmt.Errorf("handle choose time period for operations history flow step: %w", err)
+		}
+
+		nextStep = models.EndFlowStep
+	}
+
+	logger.Info().Msg("handled get operations history event")
+	return nil
+}
+
+type handlerChooseTimePeriodForOperationsHistoryFlowStepOptions struct {
+	user     *models.User
+	metaData map[string]any
+	msg      botMessage
+}
+
+func (h handlerService) handlerChooseTimePeriodForOperationsHistoryFlowStep(ctx context.Context, opts handlerChooseTimePeriodForOperationsHistoryFlowStepOptions) error {
+	logger := h.logger.With().Str("name", "handlerService.handlerChooseTimePeriodForOperationsHistoryFlowStep").Logger()
+	logger.Debug().Any("opts", opts).Msg("got args")
+
+	balance := opts.user.GetBalance(opts.metaData["balanceName"].(string))
+	if balance == nil {
+		logger.Info().Msg("balance not found")
+		return ErrBalanceNotFound
+	}
+	logger.Debug().Any("balance", balance).Msg("got balance")
+
+	creationPeriod := models.GetCreationPeriodFromText(opts.msg.Message.Text)
+	operations, err := h.stores.Operation.List(ctx, ListOperationsFilter{
+		BalanceID:      balance.ID,
+		CreationPeriod: creationPeriod,
+	})
+	if err != nil {
+		logger.Error().Err(err).Msg("get all operations from store")
+		return fmt.Errorf("get all operations from store: %w", err)
+	}
+	if operations == nil {
+		logger.Info().Msg("operations not found")
+		return ErrOperationsNotFound
+	}
+
+	resultMessage := fmt.Sprintf("Balance Amount: %v%s\nPeriod: %v\n", balance.Amount, balance.Currency, *creationPeriod)
+
+	for _, o := range operations {
+		resultMessage += fmt.Sprintf(
+			"\nOperation: %s\nCategory: %s\nAmount: %v%s\nCreation date: %v\n- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -",
+			o.Type, o.CategoryID, o.Amount, balance.Currency, o.CreatedAt.Format(time.ANSIC),
+		)
+	}
+
+	err = h.services.Message.SendMessage(&SendMessageOptions{
+		ChatID: opts.msg.GetChatID(),
+		Text:   resultMessage,
+	})
+	if err != nil {
+		logger.Error().Err(err).Msg("send message")
+		return fmt.Errorf("send message: %w", err)
+	}
+
+	return nil
+}
