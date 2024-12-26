@@ -237,6 +237,7 @@ func TestOperation_List(t *testing.T) {
 		})
 	}
 }
+
 func TestOperation_Delete(t *testing.T) {
 	t.Parallel()
 
