@@ -42,13 +42,11 @@ func Run(ctx context.Context, cfg *config.Config, logger *logger.Logger) {
 		Logger: logger,
 		Stores: stores,
 	})
-	operationService := service.NewOperation(logger, stores.Operation, stores.Balance, stores.Category)
 
 	services := service.Services{
-		Message:   messageService,
-		Keyboard:  keyboardService,
-		Operation: operationService,
-		State:     stateService,
+		Message:  messageService,
+		Keyboard: keyboardService,
+		State:    stateService,
 	}
 
 	handlerService := service.NewHandler(&service.HandlerOptions{

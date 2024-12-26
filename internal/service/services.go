@@ -11,12 +11,11 @@ import (
 
 // Services represents structure with all services.
 type Services struct {
-	Event     EventService
-	Handler   HandlerService
-	Message   MessageService
-	Keyboard  KeyboardService
-	Operation OperationService
-	State     StateService
+	Event    EventService
+	Handler  HandlerService
+	Message  MessageService
+	Keyboard KeyboardService
+	State    StateService
 }
 
 // HandlerService provides functionally for handling events.
@@ -112,47 +111,6 @@ type from struct {
 	Username string `json:"username"`
 }
 
-type event string
-
-const (
-	startEvent                   event = "start"
-	createCategoryEvent          event = "create/category"
-	listCategoryEvent            event = "list/categories"
-	updateBalanceEvent           event = "update/balance"
-	updateBalanceAmountEvent     event = "update/balance/amount"
-	updateBalanceCurrencyEvent   event = "update/balance/currency"
-	getBalanceEvent              event = "get/balance"
-	createOperationEvent         event = "create/operation"
-	createIncomingOperationEvent event = "create/incoming/operation"
-	createSpendingOperationEvent event = "create/spending/operation"
-	updateOperationAmountEvent   event = "update/operation/amount"
-	getOperationsHistoryEvent    event = "get/operations/history"
-	backEvent                    event = "back"
-	unknownEvent                 event = "unknown"
-)
-
-// Commands that we can received from bot.
-const (
-	botStartCommand                   string = "/start"
-	botBackCommand                    string = "Back ❌"
-	botCreateCategoryCommand          string = "Create Category 📊"
-	botListCategoriesCommand          string = "List Categories 🗂️"
-	botUpdateBalanceCommand           string = "Update Balance 💲"
-	botUpdateBalanceAmountCommand     string = "Update Balance Amount 💵"
-	botUpdateBalanceCurrencyCommand   string = "Update Balance Currency 💱"
-	botGetBalanceCommand              string = "Get Balance Info 🏦"
-	botCreateOperationCommand         string = "Create Operation 🤔"
-	botCreateIncomingOperationCommand string = "Create Incoming Operation 🤑"
-	botCreateSpendingOperationCommand string = "Create Spending Operation 💸"
-	botUpdateOperationAmountCommand   string = "Update Operation Amount 💵"
-	botGetOperationsHistory           string = "Get Operations History 📖"
-)
-
-// IsBotCommand is used to determine if incoming text a bot command or not.
-func IsBotCommand(command string) bool {
-	return strings.Contains(strings.Join(models.AvailableCommands, " "), command)
-}
-
 // MessageService provides functionally for sending messages.
 type MessageService interface {
 	// SendMessage is used to send messages for specific chat.
@@ -201,34 +159,20 @@ var (
 	ErrUserAlreadyExists = errors.New("user already exists")
 	// ErrUserNotFound happens when user not exists in system.
 	ErrUserNotFound = errors.New("user not found")
-)
 
-var (
 	// ErrCategoryAlreadyExists happens when try to create category that already exists.
 	ErrCategoryAlreadyExists = errors.New("category already exist")
 	// ErrCategoriesNotFound happens when received zero categories from store.
 	ErrCategoriesNotFound = errors.New("categories not found")
 	// ErrCategoryNotFound happens when received not category from store.
 	ErrCategoryNotFound = errors.New("category not found")
+
+	// ErrBalanceNotFound happens when don't receive balance from store.
+	ErrBalanceNotFound = errors.New("balance not found")
+
+	// ErrInvalidAmountFormat happens when use enters amount with invalid format
+	ErrInvalidAmountFormat = errors.New("invalid amount format")
 )
-
-// ErrBalanceNotFound happens when don't receive balance from store.
-var ErrBalanceNotFound = errors.New("balance not found")
-
-// OperationService provides business logic for work with balance operations.
-type OperationService interface {
-	// CreateOperation is used to create new operation with change of user balance amount.
-	CreateOperation(ctx context.Context, opts CreateOperationOptions) error
-}
-
-// CreateOperationOptions represents an input values for creating new operation.
-type CreateOperationOptions struct {
-	UserID    string
-	Operation *models.Operation
-}
-
-// ErrInvalidAmountFormat happens when use enters amount with invalid format
-var ErrInvalidAmountFormat = errors.New("invalid amount format")
 
 // StateService represents a service for managing and handling complex bot flow using statesstates.
 type StateService interface {
