@@ -49,6 +49,10 @@ func (s *State) GetEvent() Event {
 		return CreateCategoryEvent
 	case ListCategoriesFlowStep:
 		return ListCategoriesEvent
+	case CreateOperationFlowStep:
+		return CreateOperationEvent
+	case GetOperationsHistoryFlowStep:
+		return GetOperationsHistoryEvent
 	default:
 		return UnknownEvent
 	}
@@ -70,6 +74,10 @@ const (
 	CreateCategoryFlow Flow = "create_category"
 	// ListCategoriesFlow represents the flow for listing all categories
 	ListCategoriesFlow Flow = "list_categories"
+	// CreateOperationFlow represents the flow for creating a new operation
+	CreateOperationFlow Flow = "create_operation"
+	// GetOperationsHistoryFlow represents the flow for getting operations history
+	GetOperationsHistoryFlow Flow = "get_operations_history"
 )
 
 // FlowStep represents a specific step within a flow
@@ -110,4 +118,19 @@ const (
 	EnterCategoryNameFlowStep FlowStep = "enter_category_name"
 	// ListCategoriesFlowStep represents the step for listing all categories
 	ListCategoriesFlowStep FlowStep = "list_categories"
+
+	// Steps that are relad for operation
+
+	// CreateOperationFlowStep represents the step for creating a new operation
+	CreateOperationFlowStep FlowStep = "create_operation"
+	// ChooseOprationTypeFlowStep represents the step for choosing operation type
+	ChooseOprationTypeFlowStep FlowStep = "choose_opration_type"
+	// ChooseCategoryFlowStep represents the step for choosing category
+	ChooseCategoryFlowStep FlowStep = "choose_category"
+	// EnterOperationAmountFlowStep represents the step for entering operation amount
+	EnterOperationAmountFlowStep FlowStep = "enter_operation_amount"
+	// GetOperationsHistoryFlowStep represents the step for getting operations history
+	GetOperationsHistoryFlowStep FlowStep = "get_operations_history"
+	// ChooseTimePeriodForOperationsHistoryFlowStep represents the step for choosing time period for operations history
+	ChooseTimePeriodForOperationsHistoryFlowStep FlowStep = "choose_time_period_for_operations_history"
 )

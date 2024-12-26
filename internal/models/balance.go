@@ -9,3 +9,8 @@ type Balance struct {
 	Amount   string `bson:"amount,omitempty"`
 	Currency string `bson:"currency,omitempty"`
 }
+
+// GetName returns the balance name.
+func (b Balance) GetName() string {
+	return b.Name
+}

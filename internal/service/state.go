@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/VladPetriv/finance_bot/internal/models"
@@ -60,7 +61,7 @@ func (s stateService) HandleState(ctx context.Context, message botMessage) (*Han
 			UpdatedAt: time.Now(),
 		}
 
-		if IsBotCommand(message.Message.Text) {
+		if isBotCommand(message.Message.Text) {
 			firstFlowStep := models.CommadToFistFlowStep[message.Message.Text]
 
 			// NOTE: We handle here only flows that require more than two step.
@@ -111,7 +112,7 @@ func (s stateService) HandleState(ctx context.Context, message botMessage) (*Han
 			UpdatedAt: time.Now(),
 		}
 
-		if IsBotCommand(message.Message.Text) {
+		if isBotCommand(message.Message.Text) {
 			firstFlowStep := models.CommadToFistFlowStep[message.Message.Text]
 
 			// NOTE: We handle here only flows that require more than two step.
@@ -137,4 +138,8 @@ func (s stateService) HandleState(ctx context.Context, message botMessage) (*Han
 		State: nil,
 		Event: models.UnknownEvent,
 	}, nil
+}
+
+func isBotCommand(command string) bool {
+	return strings.Contains(strings.Join(models.AvailableCommands, " "), command)
 }

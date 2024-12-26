@@ -18,14 +18,20 @@ const (
 	CreateCategoryEvent Event = "category/create"
 	// ListCategoriesEvent represents the event for listing all categories
 	ListCategoriesEvent Event = "category/list"
+	// CreateOperationEvent represents the event for creating a new operation
+	CreateOperationEvent Event = "operation/create"
+	// GetOperationsHistoryEvent represents the event for getting operations history
+	GetOperationsHistoryEvent Event = "operation/get_history"
 )
 
 // EventToFlow maps events to their corresponding flows
 var EventToFlow = map[Event]Flow{
-	StartEvent:          StartFlow,
-	CreateBalanceEvent:  CreateBalanceFlow,
-	UpdateBalanceEvent:  UpdateBalanceFlow,
-	GetBalanceEvent:     GetBalanceFlow,
-	CreateCategoryEvent: CreateCategoryFlow,
-	ListCategoriesEvent: ListCategoriesFlow,
+	StartEvent:                StartFlow,
+	CreateBalanceEvent:        CreateBalanceFlow,
+	UpdateBalanceEvent:        UpdateBalanceFlow,
+	GetBalanceEvent:           GetBalanceFlow,
+	CreateCategoryEvent:       CreateCategoryFlow,
+	ListCategoriesEvent:       ListCategoriesFlow,
+	CreateOperationEvent:      CreateOperationFlow,
+	GetOperationsHistoryEvent: GetOperationsHistoryFlow,
 }

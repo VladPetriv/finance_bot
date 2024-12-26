@@ -154,11 +154,25 @@ func (e eventService) ReactOnEvent(ctx context.Context, event models.Event, msg 
 			return fmt.Errorf("handle event list categories: %w", err)
 		}
 
+	case models.CreateOperationEvent:
+		err := e.handlerService.HandleEventOperationCreated(ctx, msg)
+		if err != nil {
+			logger.Error().Err(err).Msg("handle event operation created")
+			return fmt.Errorf("handle event operation created: %w", err)
+		}
+
 	case models.UnknownEvent:
 		err := e.handlerService.HandleEventUnknown(msg)
 		if err != nil {
 			logger.Error().Err(err).Msg("handle event unknown")
 			return fmt.Errorf("handle event event unknown: %w", err)
+		}
+
+	case models.GetOperationsHistoryEvent:
+		err := e.handlerService.HandleEventGetOperationsHistory(ctx, msg)
+		if err != nil {
+			logger.Error().Err(err).Msg("handle event get operations history")
+			return fmt.Errorf("handle event get operations history: %w", err)
 		}
 
 	// case models.BackEvent:
@@ -168,29 +182,8 @@ func (e eventService) ReactOnEvent(ctx context.Context, event models.Event, msg 
 	// 		return fmt.Errorf("handle event back: %w", err)
 	// 	}
 
-	// case createOperationEvent, createIncomingOperationEvent, createSpendingOperationEvent:
-	// 	err := e.handlerService.HandleEventOperationCreate(ctx, eventName, msg)
-	// 	if err != nil {
-	// 		logger.Error().Err(err).Msg("handle event operation create")
-	// 		return fmt.Errorf("handle event operation create: %w", err)
-	// 	}
-
-	// case updateOperationAmountEvent:
-	// 	err := e.handlerService.HandleEventUpdateOperationAmount(ctx, msg)
-	// 	if err != nil {
-	// 		logger.Error().Err(err).Msg("handle event update operation amount")
-	// 		return fmt.Errorf("handle event update operation amount: %w", err)
-	// 	}
-
-	// case getOperationsHistoryEvent:
-	// 	err := e.handlerService.HandleEventGetOperationsHistory(ctx, msg)
-	// 	if err != nil {
-	// 		logger.Error().Err(err).Msg("handle event get operations history")
-	// 		return fmt.Errorf("handle event get operations history: %w", err)
-	// 	}
-
 	default:
-		logger.Warn().Interface("event", event).Msg("receive unexpected event")
+		logger.Error().Any("event", event).Msg("receive unexpected event")
 		return fmt.Errorf("receive unexpected event: %v", event)
 	}
 
