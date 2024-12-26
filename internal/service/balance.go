@@ -5,7 +5,6 @@ import (
 	"fmt"
 
 	"github.com/VladPetriv/finance_bot/internal/models"
-	"github.com/VladPetriv/finance_bot/pkg/bot"
 	"github.com/VladPetriv/finance_bot/pkg/money"
 	"github.com/google/uuid"
 )
@@ -203,7 +202,7 @@ func (h handlerService) HandleEventBalanceUpdated(ctx context.Context, msg botMe
 			ChatID:  msg.GetChatID(),
 			Message: "Choose balance to update:",
 			Type:    keyboardTypeRow,
-			Rows:    convertBalancesToKeyboardRows(user.Balances),
+			Rows:    convertSliceToKeyboardRows(user.Balances),
 		})
 		if err != nil {
 			logger.Error().Err(err).Msg("create keyboard with welcome message")
@@ -404,7 +403,7 @@ func (h handlerService) HandleEventGetBalance(ctx context.Context, msg botMessag
 			ChatID:  msg.GetChatID(),
 			Message: "Select a balance to view information:",
 			Type:    keyboardTypeRow,
-			Rows:    convertBalancesToKeyboardRows(user.Balances),
+			Rows:    convertSliceToKeyboardRows(user.Balances),
 		})
 		if err != nil {
 			logger.Error().Err(err).Msg("create keyboard with welcome message")
@@ -457,23 +456,4 @@ func (h handlerService) processGetBalanceInfo(ctx context.Context, msg botMessag
 	}
 
 	return nil
-}
-
-const maxBalancesPerRow = 3
-
-func convertBalancesToKeyboardRows(balances []models.Balance) []bot.KeyboardRow {
-	keyboardRows := make([]bot.KeyboardRow, 0)
-
-	var currentRow bot.KeyboardRow
-	for i, balance := range balances {
-		currentRow.Buttons = append(currentRow.Buttons, balance.Name)
-
-		// When row is full or we're at the last balance item, append row
-		if len(currentRow.Buttons) == maxBalancesPerRow || i == len(balances)-1 {
-			keyboardRows = append(keyboardRows, currentRow)
-			currentRow = bot.KeyboardRow{} // Reset current row
-		}
-	}
-
-	return keyboardRows
 }

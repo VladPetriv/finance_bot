@@ -498,3 +498,26 @@ func (h handlerService) HandleError(ctx context.Context, msg botMessage) error {
 	logger.Info().Msg("handled error")
 	return nil
 }
+
+type named interface {
+	GetName() string
+}
+
+const maxBalancesPerRow = 3
+
+func convertSliceToKeyboardRows[T named](data []T) []bot.KeyboardRow {
+	keyboardRows := make([]bot.KeyboardRow, 0)
+
+	var currentRow bot.KeyboardRow
+	for i, entry := range data {
+		currentRow.Buttons = append(currentRow.Buttons, entry.GetName())
+
+		// When row is full or we're at the last data item, append row
+		if len(currentRow.Buttons) == maxBalancesPerRow || i == len(data)-1 {
+			keyboardRows = append(keyboardRows, currentRow)
+			currentRow = bot.KeyboardRow{} // Reset current row
+		}
+	}
+
+	return keyboardRows
+}
