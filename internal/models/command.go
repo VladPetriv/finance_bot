@@ -15,22 +15,17 @@ const (
 	// BotListCategoriesCommand represents the command to list all categories
 	BotListCategoriesCommand string = "List Categories 📋"
 
-	// BotBackCommand represents the command to go back to previous state
-	BotBackCommand string = "Back ❌"
-	// BotUpdateBalanceAmountCommand represents the command to update balance amount
-	BotUpdateBalanceAmountCommand string = "Update Balance Amount 💵"
-	// BotUpdateBalanceCurrencyCommand represents the command to update balance currency
-	BotUpdateBalanceCurrencyCommand string = "Update Balance Currency 💱"
 	// BotCreateOperationCommand represents the command to create a new operation
 	BotCreateOperationCommand string = "Create Operation 🤔"
 	// BotCreateIncomingOperationCommand represents the command to create an incoming operation
 	BotCreateIncomingOperationCommand string = "Create Incoming Operation 🤑"
 	// BotCreateSpendingOperationCommand represents the command to create a spending operation
 	BotCreateSpendingOperationCommand string = "Create Spending Operation 💸"
-	// BotUpdateOperationAmountCommand represents the command to update operation amount
-	BotUpdateOperationAmountCommand string = "Update Operation Amount 💵"
 	// BotGetOperationsHistory represents the command to get operations history
 	BotGetOperationsHistory string = "Get Operations History 📖"
+
+	// BotBackCommand represents the command to go back to previous state
+	BotBackCommand string = "Back ❌"
 )
 
 // AvailableCommands is a list of all available bot commands.
@@ -38,23 +33,32 @@ var AvailableCommands = []string{
 	BotStartCommand,
 	BotGetBalanceCommand, BotCreateBalanceCommand, BotUpdateBalanceCommand,
 	BotCreateCategoryCommand, BotListCategoriesCommand,
+	BotCreateOperationCommand, BotCreateIncomingOperationCommand, BotCreateSpendingOperationCommand,
 }
 
 // CommandToEvent maps bot commands to their corresponding events
 var CommandToEvent = map[string]Event{
-	BotStartCommand:          StartEvent,
-	BotCreateBalanceCommand:  CreateBalanceEvent,
-	BotUpdateBalanceCommand:  UpdateBalanceEvent,
-	BotGetBalanceCommand:     GetBalanceEvent,
-	BotCreateCategoryCommand: CreateCategoryEvent,
-	BotListCategoriesCommand: ListCategoriesEvent,
+	BotStartCommand:           StartEvent,
+	BotCreateBalanceCommand:   CreateBalanceEvent,
+	BotUpdateBalanceCommand:   UpdateBalanceEvent,
+	BotGetBalanceCommand:      GetBalanceEvent,
+	BotCreateCategoryCommand:  CreateCategoryEvent,
+	BotListCategoriesCommand:  ListCategoriesEvent,
+	BotCreateOperationCommand: CreateOperationEvent,
 }
 
 // CommadToFistFlowStep maps commands to their initial flow steps
 var CommadToFistFlowStep = map[string]FlowStep{
-	BotCreateBalanceCommand:  CreateBalanceFlowStep,
-	BotUpdateBalanceCommand:  UpdateBalanceFlowStep,
-	BotGetBalanceCommand:     GetBalanceFlowStep,
-	BotCreateCategoryCommand: CreateCategoryFlowStep,
-	BotListCategoriesCommand: ListCategoriesFlowStep,
+	BotCreateBalanceCommand:   CreateBalanceFlowStep,
+	BotUpdateBalanceCommand:   UpdateBalanceFlowStep,
+	BotGetBalanceCommand:      GetBalanceFlowStep,
+	BotCreateCategoryCommand:  CreateCategoryFlowStep,
+	BotListCategoriesCommand:  ListCategoriesFlowStep,
+	BotCreateOperationCommand: CreateOperationFlowStep,
+}
+
+// OperationCommandToOperationType maps operation commands to their corresponding operation types
+var OperationCommandToOperationType = map[string]OperationType{
+	BotCreateIncomingOperationCommand: OperationTypeIncoming,
+	BotCreateSpendingOperationCommand: OperationTypeSpending,
 }

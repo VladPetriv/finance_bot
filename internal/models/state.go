@@ -49,6 +49,8 @@ func (s *State) GetEvent() Event {
 		return CreateCategoryEvent
 	case ListCategoriesFlowStep:
 		return ListCategoriesEvent
+	case CreateOperationFlowStep:
+		return CreateOperationEvent
 	default:
 		return UnknownEvent
 	}
@@ -70,6 +72,8 @@ const (
 	CreateCategoryFlow Flow = "create_category"
 	// ListCategoriesFlow represents the flow for listing all categories
 	ListCategoriesFlow Flow = "list_categories"
+	// CreateOperationFlow represents the flow for creating a new operation
+	CreateOperationFlow Flow = "create_operation"
 )
 
 // FlowStep represents a specific step within a flow
@@ -110,4 +114,15 @@ const (
 	EnterCategoryNameFlowStep FlowStep = "enter_category_name"
 	// ListCategoriesFlowStep represents the step for listing all categories
 	ListCategoriesFlowStep FlowStep = "list_categories"
+
+	// Steps that are relad for operation
+
+	// CreateOperationFlowStep represents the step for creating a new operation
+	CreateOperationFlowStep FlowStep = "create_operation"
+	// ChooseOprationTypeFlowStep represents the step for choosing operation type
+	ChooseOprationTypeFlowStep FlowStep = "choose_opration_type"
+	// ChooseCategoryFlowStep represents the step for choosing category
+	ChooseCategoryFlowStep FlowStep = "choose_category"
+	// EnterOperationAmountFlowStep represents the step for entering operation amount
+	EnterOperationAmountFlowStep FlowStep = "enter_operation_amount"
 )

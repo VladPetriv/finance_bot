@@ -6,3 +6,8 @@ type Category struct {
 	UserID string `bson:"userid,omitempty"`
 	Title  string `bson:"title,omitempty"`
 }
+
+// GetName returns the category title.
+func (c Category) GetName() string {
+	return c.Title
+}
