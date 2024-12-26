@@ -82,7 +82,7 @@ func TestOperation_Create(t *testing.T) {
 	}
 }
 
-func TestOperation_GetAll(t *testing.T) {
+func TestOperation_List(t *testing.T) {
 	t.Parallel()
 
 	ctx := context.Background() //nolint: forbidigo
@@ -94,8 +94,7 @@ func TestOperation_GetAll(t *testing.T) {
 	operationStore := store.NewOperation(db)
 
 	type input struct {
-		balanceID string
-		filter    service.GetAllOperationsFilter
+		filter service.ListOperationsFilter
 	}
 
 	testCases := []struct {
@@ -110,7 +109,9 @@ func TestOperation_GetAll(t *testing.T) {
 				{ID: "1", BalanceID: "id"}, {ID: "2", BalanceID: "id"},
 			},
 			input: input{
-				balanceID: "id",
+				filter: service.ListOperationsFilter{
+					BalanceID: "id",
+				},
 			},
 			expected: []models.Operation{
 				{ID: "1", BalanceID: "id"}, {ID: "2", BalanceID: "id"},
@@ -124,8 +125,8 @@ func TestOperation_GetAll(t *testing.T) {
 				{ID: "3.1", BalanceID: "id1", CreatedAt: time.Now().Add(-48 * time.Hour)},
 			},
 			input: input{
-				balanceID: "id1",
-				filter: service.GetAllOperationsFilter{
+				filter: service.ListOperationsFilter{
+					BalanceID:      "id1",
 					CreationPeriod: &models.CreationPeriodDay,
 				},
 			},
@@ -142,8 +143,8 @@ func TestOperation_GetAll(t *testing.T) {
 				{ID: "3.2", BalanceID: "id2", CreatedAt: time.Now().Add(-48 * time.Hour)},
 			},
 			input: input{
-				balanceID: "id2",
-				filter: service.GetAllOperationsFilter{
+				filter: service.ListOperationsFilter{
+					BalanceID:      "id2",
 					CreationPeriod: &models.CreationPeriodWeek,
 				},
 			},
@@ -161,8 +162,8 @@ func TestOperation_GetAll(t *testing.T) {
 				{ID: "4.3", BalanceID: "id3", CreatedAt: time.Now()},
 			},
 			input: input{
-				balanceID: "id3",
-				filter: service.GetAllOperationsFilter{
+				filter: service.ListOperationsFilter{
+					BalanceID:      "id3",
 					CreationPeriod: &models.CreationPeriodMonth,
 				},
 			},
@@ -180,8 +181,8 @@ func TestOperation_GetAll(t *testing.T) {
 				{ID: "4.4", BalanceID: "id4", CreatedAt: time.Now()},
 			},
 			input: input{
-				balanceID: "id4",
-				filter: service.GetAllOperationsFilter{
+				filter: service.ListOperationsFilter{
+					BalanceID:      "id4",
 					CreationPeriod: &models.CreationPeriodYear,
 				},
 			},
@@ -193,8 +194,8 @@ func TestOperation_GetAll(t *testing.T) {
 		{
 			desc: "negative: operations not found",
 			input: input{
-				balanceID: "not_found",
-				filter: service.GetAllOperationsFilter{
+				filter: service.ListOperationsFilter{
+					BalanceID:      "not_found",
 					CreationPeriod: &models.CreationPeriodYear,
 				},
 			},
@@ -214,11 +215,11 @@ func TestOperation_GetAll(t *testing.T) {
 			}
 
 			t.Cleanup(func() {
-				_, err := operationStore.DB.Collection("Operations").DeleteMany(ctx, bson.M{"balanceId": tc.input.balanceID})
+				_, err := operationStore.DB.Collection("Operations").DeleteMany(ctx, bson.M{"balanceId": tc.input.filter.BalanceID})
 				assert.NoError(t, err)
 			})
 
-			actual, err := operationStore.GetAll(ctx, tc.input.balanceID, tc.input.filter)
+			actual, err := operationStore.List(ctx, tc.input.filter)
 			assert.NoError(t, err)
 
 			// NOTE: Sort both slices to get right order when compare.
@@ -236,7 +237,6 @@ func TestOperation_GetAll(t *testing.T) {
 		})
 	}
 }
-
 func TestOperation_Delete(t *testing.T) {
 	t.Parallel()
 

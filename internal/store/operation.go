@@ -25,29 +25,34 @@ func NewOperation(db *database.MongoDB) *operationStore {
 	}
 }
 
-func (o operationStore) GetAll(ctx context.Context, balanceID string, filters service.GetAllOperationsFilter) ([]models.Operation, error) {
-	request := bson.M{"balanceId": balanceID}
+func (o operationStore) List(ctx context.Context, filter service.ListOperationsFilter) ([]models.Operation, error) {
+	stmt := bson.M{}
 
-	if filters.CreationPeriod != nil {
-		startDate, endDate := calculateTimeRange(*filters.CreationPeriod)
-		request["createdAt"] = bson.M{
+	if filter.BalanceID != "" {
+		stmt["balanceId"] = filter.BalanceID
+	}
+
+	if filter.CreationPeriod != nil {
+		startDate, endDate := calculateTimeRange(*filter.CreationPeriod)
+		stmt["createdAt"] = bson.M{
 			"$gte": startDate,
 			"$lte": endDate,
 		}
 	}
 
-	cursor, err := o.DB.Collection(collectionOperation).Find(ctx, request)
+	cursor, err := o.DB.Collection(collectionOperation).Find(ctx, stmt)
 	if err != nil {
 		return nil, err
 	}
 
 	var operations []models.Operation
-
-	if err := cursor.All(ctx, &operations); err != nil {
+	err = cursor.All(ctx, &operations)
+	if err != nil {
 		return nil, err
 	}
 
-	if err := cursor.Close(ctx); err != nil {
+	err = cursor.Close(ctx)
+	if err != nil {
 		return nil, err
 	}
 
