@@ -3,7 +3,6 @@ package service
 import (
 	"context"
 	"errors"
-	"strings"
 
 	"github.com/VladPetriv/finance_bot/internal/models"
 	"github.com/VladPetriv/finance_bot/pkg/bot"
@@ -37,13 +36,9 @@ type HandlerService interface {
 	HandleEventCategoryCreated(ctx context.Context, msg botMessage) error
 	// HandleEventListCategories is used to handle lit categories event.
 	HandleEventListCategories(ctx context.Context, msg botMessage) error
+	// HandleEventOperationCreated is used to create an operation.
+	HandleEventOperationCreated(ctc context.Context, msg botMessage) error
 
-	// HandleEventOperationCreate is used to create an operation without amount.
-	HandleEventOperationCreate(ctc context.Context, eventName event, msg botMessage) error
-	// HandleEventUpdateOperationAmount get last transaction with empty amount from db and update his amount with user one.
-	HandleEventUpdateOperationAmount(ctx context.Context, msg botMessage) error
-	// HandleEventGetOperationsHistory is used to return all user operation that was made during specific period of time.
-	HandleEventGetOperationsHistory(ctx context.Context, msg botMessage) error
 	// HandleEventBack is used to reset bot buttons to default mode.
 	HandleEventBack(ctx context.Context, msg botMessage) error
 }
@@ -151,6 +146,9 @@ var defaultKeyboardRows = []bot.KeyboardRow{
 	},
 	{
 		Buttons: []string{models.BotCreateCategoryCommand, models.BotListCategoriesCommand},
+	},
+	{
+		Buttons: []string{models.BotCreateOperationCommand},
 	},
 }
 

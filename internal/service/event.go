@@ -154,6 +154,13 @@ func (e eventService) ReactOnEvent(ctx context.Context, event models.Event, msg 
 			return fmt.Errorf("handle event list categories: %w", err)
 		}
 
+	case models.CreateOperationEvent:
+		err := e.handlerService.HandleEventOperationCreated(ctx, msg)
+		if err != nil {
+			logger.Error().Err(err).Msg("handle event operation created")
+			return fmt.Errorf("handle event operation created: %w", err)
+		}
+
 	case models.UnknownEvent:
 		err := e.handlerService.HandleEventUnknown(msg)
 		if err != nil {
