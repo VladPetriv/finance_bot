@@ -24,7 +24,7 @@ func NewKeyboard(botAPI bot.API, logger *logger.Logger) *keyboardService {
 
 func (k keyboardService) CreateKeyboard(opts *CreateKeyboardOptions) error {
 	logger := k.logger
-	logger.Debug().Interface("opts", opts).Msg("got args")
+	logger.Debug().Any("opts", opts).Msg("got args")
 
 	sendOptions := &bot.SendOptions{
 		ChatID:  opts.ChatID,
@@ -37,7 +37,7 @@ func (k keyboardService) CreateKeyboard(opts *CreateKeyboardOptions) error {
 	if opts.Type == keyboardTypeRow {
 		sendOptions.Keyboard = opts.Rows
 	}
-	logger.Info().Interface("sendOptions", sendOptions).Msg("built send options")
+	logger.Info().Any("sendOptions", sendOptions).Msg("built send options")
 
 	err := k.botAPI.Send(sendOptions)
 	if err != nil {

@@ -5,13 +5,14 @@ import (
 	"fmt"
 
 	"github.com/VladPetriv/finance_bot/internal/models"
+	"github.com/VladPetriv/finance_bot/pkg/errs"
 	"github.com/VladPetriv/finance_bot/pkg/money"
 	"github.com/google/uuid"
 )
 
 func (h handlerService) HandleEventBalanceCreated(ctx context.Context, msg botMessage) error {
 	logger := h.logger.With().Str("name", "handlerService.HandleEventBalanceCreated").Logger()
-	logger.Debug().Interface("msg", msg).Msg("got args")
+	logger.Debug().Any("msg", msg).Msg("got args")
 
 	var nextStep models.FlowStep
 	stateMetaData := ctx.Value(contextFieldNameState).(*models.State).Metedata
@@ -19,18 +20,17 @@ func (h handlerService) HandleEventBalanceCreated(ctx context.Context, msg botMe
 
 	defer func() {
 		state := ctx.Value(contextFieldNameState).(*models.State)
-		state.Steps = append(state.Steps, nextStep)
+		if nextStep != "" {
+			state.Steps = append(state.Steps, nextStep)
+		}
 		state.Metedata = stateMetaData
 		updatedState, err := h.stores.State.Update(ctx, state)
 		if err != nil {
 			logger.Error().Err(err).Msg("update state in store")
 			return
 		}
-		logger.Debug().Interface("updatedState", updatedState).Msg("updated state in store")
+		logger.Debug().Any("updatedState", updatedState).Msg("updated state in store")
 	}()
-
-	currentStep := ctx.Value(contextFieldNameState).(*models.State).GetCurrentStep()
-	logger.Debug().Any("currentStep", currentStep).Msg("got current step on create balance flow")
 
 	user, err := h.stores.User.Get(ctx, GetUserFilter{
 		Username: msg.GetUsername(),
@@ -45,6 +45,9 @@ func (h handlerService) HandleEventBalanceCreated(ctx context.Context, msg botMe
 	}
 	logger.Debug().Any("user", user).Msg("got user from store")
 
+	currentStep := ctx.Value(contextFieldNameState).(*models.State).GetCurrentStep()
+	logger.Debug().Any("currentStep", currentStep).Msg("got current step on create balance flow")
+
 	switch currentStep {
 	case models.CreateInitialBalanceFlowStep:
 		err := h.handleCreateBalanceFlowStep(ctx, handleCreateBalanceFlowStepOptions{
@@ -53,6 +56,10 @@ func (h handlerService) HandleEventBalanceCreated(ctx context.Context, msg botMe
 			isInitial: true,
 		})
 		if err != nil {
+			if errs.IsExpected(err) {
+				logger.Info().Err(err).Msg(err.Error())
+				return err
+			}
 			logger.Error().Err(err).Msg("handle enter balance name flow step")
 			return fmt.Errorf("handle enter balance name flow step: %w", err)
 		}
@@ -66,6 +73,10 @@ func (h handlerService) HandleEventBalanceCreated(ctx context.Context, msg botMe
 			metadata: stateMetaData,
 		})
 		if err != nil {
+			if errs.IsExpected(err) {
+				logger.Info().Err(err).Msg(err.Error())
+				return err
+			}
 			logger.Error().Err(err).Msg("handle enter balance name flow step")
 			return fmt.Errorf("handle enter balance name flow step: %w", err)
 		}
@@ -80,6 +91,11 @@ func (h handlerService) HandleEventBalanceCreated(ctx context.Context, msg botMe
 			finalMsg:    "Balance successfully created!",
 		})
 		if err != nil {
+			if errs.IsExpected(err) {
+				logger.Info().Err(err).Msg(err.Error())
+				return err
+			}
+
 			logger.Error().Err(err).Msg("process balance update")
 			return fmt.Errorf("process balance update: %w", err)
 		}
@@ -100,7 +116,7 @@ type handleCreateBalanceFlowStepOptions struct {
 
 func (h *handlerService) handleCreateBalanceFlowStep(ctx context.Context, opts handleCreateBalanceFlowStepOptions) error {
 	logger := h.logger.With().Str("name", "handlerService.handleCreateBalanceFlowStep").Logger()
-	logger.Debug().Interface("opts", opts).Msg("got args")
+	logger.Debug().Any("opts", opts).Msg("got args")
 
 	balanceID := uuid.NewString()
 
@@ -169,18 +185,17 @@ func (h handlerService) HandleEventBalanceUpdated(ctx context.Context, msg botMe
 
 	defer func() {
 		state := ctx.Value(contextFieldNameState).(*models.State)
-		state.Steps = append(state.Steps, nextStep)
+		if nextStep != "" {
+			state.Steps = append(state.Steps, nextStep)
+		}
 		state.Metedata = stateMetaData
 		updatedState, err := h.stores.State.Update(ctx, state)
 		if err != nil {
 			logger.Error().Err(err).Msg("update state in store")
 			return
 		}
-		logger.Debug().Interface("updatedState", updatedState).Msg("updated state in store")
+		logger.Debug().Any("updatedState", updatedState).Msg("updated state in store")
 	}()
-
-	currentStep := ctx.Value(contextFieldNameState).(*models.State).GetCurrentStep()
-	logger.Debug().Any("currentStep", currentStep).Msg("got current step on create balance flow")
 
 	user, err := h.stores.User.Get(ctx, GetUserFilter{
 		Username:        msg.GetUsername(),
@@ -195,6 +210,9 @@ func (h handlerService) HandleEventBalanceUpdated(ctx context.Context, msg botMe
 		return ErrUserNotFound
 	}
 	logger.Debug().Any("user", user).Msg("got user from store")
+
+	currentStep := ctx.Value(contextFieldNameState).(*models.State).GetCurrentStep()
+	logger.Debug().Any("currentStep", currentStep).Msg("got current step on create balance flow")
 
 	switch currentStep {
 	case models.UpdateBalanceFlowStep:
@@ -215,7 +233,7 @@ func (h handlerService) HandleEventBalanceUpdated(ctx context.Context, msg botMe
 		balance := user.GetBalance(msg.Message.Text)
 		if balance == nil {
 			logger.Info().Msg("balance not found")
-			return ErrBalanceNotFound
+			return fmt.Errorf("balance not found")
 		}
 
 		err := h.services.Message.SendMessage(&SendMessageOptions{
@@ -238,6 +256,11 @@ func (h handlerService) HandleEventBalanceUpdated(ctx context.Context, msg botMe
 			finalMsg:    "Balance successfully updated!",
 		})
 		if err != nil {
+			if errs.IsExpected(err) {
+				logger.Info().Err(err).Msg(err.Error())
+				return err
+			}
+
 			logger.Error().Err(err).Msg("process balance update")
 			return fmt.Errorf("process balance update: %w", err)
 		}
@@ -258,7 +281,21 @@ type processBalanceUpdateOptions struct {
 
 func (h handlerService) processBalanceUpdate(ctx context.Context, opts processBalanceUpdateOptions) (models.FlowStep, error) {
 	logger := h.logger.With().Str("name", "handlerService.processBalanceUpdate").Logger()
-	logger.Debug().Interface("opts", opts).Msg("got args")
+	logger.Debug().Any("opts", opts).Msg("got args")
+
+	if opts.msg.Message.Text != "" {
+		balance, err := h.stores.Balance.Get(ctx, GetBalanceFilter{
+			Name: opts.msg.Message.Text,
+		})
+		if err != nil {
+			logger.Error().Err(err).Msg("get balance from store")
+			return "", fmt.Errorf("get balance from store: %w", err)
+		}
+		if balance != nil {
+			logger.Info().Any("balance", balance).Msg("balance already exists")
+			return "", ErrBalanceAlreadyExists
+		}
+	}
 
 	balanceID := opts.metadata["balanceID"].(string)
 	logger.Debug().Any("balanceID", balanceID).Msg("got balance id")
@@ -269,6 +306,11 @@ func (h handlerService) processBalanceUpdate(ctx context.Context, opts processBa
 		data:      opts.msg.Message.Text,
 	})
 	if err != nil {
+		if errs.IsExpected(err) {
+			logger.Info().Err(err).Msg(err.Error())
+			return "", err
+		}
+
 		logger.Error().Err(err).Msg("update balance in store")
 		return "", fmt.Errorf("update balance in store: %w", err)
 	}
@@ -334,8 +376,8 @@ func (h handlerService) updateBalance(ctx context.Context, opts updateBalanceOpt
 		return nil, fmt.Errorf("get balance from store: %w", err)
 	}
 	if balance == nil {
-		logger.Info().Msg("balance not found")
-		return nil, ErrBalanceNotFound
+		logger.Error().Msg("balance not found")
+		return nil, fmt.Errorf("balance not found")
 	}
 	logger.Debug().Any("balance", balance).Msg("got balance from store")
 
@@ -346,8 +388,8 @@ func (h handlerService) updateBalance(ctx context.Context, opts updateBalanceOpt
 	case models.EnterBalanceAmountFlowStep:
 		price, err := money.NewFromString(opts.data)
 		if err != nil {
-			logger.Error().Err(err).Msg("convert option amount to money type")
-			return nil, fmt.Errorf("convert option amount to money type: %w", err)
+			logger.Info().Err(err).Msg("convert option amount to money type")
+			return nil, ErrInvalidAmountFormat
 		}
 
 		balance.Amount = price.String()
@@ -371,13 +413,15 @@ func (h handlerService) HandleEventGetBalance(ctx context.Context, msg botMessag
 	var nextStep models.FlowStep
 	defer func() {
 		state := ctx.Value(contextFieldNameState).(*models.State)
-		state.Steps = append(state.Steps, nextStep)
+		if nextStep != "" {
+			state.Steps = append(state.Steps, nextStep)
+		}
 		updatedState, err := h.stores.State.Update(ctx, state)
 		if err != nil {
 			logger.Error().Err(err).Msg("update state in store")
 			return
 		}
-		logger.Debug().Interface("updatedState", updatedState).Msg("updated state in store")
+		logger.Debug().Any("updatedState", updatedState).Msg("updated state in store")
 	}()
 
 	currentStep := ctx.Value(contextFieldNameState).(*models.State).GetCurrentStep()
@@ -437,8 +481,8 @@ func (h handlerService) processGetBalanceInfo(ctx context.Context, msg botMessag
 		return fmt.Errorf("get balance from store: %w", err)
 	}
 	if balance == nil {
-		logger.Info().Msg("balance not found")
-		return ErrBalanceNotFound
+		logger.Error().Msg("balance not found")
+		return fmt.Errorf("balance not found")
 	}
 	logger.Debug().Any("balance", balance).Msg("got balance from store")
 	// TODO: In the feature it would be great to add some statistics about operations on this balance.

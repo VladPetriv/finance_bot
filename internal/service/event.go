@@ -8,6 +8,7 @@ import (
 
 	"github.com/VladPetriv/finance_bot/internal/models"
 	"github.com/VladPetriv/finance_bot/pkg/bot"
+	"github.com/VladPetriv/finance_bot/pkg/errs"
 	"github.com/VladPetriv/finance_bot/pkg/logger"
 )
 
@@ -57,7 +58,7 @@ func (e eventService) Listen(ctx context.Context) {
 
 				continue
 			}
-			logger.Debug().Interface("msg", msg).Msg("unmarshalled incoming update data")
+			logger.Debug().Any("msg", msg).Msg("unmarshalled incoming update data")
 
 			stateOutput, err := e.stateService.HandleState(ctx, msg)
 			if err != nil {
@@ -72,9 +73,9 @@ func (e eventService) Listen(ctx context.Context) {
 			if err != nil {
 				logger.Error().Err(err).Msg("react on event")
 
-				handleErr := e.handlerService.HandleError(ctx, msg)
+				handleErr := e.handlerService.HandleError(ctx, err, msg)
 				if handleErr != nil {
-					logger.Error().Err(err).Msg("react on event")
+					logger.Error().Err(err).Msg("handle error")
 				}
 			}
 		case err := <-errorsCH:
@@ -115,6 +116,11 @@ func (e eventService) ReactOnEvent(ctx context.Context, event models.Event, msg 
 	case models.StartEvent:
 		err := e.handlerService.HandleEventStart(ctx, msg)
 		if err != nil {
+			if errs.IsExpected(err) {
+				logger.Info().Err(err).Msg(err.Error())
+				return err
+			}
+
 			logger.Error().Err(err).Msg("handle event start")
 			return fmt.Errorf("handle event start: %w", err)
 		}
@@ -122,6 +128,11 @@ func (e eventService) ReactOnEvent(ctx context.Context, event models.Event, msg 
 	case models.CreateBalanceEvent:
 		err := e.handlerService.HandleEventBalanceCreated(ctx, msg)
 		if err != nil {
+			if errs.IsExpected(err) {
+				logger.Info().Err(err).Msg(err.Error())
+				return err
+			}
+
 			logger.Error().Err(err).Msg("handle event balance created")
 			return fmt.Errorf("handle event balance created: %w", err)
 		}
@@ -129,6 +140,11 @@ func (e eventService) ReactOnEvent(ctx context.Context, event models.Event, msg 
 	case models.UpdateBalanceEvent:
 		err := e.handlerService.HandleEventBalanceUpdated(ctx, msg)
 		if err != nil {
+			if errs.IsExpected(err) {
+				logger.Info().Err(err).Msg(err.Error())
+				return err
+			}
+
 			logger.Error().Err(err).Msg("handle event balance created")
 			return fmt.Errorf("handle event balance created: %w", err)
 		}
@@ -136,6 +152,11 @@ func (e eventService) ReactOnEvent(ctx context.Context, event models.Event, msg 
 	case models.GetBalanceEvent:
 		err := e.handlerService.HandleEventGetBalance(ctx, msg)
 		if err != nil {
+			if errs.IsExpected(err) {
+				logger.Info().Err(err).Msg(err.Error())
+				return err
+			}
+
 			logger.Error().Err(err).Msg("handle event get balance")
 			return fmt.Errorf("handle event get balance: %w", err)
 		}
@@ -143,6 +164,11 @@ func (e eventService) ReactOnEvent(ctx context.Context, event models.Event, msg 
 	case models.CreateCategoryEvent:
 		err := e.handlerService.HandleEventCategoryCreated(ctx, msg)
 		if err != nil {
+			if errs.IsExpected(err) {
+				logger.Info().Err(err).Msg(err.Error())
+				return err
+			}
+
 			logger.Error().Err(err).Msg("handle event category created")
 			return fmt.Errorf("handle event category created: %w", err)
 		}
@@ -150,6 +176,11 @@ func (e eventService) ReactOnEvent(ctx context.Context, event models.Event, msg 
 	case models.ListCategoriesEvent:
 		err := e.handlerService.HandleEventListCategories(ctx, msg)
 		if err != nil {
+			if errs.IsExpected(err) {
+				logger.Info().Err(err).Msg(err.Error())
+				return err
+			}
+
 			logger.Error().Err(err).Msg("handle event list categories")
 			return fmt.Errorf("handle event list categories: %w", err)
 		}
@@ -157,6 +188,11 @@ func (e eventService) ReactOnEvent(ctx context.Context, event models.Event, msg 
 	case models.CreateOperationEvent:
 		err := e.handlerService.HandleEventOperationCreated(ctx, msg)
 		if err != nil {
+			if errs.IsExpected(err) {
+				logger.Info().Err(err).Msg(err.Error())
+				return err
+			}
+
 			logger.Error().Err(err).Msg("handle event operation created")
 			return fmt.Errorf("handle event operation created: %w", err)
 		}
@@ -164,6 +200,11 @@ func (e eventService) ReactOnEvent(ctx context.Context, event models.Event, msg 
 	case models.UnknownEvent:
 		err := e.handlerService.HandleEventUnknown(msg)
 		if err != nil {
+			if errs.IsExpected(err) {
+				logger.Info().Err(err).Msg(err.Error())
+				return err
+			}
+
 			logger.Error().Err(err).Msg("handle event unknown")
 			return fmt.Errorf("handle event event unknown: %w", err)
 		}
@@ -171,6 +212,11 @@ func (e eventService) ReactOnEvent(ctx context.Context, event models.Event, msg 
 	case models.GetOperationsHistoryEvent:
 		err := e.handlerService.HandleEventGetOperationsHistory(ctx, msg)
 		if err != nil {
+			if errs.IsExpected(err) {
+				logger.Info().Err(err).Msg(err.Error())
+				return err
+			}
+
 			logger.Error().Err(err).Msg("handle event get operations history")
 			return fmt.Errorf("handle event get operations history: %w", err)
 		}

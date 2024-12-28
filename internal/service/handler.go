@@ -6,6 +6,7 @@ import (
 
 	"github.com/VladPetriv/finance_bot/internal/models"
 	"github.com/VladPetriv/finance_bot/pkg/bot"
+	"github.com/VladPetriv/finance_bot/pkg/errs"
 	"github.com/VladPetriv/finance_bot/pkg/logger"
 	"github.com/google/uuid"
 )
@@ -36,7 +37,7 @@ func NewHandler(opts *HandlerOptions) *handlerService {
 
 func (h handlerService) HandleEventStart(ctx context.Context, msg botMessage) error {
 	logger := h.logger
-	logger.Debug().Interface("msg", msg).Msg("got args")
+	logger.Debug().Any("msg", msg).Msg("got args")
 
 	var nextStep models.FlowStep
 	defer func() {
@@ -47,7 +48,7 @@ func (h handlerService) HandleEventStart(ctx context.Context, msg botMessage) er
 			logger.Error().Err(err).Msg("update state in store")
 			return
 		}
-		logger.Debug().Interface("updatedState", updatedState).Msg("updated state in store")
+		logger.Debug().Any("updatedState", updatedState).Msg("updated state in store")
 	}()
 
 	username := msg.GetUsername()
@@ -116,7 +117,7 @@ func (h handlerService) HandleEventStart(ctx context.Context, msg botMessage) er
 
 func (h handlerService) HandleEventBack(ctx context.Context, msg botMessage) error {
 	logger := h.logger
-	logger.Debug().Interface("msg", msg).Msg("got args")
+	logger.Debug().Any("msg", msg).Msg("got args")
 
 	err := h.services.Keyboard.CreateKeyboard(&CreateKeyboardOptions{
 		ChatID:  msg.Message.Chat.ID,
@@ -135,7 +136,7 @@ func (h handlerService) HandleEventBack(ctx context.Context, msg botMessage) err
 
 func (h handlerService) HandleEventUnknown(msg botMessage) error {
 	logger := h.logger
-	logger.Debug().Interface("msg", msg).Msg("got args")
+	logger.Debug().Any("msg", msg).Msg("got args")
 
 	err := h.services.Message.SendMessage(&SendMessageOptions{
 		ChatID: msg.Message.Chat.ID,
@@ -150,9 +151,23 @@ func (h handlerService) HandleEventUnknown(msg botMessage) error {
 	return nil
 }
 
-func (h handlerService) HandleError(ctx context.Context, msg botMessage) error {
-	logger := h.logger
-	logger.Debug().Interface("msg", msg).Msg("got args")
+func (h handlerService) HandleError(ctx context.Context, receivedErr error, msg botMessage) error {
+	logger := h.logger.With().Str("name", "handlerService.HandleError").Logger()
+	logger.Debug().Err(receivedErr).Any("msg", msg).Msg("got args")
+
+	if errs.IsExpected(receivedErr) {
+		err := h.services.Message.SendMessage(&SendMessageOptions{
+			ChatID: msg.GetChatID(),
+			Text:   receivedErr.Error(),
+		})
+		if err != nil {
+			logger.Error().Err(err).Msg("send message")
+			return fmt.Errorf("send message: %w", err)
+		}
+
+		logger.Info().Msg("handled expected error")
+		return nil
+	}
 
 	err := h.services.Message.SendMessage(&SendMessageOptions{
 		ChatID: msg.GetChatID(),
@@ -163,7 +178,7 @@ func (h handlerService) HandleError(ctx context.Context, msg botMessage) error {
 		return fmt.Errorf("send message: %w", err)
 	}
 
-	logger.Info().Msg("handled error")
+	logger.Info().Msg("handled unexpected error")
 	return nil
 }
 

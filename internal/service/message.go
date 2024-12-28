@@ -24,7 +24,7 @@ func NewMessage(botAPI bot.API, logger *logger.Logger) *messageService {
 
 func (m messageService) SendMessage(opts *SendMessageOptions) error {
 	logger := m.logger
-	logger.Debug().Interface("opts", opts).Msg("got args")
+	logger.Debug().Any("opts", opts).Msg("got args")
 
 	err := m.botAPI.Send(&bot.SendOptions{
 		ChatID:  opts.ChatID,
