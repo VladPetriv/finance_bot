@@ -21,14 +21,16 @@ func (h handlerService) HandleEventOperationCreated(ctx context.Context, msg bot
 
 	defer func() {
 		state := ctx.Value(contextFieldNameState).(*models.State)
-		state.Steps = append(state.Steps, nextStep)
+		if nextStep != "" {
+			state.Steps = append(state.Steps, nextStep)
+		}
 		state.Metedata = stateMetaData
 		updatedState, err := h.stores.State.Update(ctx, state)
 		if err != nil {
 			logger.Error().Err(err).Msg("update state in store")
 			return
 		}
-		logger.Debug().Interface("updatedState", updatedState).Msg("updated state in store")
+		logger.Debug().Any("updatedState", updatedState).Msg("updated state in store")
 	}()
 
 	user, err := h.stores.User.Get(ctx, GetUserFilter{
@@ -204,11 +206,11 @@ func (h handlerService) handleEnterOperationAmountFlowStep(ctx context.Context, 
 	switch operationType {
 	case models.OperationTypeIncoming:
 		balanceAmount.Inc(operationAmount)
-		logger.Debug().Interface("balanceAmount", balanceAmount).Msg("increased balance amount with incoming operation")
+		logger.Debug().Any("balanceAmount", balanceAmount).Msg("increased balance amount with incoming operation")
 		balance.Amount = balanceAmount.String()
 	case models.OperationTypeSpending:
 		calculatedAmount := balanceAmount.Sub(operationAmount)
-		logger.Debug().Interface("calculatedAmount", calculatedAmount).Msg("decreased balance amount with spending operation")
+		logger.Debug().Any("calculatedAmount", calculatedAmount).Msg("decreased balance amount with spending operation")
 		balance.Amount = calculatedAmount.String()
 	default:
 		logger.Error().Any("operationType", operationType).Msg("invalid operation type")
@@ -249,14 +251,16 @@ func (h handlerService) HandleEventGetOperationsHistory(ctx context.Context, msg
 
 	defer func() {
 		state := ctx.Value(contextFieldNameState).(*models.State)
-		state.Steps = append(state.Steps, nextStep)
+		if nextStep != "" {
+			state.Steps = append(state.Steps, nextStep)
+		}
 		state.Metedata = stateMetaData
 		updatedState, err := h.stores.State.Update(ctx, state)
 		if err != nil {
 			logger.Error().Err(err).Msg("update state in store")
 			return
 		}
-		logger.Debug().Interface("updatedState", updatedState).Msg("updated state in store")
+		logger.Debug().Any("updatedState", updatedState).Msg("updated state in store")
 	}()
 
 	user, err := h.stores.User.Get(ctx, GetUserFilter{

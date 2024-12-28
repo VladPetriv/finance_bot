@@ -2,10 +2,10 @@ package service
 
 import (
 	"context"
-	"errors"
 
 	"github.com/VladPetriv/finance_bot/internal/models"
 	"github.com/VladPetriv/finance_bot/pkg/bot"
+	"github.com/VladPetriv/finance_bot/pkg/errs"
 )
 
 // Services represents structure with all services.
@@ -20,7 +20,7 @@ type Services struct {
 // HandlerService provides functionally for handling events.
 type HandlerService interface {
 	// HandleError is used to send the user a message that something went wrong while processing the command.
-	HandleError(ctx context.Context, msg botMessage) error
+	HandleError(ctx context.Context, err error, msg botMessage) error
 	// HandleEventUnknown is used to handle event unknown.
 	HandleEventUnknown(msg botMessage) error
 
@@ -156,25 +156,27 @@ var defaultKeyboardRows = []bot.KeyboardRow{
 
 var (
 	// ErrUserAlreadyExists happens when user already exists in system.
-	ErrUserAlreadyExists = errors.New("user already exists")
+	ErrUserAlreadyExists = errs.New("user already exists")
 	// ErrUserNotFound happens when user not exists in system.
-	ErrUserNotFound = errors.New("user not found")
+	ErrUserNotFound = errs.New("User not found")
 
 	// ErrCategoryAlreadyExists happens when try to create category that already exists.
-	ErrCategoryAlreadyExists = errors.New("category already exist")
+	ErrCategoryAlreadyExists = errs.New("Category already exist. Please use another name.")
 	// ErrCategoriesNotFound happens when received zero categories from store.
-	ErrCategoriesNotFound = errors.New("categories not found")
+	ErrCategoriesNotFound = errs.New("Categories not found")
 	// ErrCategoryNotFound happens when received not category from store.
-	ErrCategoryNotFound = errors.New("category not found")
+	ErrCategoryNotFound = errs.New("Category not found")
 
 	// ErrBalanceNotFound happens when don't receive balance from store.
-	ErrBalanceNotFound = errors.New("balance not found")
+	ErrBalanceNotFound = errs.New("Balance not found")
+	// ErrBalanceAlreadyExists happens when try to create balance that already exists.
+	ErrBalanceAlreadyExists = errs.New("Balance already exist. Please use another name.")
 
 	// ErrOperationsNotFound happens when don't receive operations from store.
-	ErrOperationsNotFound = errors.New("operations not found")
+	ErrOperationsNotFound = errs.New("Operations not found")
 
 	// ErrInvalidAmountFormat happens when use enters amount with invalid format
-	ErrInvalidAmountFormat = errors.New("invalid amount format")
+	ErrInvalidAmountFormat = errs.New("Invalid amount format! Please try again.")
 )
 
 // StateService represents a service for managing and handling complex bot flow using statesstates.
