@@ -36,6 +36,10 @@ func (s *State) GetEvent() Event {
 		return CreateBalanceEvent
 	}
 
+	if s.Flow == BackFlow && len(s.Steps) == 1 {
+		return BackEvent
+	}
+
 	switch s.Steps[indexOfInitialFlowStep] {
 	case CreateInitialBalanceFlowStep:
 		return CreateBalanceEvent
@@ -64,6 +68,8 @@ type Flow string
 const (
 	// StartFlow represents the initial flow when starting the bot
 	StartFlow Flow = "start"
+	// BackFlow represents the flow for stopping cuurent flow
+	BackFlow Flow = "back"
 	// CreateBalanceFlow represents the flow for creating a new balance
 	CreateBalanceFlow Flow = "create_balance"
 	// UpdateBalanceFlow represents the flow for updating a balance
