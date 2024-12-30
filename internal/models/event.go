@@ -6,7 +6,7 @@ type Event string
 const (
 	// StartEvent represents the event when user starts interacting with the bot
 	StartEvent Event = "start"
-	//BackEvent represents the event when user goes back to previous state
+	// BackEvent represents the event when user goes back to previous state
 	BackEvent Event = "back"
 	// UnknownEvent represents an unrecognized or unsupported event
 	UnknownEvent Event = "unknown"
