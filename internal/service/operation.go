@@ -56,7 +56,7 @@ func (h handlerService) HandleEventOperationCreated(ctx context.Context, msg bot
 			ChatID:  msg.GetChatID(),
 			Message: "Select a balance to view information:",
 			Type:    keyboardTypeRow,
-			Rows:    convertSliceToKeyboardRows(user.Balances),
+			Rows:    getKeyboardRows(user.Balances),
 		})
 		if err != nil {
 			logger.Error().Err(err).Msg("create row keyboard")
@@ -105,7 +105,7 @@ func (h handlerService) HandleEventOperationCreated(ctx context.Context, msg bot
 			ChatID:  msg.GetChatID(),
 			Message: "Choose operation category:",
 			Type:    keyboardTypeRow,
-			Rows:    convertSliceToKeyboardRows(categories),
+			Rows:    getKeyboardRows(categories),
 		})
 		if err != nil {
 			logger.Error().Err(err).Msg("create row keyboard")
@@ -286,7 +286,7 @@ func (h handlerService) HandleEventGetOperationsHistory(ctx context.Context, msg
 			ChatID:  msg.GetChatID(),
 			Message: "Select a balance to view information:",
 			Type:    keyboardTypeRow,
-			Rows:    convertSliceToKeyboardRows(user.Balances),
+			Rows:    getKeyboardRows(user.Balances),
 		})
 		if err != nil {
 			logger.Error().Err(err).Msg("create row keyboard")

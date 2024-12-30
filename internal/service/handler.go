@@ -188,7 +188,7 @@ type named interface {
 
 const maxBalancesPerRow = 3
 
-func convertSliceToKeyboardRows[T named](data []T) []bot.KeyboardRow {
+func getKeyboardRows[T named](data []T) []bot.KeyboardRow {
 	keyboardRows := make([]bot.KeyboardRow, 0)
 
 	var currentRow bot.KeyboardRow
@@ -201,6 +201,10 @@ func convertSliceToKeyboardRows[T named](data []T) []bot.KeyboardRow {
 			currentRow = bot.KeyboardRow{} // Reset current row
 		}
 	}
+
+	keyboardRows = append(keyboardRows, bot.KeyboardRow{
+		Buttons: []string{models.BotBackCommand},
+	})
 
 	return keyboardRows
 }
