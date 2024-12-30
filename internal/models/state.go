@@ -36,6 +36,10 @@ func (s *State) GetEvent() Event {
 		return CreateBalanceEvent
 	}
 
+	if s.Flow == BackFlow && len(s.Steps) == 1 {
+		return BackEvent
+	}
+
 	switch s.Steps[indexOfInitialFlowStep] {
 	case CreateInitialBalanceFlowStep:
 		return CreateBalanceEvent
@@ -64,6 +68,8 @@ type Flow string
 const (
 	// StartFlow represents the initial flow when starting the bot
 	StartFlow Flow = "start"
+	// BackFlow represents the flow for stopping cuurent flow
+	BackFlow Flow = "back"
 	// CreateBalanceFlow represents the flow for creating a new balance
 	CreateBalanceFlow Flow = "create_balance"
 	// UpdateBalanceFlow represents the flow for updating a balance
@@ -91,7 +97,7 @@ const (
 	// EndFlowStep represents the final step of any flow
 	EndFlowStep FlowStep = "end"
 
-	// Steps that are relad for balance
+	// Steps that are related for balance
 
 	// CreateInitialBalanceFlowStep represents the step for creating the first balance
 	CreateInitialBalanceFlowStep FlowStep = "create_initial_balance"
@@ -110,7 +116,7 @@ const (
 	// EnterBalanceAmountFlowStep represents the step for entering balance amount
 	EnterBalanceAmountFlowStep FlowStep = "enter_balance_amount"
 
-	// Steps that are relad for category
+	// Steps that are related for category
 
 	// CreateCategoryFlowStep represents the step for creating a new category
 	CreateCategoryFlowStep FlowStep = "create_category"
@@ -119,7 +125,7 @@ const (
 	// ListCategoriesFlowStep represents the step for listing all categories
 	ListCategoriesFlowStep FlowStep = "list_categories"
 
-	// Steps that are relad for operation
+	// Steps that are related for operation
 
 	// CreateOperationFlowStep represents the step for creating a new operation
 	CreateOperationFlowStep FlowStep = "create_operation"

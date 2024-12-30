@@ -6,6 +6,8 @@ type Event string
 const (
 	// StartEvent represents the event when user starts interacting with the bot
 	StartEvent Event = "start"
+	// BackEvent represents the event when user goes back to previous state
+	BackEvent Event = "back"
 	// UnknownEvent represents an unrecognized or unsupported event
 	UnknownEvent Event = "unknown"
 	// CreateBalanceEvent represents the event for creating a new balance
@@ -34,4 +36,5 @@ var EventToFlow = map[Event]Flow{
 	ListCategoriesEvent:       ListCategoriesFlow,
 	CreateOperationEvent:      CreateOperationFlow,
 	GetOperationsHistoryEvent: GetOperationsHistoryFlow,
+	BackEvent:                 BackFlow,
 }

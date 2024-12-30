@@ -54,9 +54,9 @@ func (h handlerService) HandleEventOperationCreated(ctx context.Context, msg bot
 	case models.CreateOperationFlowStep:
 		err := h.services.Keyboard.CreateKeyboard(&CreateKeyboardOptions{
 			ChatID:  msg.GetChatID(),
-			Message: "Select a balance to view information:",
+			Message: "Choose balance to create operation for:",
 			Type:    keyboardTypeRow,
-			Rows:    convertSliceToKeyboardRows(user.Balances),
+			Rows:    getKeyboardRows(user.Balances, true),
 		})
 		if err != nil {
 			logger.Error().Err(err).Msg("create row keyboard")
@@ -105,7 +105,7 @@ func (h handlerService) HandleEventOperationCreated(ctx context.Context, msg bot
 			ChatID:  msg.GetChatID(),
 			Message: "Choose operation category:",
 			Type:    keyboardTypeRow,
-			Rows:    convertSliceToKeyboardRows(categories),
+			Rows:    getKeyboardRows(categories, false),
 		})
 		if err != nil {
 			logger.Error().Err(err).Msg("create row keyboard")
@@ -229,9 +229,11 @@ func (h handlerService) handleEnterOperationAmountFlowStep(ctx context.Context, 
 		return fmt.Errorf("update balance in store: %w", err)
 	}
 
-	err = h.services.Message.SendMessage(&SendMessageOptions{
-		ChatID: opts.msg.GetChatID(),
-		Text:   "Operation created!",
+	err = h.services.Keyboard.CreateKeyboard(&CreateKeyboardOptions{
+		ChatID:  opts.msg.GetChatID(),
+		Type:    keyboardTypeRow,
+		Rows:    defaultKeyboardRows,
+		Message: "Operation created!",
 	})
 	if err != nil {
 		logger.Error().Err(err).Msg("send message")
@@ -284,9 +286,9 @@ func (h handlerService) HandleEventGetOperationsHistory(ctx context.Context, msg
 	case models.GetOperationsHistoryFlowStep:
 		err := h.services.Keyboard.CreateKeyboard(&CreateKeyboardOptions{
 			ChatID:  msg.GetChatID(),
-			Message: "Select a balance to view information:",
+			Message: "Choose balance to view operations history for:",
 			Type:    keyboardTypeRow,
-			Rows:    convertSliceToKeyboardRows(user.Balances),
+			Rows:    getKeyboardRows(user.Balances, true),
 		})
 		if err != nil {
 			logger.Error().Err(err).Msg("create row keyboard")
@@ -375,9 +377,11 @@ func (h handlerService) handlerChooseTimePeriodForOperationsHistoryFlowStep(ctx 
 		)
 	}
 
-	err = h.services.Message.SendMessage(&SendMessageOptions{
-		ChatID: opts.msg.GetChatID(),
-		Text:   resultMessage,
+	err = h.services.Keyboard.CreateKeyboard(&CreateKeyboardOptions{
+		ChatID:  opts.msg.GetChatID(),
+		Type:    keyboardTypeRow,
+		Rows:    defaultKeyboardRows,
+		Message: resultMessage,
 	})
 	if err != nil {
 		logger.Error().Err(err).Msg("send message")

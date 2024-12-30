@@ -108,9 +108,11 @@ func (h handlerService) handleEnterCategoryNameFlowStep(ctx context.Context, opt
 		return fmt.Errorf("create category in store: %w", err)
 	}
 
-	err = h.services.Message.SendMessage(&SendMessageOptions{
-		ChatID: opts.msg.GetChatID(),
-		Text:   "Category created!",
+	err = h.services.Keyboard.CreateKeyboard(&CreateKeyboardOptions{
+		ChatID:  opts.msg.GetChatID(),
+		Type:    keyboardTypeRow,
+		Rows:    defaultKeyboardRows,
+		Message: "Category created!",
 	})
 	if err != nil {
 		logger.Error().Err(err).Msg("send message")
@@ -216,9 +218,11 @@ func (h handlerService) handleListCategoriesFlowStep(ctx context.Context, opts h
 	}
 	logger.Debug().Any("outputMessage", outputMessage).Msg("built output message")
 
-	err = h.services.Message.SendMessage(&SendMessageOptions{
-		ChatID: opts.msg.GetChatID(),
-		Text:   outputMessage,
+	err = h.services.Keyboard.CreateKeyboard(&CreateKeyboardOptions{
+		ChatID:  opts.msg.GetChatID(),
+		Type:    keyboardTypeRow,
+		Rows:    defaultKeyboardRows,
+		Message: outputMessage,
 	})
 	if err != nil {
 		logger.Error().Err(err).Msg("send message")

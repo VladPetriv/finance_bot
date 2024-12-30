@@ -34,6 +34,7 @@ var AvailableCommands = []string{
 	BotGetBalanceCommand, BotCreateBalanceCommand, BotUpdateBalanceCommand,
 	BotCreateCategoryCommand, BotListCategoriesCommand,
 	BotCreateOperationCommand, BotCreateIncomingOperationCommand, BotCreateSpendingOperationCommand, BotGetOperationsHistory,
+	BotBackCommand,
 }
 
 // CommandToEvent maps bot commands to their corresponding events
@@ -46,6 +47,7 @@ var CommandToEvent = map[string]Event{
 	BotListCategoriesCommand:  ListCategoriesEvent,
 	BotCreateOperationCommand: CreateOperationEvent,
 	BotGetOperationsHistory:   GetOperationsHistoryEvent,
+	BotBackCommand:            BackEvent,
 }
 
 // CommadToFistFlowStep maps commands to their initial flow steps

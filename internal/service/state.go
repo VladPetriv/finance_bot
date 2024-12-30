@@ -47,7 +47,6 @@ func (s stateService) HandleState(ctx context.Context, message botMessage) (*Han
 	event := getEventFromMsg(&message)
 	logger.Debug().Any("event", event).Msg("got event based on bot message")
 
-	// TODO: Hanlde this case
 	if state == nil {
 		flow := models.EventToFlow[event]
 
@@ -83,6 +82,35 @@ func (s stateService) HandleState(ctx context.Context, message botMessage) (*Han
 		}, nil
 	}
 	logger.Debug().Any("state", state).Msg("got state from store")
+
+	// When handling a back event, we delete the current state and create a new finished state to start next flow properly.
+	if event == models.BackEvent {
+		err := s.stores.State.Delete(ctx, state.ID)
+		if err != nil {
+			logger.Error().Err(err).Msg("delete state from store")
+			return nil, fmt.Errorf("delete state from store: %w", err)
+		}
+
+		err = s.stores.State.Create(ctx, &models.State{
+			ID:        uuid.NewString(),
+			UserID:    message.GetUsername(),
+			Flow:      models.EventToFlow[event],
+			Steps:     []models.FlowStep{models.StartFlowStep, models.EndFlowStep},
+			Metedata:  make(map[string]any),
+			CreatedAt: time.Now(),
+			UpdatedAt: time.Now(),
+		})
+		if err != nil {
+			logger.Error().Err(err).Msg("create state in store")
+			return nil, fmt.Errorf("create state in store: %w", err)
+		}
+
+		logger.Info().Msg("processed case with back event")
+		return &HandleStateOutput{
+			State: state,
+			Event: event,
+		}, nil
+	}
 
 	// If we're not able to define the event based on message text and flow is not finished yet
 	// we should return the same state, since current flow is not finished and myabe we process other steps.

@@ -147,7 +147,7 @@ func (h handlerService) HandleEventUnknown(msg botMessage) error {
 		return fmt.Errorf("send message: %w", err)
 	}
 
-	logger.Info().Msg("handled event back")
+	logger.Info().Msg("handled event unknown")
 	return nil
 }
 
@@ -188,7 +188,7 @@ type named interface {
 
 const maxBalancesPerRow = 3
 
-func convertSliceToKeyboardRows[T named](data []T) []bot.KeyboardRow {
+func getKeyboardRows[T named](data []T, includeRowWithBackButton bool) []bot.KeyboardRow {
 	keyboardRows := make([]bot.KeyboardRow, 0)
 
 	var currentRow bot.KeyboardRow
@@ -200,6 +200,12 @@ func convertSliceToKeyboardRows[T named](data []T) []bot.KeyboardRow {
 			keyboardRows = append(keyboardRows, currentRow)
 			currentRow = bot.KeyboardRow{} // Reset current row
 		}
+	}
+
+	if includeRowWithBackButton {
+		keyboardRows = append(keyboardRows, bot.KeyboardRow{
+			Buttons: []string{models.BotBackCommand},
+		})
 	}
 
 	return keyboardRows
