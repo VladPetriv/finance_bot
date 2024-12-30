@@ -220,7 +220,7 @@ func (h handlerService) HandleEventBalanceUpdated(ctx context.Context, msg botMe
 			ChatID:  msg.GetChatID(),
 			Message: "Choose balance to update:",
 			Type:    keyboardTypeRow,
-			Rows:    getKeyboardRows(user.Balances),
+			Rows:    getKeyboardRows(user.Balances, true),
 		})
 		if err != nil {
 			logger.Error().Err(err).Msg("create keyboard with welcome message")
@@ -447,7 +447,7 @@ func (h handlerService) HandleEventGetBalance(ctx context.Context, msg botMessag
 			ChatID:  msg.GetChatID(),
 			Message: "Select a balance to view information:",
 			Type:    keyboardTypeRow,
-			Rows:    getKeyboardRows(user.Balances),
+			Rows:    getKeyboardRows(user.Balances, true),
 		})
 		if err != nil {
 			logger.Error().Err(err).Msg("create keyboard with welcome message")

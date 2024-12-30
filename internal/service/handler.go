@@ -188,7 +188,7 @@ type named interface {
 
 const maxBalancesPerRow = 3
 
-func getKeyboardRows[T named](data []T) []bot.KeyboardRow {
+func getKeyboardRows[T named](data []T, includeRowWithBackButton bool) []bot.KeyboardRow {
 	keyboardRows := make([]bot.KeyboardRow, 0)
 
 	var currentRow bot.KeyboardRow
@@ -202,9 +202,11 @@ func getKeyboardRows[T named](data []T) []bot.KeyboardRow {
 		}
 	}
 
-	keyboardRows = append(keyboardRows, bot.KeyboardRow{
-		Buttons: []string{models.BotBackCommand},
-	})
+	if includeRowWithBackButton {
+		keyboardRows = append(keyboardRows, bot.KeyboardRow{
+			Buttons: []string{models.BotBackCommand},
+		})
+	}
 
 	return keyboardRows
 }

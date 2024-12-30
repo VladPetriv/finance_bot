@@ -83,8 +83,7 @@ func (s stateService) HandleState(ctx context.Context, message botMessage) (*Han
 	}
 	logger.Debug().Any("state", state).Msg("got state from store")
 
-	// When handling a back event, we delete the current state and create a new finished state.
-	// Note: Future consideration needed for handling entities created in previous flow steps.
+	// When handling a back event, we delete the current state and create a new finished state to start next flow properly.
 	if event == models.BackEvent {
 		err := s.stores.State.Delete(ctx, state.ID)
 		if err != nil {
