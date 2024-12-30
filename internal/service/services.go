@@ -23,9 +23,10 @@ type HandlerService interface {
 	HandleError(ctx context.Context, err error, msg botMessage) error
 	// HandleEventUnknown is used to handle event unknown.
 	HandleEventUnknown(msg botMessage) error
-
 	// HandleEventStart is used to handle event start.
 	HandleEventStart(ctx context.Context, msg botMessage) error
+	// HandleEventBack is used to reset bot buttons to default mode.
+	HandleEventBack(ctx context.Context, msg botMessage) error
 	// HandleEventBalanceCreated is used to handle update balance event.
 	HandleEventBalanceCreated(ctx context.Context, msg botMessage) error
 	// HandleEventBalanceUpdated is used to handle update balance event.
@@ -40,9 +41,6 @@ type HandlerService interface {
 	HandleEventOperationCreated(ctc context.Context, msg botMessage) error
 	// HandleEventGetOperationsHistory is used to get operations history.
 	HandleEventGetOperationsHistory(ctx context.Context, msg botMessage) error
-
-	// HandleEventBack is used to reset bot buttons to default mode.
-	HandleEventBack(ctx context.Context, msg botMessage) error
 }
 
 // EventService provides functionally for receiving an updates from bot and reacting on it.

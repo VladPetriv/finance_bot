@@ -47,7 +47,6 @@ func (s stateService) HandleState(ctx context.Context, message botMessage) (*Han
 	event := getEventFromMsg(&message)
 	logger.Debug().Any("event", event).Msg("got event based on bot message")
 
-	// TODO: Hanlde this case
 	if state == nil {
 		flow := models.EventToFlow[event]
 

@@ -147,7 +147,7 @@ func (h handlerService) HandleEventUnknown(msg botMessage) error {
 		return fmt.Errorf("send message: %w", err)
 	}
 
-	logger.Info().Msg("handled event back")
+	logger.Info().Msg("handled event unknown")
 	return nil
 }
 

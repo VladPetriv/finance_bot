@@ -197,18 +197,6 @@ func (e eventService) ReactOnEvent(ctx context.Context, event models.Event, msg 
 			return fmt.Errorf("handle event operation created: %w", err)
 		}
 
-	case models.UnknownEvent:
-		err := e.handlerService.HandleEventUnknown(msg)
-		if err != nil {
-			if errs.IsExpected(err) {
-				logger.Info().Err(err).Msg(err.Error())
-				return err
-			}
-
-			logger.Error().Err(err).Msg("handle event unknown")
-			return fmt.Errorf("handle event event unknown: %w", err)
-		}
-
 	case models.GetOperationsHistoryEvent:
 		err := e.handlerService.HandleEventGetOperationsHistory(ctx, msg)
 		if err != nil {
@@ -221,12 +209,24 @@ func (e eventService) ReactOnEvent(ctx context.Context, event models.Event, msg 
 			return fmt.Errorf("handle event get operations history: %w", err)
 		}
 
-	// case models.BackEvent:
-	// 	err := e.handlerService.HandleEventBack(ctx, msg)
-	// 	if err != nil {
-	// 		logger.Error().Err(err).Msg("handle event back")
-	// 		return fmt.Errorf("handle event back: %w", err)
-	// 	}
+	case models.UnknownEvent:
+		err := e.handlerService.HandleEventUnknown(msg)
+		if err != nil {
+			if errs.IsExpected(err) {
+				logger.Info().Err(err).Msg(err.Error())
+				return err
+			}
+
+			logger.Error().Err(err).Msg("handle event unknown")
+			return fmt.Errorf("handle event event unknown: %w", err)
+		}
+
+	case models.BackEvent:
+		err := e.handlerService.HandleEventBack(ctx, msg)
+		if err != nil {
+			logger.Error().Err(err).Msg("handle event back")
+			return fmt.Errorf("handle event back: %w", err)
+		}
 
 	default:
 		logger.Error().Any("event", event).Msg("receive unexpected event")
