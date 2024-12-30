@@ -340,9 +340,11 @@ func (h handlerService) processBalanceUpdate(ctx context.Context, opts processBa
 
 		return models.EnterBalanceCurrencyFlowStep, nil
 	case models.EnterBalanceCurrencyFlowStep:
-		err = h.services.Message.SendMessage(&SendMessageOptions{
+		err = h.services.Keyboard.CreateKeyboard(&CreateKeyboardOptions{
 			ChatID: opts.msg.GetChatID(),
-			Text: fmt.Sprintf(
+			Type:   keyboardTypeRow,
+			Rows:   defaultKeyboardRows,
+			Message: fmt.Sprintf(
 				"%s\nBalance Info:\n - Name: %s\n - Amount: %v\n - Currency: %s",
 				opts.finalMsg, balance.Name, balance.Amount, balance.Currency,
 			),
@@ -485,11 +487,13 @@ func (h handlerService) processGetBalanceInfo(ctx context.Context, msg botMessag
 		return fmt.Errorf("balance not found")
 	}
 	logger.Debug().Any("balance", balance).Msg("got balance from store")
-	// TODO: In the feature it would be great to add some statistics about operations on this balance.
 
-	err = h.services.Message.SendMessage(&SendMessageOptions{
+	// TODO: In the feature it would be great to add some statistics about operations on this balance.
+	err = h.services.Keyboard.CreateKeyboard(&CreateKeyboardOptions{
 		ChatID: msg.GetChatID(),
-		Text: fmt.Sprintf(
+		Type:   keyboardTypeRow,
+		Rows:   defaultKeyboardRows,
+		Message: fmt.Sprintf(
 			"Balance info(%s):\n - Amount: %v\n - Currency: %s",
 			balance.Name, balance.Amount, balance.Currency,
 		),

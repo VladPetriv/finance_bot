@@ -229,9 +229,11 @@ func (h handlerService) handleEnterOperationAmountFlowStep(ctx context.Context, 
 		return fmt.Errorf("update balance in store: %w", err)
 	}
 
-	err = h.services.Message.SendMessage(&SendMessageOptions{
-		ChatID: opts.msg.GetChatID(),
-		Text:   "Operation created!",
+	err = h.services.Keyboard.CreateKeyboard(&CreateKeyboardOptions{
+		ChatID:  opts.msg.GetChatID(),
+		Type:    keyboardTypeRow,
+		Rows:    defaultKeyboardRows,
+		Message: "Operation created!",
 	})
 	if err != nil {
 		logger.Error().Err(err).Msg("send message")
@@ -375,9 +377,11 @@ func (h handlerService) handlerChooseTimePeriodForOperationsHistoryFlowStep(ctx 
 		)
 	}
 
-	err = h.services.Message.SendMessage(&SendMessageOptions{
-		ChatID: opts.msg.GetChatID(),
-		Text:   resultMessage,
+	err = h.services.Keyboard.CreateKeyboard(&CreateKeyboardOptions{
+		ChatID:  opts.msg.GetChatID(),
+		Type:    keyboardTypeRow,
+		Rows:    defaultKeyboardRows,
+		Message: resultMessage,
 	})
 	if err != nil {
 		logger.Error().Err(err).Msg("send message")
