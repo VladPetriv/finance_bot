@@ -2,68 +2,68 @@ package app
 
 import (
 	"context"
-	"fmt"
 	"net/http"
 	"os"
 	"os/signal"
 	"syscall"
 
 	"github.com/VladPetriv/finance_bot/config"
+	"github.com/VladPetriv/finance_bot/internal/service"
+	"github.com/VladPetriv/finance_bot/internal/store"
+	"github.com/VladPetriv/finance_bot/pkg/bot"
 	"github.com/VladPetriv/finance_bot/pkg/database"
 	"github.com/VladPetriv/finance_bot/pkg/logger"
 )
 
 // Run is used to start the application.
 func Run(ctx context.Context, cfg *config.Config, logger *logger.Logger) {
-	fmt.Printf("cfg: %+v\n", cfg)
+	b := bot.NewTelegramBot(cfg.Telegram.BotToken, cfg.Telegram.WebhookURL, cfg.Telegram.SeverAddress)
 
-	// b := bot.NewTelegramBot(cfg.Telegram.BotToken, cfg.Telegram.WebhookURL, cfg.Telegram.SeverAddress)
-
-	// botAPI, err := b.NewAPI()
-	// if err != nil {
-	// 	logger.Fatal().Err(err).Msg("create new bot api")
-	// }
+	botAPI, err := b.NewAPI()
+	if err != nil {
+		logger.Fatal().Err(err).Msg("create new bot api")
+	}
 
 	mongoDB, err := database.NewMongoDB(ctx, cfg.MongoDB.URI, cfg.MongoDB.Database)
 	if err != nil {
 		logger.Fatal().Err(err).Msg("create new mongodb instance")
 	}
 
-	// stores := service.Stores{
-	// 	Category:  store.NewCategory(mongoDB),
-	// 	User:      store.NewUser(mongoDB),
-	// 	Balance:   store.NewBalance(mongoDB),
-	// 	Operation: store.NewOperation(mongoDB),
-	// 	State:     store.NewState(mongoDB),
-	// }
+	stores := service.Stores{
+		Category:  store.NewCategory(mongoDB),
+		User:      store.NewUser(mongoDB),
+		Balance:   store.NewBalance(mongoDB),
+		Operation: store.NewOperation(mongoDB),
+		State:     store.NewState(mongoDB),
+	}
 
-	// messageService := service.NewMessage(botAPI, logger)
-	// keyboardService := service.NewKeyboard(botAPI, logger)
-	// stateService := service.NewState(&service.StateOptions{
-	// 	Logger: logger,
-	// 	Stores: stores,
-	// })
+	messageService := service.NewMessage(botAPI, logger)
+	keyboardService := service.NewKeyboard(botAPI, logger)
+	stateService := service.NewState(&service.StateOptions{
+		Logger: logger,
+		Stores: stores,
+	})
 
-	// services := service.Services{
-	// 	Message:  messageService,
-	// 	Keyboard: keyboardService,
-	// 	State: stateService,
-	// }
+	services := service.Services{
+		Message:  messageService,
+		Keyboard: keyboardService,
+		State:    stateService,
+	}
 
-	// handlerService := service.NewHandler(&service.HandlerOptions{
-	// 	Logger:   logger,
-	// 	Services: services,
-	// 	Stores:   stores,
-	// })
+	handlerService := service.NewHandler(&service.HandlerOptions{
+		Logger:   logger,
+		Services: services,
+		Stores:   stores,
+	})
 
-	// eventService := service.NewEvent(&service.EventOptions{
-	// 	// BotAPI:         botAPI,
-	// 	Logger:         logger,
-	// 	HandlerService: handlerService,
-	// 	StateService:   stateService,
-	// })
+	eventService := service.NewEvent(&service.EventOptions{
+		// BotAPI:         botAPI,
+		Logger:         logger,
+		HandlerService: handlerService,
+		StateService:   stateService,
+	})
 
-	// go eventService.Listen(ctx)
+	go eventService.Listen(ctx)
 
 	// Setup health check server
 	mux := http.NewServeMux()
@@ -94,10 +94,10 @@ func Run(ctx context.Context, cfg *config.Config, logger *logger.Logger) {
 
 	<-signals
 
-	// err = botAPI.Close()
-	// if err != nil {
-	// 	logger.Error().Err(err).Msg("close telegram bot connection")
-	// }
+	err = botAPI.Close()
+	if err != nil {
+		logger.Error().Err(err).Msg("close telegram bot connection")
+	}
 
 	err = server.Shutdown(ctx)
 	if err != nil {
