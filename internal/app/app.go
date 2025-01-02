@@ -57,7 +57,7 @@ func Run(ctx context.Context, cfg *config.Config, logger *logger.Logger) {
 	})
 
 	eventService := service.NewEvent(&service.EventOptions{
-		// BotAPI:         botAPI,
+		BotAPI:         botAPI,
 		Logger:         logger,
 		HandlerService: handlerService,
 		StateService:   stateService,
