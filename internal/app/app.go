@@ -3,6 +3,7 @@ package app
 import (
 	"context"
 	"fmt"
+	"net/http"
 	"os"
 	"os/signal"
 	"syscall"
@@ -63,6 +64,29 @@ func Run(ctx context.Context, cfg *config.Config, logger *logger.Logger) {
 	// })
 
 	// go eventService.Listen(ctx)
+
+	// Setup health check server
+	mux := http.NewServeMux()
+	mux.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte(`{"status": "ok"}`))
+	})
+
+	server := &http.Server{
+		Addr:    ":8080", // You might want to make this configurable
+		Handler: mux,
+	}
+
+	// Start HTTP server in a goroutine
+	go func() {
+		logger.Info().Msg("starting health check server on :8080")
+		err := server.ListenAndServe()
+		if err != nil && err != http.ErrServerClosed {
+			logger.Error().Err(err).Msg("health check server error")
+		}
+	}()
+
 	logger.Info().Msg("application started")
 
 	signals := make(chan os.Signal, 1)
@@ -74,6 +98,11 @@ func Run(ctx context.Context, cfg *config.Config, logger *logger.Logger) {
 	// if err != nil {
 	// 	logger.Error().Err(err).Msg("close telegram bot connection")
 	// }
+
+	err = server.Shutdown(ctx)
+	if err != nil {
+		logger.Error().Err(err).Msg("error shutting down health check server")
+	}
 
 	err = mongoDB.Close()
 	if err != nil {
