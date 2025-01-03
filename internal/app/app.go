@@ -29,6 +29,11 @@ func Run(ctx context.Context, cfg *config.Config, logger *logger.Logger) {
 		logger.Fatal().Err(err).Msg("create new mongodb instance")
 	}
 
+	err = mongoDB.Ping(ctx)
+	if err != nil {
+		logger.Fatal().Err(err).Msg("connection with mondodb is not established")
+	}
+
 	stores := service.Stores{
 		Category:  store.NewCategory(mongoDB),
 		User:      store.NewUser(mongoDB),

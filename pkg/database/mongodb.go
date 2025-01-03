@@ -40,3 +40,7 @@ func (m MongoDB) Close() error {
 
 	return nil
 }
+
+func (m MongoDB) Ping(ctx context.Context) error {
+	return m.DB.Client().Ping(ctx, nil)
+}
