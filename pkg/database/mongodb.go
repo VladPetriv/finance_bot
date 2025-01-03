@@ -41,6 +41,7 @@ func (m MongoDB) Close() error {
 	return nil
 }
 
+// Ping pings the database to check connection with MongoDB.
 func (m MongoDB) Ping(ctx context.Context) error {
 	return m.DB.Client().Ping(ctx, nil)
 }
