@@ -604,6 +604,11 @@ func (h handlerService) HandleEventGetOperationsHistory(ctx context.Context, msg
 						string(models.CreationPeriodYear),
 					},
 				},
+				{
+					Buttons: []string{
+						models.BotBackCommand,
+					},
+				},
 			},
 		})
 		if err != nil {
