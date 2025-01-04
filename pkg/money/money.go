@@ -44,6 +44,11 @@ func (m *Money) Inc(right Money) {
 	m.decimal = m.decimal.Add(right.decimal)
 }
 
+// Mul multiplies this Money value with another and updates the result in place
+func (m *Money) Mul(right Money) {
+	m.decimal = m.decimal.Mul(right.decimal)
+}
+
 // String returns string representation of float with 2 places after digit.
 // Resulting string will be rounded to nearest.
 func (m Money) String() string {

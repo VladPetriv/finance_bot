@@ -175,6 +175,9 @@ var (
 
 	// ErrInvalidAmountFormat happens when use enters amount with invalid format
 	ErrInvalidAmountFormat = errs.New("Invalid amount format! Please try again.")
+
+	// ErrInvalidExchangeRateFormat happens when user enters exchange rate with invalid format
+	ErrInvalidExchangeRateFormat = errs.New("Invalid exchange rate format! Please try again.")
 )
 
 // StateService represents a service for managing and handling complex bot flow using statesstates.

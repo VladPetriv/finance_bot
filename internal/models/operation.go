@@ -14,7 +14,7 @@ type Operation struct {
 	CreatedAt  time.Time     `bson:"createdAt,omitempty"`
 }
 
-// OperationType represents the type of an operation, which can be either incoming or spending.
+// OperationType represents the type of an operation, which can be either incoming, spending or transfer.
 type OperationType string
 
 const (
@@ -22,6 +22,12 @@ const (
 	OperationTypeIncoming OperationType = "incoming"
 	// OperationTypeSpending represents a spending operation.
 	OperationTypeSpending OperationType = "spending"
+	// OperationTypeTransfer represents a transfer operation.
+	OperationTypeTransfer OperationType = "transfer"
+	// OperationTypeTransferIn represents a transfer_in operation.
+	OperationTypeTransferIn OperationType = "transfer_in"
+	// OperationTypeTransferOut represents a transfer_out operation.
+	OperationTypeTransferOut OperationType = "transfer_out"
 )
 
 // CreationPeriod defines constants representing different time periods for creation operations.

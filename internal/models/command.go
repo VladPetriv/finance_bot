@@ -18,9 +18,11 @@ const (
 	// BotCreateOperationCommand represents the command to create a new operation
 	BotCreateOperationCommand string = "Create Operation 🤔"
 	// BotCreateIncomingOperationCommand represents the command to create an incoming operation
-	BotCreateIncomingOperationCommand string = "Create Incoming Operation 🤑"
+	BotCreateIncomingOperationCommand string = "Incoming 🤑"
 	// BotCreateSpendingOperationCommand represents the command to create a spending operation
-	BotCreateSpendingOperationCommand string = "Create Spending Operation 💸"
+	BotCreateSpendingOperationCommand string = "Spending 💸"
+	// BotCreateagsingOperationCommand represents the command to create a transfer operation
+	BotCreateTransferOperationCommand string = "Transfer ➡️"
 	// BotGetOperationsHistory represents the command to get operations history
 	BotGetOperationsHistory string = "Get Operations History 📖"
 
@@ -65,4 +67,5 @@ var CommadToFistFlowStep = map[string]FlowStep{
 var OperationCommandToOperationType = map[string]OperationType{
 	BotCreateIncomingOperationCommand: OperationTypeIncoming,
 	BotCreateSpendingOperationCommand: OperationTypeSpending,
+	BotCreateTransferOperationCommand: OperationTypeTransfer,
 }

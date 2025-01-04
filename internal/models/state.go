@@ -129,8 +129,14 @@ const (
 
 	// CreateOperationFlowStep represents the step for creating a new operation
 	CreateOperationFlowStep FlowStep = "create_operation"
-	// ChooseOprationTypeFlowStep represents the step for choosing operation type
-	ChooseOprationTypeFlowStep FlowStep = "choose_opration_type"
+	// ProcessOprationTypeFlowStep represents the step for processing operation type
+	ProcessOprationTypeFlowStep FlowStep = "process_opration_type"
+	// ChooseBalanceFromFlowStep represents the step for choosing balance from which transfer operation will be created
+	ChooseBalanceFromFlowStep FlowStep = "choose_balance_from_for_transfer_operation"
+	// ChooseBalanceToFlowStep represents the step for choosing balance to which transfer operation will be created
+	ChooseBalanceToFlowStep FlowStep = "choose_balance_to_for_transfer_operation"
+	// EnterCurrencyExchangeRateFlowStep represents the step for entering currency exchange rate
+	EnterCurrencyExchangeRateFlowStep FlowStep = "enter_currency_exchange_rate"
 	// ChooseCategoryFlowStep represents the step for choosing category
 	ChooseCategoryFlowStep FlowStep = "choose_category"
 	// EnterOperationAmountFlowStep represents the step for entering operation amount
