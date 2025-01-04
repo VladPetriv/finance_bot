@@ -619,6 +619,10 @@ func (h handlerService) HandleEventGetOperationsHistory(ctx context.Context, msg
 			msg:      msg,
 		})
 		if err != nil {
+			if errs.IsExpected(err) {
+				logger.Info().Msg(err.Error())
+				return err
+			}
 			logger.Error().Err(err).Msg("handle choose time period for operations history flow step")
 			return fmt.Errorf("handle choose time period for operations history flow step: %w", err)
 		}
