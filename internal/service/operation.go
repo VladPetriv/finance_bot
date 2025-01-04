@@ -283,7 +283,7 @@ func (h handlerService) handleProcessOprationTypeFlowStep(opts handleProcessOpra
 		message = "Choose balance:"
 		nextStep = models.ChooseBalanceFlowStep
 	case models.OperationTypeTransfer:
-		message = "Choose balance from which money will be transfered:"
+		message = "Choose balance from which money will be transferred:"
 		nextStep = models.ChooseBalanceFromFlowStep
 	}
 

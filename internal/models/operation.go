@@ -22,7 +22,7 @@ const (
 	OperationTypeIncoming OperationType = "incoming"
 	// OperationTypeSpending represents a spending operation.
 	OperationTypeSpending OperationType = "spending"
-	// OperationTYpeTransfer represents a transfer operation.
+	// OperationTypeTransfer represents a transfer operation.
 	OperationTypeTransfer OperationType = "transfer"
 	// OperationTypeTransferIn represents a transfer_in operation.
 	OperationTypeTransferIn OperationType = "transfer_in"
