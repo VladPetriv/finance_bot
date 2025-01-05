@@ -6,12 +6,15 @@ import (
 
 // Operation represent a financial operation.
 type Operation struct {
-	ID         string        `bson:"_id,omitempty"`
-	Type       OperationType `bson:"type,ommitempty"`
-	CategoryID string        `bson:"categoryId,omitempty"`
-	BalanceID  string        `bson:"balanceId,omitempty"`
-	Amount     string        `bson:"amount,omitempty"`
-	CreatedAt  time.Time     `bson:"createdAt,omitempty"`
+	ID         string `bson:"_id,omitempty"`
+	CategoryID string `bson:"categoryId,omitempty"`
+	BalanceID  string `bson:"balanceId,omitempty"`
+
+	Type        OperationType `bson:"type,ommitempty"`
+	Amount      string        `bson:"amount,omitempty"`
+	Description string        `bson:"description,omitempty"`
+
+	CreatedAt time.Time `bson:"createdAt,omitempty"`
 }
 
 // OperationType represents the type of an operation, which can be either incoming, spending or transfer.
