@@ -249,6 +249,10 @@ Please enter the current exchange rate:`,
 			msg:      msg,
 		})
 		if err != nil {
+			if errs.IsExpected(err) {
+				logger.Info().Msg(err.Error())
+				return err
+			}
 			logger.Error().Err(err).Msg("handle enter operation amount flow step")
 			return fmt.Errorf("handle enter operation amount flow step: %w", err)
 		}
