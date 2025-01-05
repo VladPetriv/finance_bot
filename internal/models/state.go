@@ -139,6 +139,8 @@ const (
 	EnterCurrencyExchangeRateFlowStep FlowStep = "enter_currency_exchange_rate"
 	// ChooseCategoryFlowStep represents the step for choosing category
 	ChooseCategoryFlowStep FlowStep = "choose_category"
+	// EnterOperationDescriptionFlowStep represents the step for entering operation description
+	EnterOperationDescriptionFlowStep FlowStep = "enter_operation_description"
 	// EnterOperationAmountFlowStep represents the step for entering operation amount
 	EnterOperationAmountFlowStep FlowStep = "enter_operation_amount"
 	// GetOperationsHistoryFlowStep represents the step for getting operations history

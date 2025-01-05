@@ -133,7 +133,6 @@ func (h handlerService) HandleEventOperationCreated(ctx context.Context, msg bot
 		}
 
 		nextStep = models.ChooseBalanceToFlowStep
-
 	case models.ChooseBalanceToFlowStep:
 		stateMetaData["balanceTo"] = msg.Message.Text
 
@@ -231,6 +230,19 @@ Please enter the current exchange rate:`,
 		nextStep = models.EnterOperationAmountFlowStep
 	case models.ChooseCategoryFlowStep:
 		stateMetaData["categoryTitle"] = msg.Message.Text
+
+		err = h.services.Message.SendMessage(&SendMessageOptions{
+			ChatID: msg.GetChatID(),
+			Text:   "Enter operation description:",
+		})
+		if err != nil {
+			logger.Error().Err(err).Msg("send message")
+			return fmt.Errorf("send message: %w", err)
+		}
+
+		nextStep = models.EnterOperationDescriptionFlowStep
+	case models.EnterOperationDescriptionFlowStep:
+		stateMetaData["operationDescription"] = msg.Message.Text
 
 		err = h.services.Message.SendMessage(&SendMessageOptions{
 			ChatID: msg.GetChatID(),
@@ -419,12 +431,13 @@ func (h handlerService) processSpendingAndIncomingOperation(ctx context.Context,
 	}
 
 	operation := &models.Operation{
-		ID:         uuid.NewString(),
-		Type:       opts.operationType,
-		Amount:     opts.operationAmount.StringFixed(),
-		BalanceID:  balance.ID,
-		CategoryID: category.ID,
-		CreatedAt:  time.Now(),
+		ID:          uuid.NewString(),
+		BalanceID:   balance.ID,
+		CategoryID:  category.ID,
+		Type:        opts.operationType,
+		Amount:      opts.operationAmount.StringFixed(),
+		Description: opts.metaData["operationDescription"].(string),
+		CreatedAt:   time.Now(),
 	}
 	logger.Debug().Any("operation", operation).Msg("build operation for create")
 
@@ -501,20 +514,22 @@ func (h handlerService) processTransferOperation(ctx context.Context, opts proce
 
 	operationsForCreate := []models.Operation{
 		{
-			ID:         uuid.NewString(),
-			Type:       models.OperationTypeTransferOut,
-			Amount:     operationAmountOut.StringFixed(),
-			BalanceID:  balanceFrom.ID,
-			CategoryID: "",
-			CreatedAt:  time.Now(),
+			ID:          uuid.NewString(),
+			BalanceID:   balanceFrom.ID,
+			CategoryID:  "",
+			Type:        models.OperationTypeTransferOut,
+			Amount:      operationAmountOut.StringFixed(),
+			Description: fmt.Sprintf("Transfer: %s ➜ %s", balanceFrom.Name, balanceTo.Name),
+			CreatedAt:   time.Now(),
 		},
 		{
-			ID:         uuid.NewString(),
-			Type:       models.OperationTypeTransferIn,
-			Amount:     operationAmountIn.StringFixed(),
-			BalanceID:  balanceTo.ID,
-			CategoryID: "",
-			CreatedAt:  time.Now(),
+			ID:          uuid.NewString(),
+			BalanceID:   balanceTo.ID,
+			CategoryID:  "",
+			Type:        models.OperationTypeTransferIn,
+			Amount:      operationAmountIn.StringFixed(),
+			Description: fmt.Sprintf("Received transfer from %s", balanceFrom.Name),
+			CreatedAt:   time.Now(),
 		},
 	}
 	for _, operation := range operationsForCreate {
@@ -678,8 +693,8 @@ func (h handlerService) handlerChooseTimePeriodForOperationsHistoryFlowStep(ctx 
 
 	for _, o := range operations {
 		resultMessage += fmt.Sprintf(
-			"\nOperation: %s\nCategory: %s\nAmount: %v%s\nCreation date: %v\n- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -",
-			o.Type, o.CategoryID, o.Amount, balance.Currency, o.CreatedAt.Format(time.ANSIC),
+			"\nOperation: %s\nDescription: %s\nCategory: %s\nAmount: %v%s\nCreation date: %v\n- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -",
+			o.Type, o.Description, o.CategoryID, o.Amount, balance.Currency, o.CreatedAt.Format(time.ANSIC),
 		)
 	}
 
