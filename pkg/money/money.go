@@ -49,8 +49,14 @@ func (m *Money) Mul(right Money) {
 	m.decimal = m.decimal.Mul(right.decimal)
 }
 
-// String returns string representation of float with 2 places after digit.
+// StringFixed returns string representation of float with 2 places after digit.
+// Resulting string will be rounded to nearest.
+func (m Money) StringFixed() string {
+	return m.decimal.StringFixed(2)
+}
+
+// String returns string representation of float with unlimited places after digit.
 // Resulting string will be rounded to nearest.
 func (m Money) String() string {
-	return m.decimal.StringFixed(2)
+	return m.decimal.String()
 }

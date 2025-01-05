@@ -183,7 +183,7 @@ Please enter the current exchange rate:`,
 					balanceTo.Currency,
 					balanceFrom.Amount,
 					balanceFrom.Currency,
-					parsedBalanceFromAmount.String(),
+					parsedBalanceFromAmount.StringFixed(),
 					balanceTo.Currency,
 				),
 			})
@@ -406,18 +406,18 @@ func (h handlerService) processSpendingAndIncomingOperation(ctx context.Context,
 	case models.OperationTypeIncoming:
 		balanceAmount.Inc(opts.operationAmount)
 		logger.Debug().Any("balanceAmount", balanceAmount).Msg("increased balance amount with incoming operation")
-		balance.Amount = balanceAmount.String()
+		balance.Amount = balanceAmount.StringFixed()
 
 	case models.OperationTypeSpending:
 		calculatedAmount := balanceAmount.Sub(opts.operationAmount)
 		logger.Debug().Any("calculatedAmount", calculatedAmount).Msg("decreased balance amount with spending operation")
-		balance.Amount = calculatedAmount.String()
+		balance.Amount = calculatedAmount.StringFixed()
 	}
 
 	operation := &models.Operation{
 		ID:         uuid.NewString(),
 		Type:       opts.operationType,
-		Amount:     opts.operationAmount.String(),
+		Amount:     opts.operationAmount.StringFixed(),
 		BalanceID:  balance.ID,
 		CategoryID: category.ID,
 		CreatedAt:  time.Now(),
@@ -490,16 +490,16 @@ func (h handlerService) processTransferOperation(ctx context.Context, opts proce
 	}
 
 	calculatedAmount := balanceFromAmount.Sub(operationAmountOut)
-	balanceFrom.Amount = calculatedAmount.String()
+	balanceFrom.Amount = calculatedAmount.StringFixed()
 
 	balanceToAmount.Inc(operationAmountIn)
-	balanceTo.Amount = balanceToAmount.String()
+	balanceTo.Amount = balanceToAmount.StringFixed()
 
 	operationsForCreate := []models.Operation{
 		{
 			ID:         uuid.NewString(),
 			Type:       models.OperationTypeTransferOut,
-			Amount:     operationAmountOut.String(),
+			Amount:     operationAmountOut.StringFixed(),
 			BalanceID:  balanceFrom.ID,
 			CategoryID: "",
 			CreatedAt:  time.Now(),
@@ -507,7 +507,7 @@ func (h handlerService) processTransferOperation(ctx context.Context, opts proce
 		{
 			ID:         uuid.NewString(),
 			Type:       models.OperationTypeTransferIn,
-			Amount:     operationAmountIn.String(),
+			Amount:     operationAmountIn.StringFixed(),
 			BalanceID:  balanceTo.ID,
 			CategoryID: "",
 			CreatedAt:  time.Now(),

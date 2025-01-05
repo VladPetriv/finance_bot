@@ -394,7 +394,7 @@ func (h handlerService) updateBalance(ctx context.Context, opts updateBalanceOpt
 			return nil, ErrInvalidAmountFormat
 		}
 
-		balance.Amount = price.String()
+		balance.Amount = price.StringFixed()
 	case models.EnterBalanceCurrencyFlowStep:
 		balance.Currency = opts.data
 	}
