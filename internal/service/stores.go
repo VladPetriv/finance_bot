@@ -82,6 +82,8 @@ type CategoryStore interface {
 	Get(ctx context.Context, filter GetCategoryFilter) (*models.Category, error)
 	// Create creates new category in store.
 	Create(ctx context.Context, category *models.Category) error
+	// Update  updates category in store.
+	Update(ctx context.Context, category *models.Category) error
 	// Delete delete category from store.
 	Delete(ctx context.Context, categoryID string) error
 }
@@ -93,8 +95,9 @@ type ListCategoriesFilter struct {
 
 // GetCategoryFilter represents a filters for Get method.
 type GetCategoryFilter struct {
-	ID    string
-	Title string
+	ID     string
+	UserID string
+	Title  string
 }
 
 // StateStore represents a store for user states.
