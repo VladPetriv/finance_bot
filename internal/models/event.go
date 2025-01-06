@@ -10,16 +10,21 @@ const (
 	BackEvent Event = "back"
 	// UnknownEvent represents an unrecognized or unsupported event
 	UnknownEvent Event = "unknown"
+
 	// CreateBalanceEvent represents the event for creating a new balance
 	CreateBalanceEvent Event = "balance/create"
 	// UpdateBalanceEvent represents the event for updating a balance
 	UpdateBalanceEvent Event = "balance/update"
 	// GetBalanceEvent represents the event for getting a balance
 	GetBalanceEvent Event = "balance/get"
+
 	// CreateCategoryEvent represents the event for creating a new category
 	CreateCategoryEvent Event = "category/create"
 	// ListCategoriesEvent represents the event for listing all categories
 	ListCategoriesEvent Event = "category/list"
+	// UpdateCategoryEvent represents the event for updating a category
+	UpdateCategoryEvent Event = "category/update"
+
 	// CreateOperationEvent represents the event for creating a new operation
 	CreateOperationEvent Event = "operation/create"
 	// GetOperationsHistoryEvent represents the event for getting operations history
@@ -34,6 +39,7 @@ var EventToFlow = map[Event]Flow{
 	GetBalanceEvent:           GetBalanceFlow,
 	CreateCategoryEvent:       CreateCategoryFlow,
 	ListCategoriesEvent:       ListCategoriesFlow,
+	UpdateCategoryEvent:       UpdateCategoryFlow,
 	CreateOperationEvent:      CreateOperationFlow,
 	GetOperationsHistoryEvent: GetOperationsHistoryFlow,
 	BackEvent:                 BackFlow,

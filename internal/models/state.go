@@ -53,6 +53,8 @@ func (s *State) GetEvent() Event {
 		return CreateCategoryEvent
 	case ListCategoriesFlowStep:
 		return ListCategoriesEvent
+	case UpdateCategoryFlowStep:
+		return UpdateCategoryEvent
 	case CreateOperationFlowStep:
 		return CreateOperationEvent
 	case GetOperationsHistoryFlowStep:
@@ -70,16 +72,21 @@ const (
 	StartFlow Flow = "start"
 	// BackFlow represents the flow for stopping cuurent flow
 	BackFlow Flow = "back"
+
 	// CreateBalanceFlow represents the flow for creating a new balance
 	CreateBalanceFlow Flow = "create_balance"
 	// UpdateBalanceFlow represents the flow for updating a balance
 	UpdateBalanceFlow Flow = "update_balance"
 	// GetBalanceFlow represents the flow for getting a balance
 	GetBalanceFlow Flow = "get_balance"
+
 	// CreateCategoryFlow represents the flow for creating a new category
 	CreateCategoryFlow Flow = "create_category"
 	// ListCategoriesFlow represents the flow for listing all categories
 	ListCategoriesFlow Flow = "list_categories"
+	// UpdateCategoryFlow represents the flow for updating a category
+	UpdateCategoryFlow Flow = "update_category"
+
 	// CreateOperationFlow represents the flow for creating a new operation
 	CreateOperationFlow Flow = "create_operation"
 	// GetOperationsHistoryFlow represents the flow for getting operations history
@@ -120,6 +127,12 @@ const (
 
 	// CreateCategoryFlowStep represents the step for creating a new category
 	CreateCategoryFlowStep FlowStep = "create_category"
+	// UpdateBalanceFlowStep represents the step for updating a category
+	UpdateCategoryFlowStep FlowStep = "update_category"
+	// ChooseCategoryFlowStep represents the step for choosing category
+	ChooseCategoryFlowStep FlowStep = "choose_category"
+	// EnterUpdatedCategoryNameFlowStep represents the step for entering category name
+	EnterUpdatedCategoryNameFlowStep FlowStep = "enter_updated_category_name"
 	// EnterCategoryNameFlowStep represents the step for entering category name
 	EnterCategoryNameFlowStep FlowStep = "enter_category_name"
 	// ListCategoriesFlowStep represents the step for listing all categories
@@ -137,8 +150,6 @@ const (
 	ChooseBalanceToFlowStep FlowStep = "choose_balance_to_for_transfer_operation"
 	// EnterCurrencyExchangeRateFlowStep represents the step for entering currency exchange rate
 	EnterCurrencyExchangeRateFlowStep FlowStep = "enter_currency_exchange_rate"
-	// ChooseCategoryFlowStep represents the step for choosing category
-	ChooseCategoryFlowStep FlowStep = "choose_category"
 	// EnterOperationDescriptionFlowStep represents the step for entering operation description
 	EnterOperationDescriptionFlowStep FlowStep = "enter_operation_description"
 	// EnterOperationAmountFlowStep represents the step for entering operation amount
