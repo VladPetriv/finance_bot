@@ -30,7 +30,7 @@ func (c categoryStore) List(ctx context.Context, filter *service.ListCategoriesF
 	stmt := bson.M{}
 
 	if filter.UserID != "" {
-		stmt = bson.M{"userid": filter.UserID}
+		stmt = bson.M{"userId": filter.UserID}
 	}
 
 	cursor, err := c.DB.Collection(collectionCategory).Find(ctx, stmt)
