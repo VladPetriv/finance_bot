@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/VladPetriv/finance_bot/internal/models"
+	"github.com/VladPetriv/finance_bot/pkg/bot"
 	"github.com/VladPetriv/finance_bot/pkg/errs"
 	"github.com/google/uuid"
 )
@@ -87,7 +88,8 @@ func (h handlerService) handleEnterCategoryNameFlowStep(ctx context.Context, opt
 	logger.Debug().Any("opts", opts).Msg("got args")
 
 	category, err := h.stores.Category.Get(ctx, GetCategoryFilter{
-		Title: opts.msg.Message.Text,
+		UserID: opts.userID,
+		Title:  opts.msg.Message.Text,
 	})
 	if err != nil {
 		logger.Error().Err(err).Msg("get category from store")
@@ -179,6 +181,153 @@ func (h handlerService) HandleEventListCategories(ctx context.Context, msg botMe
 	return nil
 }
 
+func (h handlerService) HandleEventCategoryUpdated(ctx context.Context, msg botMessage) error {
+	logger := h.logger.With().Str("name", "handlerService.HandleEventCategoryUpdated").Logger()
+	logger.Debug().Any("msg", msg).Msg("got args")
+
+	var nextStep models.FlowStep
+	stateMetaData := ctx.Value(contextFieldNameState).(*models.State).Metedata
+	logger.Debug().Any("stateMetaData", stateMetaData).Msg("got state metadata")
+
+	defer func() {
+		state := ctx.Value(contextFieldNameState).(*models.State)
+		if nextStep != "" {
+			state.Steps = append(state.Steps, nextStep)
+		}
+		state.Metedata = stateMetaData
+		updatedState, err := h.stores.State.Update(ctx, state)
+		if err != nil {
+			logger.Error().Err(err).Msg("update state in store")
+			return
+		}
+		logger.Debug().Any("updatedState", updatedState).Msg("updated state in store")
+	}()
+
+	user, err := h.stores.User.Get(ctx, GetUserFilter{
+		Username: msg.GetUsername(),
+	})
+	if err != nil {
+		logger.Error().Err(err).Msg("get user from store")
+		return fmt.Errorf("get user from store: %w", err)
+	}
+	if user == nil {
+		logger.Info().Msg("user not found")
+		return ErrUserNotFound
+	}
+	logger.Debug().Any("user", user).Msg("got user from store")
+
+	currentStep := ctx.Value(contextFieldNameState).(*models.State).GetCurrentStep()
+	logger.Debug().Any("currentStep", currentStep).Msg("got current step on create balance flow")
+
+	switch currentStep {
+	case models.UpdateCategoryFlowStep:
+		categories, err := h.listCategories(ctx, user.ID)
+		if err != nil {
+			if errs.IsExpected(err) {
+				logger.Info().Err(err).Msg(err.Error())
+				return err
+			}
+
+			logger.Error().Err(err).Msg("handle list categories flow step")
+			return fmt.Errorf("handle list categories flow step: %w", err)
+		}
+
+		err = h.services.Keyboard.CreateKeyboard(&CreateKeyboardOptions{
+			ChatID:  msg.Message.Chat.ID,
+			Type:    keyboardTypeRow,
+			Rows:    getKeyboardRows(categories, true),
+			Message: "Choose category to update:",
+		})
+		if err != nil {
+			logger.Error().Err(err).Msg("send message")
+			return fmt.Errorf("send message: %w", err)
+		}
+
+		nextStep = models.ChooseCategoryFlowStep
+	case models.ChooseCategoryFlowStep:
+		stateMetaData["previousCategoryTitle"] = msg.Message.Text
+
+		err := h.services.Keyboard.CreateKeyboard(&CreateKeyboardOptions{
+			ChatID:  msg.GetChatID(),
+			Message: "Enter updated category name:",
+			Type:    keyboardTypeRow,
+			Rows: []bot.KeyboardRow{
+				{
+					Buttons: []string{models.BotBackCommand},
+				},
+			},
+		})
+		if err != nil {
+			logger.Error().Err(err).Msg("send message")
+			return fmt.Errorf("send message: %w", err)
+		}
+
+		nextStep = models.EnterUpdatedCategoryNameFlowStep
+	case models.EnterUpdatedCategoryNameFlowStep:
+		err := h.handleEnterUpdatedCategoryNameFlowStep(ctx, handleEnterUpdatedCategoryNameFlowStepOptions{
+			userID:   user.ID,
+			metaData: stateMetaData,
+			msg:      msg,
+		})
+		if err != nil {
+			logger.Error().Err(err).Msg("handle enter uopdated category name flow step")
+			return fmt.Errorf("handle enter uopdated category name flow step: %w", err)
+		}
+
+		nextStep = models.EndFlowStep
+	}
+
+	logger.Info().Msg("handled create category event")
+	return nil
+
+}
+
+type handleEnterUpdatedCategoryNameFlowStepOptions struct {
+	userID   string
+	metaData map[string]any
+	msg      botMessage
+}
+
+func (h handlerService) handleEnterUpdatedCategoryNameFlowStep(ctx context.Context, opts handleEnterUpdatedCategoryNameFlowStepOptions) error {
+	logger := h.logger.With().Str("name", "handlerService.handleEnterUpdatedCategoryNameFlowStep").Logger()
+	logger.Debug().Any("opts", opts).Msg("got args")
+
+	category, err := h.stores.Category.Get(ctx, GetCategoryFilter{
+		UserID: opts.userID,
+		Title:  opts.metaData["previousCategoryTitle"].(string),
+	})
+	if err != nil {
+		logger.Error().Err(err).Msg("get category from store")
+		return fmt.Errorf("get category from store: %w", err)
+	}
+	if category == nil {
+		logger.Info().Msg("category not found")
+		return ErrCategoryNotFound
+	}
+	logger.Debug().Any("category", category).Msg("got category from store")
+
+	category.Title = opts.msg.Message.Text
+
+	err = h.stores.Category.Update(ctx, category)
+	if err != nil {
+		logger.Error().Err(err).Msg("update category in store")
+		return fmt.Errorf("update category in store: %w", err)
+	}
+
+	err = h.services.Keyboard.CreateKeyboard(&CreateKeyboardOptions{
+		ChatID:  opts.msg.GetChatID(),
+		Type:    keyboardTypeRow,
+		Rows:    defaultKeyboardRows,
+		Message: "Category updated!",
+	})
+	if err != nil {
+		logger.Error().Err(err).Msg("send message")
+		return fmt.Errorf("send message: %w", err)
+	}
+
+	return nil
+}
+
 type handleListCategoriesFlowStepOptions struct {
 	userID string
 	msg    botMessage
@@ -230,4 +379,24 @@ func (h handlerService) handleListCategoriesFlowStep(ctx context.Context, opts h
 	}
 
 	return nil
+}
+
+func (h handlerService) listCategories(ctx context.Context, userID string) ([]models.Category, error) {
+	logger := h.logger.With().Str("name", "handlerService.listCategories").Logger()
+	logger.Debug().Any("userID", userID).Msg("got args")
+
+	categories, err := h.stores.Category.List(ctx, &ListCategoriesFilter{
+		UserID: userID,
+	})
+	if err != nil {
+		logger.Error().Err(err).Msg("list categories from store")
+		return nil, fmt.Errorf("list categories from store: %w", err)
+	}
+	if len(categories) == 0 {
+		logger.Info().Msg("categories not found")
+		return nil, ErrCategoriesNotFound
+	}
+
+	logger.Info().Any("categories", categories).Msg("got categories from store")
+	return categories, nil
 }
