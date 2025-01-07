@@ -10,10 +10,15 @@ const (
 	BotUpdateBalanceCommand string = "Update Balance 📈"
 	// BotGetBalanceCommand represents the command to get information about specific balance
 	BotGetBalanceCommand string = "Get Balance Info 📊"
+
 	// BotCreateCategoryCommand represents the command to create a new category
 	BotCreateCategoryCommand string = "Create Category ✨"
 	// BotListCategoriesCommand represents the command to list all categories
 	BotListCategoriesCommand string = "List Categories 📋"
+	// BotUpdateCategoryCommand represents the command to update a category
+	BotUpdateCategoryCommand string = "Update Category ✏️"
+	// BotDeleteCategoryCommand represents the command to delete a category
+	BotDeleteCategoryCommand string = "Delete Category ❌"
 
 	// BotCreateOperationCommand represents the command to create a new operation
 	BotCreateOperationCommand string = "Create Operation 🤔"
@@ -34,7 +39,7 @@ const (
 var AvailableCommands = []string{
 	BotStartCommand,
 	BotGetBalanceCommand, BotCreateBalanceCommand, BotUpdateBalanceCommand,
-	BotCreateCategoryCommand, BotListCategoriesCommand,
+	BotCreateCategoryCommand, BotListCategoriesCommand, BotUpdateCategoryCommand, BotDeleteCategoryCommand,
 	BotCreateOperationCommand, BotCreateIncomingOperationCommand, BotCreateSpendingOperationCommand, BotGetOperationsHistory,
 	BotBackCommand,
 }
@@ -47,6 +52,8 @@ var CommandToEvent = map[string]Event{
 	BotGetBalanceCommand:      GetBalanceEvent,
 	BotCreateCategoryCommand:  CreateCategoryEvent,
 	BotListCategoriesCommand:  ListCategoriesEvent,
+	BotUpdateCategoryCommand:  UpdateCategoryEvent,
+	BotDeleteCategoryCommand:  DeleteCategoryEvent,
 	BotCreateOperationCommand: CreateOperationEvent,
 	BotGetOperationsHistory:   GetOperationsHistoryEvent,
 	BotBackCommand:            BackEvent,
@@ -59,6 +66,8 @@ var CommadToFistFlowStep = map[string]FlowStep{
 	BotGetBalanceCommand:      GetBalanceFlowStep,
 	BotCreateCategoryCommand:  CreateCategoryFlowStep,
 	BotListCategoriesCommand:  ListCategoriesFlowStep,
+	BotUpdateCategoryCommand:  UpdateCategoryFlowStep,
+	BotDeleteCategoryCommand:  DeleteCategoryFlowStep,
 	BotCreateOperationCommand: CreateOperationFlowStep,
 	BotGetOperationsHistory:   GetOperationsHistoryFlowStep,
 }

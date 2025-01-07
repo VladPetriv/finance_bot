@@ -30,7 +30,7 @@ func (c categoryStore) List(ctx context.Context, filter *service.ListCategoriesF
 	stmt := bson.M{}
 
 	if filter.UserID != "" {
-		stmt = bson.M{"userid": filter.UserID}
+		stmt = bson.M{"userId": filter.UserID}
 	}
 
 	cursor, err := c.DB.Collection(collectionCategory).Find(ctx, stmt)
@@ -61,6 +61,9 @@ func (c categoryStore) Get(ctx context.Context, filter service.GetCategoryFilter
 	if filter.Title != "" {
 		request["title"] = filter.Title
 	}
+	if filter.UserID != "" {
+		request["userId"] = filter.UserID
+	}
 
 	var category models.Category
 	err := c.DB.Collection(collectionCategory).FindOne(ctx, request).Decode(&category)
@@ -77,6 +80,15 @@ func (c categoryStore) Get(ctx context.Context, filter service.GetCategoryFilter
 
 func (c categoryStore) Create(ctx context.Context, category *models.Category) error {
 	_, err := c.DB.Collection(collectionCategory).InsertOne(ctx, category)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (c categoryStore) Update(ctx context.Context, category *models.Category) error {
+	_, err := c.DB.Collection(collectionCategory).UpdateOne(ctx, bson.M{"_id": category.ID}, bson.M{"$set": category})
 	if err != nil {
 		return err
 	}

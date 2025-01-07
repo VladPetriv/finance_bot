@@ -27,16 +27,23 @@ type HandlerService interface {
 	HandleEventStart(ctx context.Context, msg botMessage) error
 	// HandleEventBack is used to reset bot buttons to default mode.
 	HandleEventBack(ctx context.Context, msg botMessage) error
+
 	// HandleEventBalanceCreated is used to handle update balance event.
 	HandleEventBalanceCreated(ctx context.Context, msg botMessage) error
 	// HandleEventBalanceUpdated is used to handle update balance event.
 	HandleEventBalanceUpdated(ctx context.Context, msg botMessage) error
 	// HandleEventGetBalance is used to handle get balance event.
 	HandleEventGetBalance(ctx context.Context, msg botMessage) error
+
 	// HandleEventCategoryCreate is used to handle category created event.
 	HandleEventCategoryCreated(ctx context.Context, msg botMessage) error
 	// HandleEventListCategories is used to handle lit categories event.
 	HandleEventListCategories(ctx context.Context, msg botMessage) error
+	// HandleEventCategoryUpdated is used to handle update category event.
+	HandleEventCategoryUpdated(ctx context.Context, msg botMessage) error
+	// HandleEventCategoryDeleted is used to handle delete category event.
+	HandleEventCategoryDeleted(ctx context.Context, msg botMessage) error
+
 	// HandleEventOperationCreated is used to create an operation.
 	HandleEventOperationCreated(ctc context.Context, msg botMessage) error
 	// HandleEventGetOperationsHistory is used to get operations history.
@@ -145,7 +152,10 @@ var defaultKeyboardRows = []bot.KeyboardRow{
 		Buttons: []string{models.BotCreateBalanceCommand, models.BotUpdateBalanceCommand, models.BotGetBalanceCommand},
 	},
 	{
-		Buttons: []string{models.BotCreateCategoryCommand, models.BotListCategoriesCommand},
+		Buttons: []string{models.BotCreateCategoryCommand, models.BotListCategoriesCommand, models.BotUpdateCategoryCommand},
+	},
+	{
+		Buttons: []string{models.BotDeleteCategoryCommand},
 	},
 	{
 		Buttons: []string{models.BotCreateOperationCommand, models.BotGetOperationsHistory},

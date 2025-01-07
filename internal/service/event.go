@@ -185,6 +185,28 @@ func (e eventService) ReactOnEvent(ctx context.Context, event models.Event, msg 
 			return fmt.Errorf("handle event list categories: %w", err)
 		}
 
+	case models.UpdateCategoryEvent:
+		err := e.handlerService.HandleEventCategoryUpdated(ctx, msg)
+		if err != nil {
+			if errs.IsExpected(err) {
+				logger.Info().Err(err).Msg(err.Error())
+				return err
+			}
+			logger.Error().Err(err).Msg("handle event category updated")
+			return fmt.Errorf("handle event category updated: %w", err)
+		}
+
+	case models.DeleteCategoryEvent:
+		err := e.handlerService.HandleEventCategoryDeleted(ctx, msg)
+		if err != nil {
+			if errs.IsExpected(err) {
+				logger.Info().Err(err).Msg(err.Error())
+				return err
+			}
+			logger.Error().Err(err).Msg("handle event category deleted")
+			return fmt.Errorf("handle event category deleted: %w", err)
+		}
+
 	case models.CreateOperationEvent:
 		err := e.handlerService.HandleEventOperationCreated(ctx, msg)
 		if err != nil {

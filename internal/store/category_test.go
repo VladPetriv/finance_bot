@@ -87,7 +87,8 @@ func TestCategory_Get(t *testing.T) {
 	require.NoError(t, err)
 	categoryStore := store.NewCategory(db)
 
-	categoryID1, categoryID2 := uuid.NewString(), uuid.NewString()
+	categoryID1, categoryID2, categoryID3 := uuid.NewString(), uuid.NewString(), uuid.NewString()
+	userID1 := uuid.NewString()
 	title := "test_get"
 
 	testCases := []struct {
@@ -122,6 +123,22 @@ func TestCategory_Get(t *testing.T) {
 			expected: &models.Category{
 				ID:    categoryID2,
 				Title: "test_get",
+			},
+		},
+		{
+			desc: "positive: returned category by user id",
+			preconditions: &models.Category{
+				ID:     categoryID3,
+				UserID: userID1,
+				Title:  "test_get_user_id",
+			},
+			input: service.GetCategoryFilter{
+				UserID: userID1,
+			},
+			expected: &models.Category{
+				ID:     categoryID3,
+				UserID: userID1,
+				Title:  "test_get_user_id",
 			},
 		},
 		{
@@ -224,6 +241,81 @@ func TestCategory_Delete(t *testing.T) {
 				assert.NoError(t, err)
 				assert.NotNil(t, category)
 			}
+		})
+	}
+}
+
+func TestCategory_Update(t *testing.T) {
+	t.Parallel()
+
+	ctx := context.TODO() //nolint: forbidigo
+	cfg := config.Get()
+
+	db, err := database.NewMongoDB(ctx, cfg.MongoDB.URI, cfg.MongoDB.Database)
+	require.NoError(t, err)
+	categoryStore := store.NewCategory(db)
+
+	categoryID1 := uuid.NewString()
+	categoryID2 := uuid.NewString()
+
+	testCases := []struct {
+		desc          string
+		preconditions *models.Category
+		input         *models.Category
+		expected      *models.Category
+	}{
+		{
+			desc: "positive: category updated",
+			preconditions: &models.Category{
+				ID:    categoryID1,
+				Title: "old_title",
+			},
+			input: &models.Category{
+				ID:    categoryID1,
+				Title: "new_title",
+			},
+			expected: &models.Category{
+				ID:    categoryID1,
+				Title: "new_title",
+			},
+		},
+		{
+			desc: "negative: category not updated because of not existed id",
+			preconditions: &models.Category{
+				ID:    categoryID2,
+				Title: "test_title",
+			},
+			input: &models.Category{
+				ID:    uuid.NewString(),
+				Title: "updated_title",
+			},
+			expected: &models.Category{
+				ID:    categoryID2,
+				Title: "test_title",
+			},
+		},
+	}
+	for _, tc := range testCases {
+		tc := tc
+		t.Run(tc.desc, func(t *testing.T) {
+			t.Parallel()
+
+			if tc.preconditions != nil {
+				err = categoryStore.Create(ctx, tc.preconditions)
+				assert.NoError(t, err)
+			}
+
+			t.Cleanup(func() {
+				err = categoryStore.Delete(ctx, tc.preconditions.ID)
+				assert.NoError(t, err)
+			})
+
+			err = categoryStore.Update(ctx, tc.input)
+			assert.NoError(t, err)
+
+			got, err := categoryStore.Get(ctx, service.GetCategoryFilter{ID: tc.preconditions.ID})
+			assert.NoError(t, err)
+			assert.Equal(t, tc.expected, got)
 		})
 	}
 }
