@@ -10,6 +10,8 @@ const (
 	BotUpdateBalanceCommand string = "Update Balance 📈"
 	// BotGetBalanceCommand represents the command to get information about specific balance
 	BotGetBalanceCommand string = "Get Balance Info 📊"
+	// BotDeleteBalanceCommand represents the command to delete a balance
+	BotDeleteBalanceCommand string = "Delete Balance ❌"
 
 	// BotCreateCategoryCommand represents the command to create a new category
 	BotCreateCategoryCommand string = "Create Category ✨"
@@ -38,7 +40,7 @@ const (
 // AvailableCommands is a list of all available bot commands.
 var AvailableCommands = []string{
 	BotStartCommand,
-	BotGetBalanceCommand, BotCreateBalanceCommand, BotUpdateBalanceCommand,
+	BotGetBalanceCommand, BotCreateBalanceCommand, BotUpdateBalanceCommand, BotDeleteBalanceCommand,
 	BotCreateCategoryCommand, BotListCategoriesCommand, BotUpdateCategoryCommand, BotDeleteCategoryCommand,
 	BotCreateOperationCommand, BotCreateIncomingOperationCommand, BotCreateSpendingOperationCommand, BotGetOperationsHistory,
 	BotBackCommand,
@@ -50,6 +52,7 @@ var CommandToEvent = map[string]Event{
 	BotCreateBalanceCommand:   CreateBalanceEvent,
 	BotUpdateBalanceCommand:   UpdateBalanceEvent,
 	BotGetBalanceCommand:      GetBalanceEvent,
+	BotDeleteBalanceCommand:   DeleteBalanceEvent,
 	BotCreateCategoryCommand:  CreateCategoryEvent,
 	BotListCategoriesCommand:  ListCategoriesEvent,
 	BotUpdateCategoryCommand:  UpdateCategoryEvent,
@@ -64,6 +67,7 @@ var CommadToFistFlowStep = map[string]FlowStep{
 	BotCreateBalanceCommand:   CreateBalanceFlowStep,
 	BotUpdateBalanceCommand:   UpdateBalanceFlowStep,
 	BotGetBalanceCommand:      GetBalanceFlowStep,
+	BotDeleteBalanceCommand:   DeleteBalanceFlowStep,
 	BotCreateCategoryCommand:  CreateCategoryFlowStep,
 	BotListCategoriesCommand:  ListCategoriesFlowStep,
 	BotUpdateCategoryCommand:  UpdateCategoryFlowStep,

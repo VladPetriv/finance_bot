@@ -17,6 +17,8 @@ const (
 	UpdateBalanceEvent Event = "balance/update"
 	// GetBalanceEvent represents the event for getting a balance
 	GetBalanceEvent Event = "balance/get"
+	// DeleteBalanceEvent represents the event for deleting a balance
+	DeleteBalanceEvent Event = "balance/delete"
 
 	// CreateCategoryEvent represents the event for creating a new category
 	CreateCategoryEvent Event = "category/create"
@@ -38,6 +40,7 @@ var EventToFlow = map[Event]Flow{
 	StartEvent:                StartFlow,
 	CreateBalanceEvent:        CreateBalanceFlow,
 	UpdateBalanceEvent:        UpdateBalanceFlow,
+	DeleteBalanceEvent:        DeleteBalanceFlow,
 	GetBalanceEvent:           GetBalanceFlow,
 	CreateCategoryEvent:       CreateCategoryFlow,
 	ListCategoriesEvent:       ListCategoriesFlow,
