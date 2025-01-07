@@ -49,6 +49,8 @@ func (s *State) GetEvent() Event {
 		return UpdateBalanceEvent
 	case GetBalanceFlowStep:
 		return GetBalanceEvent
+	case DeleteBalanceFlowStep:
+		return DeleteBalanceEvent
 	case CreateCategoryFlowStep:
 		return CreateCategoryEvent
 	case ListCategoriesFlowStep:
@@ -81,6 +83,8 @@ const (
 	UpdateBalanceFlow Flow = "update_balance"
 	// GetBalanceFlow represents the flow for getting a balance
 	GetBalanceFlow Flow = "get_balance"
+	// DeleteBalanceFlow represents the flow for deleting a balance
+	DeleteBalanceFlow Flow = "delete_balance"
 
 	// CreateCategoryFlow represents the flow for creating a new category
 	CreateCategoryFlow Flow = "create_category"
@@ -118,8 +122,12 @@ const (
 	UpdateBalanceFlowStep FlowStep = "update_balance"
 	// GetBalanceFlowStep represents the step for getting a balance
 	GetBalanceFlowStep FlowStep = "get_balance"
+	// DeleteBalanceFlowStep represents the step for deleting a balance
+	DeleteBalanceFlowStep FlowStep = "delete_balance"
 	// ChooseBalanceFlowStep represents the step for choosing balance that will be used for an action
 	ChooseBalanceFlowStep FlowStep = "choose_balance"
+	// ConfirmBalanceDeletionFlowStep represents the step for confirming balance deletion
+	ConfirmBalanceDeletionFlowStep FlowStep = "confirm_balance_deletion"
 	// EnterBalanceNameFlowStep represents the step for entering balance name
 	EnterBalanceNameFlowStep FlowStep = "enter_balance_name"
 	// EnterBalanceCurrencyFlowStep represents the step for entering balance currency
