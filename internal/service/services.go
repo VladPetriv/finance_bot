@@ -41,6 +41,8 @@ type HandlerService interface {
 	HandleEventListCategories(ctx context.Context, msg botMessage) error
 	// HandleEventCategoryUpdated is used to handle update category event.
 	HandleEventCategoryUpdated(ctx context.Context, msg botMessage) error
+	// HandleEventCategoryDeleted is used to handle delete category event.
+	HandleEventCategoryDeleted(ctx context.Context, msg botMessage) error
 
 	// HandleEventOperationCreated is used to create an operation.
 	HandleEventOperationCreated(ctc context.Context, msg botMessage) error
@@ -151,6 +153,9 @@ var defaultKeyboardRows = []bot.KeyboardRow{
 	},
 	{
 		Buttons: []string{models.BotCreateCategoryCommand, models.BotListCategoriesCommand, models.BotUpdateCategoryCommand},
+	},
+	{
+		Buttons: []string{models.BotDeleteCategoryCommand},
 	},
 	{
 		Buttons: []string{models.BotCreateOperationCommand, models.BotGetOperationsHistory},

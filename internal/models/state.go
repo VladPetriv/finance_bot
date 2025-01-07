@@ -55,6 +55,8 @@ func (s *State) GetEvent() Event {
 		return ListCategoriesEvent
 	case UpdateCategoryFlowStep:
 		return UpdateCategoryEvent
+	case DeleteCategoryFlowStep:
+		return DeleteCategoryEvent
 	case CreateOperationFlowStep:
 		return CreateOperationEvent
 	case GetOperationsHistoryFlowStep:
@@ -86,6 +88,8 @@ const (
 	ListCategoriesFlow Flow = "list_categories"
 	// UpdateCategoryFlow represents the flow for updating a category
 	UpdateCategoryFlow Flow = "update_category"
+	// DeleteCategoryFlow represents the flow for deleting a category
+	DeleteCategoryFlow Flow = "delete_category"
 
 	// CreateOperationFlow represents the flow for creating a new operation
 	CreateOperationFlow Flow = "create_operation"
@@ -127,8 +131,10 @@ const (
 
 	// CreateCategoryFlowStep represents the step for creating a new category
 	CreateCategoryFlowStep FlowStep = "create_category"
-	// UpdateBalanceFlowStep represents the step for updating a category
+	// UpdateCategoryFlowStep represents the step for updating a category
 	UpdateCategoryFlowStep FlowStep = "update_category"
+	// DeleteCategoryFlowStep represents the step for deleting a category
+	DeleteCategoryFlowStep FlowStep = "delete_category"
 	// ChooseCategoryFlowStep represents the step for choosing category
 	ChooseCategoryFlowStep FlowStep = "choose_category"
 	// EnterUpdatedCategoryNameFlowStep represents the step for entering category name

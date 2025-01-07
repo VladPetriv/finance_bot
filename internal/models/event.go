@@ -24,6 +24,8 @@ const (
 	ListCategoriesEvent Event = "category/list"
 	// UpdateCategoryEvent represents the event for updating a category
 	UpdateCategoryEvent Event = "category/update"
+	// DeleteCategoryEvent represents the event for deleting a category
+	DeleteCategoryEvent Event = "category/delete"
 
 	// CreateOperationEvent represents the event for creating a new operation
 	CreateOperationEvent Event = "operation/create"
@@ -40,6 +42,7 @@ var EventToFlow = map[Event]Flow{
 	CreateCategoryEvent:       CreateCategoryFlow,
 	ListCategoriesEvent:       ListCategoriesFlow,
 	UpdateCategoryEvent:       UpdateCategoryFlow,
+	DeleteCategoryEvent:       DeleteCategoryFlow,
 	CreateOperationEvent:      CreateOperationFlow,
 	GetOperationsHistoryEvent: GetOperationsHistoryFlow,
 	BackEvent:                 BackFlow,

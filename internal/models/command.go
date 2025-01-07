@@ -17,6 +17,8 @@ const (
 	BotListCategoriesCommand string = "List Categories 📋"
 	// BotUpdateCategoryCommand represents the command to update a category
 	BotUpdateCategoryCommand string = "Update Category ✏️"
+	// BotDeleteCategoryCommand represents the command to delete a category
+	BotDeleteCategoryCommand string = "Delete Category ❌"
 
 	// BotCreateOperationCommand represents the command to create a new operation
 	BotCreateOperationCommand string = "Create Operation 🤔"
@@ -37,7 +39,7 @@ const (
 var AvailableCommands = []string{
 	BotStartCommand,
 	BotGetBalanceCommand, BotCreateBalanceCommand, BotUpdateBalanceCommand,
-	BotCreateCategoryCommand, BotListCategoriesCommand, BotUpdateCategoryCommand,
+	BotCreateCategoryCommand, BotListCategoriesCommand, BotUpdateCategoryCommand, BotDeleteCategoryCommand,
 	BotCreateOperationCommand, BotCreateIncomingOperationCommand, BotCreateSpendingOperationCommand, BotGetOperationsHistory,
 	BotBackCommand,
 }
@@ -51,6 +53,7 @@ var CommandToEvent = map[string]Event{
 	BotCreateCategoryCommand:  CreateCategoryEvent,
 	BotListCategoriesCommand:  ListCategoriesEvent,
 	BotUpdateCategoryCommand:  UpdateCategoryEvent,
+	BotDeleteCategoryCommand:  DeleteCategoryEvent,
 	BotCreateOperationCommand: CreateOperationEvent,
 	BotGetOperationsHistory:   GetOperationsHistoryEvent,
 	BotBackCommand:            BackEvent,
@@ -64,6 +67,7 @@ var CommadToFistFlowStep = map[string]FlowStep{
 	BotCreateCategoryCommand:  CreateCategoryFlowStep,
 	BotListCategoriesCommand:  ListCategoriesFlowStep,
 	BotUpdateCategoryCommand:  UpdateCategoryFlowStep,
+	BotDeleteCategoryCommand:  DeleteCategoryFlowStep,
 	BotCreateOperationCommand: CreateOperationFlowStep,
 	BotGetOperationsHistory:   GetOperationsHistoryFlowStep,
 }

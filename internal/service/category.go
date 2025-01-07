@@ -279,7 +279,6 @@ func (h handlerService) HandleEventCategoryUpdated(ctx context.Context, msg botM
 
 	logger.Info().Msg("handled create category event")
 	return nil
-
 }
 
 type handleEnterUpdatedCategoryNameFlowStepOptions struct {
