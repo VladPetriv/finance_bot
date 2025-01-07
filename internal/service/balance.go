@@ -673,7 +673,7 @@ func (h handlerService) handleChooseBalanceFlowStepForDeletionFlow(ctx context.C
 	case "No":
 		err := h.services.Keyboard.CreateKeyboard(&CreateKeyboardOptions{
 			ChatID:  opts.msg.GetChatID(),
-			Message: "Please choose command to execute:",
+			Message: "Action cancelled!\nPlease choose new command to execute:",
 			Type:    keyboardTypeRow,
 			Rows:    defaultKeyboardRows,
 		})
