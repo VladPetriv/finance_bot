@@ -126,6 +126,8 @@ const (
 	DeleteBalanceFlowStep FlowStep = "delete_balance"
 	// ChooseBalanceFlowStep represents the step for choosing balance that will be used for an action
 	ChooseBalanceFlowStep FlowStep = "choose_balance"
+	// ConfirmBalanceDeletionFlowStep represents the step for confirming balance deletion
+	ConfirmBalanceDeletionFlowStep FlowStep = "confirm_balance_deletion"
 	// EnterBalanceNameFlowStep represents the step for entering balance name
 	EnterBalanceNameFlowStep FlowStep = "enter_balance_name"
 	// EnterBalanceCurrencyFlowStep represents the step for entering balance currency

@@ -161,6 +161,18 @@ func (e eventService) ReactOnEvent(ctx context.Context, event models.Event, msg 
 			return fmt.Errorf("handle event get balance: %w", err)
 		}
 
+	case models.DeleteBalanceEvent:
+		err := e.handlerService.HandleEventBalanceDeleted(ctx, msg)
+		if err != nil {
+			if errs.IsExpected(err) {
+				logger.Info().Err(err).Msg(err.Error())
+				return err
+			}
+
+			logger.Error().Err(err).Msg("handle event balance deleted")
+			return fmt.Errorf("handle event balance deleted: %w", err)
+		}
+
 	case models.CreateCategoryEvent:
 		err := e.handlerService.HandleEventCategoryCreated(ctx, msg)
 		if err != nil {
