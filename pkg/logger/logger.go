@@ -41,7 +41,6 @@ func New(opts LoggergerOptions) *Logger {
 
 		if opts.PrettyLogOutput {
 			writers[0] = zerolog.ConsoleWriter{Out: os.Stdout, TimeFormat: time.Stamp}
-
 		}
 
 		if opts.LogFile != "" {
