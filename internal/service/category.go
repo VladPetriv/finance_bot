@@ -12,7 +12,6 @@ import (
 
 func (h handlerService) HandleEventCategoryCreated(ctx context.Context, msg botMessage) error {
 	logger := h.logger.With().Str("name", "handlerService.HandleEventCategoryCreated").Logger()
-	logger.Debug().Any("msg", msg).Msg("got args")
 
 	var nextStep models.FlowStep
 	defer func() {
@@ -42,7 +41,7 @@ func (h handlerService) HandleEventCategoryCreated(ctx context.Context, msg botM
 	logger.Debug().Any("user", user).Msg("got user from store")
 
 	currentStep := ctx.Value(contextFieldNameState).(*models.State).GetCurrentStep()
-	logger.Debug().Any("currentStep", currentStep).Msg("got current step on create balance flow")
+	logger.Debug().Any("currentStep", currentStep).Msg("got current step on create category flow")
 
 	switch currentStep {
 	case models.CreateCategoryFlowStep:
@@ -74,7 +73,6 @@ func (h handlerService) HandleEventCategoryCreated(ctx context.Context, msg botM
 		nextStep = models.EndFlowStep
 	}
 
-	logger.Info().Msg("handled create category event")
 	return nil
 }
 
@@ -126,7 +124,6 @@ func (h handlerService) handleEnterCategoryNameFlowStep(ctx context.Context, opt
 
 func (h handlerService) HandleEventListCategories(ctx context.Context, msg botMessage) error {
 	logger := h.logger.With().Str("name", "handlerService.HandleEventListCategories").Logger()
-	logger.Debug().Any("msg", msg).Msg("got args")
 
 	var nextStep models.FlowStep
 	defer func() {
@@ -156,7 +153,7 @@ func (h handlerService) HandleEventListCategories(ctx context.Context, msg botMe
 	logger.Debug().Any("user", user).Msg("got user from store")
 
 	currentStep := ctx.Value(contextFieldNameState).(*models.State).GetCurrentStep()
-	logger.Debug().Any("currentStep", currentStep).Msg("got current step on create balance flow")
+	logger.Debug().Any("currentStep", currentStep).Msg("got current step on list categories flow")
 
 	switch currentStep {
 	case models.ListCategoriesFlowStep:
@@ -177,7 +174,6 @@ func (h handlerService) HandleEventListCategories(ctx context.Context, msg botMe
 		nextStep = models.EndFlowStep
 	}
 
-	logger.Info().Msg("handled list categories event")
 	return nil
 }
 
@@ -237,8 +233,6 @@ func (h handlerService) HandleEventCategoryUpdated(ctx context.Context, msg botM
 
 	var nextStep models.FlowStep
 	stateMetaData := ctx.Value(contextFieldNameState).(*models.State).Metedata
-	logger.Debug().Any("stateMetaData", stateMetaData).Msg("got state metadata")
-
 	defer func() {
 		state := ctx.Value(contextFieldNameState).(*models.State)
 		if nextStep != "" {
@@ -267,7 +261,7 @@ func (h handlerService) HandleEventCategoryUpdated(ctx context.Context, msg botM
 	logger.Debug().Any("user", user).Msg("got user from store")
 
 	currentStep := ctx.Value(contextFieldNameState).(*models.State).GetCurrentStep()
-	logger.Debug().Any("currentStep", currentStep).Msg("got current step on create balance flow")
+	logger.Debug().Any("currentStep", currentStep).Msg("got current step on update category flow")
 
 	switch currentStep {
 	case models.UpdateCategoryFlowStep:
@@ -327,7 +321,6 @@ func (h handlerService) HandleEventCategoryUpdated(ctx context.Context, msg botM
 		nextStep = models.EndFlowStep
 	}
 
-	logger.Info().Msg("handled create category event")
 	return nil
 }
 
@@ -379,10 +372,8 @@ func (h handlerService) handleEnterUpdatedCategoryNameFlowStep(ctx context.Conte
 
 func (h handlerService) HandleEventCategoryDeleted(ctx context.Context, msg botMessage) error {
 	logger := h.logger.With().Str("name", "handlerService.HandleEventCategoryDeleted").Logger()
-	logger.Debug().Any("msg", msg).Msg("got args")
 
 	var nextStep models.FlowStep
-
 	defer func() {
 		state := ctx.Value(contextFieldNameState).(*models.State)
 		if nextStep != "" {
@@ -410,7 +401,7 @@ func (h handlerService) HandleEventCategoryDeleted(ctx context.Context, msg botM
 	logger.Debug().Any("user", user).Msg("got user from store")
 
 	currentStep := ctx.Value(contextFieldNameState).(*models.State).GetCurrentStep()
-	logger.Debug().Any("currentStep", currentStep).Msg("got current step on create balance flow")
+	logger.Debug().Any("currentStep", currentStep).Msg("got current step on delete category flow")
 
 	switch currentStep {
 	case models.DeleteCategoryFlowStep:
@@ -470,10 +461,10 @@ func (h handlerService) HandleEventCategoryDeleted(ctx context.Context, msg botM
 			logger.Error().Err(err).Msg("send message")
 			return fmt.Errorf("send message: %w", err)
 		}
+
 		nextStep = models.EndFlowStep
 	}
 
-	logger.Info().Msg("handled category deleted event")
 	return nil
 }
 

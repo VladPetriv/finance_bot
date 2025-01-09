@@ -12,7 +12,11 @@ func main() {
 	cfg := config.Get()
 	ctx := context.Background()
 
-	logger := logger.New(cfg.Logger.LogLevel, cfg.Logger.LogFilename)
+	logger := logger.New(logger.LoggergerOptions{
+		LogLevel:        cfg.Logger.LogLevel,
+		LogFile:         cfg.Logger.LogFilename,
+		PrettyLogOutput: cfg.Logger.PrettyLogOutput,
+	})
 
 	app.Run(ctx, cfg, logger)
 }

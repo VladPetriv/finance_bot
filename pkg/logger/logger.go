@@ -26,18 +26,29 @@ var (
 	once   sync.Once
 )
 
+// LoggergerOptions represents options for logger.
+type LoggergerOptions struct {
+	LogLevel        string
+	LogFile         string
+	PrettyLogOutput bool
+}
+
 // New returns a new instance of logger.
-func New(logLevel, logFilename string) *Logger {
+func New(opts LoggergerOptions) *Logger {
 	once.Do(func() {
 		// By default create console writer
-		writers := []io.Writer{zerolog.ConsoleWriter{Out: os.Stdout, TimeFormat: time.Stamp}}
+		writers := []io.Writer{os.Stdout}
 
-		if logFilename != "" {
-			writers = append(writers, newFileWriter(logFilename))
+		if opts.PrettyLogOutput {
+			writers[0] = zerolog.ConsoleWriter{Out: os.Stdout, TimeFormat: time.Stamp}
 		}
 
-		if logLevel != "" {
-			level, err := zerolog.ParseLevel(logLevel)
+		if opts.LogFile != "" {
+			writers = append(writers, newFileWriter(opts.LogFile))
+		}
+
+		if opts.LogLevel != "" {
+			level, err := zerolog.ParseLevel(opts.LogLevel)
 			if err != nil {
 				panic(err)
 			}

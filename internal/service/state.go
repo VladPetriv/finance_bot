@@ -34,7 +34,6 @@ func NewState(opts *StateOptions) *stateService {
 
 func (s stateService) HandleState(ctx context.Context, message botMessage) (*HandleStateOutput, error) {
 	logger := s.logger.With().Str("name", "stateService.HandleState").Logger()
-	logger.Debug().Any("message", message).Msg("got args")
 
 	state, err := s.stores.State.Get(ctx, GetStateFilter{
 		UserID: message.GetUsername(),
@@ -49,6 +48,7 @@ func (s stateService) HandleState(ctx context.Context, message botMessage) (*Han
 
 	if state == nil {
 		flow := models.EventToFlow[event]
+		logger.Debug().Any("flow", flow).Msg("got flow based on event")
 
 		stateForCreate := &models.State{
 			ID:        uuid.NewString(),

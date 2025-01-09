@@ -23,7 +23,7 @@ func NewMessage(botAPI bot.API, logger *logger.Logger) *messageService {
 }
 
 func (m messageService) SendMessage(opts *SendMessageOptions) error {
-	logger := m.logger
+	logger := m.logger.With().Str("name", "messageService.SendMessage").Logger()
 	logger.Debug().Any("opts", opts).Msg("got args")
 
 	err := m.botAPI.Send(&bot.SendOptions{
@@ -35,6 +35,5 @@ func (m messageService) SendMessage(opts *SendMessageOptions) error {
 		return fmt.Errorf("send message using botAPI: %w", err)
 	}
 
-	logger.Info().Msg("sent message")
 	return nil
 }

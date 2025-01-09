@@ -13,12 +13,9 @@ import (
 
 func (h handlerService) HandleEventBalanceCreated(ctx context.Context, msg botMessage) error {
 	logger := h.logger.With().Str("name", "handlerService.HandleEventBalanceCreated").Logger()
-	logger.Debug().Any("msg", msg).Msg("got args")
 
 	var nextStep models.FlowStep
 	stateMetaData := ctx.Value(contextFieldNameState).(*models.State).Metedata
-	logger.Debug().Any("stateMetaData", stateMetaData).Msg("got state metadata")
-
 	defer func() {
 		state := ctx.Value(contextFieldNameState).(*models.State)
 		if nextStep != "" {
@@ -66,7 +63,6 @@ func (h handlerService) HandleEventBalanceCreated(ctx context.Context, msg botMe
 		}
 
 		nextStep = models.EndFlowStep
-
 	case models.CreateBalanceFlowStep:
 		err := h.handleCreateBalanceFlowStep(ctx, handleCreateBalanceFlowStepOptions{
 			msg:      msg,
@@ -83,7 +79,6 @@ func (h handlerService) HandleEventBalanceCreated(ctx context.Context, msg botMe
 		}
 
 		nextStep = models.EnterBalanceNameFlowStep
-
 	case models.EnterBalanceNameFlowStep, models.EnterBalanceAmountFlowStep, models.EnterBalanceCurrencyFlowStep:
 		step, err := h.processBalanceUpdate(ctx, processBalanceUpdateOptions{
 			metadata:    stateMetaData,
@@ -104,7 +99,6 @@ func (h handlerService) HandleEventBalanceCreated(ctx context.Context, msg botMe
 		nextStep = step
 	}
 
-	logger.Info().Msg("handled event balance created")
 	return nil
 }
 
@@ -157,8 +151,8 @@ func (h *handlerService) handleCreateBalanceFlowStep(ctx context.Context, opts h
 			Rows:    defaultKeyboardRows,
 		})
 		if err != nil {
-			logger.Error().Err(err).Msg("create keyboard with welcome message")
-			return fmt.Errorf("create keyboard with welcome message: %w", err)
+			logger.Error().Err(err).Msg("create keyboard")
+			return fmt.Errorf("create keyboard: %w", err)
 		}
 
 		return nil
@@ -178,12 +172,9 @@ func (h *handlerService) handleCreateBalanceFlowStep(ctx context.Context, opts h
 
 func (h handlerService) HandleEventBalanceUpdated(ctx context.Context, msg botMessage) error {
 	logger := h.logger.With().Str("name", "handlerService.HandleEventBalanceUpdated").Logger()
-	logger.Debug().Any("msg", msg).Msg("got args")
 
 	var nextStep models.FlowStep
 	stateMetaData := ctx.Value(contextFieldNameState).(*models.State).Metedata
-	logger.Debug().Any("stateMetaData", stateMetaData).Msg("got state metadata")
-
 	defer func() {
 		state := ctx.Value(contextFieldNameState).(*models.State)
 		if nextStep != "" {
@@ -213,7 +204,7 @@ func (h handlerService) HandleEventBalanceUpdated(ctx context.Context, msg botMe
 	logger.Debug().Any("user", user).Msg("got user from store")
 
 	currentStep := ctx.Value(contextFieldNameState).(*models.State).GetCurrentStep()
-	logger.Debug().Any("currentStep", currentStep).Msg("got current step on create balance flow")
+	logger.Debug().Any("currentStep", currentStep).Msg("got current step on update balance flow")
 
 	switch currentStep {
 	case models.UpdateBalanceFlowStep:
@@ -229,13 +220,13 @@ func (h handlerService) HandleEventBalanceUpdated(ctx context.Context, msg botMe
 		}
 
 		nextStep = models.ChooseBalanceFlowStep
-
 	case models.ChooseBalanceFlowStep:
 		balance := user.GetBalance(msg.Message.Text)
 		if balance == nil {
-			logger.Info().Msg("balance not found")
+			logger.Error().Msg("balance not found")
 			return fmt.Errorf("balance not found")
 		}
+		stateMetaData["balanceID"] = balance.ID
 
 		err := h.services.Message.SendMessage(&SendMessageOptions{
 			ChatID: msg.GetChatID(),
@@ -246,9 +237,7 @@ func (h handlerService) HandleEventBalanceUpdated(ctx context.Context, msg botMe
 			return fmt.Errorf("send message: %w", err)
 		}
 
-		stateMetaData["balanceID"] = balance.ID
 		nextStep = models.EnterBalanceNameFlowStep
-
 	case models.EnterBalanceNameFlowStep, models.EnterBalanceAmountFlowStep, models.EnterBalanceCurrencyFlowStep:
 		step, err := h.processBalanceUpdate(ctx, processBalanceUpdateOptions{
 			metadata:    stateMetaData,
@@ -269,7 +258,6 @@ func (h handlerService) HandleEventBalanceUpdated(ctx context.Context, msg botMe
 		nextStep = step
 	}
 
-	logger.Info().Msg("handled event balance updated")
 	return nil
 }
 
@@ -298,11 +286,8 @@ func (h handlerService) processBalanceUpdate(ctx context.Context, opts processBa
 		}
 	}
 
-	balanceID := opts.metadata["balanceID"].(string)
-	logger.Debug().Any("balanceID", balanceID).Msg("got balance id")
-
 	balance, err := h.updateBalance(ctx, updateBalanceOptions{
-		balanceID: balanceID,
+		balanceID: opts.metadata["balanceID"].(string),
 		step:      opts.currentStep,
 		data:      opts.msg.Message.Text,
 	})
@@ -391,7 +376,7 @@ func (h handlerService) updateBalance(ctx context.Context, opts updateBalanceOpt
 	case models.EnterBalanceAmountFlowStep:
 		price, err := money.NewFromString(opts.data)
 		if err != nil {
-			logger.Info().Err(err).Msg("convert option amount to money type")
+			logger.Error().Err(err).Msg("convert option amount to money type")
 			return nil, ErrInvalidAmountFormat
 		}
 
@@ -411,7 +396,6 @@ func (h handlerService) updateBalance(ctx context.Context, opts updateBalanceOpt
 
 func (h handlerService) HandleEventGetBalance(ctx context.Context, msg botMessage) error {
 	logger := h.logger.With().Str("name", "handlerService.HandleEventGetBalance").Logger()
-	logger.Debug().Any("msg", msg).Msg("got args")
 
 	var nextStep models.FlowStep
 	defer func() {
@@ -428,7 +412,7 @@ func (h handlerService) HandleEventGetBalance(ctx context.Context, msg botMessag
 	}()
 
 	currentStep := ctx.Value(contextFieldNameState).(*models.State).GetCurrentStep()
-	logger.Debug().Any("currentStep", currentStep).Msg("got current step on create balance flow")
+	logger.Debug().Any("currentStep", currentStep).Msg("got current step on get balance flow")
 
 	user, err := h.stores.User.Get(ctx, GetUserFilter{
 		Username:        msg.GetUsername(),
@@ -468,7 +452,6 @@ func (h handlerService) HandleEventGetBalance(ctx context.Context, msg botMessag
 		nextStep = models.EndFlowStep
 	}
 
-	logger.Info().Msg("handled event get balance")
 	return nil
 }
 
@@ -509,12 +492,9 @@ func (h handlerService) processGetBalanceInfo(ctx context.Context, msg botMessag
 
 func (h handlerService) HandleEventBalanceDeleted(ctx context.Context, msg botMessage) error {
 	logger := h.logger.With().Str("name", "handlerService.HandleEventBalanceDeleted").Logger()
-	logger.Debug().Any("msg", msg).Msg("got args")
 
 	var nextStep models.FlowStep
 	stateMetaData := ctx.Value(contextFieldNameState).(*models.State).Metedata
-	logger.Debug().Any("stateMetaData", stateMetaData).Msg("got state metadata")
-
 	defer func() {
 		state := ctx.Value(contextFieldNameState).(*models.State)
 		if nextStep != "" {
@@ -544,7 +524,7 @@ func (h handlerService) HandleEventBalanceDeleted(ctx context.Context, msg botMe
 	logger.Debug().Any("user", user).Msg("got user from store")
 
 	currentStep := ctx.Value(contextFieldNameState).(*models.State).GetCurrentStep()
-	logger.Debug().Any("currentStep", currentStep).Msg("got current step on create balance flow")
+	logger.Debug().Any("currentStep", currentStep).Msg("got current step on delete balance flow")
 
 	switch currentStep {
 	case models.DeleteBalanceFlowStep:
@@ -556,8 +536,8 @@ func (h handlerService) HandleEventBalanceDeleted(ctx context.Context, msg botMe
 				Rows:    defaultKeyboardRows,
 			})
 			if err != nil {
-				logger.Error().Err(err).Msg("create keyboard with welcome message")
-				return fmt.Errorf("create keyboard with welcome message: %w", err)
+				logger.Error().Err(err).Msg("create keyboard")
+				return fmt.Errorf("create keyboard: %w", err)
 			}
 
 			nextStep = models.EndFlowStep
@@ -609,7 +589,6 @@ func (h handlerService) HandleEventBalanceDeleted(ctx context.Context, msg botMe
 		nextStep = models.EndFlowStep
 	}
 
-	logger.Info().Msg("handled event balance deleted")
 	return nil
 }
 
@@ -645,14 +624,15 @@ func (h handlerService) handleChooseBalanceFlowStepForDeletionFlow(ctx context.C
 			})
 			if err != nil {
 				logger.Error().Err(err).Msg("list operations from store")
+
+				return
 			}
 
 			for _, operation := range balanceOperations {
-				logger.Debug().Any("operation", operation).Msg("got operation for deletion")
-
 				err := h.stores.Operation.Delete(ctx, operation.ID)
 				if err != nil {
 					logger.Error().Err(err).Str("operrationID", operation.ID).Msg("delete operation from store")
+
 					continue
 				}
 			}
@@ -668,8 +648,6 @@ func (h handlerService) handleChooseBalanceFlowStepForDeletionFlow(ctx context.C
 			logger.Error().Err(err).Msg("send message")
 			return fmt.Errorf("send message: %w", err)
 		}
-
-		return nil
 	case "No":
 		err := h.services.Keyboard.CreateKeyboard(&CreateKeyboardOptions{
 			ChatID:  opts.msg.GetChatID(),
@@ -681,8 +659,6 @@ func (h handlerService) handleChooseBalanceFlowStepForDeletionFlow(ctx context.C
 			logger.Error().Err(err).Msg("send message")
 			return fmt.Errorf("send message: %w", err)
 		}
-
-		return nil
 	}
 
 	return nil

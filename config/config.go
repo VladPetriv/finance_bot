@@ -29,8 +29,9 @@ type MongoDB struct {
 
 // Logger represents a logger configuration.
 type Logger struct {
-	LogLevel    string `env:"LOG_LEVEL" env-default:"debug"`
-	LogFilename string `env:"LOG_FILENAME"`
+	LogLevel        string `env:"FB_LOGGER_LOG_LEVEL" env-default:"debug"`
+	LogFilename     string `env:"FB_LOGGER_LOG_FILENAME" env-default:""`
+	PrettyLogOutput bool   `env:"FB_LOGGER_PRETTY_LOG_OUTPUT" env-default:"false"`
 }
 
 var (
