@@ -82,7 +82,7 @@ func Run(ctx context.Context, cfg *config.Config, logger *logger.Logger) {
 	})
 
 	server := &http.Server{
-		Addr:    ":8080", // You might want to make this configurable
+		Addr:    ":8080",
 		Handler: mux,
 	}
 
