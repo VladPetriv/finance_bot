@@ -23,7 +23,7 @@ func NewKeyboard(botAPI bot.API, logger *logger.Logger) *keyboardService {
 }
 
 func (k keyboardService) CreateKeyboard(opts *CreateKeyboardOptions) error {
-	logger := k.logger
+	logger := k.logger.With().Str("name", "keyboardService.CreateKeyboard").Logger()
 	logger.Debug().Any("opts", opts).Msg("got args")
 
 	sendOptions := &bot.SendOptions{
@@ -45,6 +45,5 @@ func (k keyboardService) CreateKeyboard(opts *CreateKeyboardOptions) error {
 		return fmt.Errorf("create keyboard using botAPI: %w", err)
 	}
 
-	logger.Info().Msg("created keyboard")
 	return nil
 }

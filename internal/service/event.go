@@ -51,7 +51,6 @@ func (e eventService) Listen(ctx context.Context) {
 		select {
 		case update := <-updatesCH:
 			var msg botMessage
-
 			err := json.Unmarshal(update, &msg)
 			if err != nil {
 				logger.Error().Err(err).Msg("unmarshal incoming update data")

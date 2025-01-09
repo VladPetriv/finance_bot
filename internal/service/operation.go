@@ -15,12 +15,9 @@ import (
 
 func (h handlerService) HandleEventOperationCreated(ctx context.Context, msg botMessage) error {
 	logger := h.logger.With().Str("name", "handlerService.HandleEventOperationCreated").Logger()
-	logger.Debug().Any("msg", msg).Msg("got args")
 
 	var nextStep models.FlowStep
 	stateMetaData := ctx.Value(contextFieldNameState).(*models.State).Metedata
-	logger.Debug().Any("stateMetaData", stateMetaData).Msg("got state metadata")
-
 	defer func() {
 		state := ctx.Value(contextFieldNameState).(*models.State)
 		if nextStep != "" {
@@ -50,7 +47,7 @@ func (h handlerService) HandleEventOperationCreated(ctx context.Context, msg bot
 	logger.Debug().Any("user", user).Msg("got user from store")
 
 	currentStep := ctx.Value(contextFieldNameState).(*models.State).GetCurrentStep()
-	logger.Debug().Any("currentStep", currentStep).Msg("got current step")
+	logger.Debug().Any("currentStep", currentStep).Msg("got current step on create operation flow")
 
 	switch currentStep {
 	case models.CreateOperationFlowStep:
@@ -211,9 +208,8 @@ Please enter the current exchange rate:`,
 			logger.Error().Err(err).Msg("parse exchange rate")
 			return ErrInvalidExchangeRateFormat
 		}
-		logger.Debug().Any("exchangeRate", exchangeRate).Msg("parsed exchange rate")
-
 		stateMetaData["exchangeRate"] = exchangeRate.String()
+		logger.Debug().Any("exchangeRate", exchangeRate).Msg("parsed exchange rate")
 
 		err = h.services.Message.SendMessage(&SendMessageOptions{
 			ChatID: msg.GetChatID(),
@@ -272,7 +268,6 @@ Please enter the current exchange rate:`,
 		nextStep = models.EndFlowStep
 	}
 
-	logger.Info().Msg("handled event operation created")
 	return nil
 }
 
@@ -468,28 +463,28 @@ func (h handlerService) processTransferOperation(ctx context.Context, opts proce
 
 	balanceFrom := opts.user.GetBalance(opts.metaData["balanceFrom"].(string))
 	if balanceFrom == nil {
-		logger.Info().Msg("balance not found")
+		logger.Info().Msg("balance 'from' not found")
 		return ErrBalanceNotFound
 	}
 	logger.Debug().Any("balanceFrom", balanceFrom).Msg("got balance from which money is transferred")
 
 	balanceTo := opts.user.GetBalance(opts.metaData["balanceTo"].(string))
 	if balanceTo == nil {
-		logger.Info().Msg("balance not found")
+		logger.Info().Msg("balance 'to' not found")
 		return ErrBalanceNotFound
 	}
 	logger.Debug().Any("balanceTo", balanceTo).Msg("got balance to which money is transferred")
 
 	balanceFromAmount, err := money.NewFromString(balanceFrom.Amount)
 	if err != nil {
-		logger.Error().Err(err).Msg("parse balance amount")
-		return fmt.Errorf("parse balance amount: %w", err)
+		logger.Error().Err(err).Msg("parse balance 'from' amount")
+		return fmt.Errorf("parse balance 'from' amount: %w", err)
 	}
 
 	balanceToAmount, err := money.NewFromString(balanceTo.Amount)
 	if err != nil {
-		logger.Error().Err(err).Msg("parse balance amount")
-		return fmt.Errorf("parse balance amount: %w", err)
+		logger.Error().Err(err).Msg("parse balance 'to' amount")
+		return fmt.Errorf("parse balance 'to' amount: %w", err)
 	}
 
 	operationAmountIn, operationAmountOut := opts.operationAmount, opts.operationAmount
@@ -557,12 +552,9 @@ func (h handlerService) processTransferOperation(ctx context.Context, opts proce
 
 func (h handlerService) HandleEventGetOperationsHistory(ctx context.Context, msg botMessage) error {
 	logger := h.logger.With().Str("name", "handlerService.HandleEventGetOperationsHistory").Logger()
-	logger.Debug().Any("msg", msg).Msg("got args")
 
 	var nextStep models.FlowStep
 	stateMetaData := ctx.Value(contextFieldNameState).(*models.State).Metedata
-	logger.Debug().Any("stateMetaData", stateMetaData).Msg("got state metadata")
-
 	defer func() {
 		state := ctx.Value(contextFieldNameState).(*models.State)
 		if nextStep != "" {
@@ -592,7 +584,7 @@ func (h handlerService) HandleEventGetOperationsHistory(ctx context.Context, msg
 	logger.Debug().Any("user", user).Msg("got user from store")
 
 	currentStep := ctx.Value(contextFieldNameState).(*models.State).GetCurrentStep()
-	logger.Debug().Any("currentStep", currentStep).Msg("got current step")
+	logger.Debug().Any("currentStep", currentStep).Msg("got current step on get operations history flow")
 
 	switch currentStep {
 	case models.GetOperationsHistoryFlowStep:
@@ -654,7 +646,6 @@ func (h handlerService) HandleEventGetOperationsHistory(ctx context.Context, msg
 		nextStep = models.EndFlowStep
 	}
 
-	logger.Info().Msg("handled get operations history event")
 	return nil
 }
 

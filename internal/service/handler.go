@@ -36,8 +36,7 @@ func NewHandler(opts *HandlerOptions) *handlerService {
 }
 
 func (h handlerService) HandleEventStart(ctx context.Context, msg botMessage) error {
-	logger := h.logger
-	logger.Debug().Any("msg", msg).Msg("got args")
+	logger := h.logger.With().Str("name", "handlerService.HandleEventStart").Logger()
 
 	var nextStep models.FlowStep
 	defer func() {
@@ -53,10 +52,6 @@ func (h handlerService) HandleEventStart(ctx context.Context, msg botMessage) er
 
 	username := msg.GetUsername()
 	chatID := msg.GetChatID()
-	logger.Debug().
-		Str("username", username).
-		Int64("chatID", chatID).
-		Msg("got username and chat id from incoming message")
 
 	user, err := h.stores.User.Get(ctx, GetUserFilter{
 		Username: username,
@@ -75,13 +70,11 @@ func (h handlerService) HandleEventStart(ctx context.Context, msg botMessage) er
 			Rows:    defaultKeyboardRows,
 		})
 		if err != nil {
-			logger.Error().Err(err).Msg("create keyboard with welcome message")
-			return fmt.Errorf("create keyboard with welcome message: %w", err)
+			logger.Error().Err(err).Msg("create keyboard")
+			return fmt.Errorf("create keyboard: %w", err)
 		}
 
 		nextStep = models.EndFlowStep
-
-		logger.Info().Msg("user already exists")
 		return nil
 	}
 
@@ -110,14 +103,11 @@ func (h handlerService) HandleEventStart(ctx context.Context, msg botMessage) er
 	}
 
 	nextStep = models.CreateInitialBalanceFlowStep
-
-	logger.Info().Msg("handled event start")
 	return nil
 }
 
 func (h handlerService) HandleEventBack(ctx context.Context, msg botMessage) error {
-	logger := h.logger
-	logger.Debug().Any("msg", msg).Msg("got args")
+	logger := h.logger.With().Str("name", "handlerService.HandleEventBack").Logger()
 
 	err := h.services.Keyboard.CreateKeyboard(&CreateKeyboardOptions{
 		ChatID:  msg.Message.Chat.ID,
@@ -126,17 +116,15 @@ func (h handlerService) HandleEventBack(ctx context.Context, msg botMessage) err
 		Rows:    defaultKeyboardRows,
 	})
 	if err != nil {
-		logger.Error().Err(err).Msg("create row keyboard")
-		return fmt.Errorf("create row keyboard: %w", err)
+		logger.Error().Err(err).Msg("create keyboard")
+		return fmt.Errorf("create keyboard: %w", err)
 	}
 
-	logger.Info().Msg("handled event back")
 	return nil
 }
 
 func (h handlerService) HandleEventUnknown(msg botMessage) error {
-	logger := h.logger
-	logger.Debug().Any("msg", msg).Msg("got args")
+	logger := h.logger.With().Str("name", "handlerService.HandleEventUnknown").Logger()
 
 	err := h.services.Message.SendMessage(&SendMessageOptions{
 		ChatID: msg.Message.Chat.ID,
@@ -147,13 +135,11 @@ func (h handlerService) HandleEventUnknown(msg botMessage) error {
 		return fmt.Errorf("send message: %w", err)
 	}
 
-	logger.Info().Msg("handled event unknown")
 	return nil
 }
 
 func (h handlerService) HandleError(ctx context.Context, receivedErr error, msg botMessage) error {
 	logger := h.logger.With().Str("name", "handlerService.HandleError").Logger()
-	logger.Debug().Err(receivedErr).Any("msg", msg).Msg("got args")
 
 	if errs.IsExpected(receivedErr) {
 		err := h.services.Message.SendMessage(&SendMessageOptions{
@@ -178,7 +164,6 @@ func (h handlerService) HandleError(ctx context.Context, receivedErr error, msg 
 		return fmt.Errorf("send message: %w", err)
 	}
 
-	logger.Info().Msg("handled unexpected error")
 	return nil
 }
 
