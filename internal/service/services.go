@@ -195,6 +195,26 @@ var (
 	ErrInvalidExchangeRateFormat = errs.New("Invalid exchange rate format! Please try again.")
 )
 
+const (
+	// Balance related keys
+	balanceIDMetadataKey              = "balance_id"
+	balanceNameMetadataKey            = "balance_name"
+	balanceFromMetadataKey            = "balance_from"
+	balanceToMetadataKey              = "balance_to"
+	currentBalanceNameMetadataKey     = "current_balance_name"
+	currentBalanceCurrencyMetadataKey = "current_balance_currency"
+	currentBalanceAmountMetadataKey   = "current_balance_amount"
+
+	// Category related keys
+	previousCategoryTitleMetadataKey = "previous_category_title"
+	categoryTitleMetadataKey         = "category_title"
+
+	// Operation related keys
+	exchangeRateMetadataKey         = "exchange_rate"
+	operationDescriptionMetadataKey = "operation_description"
+	operationTypeMetadataKey        = "operation_type"
+)
+
 // StateService represents a service for managing and handling complex bot flow using statesstates.
 type StateService interface {
 	HandleState(ctx context.Context, message botMessage) (*HandleStateOutput, error)
