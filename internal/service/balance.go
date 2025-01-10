@@ -147,7 +147,7 @@ func (h *handlerService) handleCreateBalanceFlowStep(ctx context.Context, opts h
 		sendDefaultKeyboard = true
 	case false:
 		outputText = "Please enter balance name!"
-		opts.metadata["balanceID"] = balanceID
+		opts.metadata[balanceIDMetadataKey] = balanceID
 	}
 
 	if sendDefaultKeyboard {
@@ -233,10 +233,10 @@ func (h handlerService) HandleEventBalanceUpdated(ctx context.Context, msg botMe
 			logger.Error().Msg("balance not found")
 			return fmt.Errorf("balance not found")
 		}
-		stateMetaData["balanceID"] = balance.ID
-		stateMetaData["currentBalanceName"] = balance.Name
-		stateMetaData["currentBalanceCurrency"] = balance.Currency
-		stateMetaData["currentBalanceAmount"] = balance.Amount
+		stateMetaData[balanceIDMetadataKey] = balance.ID
+		stateMetaData[currentBalanceNameMetadataKey] = balance.Name
+		stateMetaData[currentBalanceCurrencyMetadataKey] = balance.Currency
+		stateMetaData[currentBalanceAmountMetadataKey] = balance.Amount
 
 		messages := []string{
 			`Send '-' if you want to keep the current balance value. Otherwise, send your new value.
@@ -268,11 +268,11 @@ Please note: this symbol can be used for any balance value you don't want to cha
 		if msg.Message.Text == "-" {
 			switch currentStep {
 			case models.EnterBalanceNameFlowStep:
-				msg.Message.Text = stateMetaData["currentBalanceName"].(string)
+				msg.Message.Text = stateMetaData[currentBalanceNameMetadataKey].(string)
 			case models.EnterBalanceAmountFlowStep:
-				msg.Message.Text = stateMetaData["currentBalanceAmount"].(string)
+				msg.Message.Text = stateMetaData[currentBalanceAmountMetadataKey].(string)
 			case models.EnterBalanceCurrencyFlowStep:
-				msg.Message.Text = stateMetaData["currentBalanceCurrency"].(string)
+				msg.Message.Text = stateMetaData[currentBalanceCurrencyMetadataKey].(string)
 			}
 		}
 
@@ -310,7 +310,7 @@ func (h handlerService) processBalanceUpdate(ctx context.Context, opts processBa
 	logger.Debug().Any("opts", opts).Msg("got args")
 
 	balance, err := h.updateBalance(ctx, updateBalanceOptions{
-		balanceID: opts.metadata["balanceID"].(string),
+		balanceID: opts.metadata[balanceIDMetadataKey].(string),
 		step:      opts.currentStep,
 		data:      opts.msg.Message.Text,
 	})
@@ -579,7 +579,7 @@ func (h handlerService) HandleEventBalanceDeleted(ctx context.Context, msg botMe
 
 		nextStep = models.ConfirmBalanceDeletionFlowStep
 	case models.ConfirmBalanceDeletionFlowStep:
-		stateMetaData["balanceName"] = msg.Message.Text
+		stateMetaData[balanceNameMetadataKey] = msg.Message.Text
 
 		err := h.services.Keyboard.CreateKeyboard(&CreateKeyboardOptions{
 			ChatID:  msg.GetChatID(),
@@ -626,7 +626,7 @@ func (h handlerService) handleChooseBalanceFlowStepForDeletionFlow(ctx context.C
 
 	switch opts.msg.CallbackQuery.Data {
 	case "Yes":
-		balance := opts.user.GetBalance(opts.metaData["balanceName"].(string))
+		balance := opts.user.GetBalance(opts.metaData[balanceNameMetadataKey].(string))
 		if balance == nil {
 			logger.Error().Msg("balance for deletion not found")
 			return fmt.Errorf("balance for deletion not found")

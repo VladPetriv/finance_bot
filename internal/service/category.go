@@ -289,7 +289,7 @@ func (h handlerService) HandleEventCategoryUpdated(ctx context.Context, msg botM
 
 		nextStep = models.ChooseCategoryFlowStep
 	case models.ChooseCategoryFlowStep:
-		stateMetaData["previousCategoryTitle"] = msg.Message.Text
+		stateMetaData[previousCategoryTitleMetadataKey] = msg.Message.Text
 
 		err := h.services.Keyboard.CreateKeyboard(&CreateKeyboardOptions{
 			ChatID:  msg.GetChatID(),
@@ -336,7 +336,7 @@ func (h handlerService) handleEnterUpdatedCategoryNameFlowStep(ctx context.Conte
 
 	category, err := h.stores.Category.Get(ctx, GetCategoryFilter{
 		UserID: opts.userID,
-		Title:  opts.metaData["previousCategoryTitle"].(string),
+		Title:  opts.metaData[previousCategoryTitleMetadataKey].(string),
 	})
 	if err != nil {
 		logger.Error().Err(err).Msg("get category from store")
