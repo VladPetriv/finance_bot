@@ -31,7 +31,8 @@ func (h handlerService) HandleEventBalanceCreated(ctx context.Context, msg botMe
 	}()
 
 	user, err := h.stores.User.Get(ctx, GetUserFilter{
-		Username: msg.GetUsername(),
+		Username:        msg.GetUsername(),
+		PreloadBalances: true,
 	})
 	if err != nil {
 		logger.Error().Err(err).Msg("get user from store")
@@ -80,6 +81,12 @@ func (h handlerService) HandleEventBalanceCreated(ctx context.Context, msg botMe
 
 		nextStep = models.EnterBalanceNameFlowStep
 	case models.EnterBalanceNameFlowStep, models.EnterBalanceAmountFlowStep, models.EnterBalanceCurrencyFlowStep:
+		balance := user.GetBalance(msg.Message.Text)
+		if balance != nil {
+			logger.Info().Any("balance", balance).Msg("balance already exists")
+			return ErrBalanceAlreadyExists
+		}
+
 		step, err := h.processBalanceUpdate(ctx, processBalanceUpdateOptions{
 			metadata:    stateMetaData,
 			currentStep: currentStep,
@@ -227,18 +234,48 @@ func (h handlerService) HandleEventBalanceUpdated(ctx context.Context, msg botMe
 			return fmt.Errorf("balance not found")
 		}
 		stateMetaData["balanceID"] = balance.ID
+		stateMetaData["currentBalanceName"] = balance.Name
+		stateMetaData["currentBalanceCurrency"] = balance.Currency
+		stateMetaData["currentBalanceAmount"] = balance.Amount
 
-		err := h.services.Message.SendMessage(&SendMessageOptions{
-			ChatID: msg.GetChatID(),
-			Text:   fmt.Sprintf("Enter new name for balance %s:", balance.Name),
-		})
-		if err != nil {
-			logger.Error().Err(err).Msg("send message")
-			return fmt.Errorf("send message: %w", err)
+		messages := []string{
+			`Send '-' if you want to keep the current balance value. Otherwise, send your new value.
+Please note: this symbol can be used for any balance value you don't want to change.`,
+			fmt.Sprintf("Enter new name for balance %s:", balance.Name),
+		}
+
+		for _, message := range messages {
+			err := h.services.Message.SendMessage(&SendMessageOptions{
+				ChatID: msg.GetChatID(),
+				Text:   message,
+			})
+			if err != nil {
+				logger.Error().Err(err).Msg("send message")
+				return fmt.Errorf("send message: %w", err)
+			}
 		}
 
 		nextStep = models.EnterBalanceNameFlowStep
 	case models.EnterBalanceNameFlowStep, models.EnterBalanceAmountFlowStep, models.EnterBalanceCurrencyFlowStep:
+		if msg.Message.Text != "-" {
+			balance := user.GetBalance(msg.Message.Text)
+			if balance != nil {
+				logger.Info().Any("balance", balance).Msg("balance already exists")
+				return ErrBalanceAlreadyExists
+			}
+		}
+
+		if msg.Message.Text == "-" {
+			switch currentStep {
+			case models.EnterBalanceNameFlowStep:
+				msg.Message.Text = stateMetaData["currentBalanceName"].(string)
+			case models.EnterBalanceAmountFlowStep:
+				msg.Message.Text = stateMetaData["currentBalanceAmount"].(string)
+			case models.EnterBalanceCurrencyFlowStep:
+				msg.Message.Text = stateMetaData["currentBalanceCurrency"].(string)
+			}
+		}
+
 		step, err := h.processBalanceUpdate(ctx, processBalanceUpdateOptions{
 			metadata:    stateMetaData,
 			currentStep: currentStep,
@@ -272,20 +309,6 @@ func (h handlerService) processBalanceUpdate(ctx context.Context, opts processBa
 	logger := h.logger.With().Str("name", "handlerService.processBalanceUpdate").Logger()
 	logger.Debug().Any("opts", opts).Msg("got args")
 
-	if opts.msg.Message.Text != "" {
-		balance, err := h.stores.Balance.Get(ctx, GetBalanceFilter{
-			Name: opts.msg.Message.Text,
-		})
-		if err != nil {
-			logger.Error().Err(err).Msg("get balance from store")
-			return "", fmt.Errorf("get balance from store: %w", err)
-		}
-		if balance != nil {
-			logger.Info().Any("balance", balance).Msg("balance already exists")
-			return "", ErrBalanceAlreadyExists
-		}
-	}
-
 	balance, err := h.updateBalance(ctx, updateBalanceOptions{
 		balanceID: opts.metadata["balanceID"].(string),
 		step:      opts.currentStep,
@@ -313,7 +336,6 @@ func (h handlerService) processBalanceUpdate(ctx context.Context, opts processBa
 		}
 
 		return models.EnterBalanceAmountFlowStep, nil
-
 	case models.EnterBalanceAmountFlowStep:
 		err = h.services.Message.SendMessage(&SendMessageOptions{
 			ChatID: opts.msg.GetChatID(),
