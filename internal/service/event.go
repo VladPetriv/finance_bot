@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"runtime/debug"
 	"strings"
 
 	"github.com/VladPetriv/finance_bot/internal/models"
@@ -51,6 +52,21 @@ func (e eventService) Listen(ctx context.Context) {
 		select {
 		case update := <-updatesCH:
 			var msg botMessage
+
+			defer func() {
+				if r := recover(); r != nil {
+					logger.Error().
+						Any("panic", r).
+						Str("stack", string(debug.Stack())).
+						Msg("recovered from panic while processing bot update")
+				}
+
+				handleErr := e.handlerService.HandleError(ctx, fmt.Errorf("internal error"), msg)
+				if handleErr != nil {
+					logger.Error().Err(handleErr).Msg("handle error")
+				}
+			}()
+
 			err := json.Unmarshal(update, &msg)
 			if err != nil {
 				logger.Error().Err(err).Msg("unmarshal incoming update data")
@@ -74,7 +90,7 @@ func (e eventService) Listen(ctx context.Context) {
 
 				handleErr := e.handlerService.HandleError(ctx, err, msg)
 				if handleErr != nil {
-					logger.Error().Err(err).Msg("handle error")
+					logger.Error().Err(handleErr).Msg("handle error")
 				}
 			}
 		case err := <-errorsCH:
