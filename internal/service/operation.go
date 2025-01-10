@@ -85,7 +85,7 @@ func (h handlerService) HandleEventOperationCreated(ctx context.Context, msg bot
 
 		nextStep = step
 	case models.ChooseBalanceFlowStep:
-		stateMetaData["balanceName"] = msg.Message.Text
+		stateMetaData[balanceNameMetadataKey] = msg.Message.Text
 		categories, err := h.stores.Category.List(ctx, &ListCategoriesFilter{
 			UserID: user.ID,
 		})
@@ -112,7 +112,7 @@ func (h handlerService) HandleEventOperationCreated(ctx context.Context, msg bot
 
 		nextStep = models.ChooseCategoryFlowStep
 	case models.ChooseBalanceFromFlowStep:
-		stateMetaData["balanceFrom"] = msg.Message.Text
+		stateMetaData[balanceFromMetadataKey] = msg.Message.Text
 
 		userBalancesWithoutBalanceFrom := slices.DeleteFunc(user.Balances, func(balance models.Balance) bool {
 			return balance.Name == msg.Message.Text
@@ -131,9 +131,9 @@ func (h handlerService) HandleEventOperationCreated(ctx context.Context, msg bot
 
 		nextStep = models.ChooseBalanceToFlowStep
 	case models.ChooseBalanceToFlowStep:
-		stateMetaData["balanceTo"] = msg.Message.Text
+		stateMetaData[balanceToMetadataKey] = msg.Message.Text
 
-		balanceFrom := user.GetBalance(stateMetaData["balanceFrom"].(string))
+		balanceFrom := user.GetBalance(stateMetaData[balanceFromMetadataKey].(string))
 		balanceTo := user.GetBalance(msg.Message.Text)
 
 		if balanceFrom.Currency != balanceTo.Currency {
@@ -208,14 +208,14 @@ Please enter the current exchange rate:`,
 			logger.Error().Err(err).Msg("parse exchange rate")
 			return ErrInvalidExchangeRateFormat
 		}
-		stateMetaData["exchangeRate"] = exchangeRate.String()
+		stateMetaData[exchangeRateMetadataKey] = exchangeRate.String()
 		logger.Debug().Any("exchangeRate", exchangeRate).Msg("parsed exchange rate")
 
 		err = h.services.Message.SendMessage(&SendMessageOptions{
 			ChatID: msg.GetChatID(),
 			Text: fmt.Sprintf(
 				"Enter operation amount(currency: %s): ",
-				user.GetBalance(stateMetaData["balanceFrom"].(string)).Currency,
+				user.GetBalance(stateMetaData[balanceFromMetadataKey].(string)).Currency,
 			),
 		})
 		if err != nil {
@@ -225,7 +225,7 @@ Please enter the current exchange rate:`,
 
 		nextStep = models.EnterOperationAmountFlowStep
 	case models.ChooseCategoryFlowStep:
-		stateMetaData["categoryTitle"] = msg.Message.Text
+		stateMetaData[categoryTitleMetadataKey] = msg.Message.Text
 
 		err = h.services.Message.SendMessage(&SendMessageOptions{
 			ChatID: msg.GetChatID(),
@@ -238,7 +238,7 @@ Please enter the current exchange rate:`,
 
 		nextStep = models.EnterOperationDescriptionFlowStep
 	case models.EnterOperationDescriptionFlowStep:
-		stateMetaData["operationDescription"] = msg.Message.Text
+		stateMetaData[operationDescriptionMetadataKey] = msg.Message.Text
 
 		err = h.services.Message.SendMessage(&SendMessageOptions{
 			ChatID: msg.GetChatID(),
@@ -282,7 +282,7 @@ func (h handlerService) handleProcessOprationTypeFlowStep(opts handleProcessOpra
 	logger.Debug().Any("opts", opts).Msg("got args")
 
 	operationType := models.OperationCommandToOperationType[opts.msg.CallbackQuery.Data]
-	opts.metaData["operationType"] = operationType
+	opts.metaData[operationTypeMetadataKey] = operationType
 
 	var (
 		nextStep models.FlowStep
@@ -329,7 +329,7 @@ func (h handlerService) handleEnterOperationAmountFlowStep(ctx context.Context, 
 	}
 	logger.Debug().Any("operationAmount", operationAmount).Msg("parsed operation amount")
 
-	operationType := models.OperationType(opts.metaData["operationType"].(string))
+	operationType := models.OperationType(opts.metaData[operationTypeMetadataKey].(string))
 	logger.Debug().Any("operationType", operationType).Msg("parsed operation type")
 
 	switch operationType {
@@ -386,7 +386,7 @@ func (h handlerService) processSpendingAndIncomingOperation(ctx context.Context,
 	logger := h.logger.With().Str("name", "handlerService.processSpendingAndIncomingOperation").Logger()
 	logger.Debug().Any("opts", opts).Msg("got args")
 
-	balance := opts.user.GetBalance(opts.metaData["balanceName"].(string))
+	balance := opts.user.GetBalance(opts.metaData[balanceNameMetadataKey].(string))
 	if balance == nil {
 		logger.Info().Msg("balance not found")
 		return ErrBalanceNotFound
@@ -394,7 +394,7 @@ func (h handlerService) processSpendingAndIncomingOperation(ctx context.Context,
 	logger.Debug().Any("balance", balance).Msg("got balance")
 
 	category, err := h.stores.Category.Get(ctx, GetCategoryFilter{
-		Title: opts.metaData["categoryTitle"].(string),
+		Title: opts.metaData[categoryTitleMetadataKey].(string),
 	})
 	if err != nil {
 		logger.Error().Err(err).Msg("get category from store")
@@ -431,7 +431,7 @@ func (h handlerService) processSpendingAndIncomingOperation(ctx context.Context,
 		CategoryID:  category.ID,
 		Type:        opts.operationType,
 		Amount:      opts.operationAmount.StringFixed(),
-		Description: opts.metaData["operationDescription"].(string),
+		Description: opts.metaData[operationDescriptionMetadataKey].(string),
 		CreatedAt:   time.Now(),
 	}
 	logger.Debug().Any("operation", operation).Msg("build operation for create")
@@ -461,14 +461,14 @@ func (h handlerService) processTransferOperation(ctx context.Context, opts proce
 	logger := h.logger.With().Str("name", "handlerService.processTransferOperation").Logger()
 	logger.Debug().Any("opts", opts).Msg("got args")
 
-	balanceFrom := opts.user.GetBalance(opts.metaData["balanceFrom"].(string))
+	balanceFrom := opts.user.GetBalance(opts.metaData[balanceFromMetadataKey].(string))
 	if balanceFrom == nil {
 		logger.Info().Msg("balance 'from' not found")
 		return ErrBalanceNotFound
 	}
 	logger.Debug().Any("balanceFrom", balanceFrom).Msg("got balance from which money is transferred")
 
-	balanceTo := opts.user.GetBalance(opts.metaData["balanceTo"].(string))
+	balanceTo := opts.user.GetBalance(opts.metaData[balanceToMetadataKey].(string))
 	if balanceTo == nil {
 		logger.Info().Msg("balance 'to' not found")
 		return ErrBalanceNotFound
@@ -489,7 +489,7 @@ func (h handlerService) processTransferOperation(ctx context.Context, opts proce
 
 	operationAmountIn, operationAmountOut := opts.operationAmount, opts.operationAmount
 
-	exchangeRate, ok := opts.metaData["exchangeRate"]
+	exchangeRate, ok := opts.metaData[exchangeRateMetadataKey]
 	if ok {
 		parsedExchangeRate, err := money.NewFromString(exchangeRate.(string))
 		if err != nil {
@@ -601,7 +601,7 @@ func (h handlerService) HandleEventGetOperationsHistory(ctx context.Context, msg
 
 		nextStep = models.ChooseBalanceFlowStep
 	case models.ChooseBalanceFlowStep:
-		stateMetaData["balanceName"] = msg.Message.Text
+		stateMetaData[balanceNameMetadataKey] = msg.Message.Text
 		err := h.services.Keyboard.CreateKeyboard(&CreateKeyboardOptions{
 			ChatID:  msg.GetChatID(),
 			Message: "Please select a period for operation history!",
@@ -659,7 +659,7 @@ func (h handlerService) handlerChooseTimePeriodForOperationsHistoryFlowStep(ctx 
 	logger := h.logger.With().Str("name", "handlerService.handlerChooseTimePeriodForOperationsHistoryFlowStep").Logger()
 	logger.Debug().Any("opts", opts).Msg("got args")
 
-	balance := opts.user.GetBalance(opts.metaData["balanceName"].(string))
+	balance := opts.user.GetBalance(opts.metaData[balanceNameMetadataKey].(string))
 	if balance == nil {
 		logger.Info().Msg("balance not found")
 		return ErrBalanceNotFound
