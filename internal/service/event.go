@@ -48,25 +48,24 @@ func (e eventService) Listen(ctx context.Context) {
 
 	go e.botAPI.ReadUpdates(updatesCH, errorsCH)
 
+	var msg botMessage
+	defer func() {
+		if r := recover(); r != nil {
+			logger.Error().
+				Any("panic", r).
+				Str("stack", string(debug.Stack())).
+				Msg("recovered from panic while processing bot update")
+		}
+
+		handleErr := e.handlerService.HandleError(ctx, fmt.Errorf("internal error"), msg)
+		if handleErr != nil {
+			logger.Error().Err(handleErr).Msg("handle error")
+		}
+	}()
+
 	for {
 		select {
 		case update := <-updatesCH:
-			var msg botMessage
-
-			defer func() {
-				if r := recover(); r != nil {
-					logger.Error().
-						Any("panic", r).
-						Str("stack", string(debug.Stack())).
-						Msg("recovered from panic while processing bot update")
-				}
-
-				handleErr := e.handlerService.HandleError(ctx, fmt.Errorf("internal error"), msg)
-				if handleErr != nil {
-					logger.Error().Err(handleErr).Msg("handle error")
-				}
-			}()
-
 			err := json.Unmarshal(update, &msg)
 			if err != nil {
 				logger.Error().Err(err).Msg("unmarshal incoming update data")
