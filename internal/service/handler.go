@@ -138,13 +138,13 @@ func (h handlerService) HandleEventUnknown(msg botMessage) error {
 	return nil
 }
 
-func (h handlerService) HandleError(ctx context.Context, receivedErr error, msg botMessage) error {
+func (h handlerService) HandleError(ctx context.Context, opts HandleErrorOptions) error {
 	logger := h.logger.With().Str("name", "handlerService.HandleError").Logger()
 
-	if errs.IsExpected(receivedErr) {
+	if errs.IsExpected(opts.Err) {
 		err := h.services.Message.SendMessage(&SendMessageOptions{
-			ChatID: msg.GetChatID(),
-			Text:   receivedErr.Error(),
+			ChatID: opts.Msg.GetChatID(),
+			Text:   opts.Err.Error(),
 		})
 		if err != nil {
 			logger.Error().Err(err).Msg("send message")
@@ -155,8 +155,25 @@ func (h handlerService) HandleError(ctx context.Context, receivedErr error, msg 
 		return nil
 	}
 
+	message := "Something went wrong!\nPlease try again later!"
+
+	if opts.SendDefaultKeyboard {
+		err := h.services.Keyboard.CreateKeyboard(&CreateKeyboardOptions{
+			ChatID:  opts.Msg.GetChatID(),
+			Message: message,
+			Type:    keyboardTypeRow,
+			Rows:    defaultKeyboardRows,
+		})
+		if err != nil {
+			logger.Error().Err(err).Msg("create keyboard")
+			return fmt.Errorf("create keyboard: %w", err)
+		}
+
+		return nil
+	}
+
 	err := h.services.Message.SendMessage(&SendMessageOptions{
-		ChatID: msg.GetChatID(),
+		ChatID: opts.Msg.GetChatID(),
 		Text:   "Something went wrong!\nPlease try again later!",
 	})
 	if err != nil {
