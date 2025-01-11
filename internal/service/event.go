@@ -48,53 +48,70 @@ func (e eventService) Listen(ctx context.Context) {
 
 	go e.botAPI.ReadUpdates(updatesCH, errorsCH)
 
-	var msg botMessage
-	defer func() {
-		if r := recover(); r != nil {
-			logger.Error().
-				Any("panic", r).
-				Str("stack", string(debug.Stack())).
-				Msg("recovered from panic while processing bot update")
-		}
-
-		handleErr := e.handlerService.HandleError(ctx, fmt.Errorf("internal error"), msg)
-		if handleErr != nil {
-			logger.Error().Err(handleErr).Msg("handle error")
-		}
-	}()
-
 	for {
-		select {
-		case update := <-updatesCH:
-			err := json.Unmarshal(update, &msg)
-			if err != nil {
-				logger.Error().Err(err).Msg("unmarshal incoming update data")
+		func() {
+			var msg botMessage
+			defer func() {
+				if r := recover(); r != nil {
+					logger.Error().
+						Any("panic", r).
+						Str("stack", string(debug.Stack())).
+						Msg("recovered from panic while processing bot update")
+				}
 
-				continue
-			}
-			logger.Debug().Any("msg", msg).Msg("unmarshalled incoming update data")
+				if msg.GetUsername() != "" {
+					err := e.stateService.DeleteState(ctx, msg)
+					if err != nil {
+						logger.Error().Err(err).Msg("delete state")
+					}
+				}
 
-			stateOutput, err := e.stateService.HandleState(ctx, msg)
-			if err != nil {
-				logger.Error().Err(err).Msg("handle state")
-
-				continue
-			}
-			logger.Debug().Any("stateOutput", stateOutput).Msg("handled request state")
-
-			ctx = context.WithValue(ctx, contextFieldNameState, stateOutput.State)
-			err = e.ReactOnEvent(ctx, stateOutput.Event, msg)
-			if err != nil {
-				logger.Error().Err(err).Msg("react on event")
-
-				handleErr := e.handlerService.HandleError(ctx, err, msg)
+				handleErr := e.handlerService.HandleError(ctx, HandleErrorOptions{
+					Err:                 fmt.Errorf("internal error"),
+					Msg:                 msg,
+					SendDefaultKeyboard: true,
+				})
 				if handleErr != nil {
 					logger.Error().Err(handleErr).Msg("handle error")
 				}
+			}()
+
+			select {
+			case update := <-updatesCH:
+
+				err := json.Unmarshal(update, &msg)
+				if err != nil {
+					logger.Error().Err(err).Msg("unmarshal incoming update data")
+
+					return
+				}
+				logger.Debug().Any("msg", msg).Msg("unmarshalled incoming update data")
+
+				stateOutput, err := e.stateService.HandleState(ctx, msg)
+				if err != nil {
+					logger.Error().Err(err).Msg("handle state")
+
+					return
+				}
+				logger.Debug().Any("stateOutput", stateOutput).Msg("handled request state")
+
+				ctx = context.WithValue(ctx, contextFieldNameState, stateOutput.State)
+				err = e.ReactOnEvent(ctx, stateOutput.Event, msg)
+				if err != nil {
+					logger.Error().Err(err).Msg("react on event")
+
+					handleErr := e.handlerService.HandleError(ctx, HandleErrorOptions{
+						Err: err,
+						Msg: msg,
+					})
+					if handleErr != nil {
+						logger.Error().Err(handleErr).Msg("handle error")
+					}
+				}
+			case err := <-errorsCH:
+				logger.Error().Err(err).Msg("read updates")
 			}
-		case err := <-errorsCH:
-			logger.Error().Err(err).Msg("read updates")
-		}
+		}()
 	}
 }
 
