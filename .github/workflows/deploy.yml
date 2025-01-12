@@ -8,6 +8,10 @@ on:
     branches:
       - main
 
+permissions:
+  checks: read
+  contents: read
+
 jobs:
   wait-for-checks:
     runs-on: ubuntu-latest
@@ -17,7 +21,7 @@ jobs:
         with:
           ref: ${{ github.ref }}
           check-name: "build_and_test"
-          repo-token: ${{ secrets.GITHUB_TOKEN }}
+          repo-token: ${{ secrets.PAT_TOKEN }}
           wait-interval: 10
           allowed-conclusions: success
 
@@ -26,7 +30,7 @@ jobs:
         with:
           ref: ${{ github.ref }}
           check-name: "lint"
-          repo-token: ${{ secrets.GITHUB_TOKEN }}
+          repo-token: ${{ secrets.PAT_TOKEN }}
           wait-interval: 10
           allowed-conclusions: success
 
