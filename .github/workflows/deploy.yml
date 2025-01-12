@@ -73,9 +73,13 @@ jobs:
             # 4. Checkout to production branch
             git checkout production
 
-            # 5. Build app
+            # 5. Create and setup environment file
+            echo "${{ secrets.ENV }}" > env.sh
+            source env.sh
+
+            # 6. Build app
             make build
 
-            # 6. Start app
+            # 7. Start app
             ./finance_bot
           '
