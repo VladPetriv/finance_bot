@@ -17,7 +17,7 @@ import (
 
 // Run is used to start the application.
 func Run(ctx context.Context, cfg *config.Config, logger *logger.Logger) {
-	b := bot.NewTelegramBot(cfg.Telegram.BotToken, cfg.Telegram.WebhookURL, cfg.Telegram.SeverAddress)
+	b := bot.NewTelegramBot(cfg.Telegram.BotToken, cfg.Telegram.WebhookURL, cfg.Telegram.SeverAddress, cfg.Telegram.UpdatesType)
 
 	botAPI, err := b.NewAPI()
 	if err != nil {
