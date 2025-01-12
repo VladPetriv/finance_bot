@@ -21,20 +21,20 @@ jobs:
   wait-for-checks:
     runs-on: ubuntu-latest
     steps:
-      - name: Wait for other checks
+      - name: Wait for build and test checks
         uses: lewagon/wait-on-check-action@v1.3.1
         with:
           ref: ${{ github.ref }}
-          check-name: "build_and_test"
+          check-name: build_and_test
           repo-token: ${{ secrets.PAT_TOKEN }}
           wait-interval: 20
           allowed-conclusions: success
 
-      - name: Wait for lint
+      - name: Wait for lint checks
         uses: lewagon/wait-on-check-action@v1.3.1
         with:
           ref: ${{ github.ref }}
-          check-name: "lint"
+          check-name: golangci
           repo-token: ${{ secrets.PAT_TOKEN }}
           wait-interval: 20
           allowed-conclusions: success
@@ -43,19 +43,18 @@ jobs:
     needs: [wait-for-checks]
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - name: Checkout code
+        uses: actions/checkout@v3
 
       - name: Install SSH Key
         uses: shimataro/ssh-key-action@v2
         with:
           key: ${{ secrets.SSH_PRIVATE_KEY }}
-          known_hosts: unnecessary
+          known_hosts: |
+            ${{ secrets.PRODUCTION_SERVER }}
           if_key_exists: replace
-          config: |
-            Host *
-              StrictHostKeyChecking no
 
-      - name: Adding Known Hosts
+      - name: Add Known Hosts
         run: |
           mkdir -p ~/.ssh
           ssh-keyscan -H ${{ secrets.PRODUCTION_SERVER }} >> ~/.ssh/known_hosts
@@ -63,4 +62,4 @@ jobs:
 
       - name: Test Connection and Print Hello World
         run: |
-          ssh -v ${{ secrets.PRODUCTION_USER}}@${{ secrets.PRODUCTION_SERVER }} 'echo "hello world"'
+          ssh -o StrictHostKeyChecking=no -v ${{ secrets.PRODUCTION_USER }}@${{ secrets.PRODUCTION_SERVER }} 'echo "hello world"'
