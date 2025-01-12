@@ -16,15 +16,16 @@ type Config struct {
 
 // Telegram represents a telegram bot configuration.
 type Telegram struct {
-	BotToken     string `env:"BOT_TOKEN"`
-	WebhookURL   string `env:"WEBHOOK_URL"`
-	SeverAddress string `env:"SERVER_ADDRESS" env-default:":8443"`
+	BotToken     string `env:"FB_TELEGRAM_BOT_TOKEN"`
+	WebhookURL   string `env:"FB_TELEGRAM_WEBHOOK_URL"`
+	SeverAddress string `env:"FB_TELEGRAM_SERVER_ADDRESS" env-default:":8443"`
+	UpdatesType  string `env:"FB_TELEGRAM_UPDATES_TYPE" env-default:"polling"`
 }
 
 // MongoDB represents a mongoDB database configuration.
 type MongoDB struct {
-	URI      string `env:"MONGODB_URI" env-default:"mongodb://localhost:27017"`
-	Database string `env:"MONGODB_DATABASE" env-default:"api"`
+	URI      string `env:"FB_MONGODB_URI" env-default:"mongodb://localhost:27017"`
+	Database string `env:"FB_MONGODB_DATABASE" env-default:"api"`
 }
 
 // Logger represents a logger configuration.
