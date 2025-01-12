@@ -71,9 +71,9 @@ jobs:
             echo "${{ secrets.ENV }}" > env.sh
             source env.sh
 
-            # 6. Build app
-            make build
+            # 7. Kill existing process if running
+            pkill -f "./finance_bot" || true
 
-            # 7. Start app
-            ./finance_bot
+            # 8. Start app in background
+            nohup ./finance_bot > bot.log 2>&1 &
           '
