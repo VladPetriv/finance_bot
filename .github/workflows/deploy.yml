@@ -55,25 +55,22 @@ jobs:
       - name: Deploy to production server
         run: |
           ssh ${{ secrets.PRODUCTION_USER }}@${{ secrets.PRODUCTION_SERVER }} '
-            # 1. Remove repo directory if exists
+            echo "Remove repo if exists"
             rm -rf finance_bot || true
 
-            # 2. Clone new repo directory
+            echo "Clone new repo"
             git clone git@github.com:VladPetriv/finance_bot.git
 
-            # 3. Move to this directory
+            echo "Change directory"
             cd finance_bot
 
-            # 4. Checkout to production branch
+            echo "Checkout to production branch"
             git checkout production
 
-            # 5. Create and setup environment file
+            echo "Create env file and source them"
             echo "${{ secrets.ENV }}" > env.sh
             source env.sh
 
-            # 7. Kill existing process if running
-            pkill -f "./finance_bot" || true
-
-            # 8. Start app in background
+            echo "Start app in background"
             nohup ./finance_bot > bot.log 2>&1 &
           '
