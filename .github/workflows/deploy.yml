@@ -17,7 +17,7 @@ permissions:
   pull-requests: read
 
 jobs:
-  wait-for-checks:
+  wait-for-test-checks:
     runs-on: ubuntu-latest
     steps:
       - name: Wait for build and test checks
@@ -30,6 +30,9 @@ jobs:
           allowed-conclusions: success
           running-workflow-name: Deploy
 
+  wait-for-lint-checks:
+    runs-on: ubuntu-latest
+    steps:
       - name: Wait for lint checks
         uses: lewagon/wait-on-check-action@v1.3.1
         with:
@@ -41,7 +44,7 @@ jobs:
           running-workflow-name: Deploy
 
   deploy:
-    needs: [wait-for-checks]
+    needs: [wait-for-test-checks, wait-for-lint-checks]
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
