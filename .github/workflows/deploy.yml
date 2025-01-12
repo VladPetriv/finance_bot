@@ -51,16 +51,18 @@ jobs:
         uses: shimataro/ssh-key-action@v2
         with:
           key: ${{ secrets.SSH_PRIVATE_KEY }}
-          known_hosts: |
-            ${{ secrets.PRODUCTION_SERVER }}
+          name: id_rsa
+          known_hosts: unnecessary
           if_key_exists: replace
 
-      - name: Add Known Hosts
+      - name: Add to known_hosts
         run: |
           mkdir -p ~/.ssh
-          ssh-keyscan -H ${{ secrets.PRODUCTION_SERVER }} >> ~/.ssh/known_hosts
+          echo "${{ secrets.PRODUCTION_SERVER }} ssh-ed25519 SHA256:t88ooFTKGnCw0nAjfNjwX3p4RRsPfVV8ZZ6C4aJHAm4" >> ~/.ssh/known_hosts
           chmod 644 ~/.ssh/known_hosts
 
-      - name: Test Connection and Print Hello World
+      - name: Test Connection
         run: |
-          ssh -o StrictHostKeyChecking=no -v ${{ secrets.PRODUCTION_USER }}@${{ secrets.PRODUCTION_SERVER }} 'echo "hello world"'
+          eval $(ssh-agent -s)
+          ssh-add ~/.ssh/id_rsa
+          ssh -o StrictHostKeyChecking=accept-new ${{ secrets.PRODUCTION_USER }}@${{ secrets.PRODUCTION_SERVER }} 'echo "hello world"'
