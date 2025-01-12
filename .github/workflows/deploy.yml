@@ -22,7 +22,7 @@ jobs:
           ref: ${{ github.ref }}
           check-name: "build_and_test"
           repo-token: ${{ secrets.PAT_TOKEN }}
-          wait-interval: 10
+          wait-interval: 20
           allowed-conclusions: success
 
       - name: Wait for lint
@@ -31,7 +31,7 @@ jobs:
           ref: ${{ github.ref }}
           check-name: "lint"
           repo-token: ${{ secrets.PAT_TOKEN }}
-          wait-interval: 10
+          wait-interval: 20
           allowed-conclusions: success
 
   deploy:
