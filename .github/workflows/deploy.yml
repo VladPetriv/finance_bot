@@ -47,22 +47,11 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v3
 
-      - name: Install SSH Key
-        uses: shimataro/ssh-key-action@v2
-        with:
-          key: ${{ secrets.SSH_PRIVATE_KEY }}
-          name: id_rsa
-          known_hosts: unnecessary
-          if_key_exists: replace
-
-      - name: Add to known_hosts
+      - name: Create SSH key
         run: |
-          mkdir -p ~/.ssh
-          echo "${{ secrets.PRODUCTION_SERVER }} ssh-ed25519 SHA256:t88ooFTKGnCw0nAjfNjwX3p4RRsPfVV8ZZ6C4aJHAm4" >> ~/.ssh/known_hosts
-          chmod 644 ~/.ssh/known_hosts
+          install -m 600 -D /dev/null ~/.ssh/id_rsa
+          echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
 
-      - name: Test Connection
+      - name: Test connection
         run: |
-          eval $(ssh-agent -s)
-          ssh-add ~/.ssh/id_rsa
-          ssh -o StrictHostKeyChecking=accept-new ${{ secrets.PRODUCTION_USER }}@${{ secrets.PRODUCTION_SERVER }} 'echo "hello world"'
+          ssh ${{ secrets.PRODUCTION_USER}}@${{ secrets.PRODUCTION_SERVER }} 'echo "hello from remote server"'
