@@ -4,12 +4,34 @@ on:
   push:
     branches:
       - production
-  pull_request: # TODO: Remove it before merge to main
+  pull_request:
     branches:
       - main
 
 jobs:
+  wait-for-checks:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Wait for other checks
+        uses: lewagon/wait-on-check-action@v1.3.1
+        with:
+          ref: ${{ github.ref }}
+          check-name: "build_and_test"
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+          wait-interval: 10
+          allowed-conclusions: success
+
+      - name: Wait for lint
+        uses: lewagon/wait-on-check-action@v1.3.1
+        with:
+          ref: ${{ github.ref }}
+          check-name: "lint"
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+          wait-interval: 10
+          allowed-conclusions: success
+
   deploy:
+    needs: [wait-for-checks]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
@@ -20,9 +42,16 @@ jobs:
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           known_hosts: unnecessary
           if_key_exists: replace
+          config: |
+            Host *
+              StrictHostKeyChecking no
 
       - name: Adding Known Hosts
-        run: ssh-keyscan -H ${{ secrets.PRODUCTION_SERVER }} >> ~/.ssh/known_hosts
+        run: |
+          mkdir -p ~/.ssh
+          ssh-keyscan -H ${{ secrets.PRODUCTION_SERVER }} >> ~/.ssh/known_hosts
+          chmod 644 ~/.ssh/known_hosts
 
       - name: Test Connection and Print Hello World
-        run: ssh ${{ secrets.PRODUCTION_USER}}@${{ secrets.PRODUCTION_SERVER }} 'echo "hello world"'
+        run: |
+          ssh -v ${{ secrets.PRODUCTION_USER}}@${{ secrets.PRODUCTION_SERVER }} 'echo "hello world"'
