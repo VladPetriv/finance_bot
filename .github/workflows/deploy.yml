@@ -58,6 +58,24 @@ jobs:
           touch ~/.ssh/known_hosts
           ssh-keyscan -H ${{ secrets.PRODUCTION_SERVER }} >> ~/.ssh/known_hosts
 
-      - name: Test connection
+      - name: Deploy to production server
         run: |
-          ssh -o StrictHostKeyChecking=no ${{ secrets.PRODUCTION_USER}}@${{ secrets.PRODUCTION_SERVER }} 'echo "hello from remote server"'
+          ssh ${{ secrets.PRODUCTION_USER }}@${{ secrets.PRODUCTION_SERVER }} '
+            # 1. Remove repo directory if exists
+            rm -rf finance_bot || true
+
+            # 2. Clone new repo directory
+            git clone git@github.com:VladPetriv/finance_bot.git
+
+            # 3. Move to this directory
+            cd finance_bot
+
+            # 4. Checkout to production branch
+            git checkout production
+
+            # 5. Build app
+            make build
+
+            # 6. Start app
+            ./finance_bot
+          '
