@@ -167,6 +167,71 @@ func (h handlerService) HandleError(ctx context.Context, receivedErr error, msg 
 	return nil
 }
 
+func (h handlerService) HandleWrappers(ctx context.Context, event models.Event, msg botMessage) error {
+	logger := h.logger.With().Str("name", "handlerService.HandleWrappers").Logger()
+	logger.Debug().Any("msg", msg).Any("event", event).Msg("got args")
+
+	var (
+		rows    []bot.KeyboardRow
+		message string
+	)
+
+	switch event {
+	case models.BalanceEvent:
+
+		rows = []bot.KeyboardRow{
+			{
+				Buttons: []string{models.BotCreateBalanceCommand, models.BotGetBalanceCommand},
+			},
+			{
+				Buttons: []string{models.BotUpdateBalanceCommand, models.BotDeleteBalanceCommand},
+			},
+			{
+				Buttons: []string{models.BotBackCommand},
+			},
+		}
+		message = "Please choose balance command to execute:"
+	case models.CategoryEvent:
+		rows = []bot.KeyboardRow{
+			{
+				Buttons: []string{models.BotCreateCategoryCommand, models.BotListCategoriesCommand},
+			},
+			{
+				Buttons: []string{models.BotUpdateCategoryCommand, models.BotDeleteCategoryCommand},
+			},
+			{
+				Buttons: []string{models.BotBackCommand},
+			},
+		}
+		message = "Please choose category command to execute:"
+	case models.OperationEvent:
+		rows = []bot.KeyboardRow{
+			{
+				Buttons: []string{models.BotCreateOperationCommand, models.BotGetOperationsHistory},
+			},
+			{
+				Buttons: []string{models.BotBackCommand},
+			},
+		}
+		message = "Please choose operation command to execute:"
+	default:
+		return fmt.Errorf("unknown wrappers event: %s", event)
+	}
+
+	err := h.services.Keyboard.CreateKeyboard(&CreateKeyboardOptions{
+		ChatID:  msg.GetChatID(),
+		Message: message,
+		Type:    keyboardTypeRow,
+		Rows:    rows,
+	})
+	if err != nil {
+		logger.Error().Err(err).Msg("create keyboard")
+		return fmt.Errorf("create keyboard: %w", err)
+	}
+
+	return nil
+}
+
 type named interface {
 	GetName() string
 }
