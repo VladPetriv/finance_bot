@@ -55,7 +55,10 @@ jobs:
       - name: Deploy to production server
         run: |
           ssh ${{ secrets.PRODUCTION_USER }}@${{ secrets.PRODUCTION_SERVER }} '
-            echo "Remove repo if exists"
+            echo "Stop the existing service"
+            sudo systemctl stop finance-bot.service || true
+
+            echo "Remove previous repo if exists"
             rm -rf finance_bot || true
 
             echo "Clone new repo"
@@ -67,10 +70,22 @@ jobs:
             echo "Checkout to production branch"
             git checkout production
 
-            echo "Create env file and source them"
+            echo "Create env file"
             echo "${{ secrets.ENV }}" > env.sh
-            source env.sh
+            chmod +x env.sh
 
-            echo "Start app in background"
-            nohup ./finance_bot > bot.log 2>&1 &
+            echo "Build application"
+            make build
+
+            echo "Reload systemd daemon"
+            sudo systemctl daemon-reload
+
+            echo "Start the service"
+            sudo systemctl start finance-bot.service
+
+            echo "Enable service on boot"
+            sudo systemctl enable finance-bot.service
+
+            echo "Check service status"
+            sudo systemctl status finance-bot.service
           '
