@@ -11,6 +11,13 @@ const (
 	// UnknownEvent represents an unrecognized or unsupported event
 	UnknownEvent Event = "unknown"
 
+	// BalanceEvent represents the event for receiving balance actionsn
+	BalanceEvent Event = "balance/actions"
+	// CategoryEvent represents the event for receiving category actions
+	CategoryEvent Event = "category/actions"
+	// OperationEvent represents the event for receiving operation actions
+	OperationEvent Event = "operation/actions"
+
 	// CreateBalanceEvent represents the event for creating a new balance
 	CreateBalanceEvent Event = "balance/create"
 	// UpdateBalanceEvent represents the event for updating a balance
@@ -37,16 +44,28 @@ const (
 
 // EventToFlow maps events to their corresponding flows
 var EventToFlow = map[Event]Flow{
-	StartEvent:                StartFlow,
-	CreateBalanceEvent:        CreateBalanceFlow,
-	UpdateBalanceEvent:        UpdateBalanceFlow,
-	DeleteBalanceEvent:        DeleteBalanceFlow,
-	GetBalanceEvent:           GetBalanceFlow,
-	CreateCategoryEvent:       CreateCategoryFlow,
-	ListCategoriesEvent:       ListCategoriesFlow,
-	UpdateCategoryEvent:       UpdateCategoryFlow,
-	DeleteCategoryEvent:       DeleteCategoryFlow,
+	// General
+	StartEvent: StartFlow,
+	BackEvent:  BackFlow,
+
+	// Wrappers
+	BalanceEvent:   BalanceFlow,
+	CategoryEvent:  CategoryFlow,
+	OperationEvent: OperationFlow,
+
+	// Balance
+	CreateBalanceEvent: CreateBalanceFlow,
+	UpdateBalanceEvent: UpdateBalanceFlow,
+	DeleteBalanceEvent: DeleteBalanceFlow,
+	GetBalanceEvent:    GetBalanceFlow,
+
+	// Category
+	CreateCategoryEvent: CreateCategoryFlow,
+	ListCategoriesEvent: ListCategoriesFlow,
+	UpdateCategoryEvent: UpdateCategoryFlow,
+	DeleteCategoryEvent: DeleteCategoryFlow,
+
+	// Operation
 	CreateOperationEvent:      CreateOperationFlow,
 	GetOperationsHistoryEvent: GetOperationsHistoryFlow,
-	BackEvent:                 BackFlow,
 }
