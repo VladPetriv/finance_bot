@@ -77,6 +77,13 @@ const (
 	// BackFlow represents the flow for stopping cuurent flow
 	BackFlow Flow = "back"
 
+	// BalanceFlow represents the flow for getting balance actions
+	BalanceFlow Flow = "balance"
+	// CategoryFlow represents the flow for getting category actions
+	CategoryFlow Flow = "category"
+	// OperationFlow represents the flow for getting operation actions
+	OperationFlow Flow = "operation"
+
 	// CreateBalanceFlow represents the flow for creating a new balance
 	CreateBalanceFlow Flow = "create_balance"
 	// UpdateBalanceFlow represents the flow for updating a balance

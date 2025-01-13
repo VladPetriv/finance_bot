@@ -28,6 +28,9 @@ type HandlerService interface {
 	// HandleEventBack is used to reset bot buttons to default mode.
 	HandleEventBack(ctx context.Context, msg botMessage) error
 
+	// HandleWrappers is used to handle wrapper events.
+	HandleWrappers(ctx context.Context, event models.Event, msg botMessage) error
+
 	// HandleEventBalanceCreated is used to handle update balance event.
 	HandleEventBalanceCreated(ctx context.Context, msg botMessage) error
 	// HandleEventBalanceUpdated is used to handle update balance event.
@@ -151,19 +154,10 @@ const (
 
 var defaultKeyboardRows = []bot.KeyboardRow{
 	{
-		Buttons: []string{models.BotCreateBalanceCommand, models.BotUpdateBalanceCommand, models.BotGetBalanceCommand},
+		Buttons: []string{models.BotBalanceCommand, models.BotCategoryCommand},
 	},
 	{
-		Buttons: []string{models.BotDeleteBalanceCommand},
-	},
-	{
-		Buttons: []string{models.BotCreateCategoryCommand, models.BotListCategoriesCommand, models.BotUpdateCategoryCommand},
-	},
-	{
-		Buttons: []string{models.BotDeleteCategoryCommand},
-	},
-	{
-		Buttons: []string{models.BotCreateOperationCommand, models.BotGetOperationsHistory},
+		Buttons: []string{models.BotOperationCommand},
 	},
 }
 

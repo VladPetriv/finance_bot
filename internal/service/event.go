@@ -124,6 +124,32 @@ func (e eventService) ReactOnEvent(ctx context.Context, event models.Event, msg 
 			return fmt.Errorf("handle event start: %w", err)
 		}
 
+	case models.UnknownEvent:
+		err := e.handlerService.HandleEventUnknown(msg)
+		if err != nil {
+			if errs.IsExpected(err) {
+				logger.Info().Err(err).Msg(err.Error())
+				return err
+			}
+
+			logger.Error().Err(err).Msg("handle event unknown")
+			return fmt.Errorf("handle event event unknown: %w", err)
+		}
+
+	case models.BackEvent:
+		err := e.handlerService.HandleEventBack(ctx, msg)
+		if err != nil {
+			logger.Error().Err(err).Msg("handle event back")
+			return fmt.Errorf("handle event back: %w", err)
+		}
+
+	case models.BalanceEvent, models.CategoryEvent, models.OperationEvent:
+		err := e.handlerService.HandleWrappers(ctx, event, msg)
+		if err != nil {
+			logger.Error().Err(err).Msg("handle wrappers")
+			return fmt.Errorf("handle wrappers: %w", err)
+		}
+
 	case models.CreateBalanceEvent:
 		err := e.handlerService.HandleEventBalanceCreated(ctx, msg)
 		if err != nil {
@@ -241,26 +267,6 @@ func (e eventService) ReactOnEvent(ctx context.Context, event models.Event, msg 
 			logger.Error().Err(err).Msg("handle event get operations history")
 			return fmt.Errorf("handle event get operations history: %w", err)
 		}
-
-	case models.UnknownEvent:
-		err := e.handlerService.HandleEventUnknown(msg)
-		if err != nil {
-			if errs.IsExpected(err) {
-				logger.Info().Err(err).Msg(err.Error())
-				return err
-			}
-
-			logger.Error().Err(err).Msg("handle event unknown")
-			return fmt.Errorf("handle event event unknown: %w", err)
-		}
-
-	case models.BackEvent:
-		err := e.handlerService.HandleEventBack(ctx, msg)
-		if err != nil {
-			logger.Error().Err(err).Msg("handle event back")
-			return fmt.Errorf("handle event back: %w", err)
-		}
-
 	default:
 		logger.Error().Any("event", event).Msg("receive unexpected event")
 		return fmt.Errorf("receive unexpected event: %v", event)
