@@ -42,7 +42,7 @@ const (
 	BotGetOperationsHistory string = "Get Operations History 📖"
 
 	// BotBackCommand represents the command to go back to previous state
-	BotBackCommand string = "Back ❌"
+	BotBackCommand string = "Back ⬅️"
 )
 
 // AvailableCommands is a list of all available bot commands.
