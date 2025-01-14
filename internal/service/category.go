@@ -10,8 +10,8 @@ import (
 	"github.com/google/uuid"
 )
 
-func (h handlerService) HandleEventCategoryCreated(ctx context.Context, msg botMessage) error {
-	logger := h.logger.With().Str("name", "handlerService.HandleEventCategoryCreated").Logger()
+func (h handlerService) HandleCategoryCreate(ctx context.Context, msg botMessage) error {
+	logger := h.logger.With().Str("name", "handlerService.HandleCategoryCreate").Logger()
 
 	var nextStep models.FlowStep
 	defer func() {
@@ -122,8 +122,8 @@ func (h handlerService) handleEnterCategoryNameFlowStep(ctx context.Context, opt
 	return nil
 }
 
-func (h handlerService) HandleEventListCategories(ctx context.Context, msg botMessage) error {
-	logger := h.logger.With().Str("name", "handlerService.HandleEventListCategories").Logger()
+func (h handlerService) HandleCategoryList(ctx context.Context, msg botMessage) error {
+	logger := h.logger.With().Str("name", "handlerService.HandleCategoryList").Logger()
 
 	var nextStep models.FlowStep
 	defer func() {
@@ -227,8 +227,8 @@ func (h handlerService) handleListCategoriesFlowStep(ctx context.Context, opts h
 	return nil
 }
 
-func (h handlerService) HandleEventCategoryUpdated(ctx context.Context, msg botMessage) error {
-	logger := h.logger.With().Str("name", "handlerService.HandleEventCategoryUpdated").Logger()
+func (h handlerService) HandleCategoryUpdate(ctx context.Context, msg botMessage) error {
+	logger := h.logger.With().Str("name", "handlerService.HandleCategoryUpdate").Logger()
 	logger.Debug().Any("msg", msg).Msg("got args")
 
 	var nextStep models.FlowStep
@@ -370,8 +370,8 @@ func (h handlerService) handleEnterUpdatedCategoryNameFlowStep(ctx context.Conte
 	return nil
 }
 
-func (h handlerService) HandleEventCategoryDeleted(ctx context.Context, msg botMessage) error {
-	logger := h.logger.With().Str("name", "handlerService.HandleEventCategoryDeleted").Logger()
+func (h handlerService) HandleCategoryDelete(ctx context.Context, msg botMessage) error {
+	logger := h.logger.With().Str("name", "handlerService.HandleCategoryDelete").Logger()
 
 	var nextStep models.FlowStep
 	defer func() {
