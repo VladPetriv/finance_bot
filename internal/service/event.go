@@ -113,7 +113,7 @@ func (e eventService) ReactOnEvent(ctx context.Context, event models.Event, msg 
 
 	switch event {
 	case models.StartEvent:
-		err := e.handlerService.HandleEventStart(ctx, msg)
+		err := e.handlerService.HandleStart(ctx, msg)
 		if err != nil {
 			if errs.IsExpected(err) {
 				logger.Info().Err(err).Msg(err.Error())
@@ -125,7 +125,7 @@ func (e eventService) ReactOnEvent(ctx context.Context, event models.Event, msg 
 		}
 
 	case models.UnknownEvent:
-		err := e.handlerService.HandleEventUnknown(msg)
+		err := e.handlerService.HandleUnknown(msg)
 		if err != nil {
 			if errs.IsExpected(err) {
 				logger.Info().Err(err).Msg(err.Error())
@@ -137,7 +137,7 @@ func (e eventService) ReactOnEvent(ctx context.Context, event models.Event, msg 
 		}
 
 	case models.BackEvent:
-		err := e.handlerService.HandleEventBack(ctx, msg)
+		err := e.handlerService.HandleBack(ctx, msg)
 		if err != nil {
 			logger.Error().Err(err).Msg("handle event back")
 			return fmt.Errorf("handle event back: %w", err)
@@ -151,7 +151,7 @@ func (e eventService) ReactOnEvent(ctx context.Context, event models.Event, msg 
 		}
 
 	case models.CreateBalanceEvent:
-		err := e.handlerService.HandleEventBalanceCreated(ctx, msg)
+		err := e.handlerService.HandleBalanceCreate(ctx, msg)
 		if err != nil {
 			if errs.IsExpected(err) {
 				logger.Info().Err(err).Msg(err.Error())
@@ -163,7 +163,7 @@ func (e eventService) ReactOnEvent(ctx context.Context, event models.Event, msg 
 		}
 
 	case models.UpdateBalanceEvent:
-		err := e.handlerService.HandleEventBalanceUpdated(ctx, msg)
+		err := e.handlerService.HandleBalanceUpdate(ctx, msg)
 		if err != nil {
 			if errs.IsExpected(err) {
 				logger.Info().Err(err).Msg(err.Error())
@@ -175,7 +175,7 @@ func (e eventService) ReactOnEvent(ctx context.Context, event models.Event, msg 
 		}
 
 	case models.GetBalanceEvent:
-		err := e.handlerService.HandleEventGetBalance(ctx, msg)
+		err := e.handlerService.HandleBalanceGet(ctx, msg)
 		if err != nil {
 			if errs.IsExpected(err) {
 				logger.Info().Err(err).Msg(err.Error())
@@ -187,7 +187,7 @@ func (e eventService) ReactOnEvent(ctx context.Context, event models.Event, msg 
 		}
 
 	case models.DeleteBalanceEvent:
-		err := e.handlerService.HandleEventBalanceDeleted(ctx, msg)
+		err := e.handlerService.HandleBalanceDelete(ctx, msg)
 		if err != nil {
 			if errs.IsExpected(err) {
 				logger.Info().Err(err).Msg(err.Error())
@@ -199,7 +199,7 @@ func (e eventService) ReactOnEvent(ctx context.Context, event models.Event, msg 
 		}
 
 	case models.CreateCategoryEvent:
-		err := e.handlerService.HandleEventCategoryCreated(ctx, msg)
+		err := e.handlerService.HandleCategoryCreate(ctx, msg)
 		if err != nil {
 			if errs.IsExpected(err) {
 				logger.Info().Err(err).Msg(err.Error())
@@ -211,7 +211,7 @@ func (e eventService) ReactOnEvent(ctx context.Context, event models.Event, msg 
 		}
 
 	case models.ListCategoriesEvent:
-		err := e.handlerService.HandleEventListCategories(ctx, msg)
+		err := e.handlerService.HandleCategoryList(ctx, msg)
 		if err != nil {
 			if errs.IsExpected(err) {
 				logger.Info().Err(err).Msg(err.Error())
@@ -223,7 +223,7 @@ func (e eventService) ReactOnEvent(ctx context.Context, event models.Event, msg 
 		}
 
 	case models.UpdateCategoryEvent:
-		err := e.handlerService.HandleEventCategoryUpdated(ctx, msg)
+		err := e.handlerService.HandleCategoryUpdate(ctx, msg)
 		if err != nil {
 			if errs.IsExpected(err) {
 				logger.Info().Err(err).Msg(err.Error())
@@ -234,7 +234,7 @@ func (e eventService) ReactOnEvent(ctx context.Context, event models.Event, msg 
 		}
 
 	case models.DeleteCategoryEvent:
-		err := e.handlerService.HandleEventCategoryDeleted(ctx, msg)
+		err := e.handlerService.HandleCategoryDelete(ctx, msg)
 		if err != nil {
 			if errs.IsExpected(err) {
 				logger.Info().Err(err).Msg(err.Error())
@@ -245,7 +245,7 @@ func (e eventService) ReactOnEvent(ctx context.Context, event models.Event, msg 
 		}
 
 	case models.CreateOperationEvent:
-		err := e.handlerService.HandleEventOperationCreated(ctx, msg)
+		err := e.handlerService.HandleOperationCreate(ctx, msg)
 		if err != nil {
 			if errs.IsExpected(err) {
 				logger.Info().Err(err).Msg(err.Error())
@@ -257,7 +257,7 @@ func (e eventService) ReactOnEvent(ctx context.Context, event models.Event, msg 
 		}
 
 	case models.GetOperationsHistoryEvent:
-		err := e.handlerService.HandleEventGetOperationsHistory(ctx, msg)
+		err := e.handlerService.HandleOperationHistory(ctx, msg)
 		if err != nil {
 			if errs.IsExpected(err) {
 				logger.Info().Err(err).Msg(err.Error())

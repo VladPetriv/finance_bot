@@ -35,8 +35,8 @@ func NewHandler(opts *HandlerOptions) *handlerService {
 	}
 }
 
-func (h handlerService) HandleEventStart(ctx context.Context, msg botMessage) error {
-	logger := h.logger.With().Str("name", "handlerService.HandleEventStart").Logger()
+func (h handlerService) HandleStart(ctx context.Context, msg botMessage) error {
+	logger := h.logger.With().Str("name", "handlerService.HandleStart").Logger()
 
 	var nextStep models.FlowStep
 	defer func() {
@@ -106,8 +106,8 @@ func (h handlerService) HandleEventStart(ctx context.Context, msg botMessage) er
 	return nil
 }
 
-func (h handlerService) HandleEventBack(ctx context.Context, msg botMessage) error {
-	logger := h.logger.With().Str("name", "handlerService.HandleEventBack").Logger()
+func (h handlerService) HandleBack(ctx context.Context, msg botMessage) error {
+	logger := h.logger.With().Str("name", "handlerService.HandleBack").Logger()
 
 	err := h.services.Keyboard.CreateKeyboard(&CreateKeyboardOptions{
 		ChatID:  msg.Message.Chat.ID,
@@ -123,8 +123,8 @@ func (h handlerService) HandleEventBack(ctx context.Context, msg botMessage) err
 	return nil
 }
 
-func (h handlerService) HandleEventUnknown(msg botMessage) error {
-	logger := h.logger.With().Str("name", "handlerService.HandleEventUnknown").Logger()
+func (h handlerService) HandleUnknown(msg botMessage) error {
+	logger := h.logger.With().Str("name", "handlerService.HandleUnknown").Logger()
 
 	err := h.services.Message.SendMessage(&SendMessageOptions{
 		ChatID: msg.Message.Chat.ID,
