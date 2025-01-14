@@ -11,8 +11,8 @@ import (
 	"github.com/google/uuid"
 )
 
-func (h handlerService) HandleEventBalanceCreated(ctx context.Context, msg botMessage) error {
-	logger := h.logger.With().Str("name", "handlerService.HandleEventBalanceCreated").Logger()
+func (h handlerService) HandleBalanceCreate(ctx context.Context, msg botMessage) error {
+	logger := h.logger.With().Str("name", "handlerService.HandleBalanceCreate").Logger()
 
 	var nextStep models.FlowStep
 	stateMetaData := ctx.Value(contextFieldNameState).(*models.State).Metedata
@@ -177,8 +177,8 @@ func (h *handlerService) handleCreateBalanceFlowStep(ctx context.Context, opts h
 	return nil
 }
 
-func (h handlerService) HandleEventBalanceUpdated(ctx context.Context, msg botMessage) error {
-	logger := h.logger.With().Str("name", "handlerService.HandleEventBalanceUpdated").Logger()
+func (h handlerService) HandleBalanceUpdate(ctx context.Context, msg botMessage) error {
+	logger := h.logger.With().Str("name", "handlerService.HandleBalanceUpdate").Logger()
 
 	var nextStep models.FlowStep
 	stateMetaData := ctx.Value(contextFieldNameState).(*models.State).Metedata
@@ -416,8 +416,8 @@ func (h handlerService) updateBalance(ctx context.Context, opts updateBalanceOpt
 	return balance, nil
 }
 
-func (h handlerService) HandleEventGetBalance(ctx context.Context, msg botMessage) error {
-	logger := h.logger.With().Str("name", "handlerService.HandleEventGetBalance").Logger()
+func (h handlerService) HandleBalanceGet(ctx context.Context, msg botMessage) error {
+	logger := h.logger.With().Str("name", "handlerService.HandleBalanceGet").Logger()
 
 	var nextStep models.FlowStep
 	defer func() {
@@ -512,8 +512,8 @@ func (h handlerService) processGetBalanceInfo(ctx context.Context, msg botMessag
 	return nil
 }
 
-func (h handlerService) HandleEventBalanceDeleted(ctx context.Context, msg botMessage) error {
-	logger := h.logger.With().Str("name", "handlerService.HandleEventBalanceDeleted").Logger()
+func (h handlerService) HandleBalanceDelete(ctx context.Context, msg botMessage) error {
+	logger := h.logger.With().Str("name", "handlerService.HandleBalanceDelete").Logger()
 
 	var nextStep models.FlowStep
 	stateMetaData := ctx.Value(contextFieldNameState).(*models.State).Metedata

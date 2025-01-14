@@ -13,8 +13,8 @@ import (
 	"github.com/google/uuid"
 )
 
-func (h handlerService) HandleEventOperationCreated(ctx context.Context, msg botMessage) error {
-	logger := h.logger.With().Str("name", "handlerService.HandleEventOperationCreated").Logger()
+func (h handlerService) HandleOperationCreate(ctx context.Context, msg botMessage) error {
+	logger := h.logger.With().Str("name", "handlerService.HandleOperationCreate").Logger()
 
 	var nextStep models.FlowStep
 	stateMetaData := ctx.Value(contextFieldNameState).(*models.State).Metedata
@@ -550,8 +550,8 @@ func (h handlerService) processTransferOperation(ctx context.Context, opts proce
 	return nil
 }
 
-func (h handlerService) HandleEventGetOperationsHistory(ctx context.Context, msg botMessage) error {
-	logger := h.logger.With().Str("name", "handlerService.HandleEventGetOperationsHistory").Logger()
+func (h handlerService) HandleOperationHistory(ctx context.Context, msg botMessage) error {
+	logger := h.logger.With().Str("name", "handlerService.HandleOperationHistory").Logger()
 
 	var nextStep models.FlowStep
 	stateMetaData := ctx.Value(contextFieldNameState).(*models.State).Metedata

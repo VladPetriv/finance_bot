@@ -17,42 +17,43 @@ type Services struct {
 	State    StateService
 }
 
-// HandlerService provides functionally for handling events.
+// HandlerService provides functionally for handling bot events.
 type HandlerService interface {
-	// HandleError is used to send the user a message that something went wrong while processing the command.
+	// HandleError is used to send the user a message that something went wrong while processing the event.
 	HandleError(ctx context.Context, err error, msg botMessage) error
-	// HandleEventUnknown is used to handle event unknown.
-	HandleEventUnknown(msg botMessage) error
-	// HandleEventStart is used to handle event start.
-	HandleEventStart(ctx context.Context, msg botMessage) error
-	// HandleEventBack is used to reset bot buttons to default mode.
-	HandleEventBack(ctx context.Context, msg botMessage) error
+	// HandleUnknown inform user that provided event is unknown and notify him about available events.
+	HandleUnknown(msg botMessage) error
 
-	// HandleWrappers is used to handle wrapper events.
+	// HandleStart initialize new user, his balance and send welcome message.
+	HandleStart(ctx context.Context, msg botMessage) error
+	// HandleBack resets user interface to main menu.
+	HandleBack(ctx context.Context, msg botMessage) error
+	// HandleWrappers processes main keyboard selections, where each button (Balance/Operations/Categories)
+	// maps to corresponding model wrapper to handle its specific actions.
 	HandleWrappers(ctx context.Context, event models.Event, msg botMessage) error
 
-	// HandleEventBalanceCreated is used to handle update balance event.
-	HandleEventBalanceCreated(ctx context.Context, msg botMessage) error
-	// HandleEventBalanceUpdated is used to handle update balance event.
-	HandleEventBalanceUpdated(ctx context.Context, msg botMessage) error
-	// HandleEventGetBalance is used to handle get balance event.
-	HandleEventGetBalance(ctx context.Context, msg botMessage) error
-	// HandleEventBalanceDeleted is used to handle delete balance event.
-	HandleEventBalanceDeleted(ctx context.Context, msg botMessage) error
+	// HandleBalanceCreate processes new balance entry creation
+	HandleBalanceCreate(ctx context.Context, msg botMessage) error
+	// HandleBalanceUpdate processes balance modification
+	HandleBalanceUpdate(ctx context.Context, msg botMessage) error
+	// HandleBalanceGet retrieves current balance information
+	HandleBalanceGet(ctx context.Context, msg botMessage) error
+	// HandleBalanceDelete processes balance entry removal
+	HandleBalanceDelete(ctx context.Context, msg botMessage) error
 
-	// HandleEventCategoryCreate is used to handle category created event.
-	HandleEventCategoryCreated(ctx context.Context, msg botMessage) error
-	// HandleEventListCategories is used to handle lit categories event.
-	HandleEventListCategories(ctx context.Context, msg botMessage) error
-	// HandleEventCategoryUpdated is used to handle update category event.
-	HandleEventCategoryUpdated(ctx context.Context, msg botMessage) error
-	// HandleEventCategoryDeleted is used to handle delete category event.
-	HandleEventCategoryDeleted(ctx context.Context, msg botMessage) error
+	// HandleCategoryCreate processes new category creation
+	HandleCategoryCreate(ctx context.Context, msg botMessage) error
+	// HandleCategoryList retrieves all available categories
+	HandleCategoryList(ctx context.Context, msg botMessage) error
+	// HandleCategoryUpdate processes category modification
+	HandleCategoryUpdate(ctx context.Context, msg botMessage) error
+	// HandleCategoryDelete processes category removal
+	HandleCategoryDelete(ctx context.Context, msg botMessage) error
 
-	// HandleEventOperationCreated is used to create an operation.
-	HandleEventOperationCreated(ctc context.Context, msg botMessage) error
-	// HandleEventGetOperationsHistory is used to get operations history.
-	HandleEventGetOperationsHistory(ctx context.Context, msg botMessage) error
+	// HandleOperationCreate processes new operation creation
+	HandleOperationCreate(ctx context.Context, msg botMessage) error
+	// HandleOperationHistory retrieves operation transaction history
+	HandleOperationHistory(ctx context.Context, msg botMessage) error
 }
 
 // EventService provides functionally for receiving an updates from bot and reacting on it.
