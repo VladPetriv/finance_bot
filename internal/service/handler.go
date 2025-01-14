@@ -210,6 +210,9 @@ func (h handlerService) HandleWrappers(ctx context.Context, event models.Event, 
 				Buttons: []string{models.BotCreateOperationCommand, models.BotGetOperationsHistory},
 			},
 			{
+				Buttons: []string{models.BotDeleteOperationCommand},
+			},
+			{
 				Buttons: []string{models.BotBackCommand},
 			},
 		}

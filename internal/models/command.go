@@ -40,6 +40,8 @@ const (
 	BotCreateTransferOperationCommand string = "Transfer ➡️"
 	// BotGetOperationsHistory represents the command to get operations history
 	BotGetOperationsHistory string = "Get Operations History 📖"
+	// BotDeleteOperationCommand represents the command to delete an operation
+	BotDeleteOperationCommand string = "Delete Operation ❌"
 
 	// BotBackCommand represents the command to go back to previous state
 	BotBackCommand string = "Back ⬅️"
@@ -52,6 +54,7 @@ var AvailableCommands = []string{
 	BotGetBalanceCommand, BotCreateBalanceCommand, BotUpdateBalanceCommand, BotDeleteBalanceCommand,
 	BotCreateCategoryCommand, BotListCategoriesCommand, BotUpdateCategoryCommand, BotDeleteCategoryCommand,
 	BotCreateOperationCommand, BotCreateIncomingOperationCommand, BotCreateSpendingOperationCommand, BotGetOperationsHistory,
+	BotDeleteOperationCommand,
 	BotBackCommand,
 }
 
@@ -81,6 +84,7 @@ var CommandToEvent = map[string]Event{
 	// Operation
 	BotCreateOperationCommand: CreateOperationEvent,
 	BotGetOperationsHistory:   GetOperationsHistoryEvent,
+	BotDeleteOperationCommand: DeleteOperationEvent,
 }
 
 // CommadToFistFlowStep maps commands to their initial flow steps
@@ -100,6 +104,7 @@ var CommadToFistFlowStep = map[string]FlowStep{
 	// Operation
 	BotCreateOperationCommand: CreateOperationFlowStep,
 	BotGetOperationsHistory:   GetOperationsHistoryFlowStep,
+	BotDeleteOperationCommand: DeleteOperationFlowStep,
 }
 
 // OperationCommandToOperationType maps operation commands to their corresponding operation types

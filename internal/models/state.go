@@ -106,6 +106,8 @@ const (
 	CreateOperationFlow Flow = "create_operation"
 	// GetOperationsHistoryFlow represents the flow for getting operations history
 	GetOperationsHistoryFlow Flow = "get_operations_history"
+	//DeleteOperationFlow represents the flow for deleting an operation
+	DeleteOperationFlow Flow = "delete_operation"
 )
 
 // FlowStep represents a specific step within a flow
@@ -179,4 +181,6 @@ const (
 	GetOperationsHistoryFlowStep FlowStep = "get_operations_history"
 	// ChooseTimePeriodForOperationsHistoryFlowStep represents the step for choosing time period for operations history
 	ChooseTimePeriodForOperationsHistoryFlowStep FlowStep = "choose_time_period_for_operations_history"
+	// DeleteOperationFlowStep represents the step for deleting an operation
+	DeleteOperationFlowStep FlowStep = "delete_operation"
 )
