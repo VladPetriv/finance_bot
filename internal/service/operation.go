@@ -55,9 +55,22 @@ func (h handlerService) HandleOperationCreate(ctx context.Context, msg botMessag
 			ChatID:  msg.GetChatID(),
 			Message: "Choose operation type:",
 			Type:    keyboardTypeInline,
-			Rows: []bot.KeyboardRow{
+			InlineRows: []bot.InlineKeyboardRow{
 				{
-					Buttons: []string{models.BotCreateIncomingOperationCommand, models.BotCreateSpendingOperationCommand, models.BotCreateTransferOperationCommand},
+					Buttons: []bot.InlineKeyboardButton{
+						{
+							Text: models.BotCreateIncomingOperationCommand,
+							Data: string(models.OperationTypeIncoming),
+						},
+						{
+							Text: models.BotCreateSpendingOperationCommand,
+							Data: string(models.OperationTypeSpending),
+						},
+						{
+							Text: models.BotCreateTransferOperationCommand,
+							Data: string(models.OperationTypeTransfer),
+						},
+					},
 				},
 			},
 		})
@@ -281,7 +294,7 @@ func (h handlerService) handleProcessOprationTypeFlowStep(opts handleProcessOpra
 	logger := h.logger.With().Str("name", "handlerService.handleProcessOprationTypeFlowStep").Logger()
 	logger.Debug().Any("opts", opts).Msg("got args")
 
-	operationType := models.OperationCommandToOperationType[opts.msg.CallbackQuery.Data]
+	operationType := models.OperationType(opts.msg.CallbackQuery.Data)
 	opts.metaData[operationTypeMetadataKey] = operationType
 
 	var (

@@ -32,7 +32,7 @@ func (k keyboardService) CreateKeyboard(opts *CreateKeyboardOptions) error {
 	}
 
 	if opts.Type == keyboardTypeInline {
-		sendOptions.InlineKeyboard = opts.Rows
+		sendOptions.InlineKeyboard = opts.InlineRows
 	}
 	if opts.Type == keyboardTypeRow {
 		sendOptions.Keyboard = opts.Rows
