@@ -101,10 +101,3 @@ var CommadToFistFlowStep = map[string]FlowStep{
 	BotCreateOperationCommand: CreateOperationFlowStep,
 	BotGetOperationsHistory:   GetOperationsHistoryFlowStep,
 }
-
-// OperationCommandToOperationType maps operation commands to their corresponding operation types
-var OperationCommandToOperationType = map[string]OperationType{
-	BotCreateIncomingOperationCommand: OperationTypeIncoming,
-	BotCreateSpendingOperationCommand: OperationTypeSpending,
-	BotCreateTransferOperationCommand: OperationTypeTransfer,
-}
