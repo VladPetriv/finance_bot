@@ -21,10 +21,21 @@ type SendOptions struct {
 	ChatID         int64
 	Message        string
 	Keyboard       []KeyboardRow
-	InlineKeyboard []KeyboardRow
+	InlineKeyboard []InlineKeyboardRow
 }
 
 // KeyboardRow represents keyboard row with buttons.
 type KeyboardRow struct {
 	Buttons []string
+}
+
+// InlineKeyboardRow represents inline keyboard row with buttons.
+type InlineKeyboardRow struct {
+	Buttons []InlineKeyboardButton
+}
+
+// InlineKeyboardButton represents an inline keyboard button with text and data.
+type InlineKeyboardButton struct {
+	Text string
+	Data string
 }

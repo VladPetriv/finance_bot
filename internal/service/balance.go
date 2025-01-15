@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 	"fmt"
+	"strconv"
 
 	"github.com/VladPetriv/finance_bot/internal/models"
 	"github.com/VladPetriv/finance_bot/pkg/bot"
@@ -585,9 +586,18 @@ func (h handlerService) HandleBalanceDelete(ctx context.Context, msg botMessage)
 			ChatID:  msg.GetChatID(),
 			Message: fmt.Sprintf("Are you sure you want to delete balance %s?\nPlease note that all its operations will be deleted as well.", msg.Message.Text),
 			Type:    keyboardTypeInline,
-			Rows: []bot.KeyboardRow{
+			InlineRows: []bot.InlineKeyboardRow{
 				{
-					Buttons: []string{"Yes", "No"},
+					Buttons: []bot.InlineKeyboardButton{
+						{
+							Text: "Yes",
+							Data: "true",
+						},
+						{
+							Text: "No",
+							Data: "false",
+						},
+					},
 				},
 			},
 		})
@@ -624,53 +634,14 @@ func (h handlerService) handleChooseBalanceFlowStepForDeletionFlow(ctx context.C
 	logger := h.logger.With().Str("name", "handlerService.handleChooseBalanceFlowStepForDeletionFlow").Logger()
 	logger.Debug().Any("opts", opts).Msg("got args")
 
-	switch opts.msg.CallbackQuery.Data {
-	case "Yes":
-		balance := opts.user.GetBalance(opts.metaData[balanceNameMetadataKey].(string))
-		if balance == nil {
-			logger.Error().Msg("balance for deletion not found")
-			return fmt.Errorf("balance for deletion not found")
-		}
-		logger.Debug().Any("balance", balance).Msg("got balance for deletion")
+	confirmBalanceDeletion, err := strconv.ParseBool(opts.msg.CallbackQuery.Data)
+	if err != nil {
+		logger.Error().Err(err).Msg("parse callback data to bool")
+		return fmt.Errorf("parse callback data to bool: %w", err)
+	}
 
-		err := h.stores.Balance.Delete(ctx, balance.ID)
-		if err != nil {
-			logger.Error().Err(err).Msg("delete balance from store")
-			return fmt.Errorf("delete balance from store: %w", err)
-		}
-
-		// Run in separte goroutine to not block the main thread and respond to the user as soon as possible.
-		go func() {
-			balanceOperations, err := h.stores.Operation.List(ctx, ListOperationsFilter{
-				BalanceID: balance.ID,
-			})
-			if err != nil {
-				logger.Error().Err(err).Msg("list operations from store")
-
-				return
-			}
-
-			for _, operation := range balanceOperations {
-				err := h.stores.Operation.Delete(ctx, operation.ID)
-				if err != nil {
-					logger.Error().Err(err).Str("operrationID", operation.ID).Msg("delete operation from store")
-
-					continue
-				}
-			}
-		}()
-
-		err = h.services.Keyboard.CreateKeyboard(&CreateKeyboardOptions{
-			ChatID:  opts.msg.GetChatID(),
-			Message: "Balance and all its operations have been deleted!",
-			Type:    keyboardTypeRow,
-			Rows:    defaultKeyboardRows,
-		})
-		if err != nil {
-			logger.Error().Err(err).Msg("send message")
-			return fmt.Errorf("send message: %w", err)
-		}
-	case "No":
+	if !confirmBalanceDeletion {
+		logger.Info().Msg("user did not confirm balance delition")
 		err := h.services.Keyboard.CreateKeyboard(&CreateKeyboardOptions{
 			ChatID:  opts.msg.GetChatID(),
 			Message: "Action cancelled!\nPlease choose new command to execute:",
@@ -681,6 +652,53 @@ func (h handlerService) handleChooseBalanceFlowStepForDeletionFlow(ctx context.C
 			logger.Error().Err(err).Msg("send message")
 			return fmt.Errorf("send message: %w", err)
 		}
+
+		return nil
+	}
+
+	balance := opts.user.GetBalance(opts.metaData[balanceNameMetadataKey].(string))
+	if balance == nil {
+		logger.Error().Msg("balance for deletion not found")
+		return fmt.Errorf("balance for deletion not found")
+	}
+	logger.Debug().Any("balance", balance).Msg("got balance for deletion")
+
+	err = h.stores.Balance.Delete(ctx, balance.ID)
+	if err != nil {
+		logger.Error().Err(err).Msg("delete balance from store")
+		return fmt.Errorf("delete balance from store: %w", err)
+	}
+
+	// Run in separte goroutine to not block the main thread and respond to the user as soon as possible.
+	go func() {
+		balanceOperations, err := h.stores.Operation.List(ctx, ListOperationsFilter{
+			BalanceID: balance.ID,
+		})
+		if err != nil {
+			logger.Error().Err(err).Msg("list operations from store")
+
+			return
+		}
+
+		for _, operation := range balanceOperations {
+			err := h.stores.Operation.Delete(ctx, operation.ID)
+			if err != nil {
+				logger.Error().Err(err).Str("operrationID", operation.ID).Msg("delete operation from store")
+
+				continue
+			}
+		}
+	}()
+
+	err = h.services.Keyboard.CreateKeyboard(&CreateKeyboardOptions{
+		ChatID:  opts.msg.GetChatID(),
+		Message: "Balance and all its operations have been deleted!",
+		Type:    keyboardTypeRow,
+		Rows:    defaultKeyboardRows,
+	})
+	if err != nil {
+		logger.Error().Err(err).Msg("send message")
+		return fmt.Errorf("send message: %w", err)
 	}
 
 	return nil

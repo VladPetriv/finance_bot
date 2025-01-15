@@ -153,14 +153,22 @@ func (b botAPI) createKeyboard(rows []KeyboardRow) *telego.ReplyKeyboardMarkup {
 	return keyboard
 }
 
-func (b botAPI) createInlineKeyboard(rows []KeyboardRow) *telego.InlineKeyboardMarkup {
+func (b botAPI) createInlineKeyboard(rows []InlineKeyboardRow) *telego.InlineKeyboardMarkup {
 	var convertedRows [][]telego.InlineKeyboardButton
 
 	for _, r := range rows {
 		var buttons []telego.InlineKeyboardButton
 
 		for _, b := range r.Buttons {
-			buttons = append(buttons, telegoutil.InlineKeyboardButton(b).WithCallbackData(b))
+			inlineKeyboardButton := telegoutil.
+				InlineKeyboardButton(b.Text).
+				WithCallbackData(b.Text)
+
+			if b.Data != "" {
+				inlineKeyboardButton = inlineKeyboardButton.WithCallbackData(b.Data)
+			}
+
+			buttons = append(buttons, inlineKeyboardButton)
 		}
 
 		convertedRows = append(convertedRows, buttons)

@@ -139,10 +139,11 @@ type KeyboardService interface {
 
 // CreateKeyboardOptions represents input structure for CreateKeyboard method.
 type CreateKeyboardOptions struct {
-	ChatID  int64
-	Message string
-	Type    KeyboardType
-	Rows    []bot.KeyboardRow
+	ChatID     int64
+	Message    string
+	Type       KeyboardType
+	Rows       []bot.KeyboardRow
+	InlineRows []bot.InlineKeyboardRow
 }
 
 // KeyboardType represents available keyboard types.
