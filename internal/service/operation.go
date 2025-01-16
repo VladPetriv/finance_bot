@@ -630,7 +630,7 @@ func (h handlerService) HandleOperationHistory(ctx context.Context, msg botMessa
 				},
 				{
 					Buttons: []string{
-						models.BotBackCommand,
+						models.BotCancelCommand,
 					},
 				},
 			},

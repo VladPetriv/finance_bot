@@ -136,11 +136,11 @@ func (e eventService) ReactOnEvent(ctx context.Context, event models.Event, msg 
 			return fmt.Errorf("handle event event unknown: %w", err)
 		}
 
-	case models.BackEvent:
-		err := e.handlerService.HandleBack(ctx, msg)
+	case models.CancelEvent:
+		err := e.handlerService.HandleCancel(ctx, msg)
 		if err != nil {
-			logger.Error().Err(err).Msg("handle event back")
-			return fmt.Errorf("handle event back: %w", err)
+			logger.Error().Err(err).Msg("handle event cancel")
+			return fmt.Errorf("handle event cancel: %w", err)
 		}
 
 	case models.BalanceEvent, models.CategoryEvent, models.OperationEvent:

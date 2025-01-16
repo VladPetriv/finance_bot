@@ -26,8 +26,8 @@ type HandlerService interface {
 
 	// HandleStart initialize new user, his balance and send welcome message.
 	HandleStart(ctx context.Context, msg botMessage) error
-	// HandleBack resets user interface to main menu.
-	HandleBack(ctx context.Context, msg botMessage) error
+	// HandlecanCel cancel current user flow and returns the default keyboard
+	HandleCancel(ctx context.Context, msg botMessage) error
 	// HandleWrappers processes main keyboard selections, where each button (Balance/Operations/Categories)
 	// maps to corresponding model wrapper to handle its specific actions.
 	HandleWrappers(ctx context.Context, event models.Event, msg botMessage) error

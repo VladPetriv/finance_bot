@@ -297,7 +297,7 @@ func (h handlerService) HandleCategoryUpdate(ctx context.Context, msg botMessage
 			Type:    keyboardTypeRow,
 			Rows: []bot.KeyboardRow{
 				{
-					Buttons: []string{models.BotBackCommand},
+					Buttons: []string{models.BotCancelCommand},
 				},
 			},
 		})

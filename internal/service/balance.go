@@ -644,7 +644,7 @@ func (h handlerService) handleChooseBalanceFlowStepForDeletionFlow(ctx context.C
 		logger.Info().Msg("user did not confirm balance delition")
 		err := h.services.Keyboard.CreateKeyboard(&CreateKeyboardOptions{
 			ChatID:  opts.msg.GetChatID(),
-			Message: "Action cancelled!\nPlease choose new command to execute:",
+			Message: "Action canceled!\nPlease choose new command to execute:",
 			Type:    keyboardTypeRow,
 			Rows:    defaultKeyboardRows,
 		})

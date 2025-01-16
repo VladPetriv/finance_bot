@@ -85,7 +85,7 @@ func (s stateService) HandleState(ctx context.Context, message botMessage) (*Han
 
 	// For simple events that require only one steop we should delete current state and create a new finished state to start next flow properly.
 	switch event {
-	case models.BackEvent, models.BalanceEvent, models.CategoryEvent, models.OperationEvent:
+	case models.CancelEvent, models.BalanceEvent, models.CategoryEvent, models.OperationEvent:
 		err := s.stores.State.Delete(ctx, state.ID)
 		if err != nil {
 			logger.Error().Err(err).Msg("delete state from store")

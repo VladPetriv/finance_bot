@@ -41,8 +41,8 @@ const (
 	// BotGetOperationsHistory represents the command to get operations history
 	BotGetOperationsHistory string = "Get Operations History 📖"
 
-	// BotBackCommand represents the command to go back to previous state
-	BotBackCommand string = "Back ⬅️"
+	// BotCancelCommand represents the command that will cancel the current flow
+	BotCancelCommand string = "Cancel action ⬅️"
 )
 
 // AvailableCommands is a list of all available bot commands.
@@ -52,14 +52,14 @@ var AvailableCommands = []string{
 	BotGetBalanceCommand, BotCreateBalanceCommand, BotUpdateBalanceCommand, BotDeleteBalanceCommand,
 	BotCreateCategoryCommand, BotListCategoriesCommand, BotUpdateCategoryCommand, BotDeleteCategoryCommand,
 	BotCreateOperationCommand, BotCreateIncomingOperationCommand, BotCreateSpendingOperationCommand, BotGetOperationsHistory,
-	BotBackCommand,
+	BotCancelCommand,
 }
 
 // CommandToEvent maps bot commands to their corresponding events
 var CommandToEvent = map[string]Event{
 	// General
-	BotStartCommand: StartEvent,
-	BotBackCommand:  BackEvent,
+	BotStartCommand:  StartEvent,
+	BotCancelCommand: CancelEvent,
 
 	// Wrappers
 	BotBalanceCommand:   BalanceEvent,

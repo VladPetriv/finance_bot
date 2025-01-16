@@ -106,8 +106,8 @@ func (h handlerService) HandleStart(ctx context.Context, msg botMessage) error {
 	return nil
 }
 
-func (h handlerService) HandleBack(ctx context.Context, msg botMessage) error {
-	logger := h.logger.With().Str("name", "handlerService.HandleBack").Logger()
+func (h handlerService) HandleCancel(ctx context.Context, msg botMessage) error {
+	logger := h.logger.With().Str("name", "handlerService.HandleCancel").Logger()
 
 	err := h.services.Keyboard.CreateKeyboard(&CreateKeyboardOptions{
 		ChatID:  msg.Message.Chat.ID,
@@ -187,7 +187,7 @@ func (h handlerService) HandleWrappers(ctx context.Context, event models.Event, 
 				Buttons: []string{models.BotUpdateBalanceCommand, models.BotDeleteBalanceCommand},
 			},
 			{
-				Buttons: []string{models.BotBackCommand},
+				Buttons: []string{models.BotCancelCommand},
 			},
 		}
 		message = "Please choose balance command to execute:"
@@ -200,7 +200,7 @@ func (h handlerService) HandleWrappers(ctx context.Context, event models.Event, 
 				Buttons: []string{models.BotUpdateCategoryCommand, models.BotDeleteCategoryCommand},
 			},
 			{
-				Buttons: []string{models.BotBackCommand},
+				Buttons: []string{models.BotCancelCommand},
 			},
 		}
 		message = "Please choose category command to execute:"
@@ -210,7 +210,7 @@ func (h handlerService) HandleWrappers(ctx context.Context, event models.Event, 
 				Buttons: []string{models.BotCreateOperationCommand, models.BotGetOperationsHistory},
 			},
 			{
-				Buttons: []string{models.BotBackCommand},
+				Buttons: []string{models.BotCancelCommand},
 			},
 		}
 		message = "Please choose operation command to execute:"
@@ -254,7 +254,7 @@ func getKeyboardRows[T named](data []T, includeRowWithBackButton bool) []bot.Key
 
 	if includeRowWithBackButton {
 		keyboardRows = append(keyboardRows, bot.KeyboardRow{
-			Buttons: []string{models.BotBackCommand},
+			Buttons: []string{models.BotCancelCommand},
 		})
 	}
 
