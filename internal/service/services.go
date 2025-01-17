@@ -217,7 +217,7 @@ const (
 	operationTypeMetadataKey        = "operation_type"
 )
 
-// StateService represents a service for managing and handling complex bot flow using statesstates.
+// StateService represents a service for managing and handling complex bot flow using states.
 type StateService interface {
 	HandleState(ctx context.Context, message botMessage) (*HandleStateOutput, error)
 }

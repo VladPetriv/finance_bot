@@ -83,8 +83,8 @@ var CommandToEvent = map[string]Event{
 	BotGetOperationsHistory:   GetOperationsHistoryEvent,
 }
 
-// CommadToFistFlowStep maps commands to their initial flow steps
-var CommadToFistFlowStep = map[string]FlowStep{
+// CommandToFistFlowStep maps commands to their initial flow steps
+var CommandToFistFlowStep = map[string]FlowStep{
 	// Balance
 	BotCreateBalanceCommand: CreateBalanceFlowStep,
 	BotUpdateBalanceCommand: UpdateBalanceFlowStep,
