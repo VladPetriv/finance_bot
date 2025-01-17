@@ -116,7 +116,7 @@ func (h handlerService) HandleOperationCreate(ctx context.Context, msg botMessag
 			ChatID:  msg.GetChatID(),
 			Message: "Choose operation category:",
 			Type:    keyboardTypeRow,
-			Rows:    getKeyboardRows(categories, false),
+			Rows:    getKeyboardRows(categories, true),
 		})
 		if err != nil {
 			logger.Error().Err(err).Msg("create row keyboard")
@@ -205,9 +205,11 @@ Please enter the current exchange rate:`,
 			break
 		}
 
-		err = h.services.Message.SendMessage(&SendMessageOptions{
-			ChatID: msg.GetChatID(),
-			Text:   "Enter operation amount:",
+		err = h.services.Keyboard.CreateKeyboard(&CreateKeyboardOptions{
+			ChatID:  msg.GetChatID(),
+			Message: "Enter operation amount:",
+			Type:    keyboardTypeRow,
+			Rows:    rowKeyboardWithCancelButtonOnly,
 		})
 		if err != nil {
 			logger.Error().Err(err).Msg("send message")
@@ -240,9 +242,11 @@ Please enter the current exchange rate:`,
 	case models.ChooseCategoryFlowStep:
 		stateMetaData[categoryTitleMetadataKey] = msg.Message.Text
 
-		err = h.services.Message.SendMessage(&SendMessageOptions{
-			ChatID: msg.GetChatID(),
-			Text:   "Enter operation description:",
+		err = h.services.Keyboard.CreateKeyboard(&CreateKeyboardOptions{
+			ChatID:  msg.GetChatID(),
+			Message: "Enter operation description:",
+			Type:    keyboardTypeRow,
+			Rows:    rowKeyboardWithCancelButtonOnly,
 		})
 		if err != nil {
 			logger.Error().Err(err).Msg("send message")

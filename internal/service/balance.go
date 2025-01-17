@@ -137,42 +137,26 @@ func (h *handlerService) handleCreateBalanceFlowStep(ctx context.Context, opts h
 		return fmt.Errorf("create balance in store: %w", err)
 	}
 
-	var (
-		outputText          string
-		sendDefaultKeyboard bool
-	)
+	createKeyboardOptions := &CreateKeyboardOptions{
+		ChatID: opts.msg.GetChatID(),
+		Type:   keyboardTypeRow,
+	}
 
 	switch opts.isInitial {
 	case true:
-		outputText = "Initial balance successfully created!"
-		sendDefaultKeyboard = true
+		createKeyboardOptions.Message = "Initial balance successfully created!"
+		createKeyboardOptions.Rows = defaultKeyboardRows
 	case false:
-		outputText = "Please enter balance name!"
 		opts.metadata[balanceIDMetadataKey] = balanceID
+
+		createKeyboardOptions.Message = "Please enter balance name!"
+		createKeyboardOptions.Rows = rowKeyboardWithCancelButtonOnly
 	}
 
-	if sendDefaultKeyboard {
-		err = h.services.Keyboard.CreateKeyboard(&CreateKeyboardOptions{
-			ChatID:  opts.msg.GetChatID(),
-			Message: outputText,
-			Type:    keyboardTypeRow,
-			Rows:    defaultKeyboardRows,
-		})
-		if err != nil {
-			logger.Error().Err(err).Msg("create keyboard")
-			return fmt.Errorf("create keyboard: %w", err)
-		}
-
-		return nil
-	}
-
-	err = h.services.Message.SendMessage(&SendMessageOptions{
-		ChatID: opts.msg.GetChatID(),
-		Text:   outputText,
-	})
+	err = h.services.Keyboard.CreateKeyboard(createKeyboardOptions)
 	if err != nil {
-		logger.Error().Err(err).Msg("send message")
-		return fmt.Errorf("send message: %w", err)
+		logger.Error().Err(err).Msg("create keyboard")
+		return fmt.Errorf("create keyboard: %w", err)
 	}
 
 	return nil
@@ -239,21 +223,25 @@ func (h handlerService) HandleBalanceUpdate(ctx context.Context, msg botMessage)
 		stateMetaData[currentBalanceCurrencyMetadataKey] = balance.Currency
 		stateMetaData[currentBalanceAmountMetadataKey] = balance.Amount
 
-		messages := []string{
-			`Send '-' if you want to keep the current balance value. Otherwise, send your new value.
+		err := h.services.Message.SendMessage(&SendMessageOptions{
+			ChatID: msg.GetChatID(),
+			Text: `Send '-' if you want to keep the current balance value. Otherwise, send your new value.
 Please note: this symbol can be used for any balance value you don't want to change.`,
-			fmt.Sprintf("Enter new name for balance %s:", balance.Name),
+		})
+		if err != nil {
+			logger.Error().Err(err).Msg("send message")
+			return fmt.Errorf("send message: %w", err)
 		}
 
-		for _, message := range messages {
-			err := h.services.Message.SendMessage(&SendMessageOptions{
-				ChatID: msg.GetChatID(),
-				Text:   message,
-			})
-			if err != nil {
-				logger.Error().Err(err).Msg("send message")
-				return fmt.Errorf("send message: %w", err)
-			}
+		err = h.services.Keyboard.CreateKeyboard(&CreateKeyboardOptions{
+			ChatID:  msg.GetChatID(),
+			Message: fmt.Sprintf("Enter new name for balance %s:", balance.Name),
+			Type:    keyboardTypeRow,
+			Rows:    rowKeyboardWithCancelButtonOnly,
+		})
+		if err != nil {
+			logger.Error().Err(err).Msg("create keyboard with welcome message")
+			return fmt.Errorf("create keyboard with welcome message: %w", err)
 		}
 
 		nextStep = models.EnterBalanceNameFlowStep
@@ -513,6 +501,8 @@ func (h handlerService) processGetBalanceInfo(ctx context.Context, msg botMessag
 	return nil
 }
 
+const emptyMessage = "ㅤ"
+
 func (h handlerService) HandleBalanceDelete(ctx context.Context, msg botMessage) error {
 	logger := h.logger.With().Str("name", "handlerService.HandleBalanceDelete").Logger()
 
@@ -582,7 +572,19 @@ func (h handlerService) HandleBalanceDelete(ctx context.Context, msg botMessage)
 	case models.ConfirmBalanceDeletionFlowStep:
 		stateMetaData[balanceNameMetadataKey] = msg.Message.Text
 
+		// Send an empty message with updated keyboard to avoid unexpected user behavior after clicking on previously generated keyboard.
 		err := h.services.Keyboard.CreateKeyboard(&CreateKeyboardOptions{
+			ChatID:  msg.GetChatID(),
+			Message: emptyMessage,
+			Type:    keyboardTypeRow,
+			Rows:    rowKeyboardWithCancelButtonOnly,
+		})
+		if err != nil {
+			logger.Error().Err(err).Msg("create keyboard with welcome message")
+			return fmt.Errorf("create keyboard with welcome message: %w", err)
+		}
+
+		err = h.services.Keyboard.CreateKeyboard(&CreateKeyboardOptions{
 			ChatID:  msg.GetChatID(),
 			Message: fmt.Sprintf("Are you sure you want to delete balance %s?\nPlease note that all its operations will be deleted as well.", msg.Message.Text),
 			Type:    keyboardTypeInline,
@@ -683,7 +685,7 @@ func (h handlerService) handleChooseBalanceFlowStepForDeletionFlow(ctx context.C
 		for _, operation := range balanceOperations {
 			err := h.stores.Operation.Delete(ctx, operation.ID)
 			if err != nil {
-				logger.Error().Err(err).Str("operrationID", operation.ID).Msg("delete operation from store")
+				logger.Error().Err(err).Str("operationID", operation.ID).Msg("delete operation from store")
 
 				continue
 			}

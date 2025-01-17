@@ -163,6 +163,12 @@ var defaultKeyboardRows = []bot.KeyboardRow{
 	},
 }
 
+var rowKeyboardWithCancelButtonOnly = []bot.KeyboardRow{
+	{
+		Buttons: []string{models.BotCancelCommand},
+	},
+}
+
 var (
 	// ErrUserAlreadyExists happens when user already exists in system.
 	ErrUserAlreadyExists = errs.New("user already exists")
