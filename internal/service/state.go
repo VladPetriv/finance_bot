@@ -61,7 +61,7 @@ func (s stateService) HandleState(ctx context.Context, message botMessage) (*Han
 		}
 
 		if isBotCommand(message.Message.Text) {
-			firstFlowStep := models.CommadToFistFlowStep[message.Message.Text]
+			firstFlowStep := models.CommandToFistFlowStep[message.Message.Text]
 
 			// NOTE: We handle here only flows that require more than two step.
 			if firstFlowStep != "" {
@@ -142,7 +142,7 @@ func (s stateService) HandleState(ctx context.Context, message botMessage) (*Han
 		}
 
 		if isBotCommand(message.Message.Text) {
-			firstFlowStep := models.CommadToFistFlowStep[message.Message.Text]
+			firstFlowStep := models.CommandToFistFlowStep[message.Message.Text]
 
 			// NOTE: We handle here only flows that require more than two step.
 			if firstFlowStep != "" {
