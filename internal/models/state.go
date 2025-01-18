@@ -163,8 +163,8 @@ const (
 
 	// CreateOperationFlowStep represents the step for creating a new operation
 	CreateOperationFlowStep FlowStep = "create_operation"
-	// ProcessOprationTypeFlowStep represents the step for processing operation type
-	ProcessOprationTypeFlowStep FlowStep = "process_opration_type"
+	// ProcessOperationTypeFlowStep represents the step for processing operation type
+	ProcessOperationTypeFlowStep FlowStep = "process_opration_type"
 	// ChooseBalanceFromFlowStep represents the step for choosing balance from which transfer operation will be created
 	ChooseBalanceFromFlowStep FlowStep = "choose_balance_from_for_transfer_operation"
 	// ChooseBalanceToFlowStep represents the step for choosing balance to which transfer operation will be created
