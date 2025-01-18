@@ -6,13 +6,12 @@ import (
 	"strconv"
 
 	"github.com/VladPetriv/finance_bot/internal/models"
-	"github.com/VladPetriv/finance_bot/pkg/bot"
 	"github.com/VladPetriv/finance_bot/pkg/errs"
 	"github.com/VladPetriv/finance_bot/pkg/money"
 	"github.com/google/uuid"
 )
 
-func (h handlerService) HandleBalanceCreate(ctx context.Context, msg botMessage) error {
+func (h handlerService) HandleBalanceCreate(ctx context.Context, msg Message) error {
 	logger := h.logger.With().Str("name", "handlerService.HandleBalanceCreate").Logger()
 
 	var nextStep models.FlowStep
@@ -32,7 +31,7 @@ func (h handlerService) HandleBalanceCreate(ctx context.Context, msg botMessage)
 	}()
 
 	user, err := h.stores.User.Get(ctx, GetUserFilter{
-		Username:        msg.GetUsername(),
+		Username:        msg.GetSenderName(),
 		PreloadBalances: true,
 	})
 	if err != nil {
@@ -82,7 +81,7 @@ func (h handlerService) HandleBalanceCreate(ctx context.Context, msg botMessage)
 
 		nextStep = models.EnterBalanceNameFlowStep
 	case models.EnterBalanceNameFlowStep, models.EnterBalanceAmountFlowStep, models.EnterBalanceCurrencyFlowStep:
-		balance := user.GetBalance(msg.Message.Text)
+		balance := user.GetBalance(msg.GetText())
 		if balance != nil {
 			logger.Info().Any("balance", balance).Msg("balance already exists")
 			return ErrBalanceAlreadyExists
@@ -91,7 +90,7 @@ func (h handlerService) HandleBalanceCreate(ctx context.Context, msg botMessage)
 		step, err := h.processBalanceUpdate(ctx, processBalanceUpdateOptions{
 			metadata:    stateMetaData,
 			currentStep: currentStep,
-			msg:         msg,
+			msg:         msg.GetText(),
 			finalMsg:    "Balance successfully created!",
 		})
 		if err != nil {
@@ -112,7 +111,7 @@ func (h handlerService) HandleBalanceCreate(ctx context.Context, msg botMessage)
 
 type handleCreateBalanceFlowStepOptions struct {
 	user      *models.User
-	msg       botMessage
+	msg       Message
 	isInitial bool
 	metadata  map[string]any
 }
@@ -122,15 +121,16 @@ func (h *handlerService) handleCreateBalanceFlowStep(ctx context.Context, opts h
 	logger.Debug().Any("opts", opts).Msg("got args")
 
 	balanceID := uuid.NewString()
+	message := opts.msg.GetText()
 
 	if !opts.isInitial {
-		opts.msg.Message.Text = ""
+		message = ""
 	}
 
 	err := h.stores.Balance.Create(ctx, &models.Balance{
 		ID:     balanceID,
 		UserID: opts.user.ID,
-		Name:   opts.msg.Message.Text,
+		Name:   message,
 	})
 	if err != nil {
 		logger.Error().Err(err).Msg("create balance in store")
@@ -152,11 +152,10 @@ func (h *handlerService) handleCreateBalanceFlowStep(ctx context.Context, opts h
 	}
 
 	if sendDefaultKeyboard {
-		err = h.services.Keyboard.CreateKeyboard(&CreateKeyboardOptions{
-			ChatID:  opts.msg.GetChatID(),
-			Message: outputText,
-			Type:    keyboardTypeRow,
-			Rows:    defaultKeyboardRows,
+		err := h.apis.Messenger.SendWithKeyboard(SendWithKeyboardOptions{
+			ChatID:   opts.msg.GetChatID(),
+			Message:  outputText,
+			Keyboard: defaultKeyboardRows,
 		})
 		if err != nil {
 			logger.Error().Err(err).Msg("create keyboard")
@@ -166,10 +165,7 @@ func (h *handlerService) handleCreateBalanceFlowStep(ctx context.Context, opts h
 		return nil
 	}
 
-	err = h.services.Message.SendMessage(&SendMessageOptions{
-		ChatID: opts.msg.GetChatID(),
-		Text:   outputText,
-	})
+	err = h.apis.Messenger.SendMessage(opts.msg.GetChatID(), outputText)
 	if err != nil {
 		logger.Error().Err(err).Msg("send message")
 		return fmt.Errorf("send message: %w", err)
@@ -178,7 +174,7 @@ func (h *handlerService) handleCreateBalanceFlowStep(ctx context.Context, opts h
 	return nil
 }
 
-func (h handlerService) HandleBalanceUpdate(ctx context.Context, msg botMessage) error {
+func (h handlerService) HandleBalanceUpdate(ctx context.Context, msg Message) error {
 	logger := h.logger.With().Str("name", "handlerService.HandleBalanceUpdate").Logger()
 
 	var nextStep models.FlowStep
@@ -198,7 +194,7 @@ func (h handlerService) HandleBalanceUpdate(ctx context.Context, msg botMessage)
 	}()
 
 	user, err := h.stores.User.Get(ctx, GetUserFilter{
-		Username:        msg.GetUsername(),
+		Username:        msg.GetSenderName(),
 		PreloadBalances: true,
 	})
 	if err != nil {
@@ -216,11 +212,10 @@ func (h handlerService) HandleBalanceUpdate(ctx context.Context, msg botMessage)
 
 	switch currentStep {
 	case models.UpdateBalanceFlowStep:
-		err := h.services.Keyboard.CreateKeyboard(&CreateKeyboardOptions{
-			ChatID:  msg.GetChatID(),
-			Message: "Choose balance to update:",
-			Type:    keyboardTypeRow,
-			Rows:    getKeyboardRows(user.Balances, true),
+		err := h.apis.Messenger.SendWithKeyboard(SendWithKeyboardOptions{
+			ChatID:   msg.GetChatID(),
+			Message:  "Choose balance to update:",
+			Keyboard: getKeyboardRows(user.Balances, true),
 		})
 		if err != nil {
 			logger.Error().Err(err).Msg("create keyboard with welcome message")
@@ -229,7 +224,7 @@ func (h handlerService) HandleBalanceUpdate(ctx context.Context, msg botMessage)
 
 		nextStep = models.ChooseBalanceFlowStep
 	case models.ChooseBalanceFlowStep:
-		balance := user.GetBalance(msg.Message.Text)
+		balance := user.GetBalance(msg.GetText())
 		if balance == nil {
 			logger.Error().Msg("balance not found")
 			return fmt.Errorf("balance not found")
@@ -246,10 +241,7 @@ Please note: this symbol can be used for any balance value you don't want to cha
 		}
 
 		for _, message := range messages {
-			err := h.services.Message.SendMessage(&SendMessageOptions{
-				ChatID: msg.GetChatID(),
-				Text:   message,
-			})
+			err := h.apis.Messenger.SendMessage(msg.GetChatID(), message)
 			if err != nil {
 				logger.Error().Err(err).Msg("send message")
 				return fmt.Errorf("send message: %w", err)
@@ -258,29 +250,31 @@ Please note: this symbol can be used for any balance value you don't want to cha
 
 		nextStep = models.EnterBalanceNameFlowStep
 	case models.EnterBalanceNameFlowStep, models.EnterBalanceAmountFlowStep, models.EnterBalanceCurrencyFlowStep:
-		if msg.Message.Text != "-" {
-			balance := user.GetBalance(msg.Message.Text)
+		if msg.GetText() != "-" {
+			balance := user.GetBalance(msg.GetText())
 			if balance != nil {
 				logger.Info().Any("balance", balance).Msg("balance already exists")
 				return ErrBalanceAlreadyExists
 			}
 		}
 
-		if msg.Message.Text == "-" {
+		text := msg.GetText()
+
+		if msg.GetText() == "-" {
 			switch currentStep {
 			case models.EnterBalanceNameFlowStep:
-				msg.Message.Text = stateMetaData[currentBalanceNameMetadataKey].(string)
+				text = stateMetaData[currentBalanceNameMetadataKey].(string)
 			case models.EnterBalanceAmountFlowStep:
-				msg.Message.Text = stateMetaData[currentBalanceAmountMetadataKey].(string)
+				text = stateMetaData[currentBalanceAmountMetadataKey].(string)
 			case models.EnterBalanceCurrencyFlowStep:
-				msg.Message.Text = stateMetaData[currentBalanceCurrencyMetadataKey].(string)
+				text = stateMetaData[currentBalanceCurrencyMetadataKey].(string)
 			}
 		}
 
 		step, err := h.processBalanceUpdate(ctx, processBalanceUpdateOptions{
 			metadata:    stateMetaData,
 			currentStep: currentStep,
-			msg:         msg,
+			msg:         text,
 			finalMsg:    "Balance successfully updated!",
 		})
 		if err != nil {
@@ -302,7 +296,8 @@ Please note: this symbol can be used for any balance value you don't want to cha
 type processBalanceUpdateOptions struct {
 	metadata    map[string]any
 	currentStep models.FlowStep
-	msg         botMessage
+	chatID      int
+	msg         string
 	finalMsg    string
 }
 
@@ -313,7 +308,7 @@ func (h handlerService) processBalanceUpdate(ctx context.Context, opts processBa
 	balance, err := h.updateBalance(ctx, updateBalanceOptions{
 		balanceID: opts.metadata[balanceIDMetadataKey].(string),
 		step:      opts.currentStep,
-		data:      opts.msg.Message.Text,
+		data:      opts.msg,
 	})
 	if err != nil {
 		if errs.IsExpected(err) {
@@ -327,10 +322,7 @@ func (h handlerService) processBalanceUpdate(ctx context.Context, opts processBa
 
 	switch opts.currentStep {
 	case models.EnterBalanceNameFlowStep:
-		err = h.services.Message.SendMessage(&SendMessageOptions{
-			ChatID: opts.msg.GetChatID(),
-			Text:   "Enter balance amount:",
-		})
+		err := h.apis.Messenger.SendMessage(opts.chatID, "Enter balance amount:")
 		if err != nil {
 			logger.Error().Err(err).Msg("send message")
 			return "", fmt.Errorf("send message: %w", err)
@@ -338,10 +330,7 @@ func (h handlerService) processBalanceUpdate(ctx context.Context, opts processBa
 
 		return models.EnterBalanceAmountFlowStep, nil
 	case models.EnterBalanceAmountFlowStep:
-		err = h.services.Message.SendMessage(&SendMessageOptions{
-			ChatID: opts.msg.GetChatID(),
-			Text:   "Enter balance currency:",
-		})
+		err := h.apis.Messenger.SendMessage(opts.chatID, "Enter balance currency:")
 		if err != nil {
 			logger.Error().Err(err).Msg("send message")
 			return "", fmt.Errorf("send message: %w", err)
@@ -349,14 +338,13 @@ func (h handlerService) processBalanceUpdate(ctx context.Context, opts processBa
 
 		return models.EnterBalanceCurrencyFlowStep, nil
 	case models.EnterBalanceCurrencyFlowStep:
-		err = h.services.Keyboard.CreateKeyboard(&CreateKeyboardOptions{
-			ChatID: opts.msg.GetChatID(),
-			Type:   keyboardTypeRow,
-			Rows:   defaultKeyboardRows,
+		err := h.apis.Messenger.SendWithKeyboard(SendWithKeyboardOptions{
+			ChatID: opts.chatID,
 			Message: fmt.Sprintf(
 				"%s\nBalance Info:\n - Name: %s\n - Amount: %v\n - Currency: %s",
 				opts.finalMsg, balance.Name, balance.Amount, balance.Currency,
 			),
+			Keyboard: defaultKeyboardRows,
 		})
 		if err != nil {
 			logger.Error().Err(err).Msg("send message")
@@ -417,7 +405,7 @@ func (h handlerService) updateBalance(ctx context.Context, opts updateBalanceOpt
 	return balance, nil
 }
 
-func (h handlerService) HandleBalanceGet(ctx context.Context, msg botMessage) error {
+func (h handlerService) HandleBalanceGet(ctx context.Context, msg Message) error {
 	logger := h.logger.With().Str("name", "handlerService.HandleBalanceGet").Logger()
 
 	var nextStep models.FlowStep
@@ -438,7 +426,7 @@ func (h handlerService) HandleBalanceGet(ctx context.Context, msg botMessage) er
 	logger.Debug().Any("currentStep", currentStep).Msg("got current step on get balance flow")
 
 	user, err := h.stores.User.Get(ctx, GetUserFilter{
-		Username:        msg.GetUsername(),
+		Username:        msg.GetSenderName(),
 		PreloadBalances: true,
 	})
 	if err != nil {
@@ -453,11 +441,10 @@ func (h handlerService) HandleBalanceGet(ctx context.Context, msg botMessage) er
 
 	switch currentStep {
 	case models.GetBalanceFlowStep:
-		err := h.services.Keyboard.CreateKeyboard(&CreateKeyboardOptions{
-			ChatID:  msg.GetChatID(),
-			Message: "Select a balance to view information:",
-			Type:    keyboardTypeRow,
-			Rows:    getKeyboardRows(user.Balances, true),
+		err := h.apis.Messenger.SendWithKeyboard(SendWithKeyboardOptions{
+			ChatID:   msg.GetChatID(),
+			Message:  "Select a balance to view information:",
+			Keyboard: getKeyboardRows(user.Balances, true),
 		})
 		if err != nil {
 			logger.Error().Err(err).Msg("create keyboard with welcome message")
@@ -478,12 +465,12 @@ func (h handlerService) HandleBalanceGet(ctx context.Context, msg botMessage) er
 	return nil
 }
 
-func (h handlerService) processGetBalanceInfo(ctx context.Context, msg botMessage) error {
+func (h handlerService) processGetBalanceInfo(ctx context.Context, msg Message) error {
 	logger := h.logger.With().Str("name", "handlerService.getBalanceInfo").Logger()
 	logger.Debug().Any("msg", msg).Msg("got args")
 
 	balance, err := h.stores.Balance.Get(ctx, GetBalanceFilter{
-		Name: msg.Message.Text,
+		Name: msg.GetText(),
 	})
 	if err != nil {
 		logger.Error().Err(err).Msg("get balance from store")
@@ -496,14 +483,10 @@ func (h handlerService) processGetBalanceInfo(ctx context.Context, msg botMessag
 	logger.Debug().Any("balance", balance).Msg("got balance from store")
 
 	// TODO: In the feature it would be great to add some statistics about operations on this balance.
-	err = h.services.Keyboard.CreateKeyboard(&CreateKeyboardOptions{
-		ChatID: msg.GetChatID(),
-		Type:   keyboardTypeRow,
-		Rows:   defaultKeyboardRows,
-		Message: fmt.Sprintf(
-			"Balance info(%s):\n - Amount: %v\n - Currency: %s",
-			balance.Name, balance.Amount, balance.Currency,
-		),
+	err = h.apis.Messenger.SendWithKeyboard(SendWithKeyboardOptions{
+		ChatID:   msg.GetChatID(),
+		Message:  fmt.Sprintf("Balance info(%s):\n - Amount: %v\n - Currency: %s", balance.Name, balance.Amount, balance.Currency),
+		Keyboard: defaultKeyboardRows,
 	})
 	if err != nil {
 		logger.Error().Err(err).Msg("send message")
@@ -513,7 +496,7 @@ func (h handlerService) processGetBalanceInfo(ctx context.Context, msg botMessag
 	return nil
 }
 
-func (h handlerService) HandleBalanceDelete(ctx context.Context, msg botMessage) error {
+func (h handlerService) HandleBalanceDelete(ctx context.Context, msg Message) error {
 	logger := h.logger.With().Str("name", "handlerService.HandleBalanceDelete").Logger()
 
 	var nextStep models.FlowStep
@@ -533,7 +516,7 @@ func (h handlerService) HandleBalanceDelete(ctx context.Context, msg botMessage)
 	}()
 
 	user, err := h.stores.User.Get(ctx, GetUserFilter{
-		Username:        msg.GetUsername(),
+		Username:        msg.GetSenderName(),
 		PreloadBalances: true,
 	})
 	if err != nil {
@@ -552,11 +535,10 @@ func (h handlerService) HandleBalanceDelete(ctx context.Context, msg botMessage)
 	switch currentStep {
 	case models.DeleteBalanceFlowStep:
 		if len(user.Balances) == 1 {
-			err := h.services.Keyboard.CreateKeyboard(&CreateKeyboardOptions{
-				ChatID:  msg.GetChatID(),
-				Message: "You're not allowed to delete last balance!",
-				Type:    keyboardTypeRow,
-				Rows:    defaultKeyboardRows,
+			err := h.apis.Messenger.SendWithKeyboard(SendWithKeyboardOptions{
+				ChatID:   msg.GetChatID(),
+				Message:  "You're not allowed to delete last balance!",
+				Keyboard: defaultKeyboardRows,
 			})
 			if err != nil {
 				logger.Error().Err(err).Msg("create keyboard")
@@ -567,11 +549,10 @@ func (h handlerService) HandleBalanceDelete(ctx context.Context, msg botMessage)
 			return nil
 		}
 
-		err := h.services.Keyboard.CreateKeyboard(&CreateKeyboardOptions{
-			ChatID:  msg.GetChatID(),
-			Message: "Choose balance to delete:",
-			Type:    keyboardTypeRow,
-			Rows:    getKeyboardRows(user.Balances, true),
+		err := h.apis.Messenger.SendWithKeyboard(SendWithKeyboardOptions{
+			ChatID:   msg.GetChatID(),
+			Message:  "Choose balance to delete:",
+			Keyboard: getKeyboardRows(user.Balances, true),
 		})
 		if err != nil {
 			logger.Error().Err(err).Msg("create keyboard with welcome message")
@@ -580,26 +561,29 @@ func (h handlerService) HandleBalanceDelete(ctx context.Context, msg botMessage)
 
 		nextStep = models.ConfirmBalanceDeletionFlowStep
 	case models.ConfirmBalanceDeletionFlowStep:
-		stateMetaData[balanceNameMetadataKey] = msg.Message.Text
+		stateMetaData[balanceNameMetadataKey] = msg.GetText()
 
-		err := h.services.Keyboard.CreateKeyboard(&CreateKeyboardOptions{
-			ChatID:  msg.GetChatID(),
-			Message: fmt.Sprintf("Are you sure you want to delete balance %s?\nPlease note that all its operations will be deleted as well.", msg.Message.Text),
-			Type:    keyboardTypeInline,
-			InlineRows: []bot.InlineKeyboardRow{
-				{
-					Buttons: []bot.InlineKeyboardButton{
-						{
-							Text: "Yes",
-							Data: "true",
-						},
-						{
-							Text: "No",
-							Data: "false",
-						},
+		inlineKeyboard := []InlineKeyboardRow{
+			{
+				Buttons: []InlineKeyboardButton{
+					{
+						Text: "Yes",
+						Data: "true",
+					},
+					{
+						Text: "No",
+						Data: "false",
 					},
 				},
 			},
+		}
+		err := h.apis.Messenger.SendWithKeyboard(SendWithKeyboardOptions{
+			ChatID: msg.GetChatID(),
+			Message: fmt.Sprintf(
+				"Are you sure you want to delete balance %s?\nPlease note that all its operations will be deleted as well.",
+				msg.GetText(),
+			),
+			InlineKeyboard: inlineKeyboard,
 		})
 		if err != nil {
 			logger.Error().Err(err).Msg("create keyboard with welcome message")
@@ -627,26 +611,25 @@ func (h handlerService) HandleBalanceDelete(ctx context.Context, msg botMessage)
 type handleChooseBalanceFlowStepForDeletionFlowOptions struct {
 	user     *models.User
 	metaData map[string]any
-	msg      botMessage
+	msg      Message
 }
 
 func (h handlerService) handleChooseBalanceFlowStepForDeletionFlow(ctx context.Context, opts handleChooseBalanceFlowStepForDeletionFlowOptions) error {
 	logger := h.logger.With().Str("name", "handlerService.handleChooseBalanceFlowStepForDeletionFlow").Logger()
 	logger.Debug().Any("opts", opts).Msg("got args")
 
-	confirmBalanceDeletion, err := strconv.ParseBool(opts.msg.CallbackQuery.Data)
+	confirmBalanceDeletion, err := strconv.ParseBool(opts.msg.GetText())
 	if err != nil {
 		logger.Error().Err(err).Msg("parse callback data to bool")
 		return fmt.Errorf("parse callback data to bool: %w", err)
 	}
 
 	if !confirmBalanceDeletion {
-		logger.Info().Msg("user did not confirm balance delition")
-		err := h.services.Keyboard.CreateKeyboard(&CreateKeyboardOptions{
-			ChatID:  opts.msg.GetChatID(),
-			Message: "Action cancelled!\nPlease choose new command to execute:",
-			Type:    keyboardTypeRow,
-			Rows:    defaultKeyboardRows,
+		logger.Info().Msg("user did not confirm balance deletion")
+		err := h.apis.Messenger.SendWithKeyboard(SendWithKeyboardOptions{
+			ChatID:   opts.msg.GetChatID(),
+			Message:  "Action cancelled!\nPlease choose new command to execute:",
+			Keyboard: defaultKeyboardRows,
 		})
 		if err != nil {
 			logger.Error().Err(err).Msg("send message")
@@ -669,7 +652,7 @@ func (h handlerService) handleChooseBalanceFlowStepForDeletionFlow(ctx context.C
 		return fmt.Errorf("delete balance from store: %w", err)
 	}
 
-	// Run in separte goroutine to not block the main thread and respond to the user as soon as possible.
+	// Run in separate goroutine to not block the main thread and respond to the user as soon as possible.
 	go func() {
 		balanceOperations, err := h.stores.Operation.List(ctx, ListOperationsFilter{
 			BalanceID: balance.ID,
@@ -683,18 +666,17 @@ func (h handlerService) handleChooseBalanceFlowStepForDeletionFlow(ctx context.C
 		for _, operation := range balanceOperations {
 			err := h.stores.Operation.Delete(ctx, operation.ID)
 			if err != nil {
-				logger.Error().Err(err).Str("operrationID", operation.ID).Msg("delete operation from store")
+				logger.Error().Err(err).Str("operationID", operation.ID).Msg("delete operation from store")
 
 				continue
 			}
 		}
 	}()
 
-	err = h.services.Keyboard.CreateKeyboard(&CreateKeyboardOptions{
-		ChatID:  opts.msg.GetChatID(),
-		Message: "Balance and all its operations have been deleted!",
-		Type:    keyboardTypeRow,
-		Rows:    defaultKeyboardRows,
+	err = h.apis.Messenger.SendWithKeyboard(SendWithKeyboardOptions{
+		ChatID:   opts.msg.GetChatID(),
+		Message:  "Balance and all its operations have been deleted!",
+		Keyboard: defaultKeyboardRows,
 	})
 	if err != nil {
 		logger.Error().Err(err).Msg("send message")
