@@ -1,5 +1,6 @@
 package service
 
+// APIs represents structure containing all the APIs that the application uses.
 type APIs struct {
 	Messenger Messenger
 }

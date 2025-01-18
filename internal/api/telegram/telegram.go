@@ -96,15 +96,17 @@ func (t *telegramMessenger) ReadUpdates(result chan service.Message, errors chan
 	}
 
 	for update := range updates {
-		result <- &TelegramUpdate{update: update}
+		result <- &Update{update: update}
 	}
 }
 
-type TelegramUpdate struct {
+// Update represents the update received from the Telegram.
+type Update struct {
 	update telego.Update
 }
 
-func (t *TelegramUpdate) GetChatID() int {
+// GetChatID returns the ID of the chat the message was sent to.
+func (t *Update) GetChatID() int {
 	messageChatID := t.update.Message.Chat.ID
 	callbackChatID := t.update.CallbackQuery.Message.Chat.ID
 
@@ -115,7 +117,8 @@ func (t *TelegramUpdate) GetChatID() int {
 	return int(callbackChatID)
 }
 
-func (t *TelegramUpdate) GetText() string {
+// GetText returns the text content of the message or callback data.
+func (t *Update) GetText() string {
 	messageText := t.update.Message.Text
 	callbackText := t.update.CallbackQuery.Data
 
@@ -126,7 +129,8 @@ func (t *TelegramUpdate) GetText() string {
 	return callbackText
 }
 
-func (t *TelegramUpdate) GetSenderName() string {
+// GetSenderName returns the name of the user who sent the message.
+func (t *Update) GetSenderName() string {
 	messageSenderName := t.update.Message.From.FirstName
 	callbackSenderName := t.update.CallbackQuery.From.FirstName
 
