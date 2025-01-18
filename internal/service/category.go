@@ -5,12 +5,11 @@ import (
 	"fmt"
 
 	"github.com/VladPetriv/finance_bot/internal/models"
-	"github.com/VladPetriv/finance_bot/pkg/bot"
 	"github.com/VladPetriv/finance_bot/pkg/errs"
 	"github.com/google/uuid"
 )
 
-func (h handlerService) HandleCategoryCreate(ctx context.Context, msg botMessage) error {
+func (h handlerService) HandleCategoryCreate(ctx context.Context, msg Message) error {
 	logger := h.logger.With().Str("name", "handlerService.HandleCategoryCreate").Logger()
 
 	var nextStep models.FlowStep
@@ -28,7 +27,7 @@ func (h handlerService) HandleCategoryCreate(ctx context.Context, msg botMessage
 	}()
 
 	user, err := h.stores.User.Get(ctx, GetUserFilter{
-		Username: msg.GetUsername(),
+		Username: msg.GetSenderName(),
 	})
 	if err != nil {
 		logger.Error().Err(err).Msg("get user from store")
@@ -45,10 +44,7 @@ func (h handlerService) HandleCategoryCreate(ctx context.Context, msg botMessage
 
 	switch currentStep {
 	case models.CreateCategoryFlowStep:
-		err := h.services.Message.SendMessage(&SendMessageOptions{
-			ChatID: msg.Message.Chat.ID,
-			Text:   "Enter category name:",
-		})
+		err := h.apis.Messenger.SendMessage(msg.GetChatID(), "Enter category name:")
 		if err != nil {
 			logger.Error().Err(err).Msg("send message")
 			return fmt.Errorf("send message: %w", err)
@@ -78,7 +74,7 @@ func (h handlerService) HandleCategoryCreate(ctx context.Context, msg botMessage
 
 type handleEnterCategoryNameFlowStepOptions struct {
 	userID string
-	msg    botMessage
+	msg    Message
 }
 
 func (h handlerService) handleEnterCategoryNameFlowStep(ctx context.Context, opts handleEnterCategoryNameFlowStepOptions) error {
@@ -87,7 +83,7 @@ func (h handlerService) handleEnterCategoryNameFlowStep(ctx context.Context, opt
 
 	category, err := h.stores.Category.Get(ctx, GetCategoryFilter{
 		UserID: opts.userID,
-		Title:  opts.msg.Message.Text,
+		Title:  opts.msg.GetText(),
 	})
 	if err != nil {
 		logger.Error().Err(err).Msg("get category from store")
@@ -101,18 +97,17 @@ func (h handlerService) handleEnterCategoryNameFlowStep(ctx context.Context, opt
 	err = h.stores.Category.Create(ctx, &models.Category{
 		ID:     uuid.NewString(),
 		UserID: opts.userID,
-		Title:  opts.msg.Message.Text,
+		Title:  opts.msg.GetText(),
 	})
 	if err != nil {
 		logger.Error().Err(err).Msg("create category in store")
 		return fmt.Errorf("create category in store: %w", err)
 	}
 
-	err = h.services.Keyboard.CreateKeyboard(&CreateKeyboardOptions{
-		ChatID:  opts.msg.GetChatID(),
-		Type:    keyboardTypeRow,
-		Rows:    defaultKeyboardRows,
-		Message: "Category created!",
+	err = h.apis.Messenger.SendWithKeyboard(SendWithKeyboardOptions{
+		ChatID:   opts.msg.GetChatID(),
+		Message:  "Category created!",
+		Keyboard: defaultKeyboardRows,
 	})
 	if err != nil {
 		logger.Error().Err(err).Msg("send message")
@@ -122,7 +117,7 @@ func (h handlerService) handleEnterCategoryNameFlowStep(ctx context.Context, opt
 	return nil
 }
 
-func (h handlerService) HandleCategoryList(ctx context.Context, msg botMessage) error {
+func (h handlerService) HandleCategoryList(ctx context.Context, msg Message) error {
 	logger := h.logger.With().Str("name", "handlerService.HandleCategoryList").Logger()
 
 	var nextStep models.FlowStep
@@ -140,7 +135,7 @@ func (h handlerService) HandleCategoryList(ctx context.Context, msg botMessage) 
 	}()
 
 	user, err := h.stores.User.Get(ctx, GetUserFilter{
-		Username: msg.GetUsername(),
+		Username: msg.GetSenderName(),
 	})
 	if err != nil {
 		logger.Error().Err(err).Msg("get user from store")
@@ -179,7 +174,7 @@ func (h handlerService) HandleCategoryList(ctx context.Context, msg botMessage) 
 
 type handleListCategoriesFlowStepOptions struct {
 	userID string
-	msg    botMessage
+	msg    Message
 }
 
 func (h handlerService) handleListCategoriesFlowStep(ctx context.Context, opts handleListCategoriesFlowStepOptions) error {
@@ -189,10 +184,7 @@ func (h handlerService) handleListCategoriesFlowStep(ctx context.Context, opts h
 	categories, err := h.listCategories(ctx, opts.userID)
 	if err != nil {
 		if errs.IsExpected(err) {
-			err = h.services.Message.SendMessage(&SendMessageOptions{
-				ChatID: opts.msg.GetChatID(),
-				Text:   "You don't have any create categories yet!",
-			})
+			err := h.apis.Messenger.SendMessage(opts.msg.GetChatID(), "You don't have any create categories yet!")
 			if err != nil {
 				logger.Error().Err(err).Msg("send message")
 				return fmt.Errorf("send message: %w", err)
@@ -213,11 +205,10 @@ func (h handlerService) handleListCategoriesFlowStep(ctx context.Context, opts h
 	}
 	logger.Debug().Any("outputMessage", outputMessage).Msg("built output message")
 
-	err = h.services.Keyboard.CreateKeyboard(&CreateKeyboardOptions{
-		ChatID:  opts.msg.GetChatID(),
-		Type:    keyboardTypeRow,
-		Rows:    defaultKeyboardRows,
-		Message: outputMessage,
+	err = h.apis.Messenger.SendWithKeyboard(SendWithKeyboardOptions{
+		ChatID:   opts.msg.GetChatID(),
+		Message:  outputMessage,
+		Keyboard: defaultKeyboardRows,
 	})
 	if err != nil {
 		logger.Error().Err(err).Msg("send message")
@@ -227,9 +218,8 @@ func (h handlerService) handleListCategoriesFlowStep(ctx context.Context, opts h
 	return nil
 }
 
-func (h handlerService) HandleCategoryUpdate(ctx context.Context, msg botMessage) error {
+func (h handlerService) HandleCategoryUpdate(ctx context.Context, msg Message) error {
 	logger := h.logger.With().Str("name", "handlerService.HandleCategoryUpdate").Logger()
-	logger.Debug().Any("msg", msg).Msg("got args")
 
 	var nextStep models.FlowStep
 	stateMetaData := ctx.Value(contextFieldNameState).(*models.State).Metedata
@@ -248,7 +238,7 @@ func (h handlerService) HandleCategoryUpdate(ctx context.Context, msg botMessage
 	}()
 
 	user, err := h.stores.User.Get(ctx, GetUserFilter{
-		Username: msg.GetUsername(),
+		Username: msg.GetSenderName(),
 	})
 	if err != nil {
 		logger.Error().Err(err).Msg("get user from store")
@@ -276,11 +266,10 @@ func (h handlerService) HandleCategoryUpdate(ctx context.Context, msg botMessage
 			return fmt.Errorf("handle list categories flow step: %w", err)
 		}
 
-		err = h.services.Keyboard.CreateKeyboard(&CreateKeyboardOptions{
-			ChatID:  msg.Message.Chat.ID,
-			Type:    keyboardTypeRow,
-			Rows:    getKeyboardRows(categories, true),
-			Message: "Choose category to update:",
+		err = h.apis.Messenger.SendWithKeyboard(SendWithKeyboardOptions{
+			ChatID:   msg.GetChatID(),
+			Message:  "Choose category to update:",
+			Keyboard: getKeyboardRows(categories, true),
 		})
 		if err != nil {
 			logger.Error().Err(err).Msg("send message")
@@ -289,13 +278,12 @@ func (h handlerService) HandleCategoryUpdate(ctx context.Context, msg botMessage
 
 		nextStep = models.ChooseCategoryFlowStep
 	case models.ChooseCategoryFlowStep:
-		stateMetaData[previousCategoryTitleMetadataKey] = msg.Message.Text
+		stateMetaData[previousCategoryTitleMetadataKey] = msg.GetText()
 
-		err := h.services.Keyboard.CreateKeyboard(&CreateKeyboardOptions{
+		err := h.apis.Messenger.SendWithKeyboard(SendWithKeyboardOptions{
 			ChatID:  msg.GetChatID(),
 			Message: "Enter updated category name:",
-			Type:    keyboardTypeRow,
-			Rows: []bot.KeyboardRow{
+			Keyboard: []KeyboardRow{
 				{
 					Buttons: []string{models.BotBackCommand},
 				},
@@ -314,8 +302,8 @@ func (h handlerService) HandleCategoryUpdate(ctx context.Context, msg botMessage
 			msg:      msg,
 		})
 		if err != nil {
-			logger.Error().Err(err).Msg("handle enter uopdated category name flow step")
-			return fmt.Errorf("handle enter uopdated category name flow step: %w", err)
+			logger.Error().Err(err).Msg("handle enter updated category name flow step")
+			return fmt.Errorf("handle enter updated category name flow step: %w", err)
 		}
 
 		nextStep = models.EndFlowStep
@@ -327,7 +315,7 @@ func (h handlerService) HandleCategoryUpdate(ctx context.Context, msg botMessage
 type handleEnterUpdatedCategoryNameFlowStepOptions struct {
 	userID   string
 	metaData map[string]any
-	msg      botMessage
+	msg      Message
 }
 
 func (h handlerService) handleEnterUpdatedCategoryNameFlowStep(ctx context.Context, opts handleEnterUpdatedCategoryNameFlowStepOptions) error {
@@ -348,7 +336,7 @@ func (h handlerService) handleEnterUpdatedCategoryNameFlowStep(ctx context.Conte
 	}
 	logger.Debug().Any("category", category).Msg("got category from store")
 
-	category.Title = opts.msg.Message.Text
+	category.Title = opts.msg.GetText()
 
 	err = h.stores.Category.Update(ctx, category)
 	if err != nil {
@@ -356,11 +344,10 @@ func (h handlerService) handleEnterUpdatedCategoryNameFlowStep(ctx context.Conte
 		return fmt.Errorf("update category in store: %w", err)
 	}
 
-	err = h.services.Keyboard.CreateKeyboard(&CreateKeyboardOptions{
-		ChatID:  opts.msg.GetChatID(),
-		Type:    keyboardTypeRow,
-		Rows:    defaultKeyboardRows,
-		Message: "Category updated!",
+	err = h.apis.Messenger.SendWithKeyboard(SendWithKeyboardOptions{
+		ChatID:   opts.msg.GetChatID(),
+		Message:  "Category updated!",
+		Keyboard: defaultKeyboardRows,
 	})
 	if err != nil {
 		logger.Error().Err(err).Msg("send message")
@@ -370,7 +357,7 @@ func (h handlerService) handleEnterUpdatedCategoryNameFlowStep(ctx context.Conte
 	return nil
 }
 
-func (h handlerService) HandleCategoryDelete(ctx context.Context, msg botMessage) error {
+func (h handlerService) HandleCategoryDelete(ctx context.Context, msg Message) error {
 	logger := h.logger.With().Str("name", "handlerService.HandleCategoryDelete").Logger()
 
 	var nextStep models.FlowStep
@@ -388,7 +375,7 @@ func (h handlerService) HandleCategoryDelete(ctx context.Context, msg botMessage
 	}()
 
 	user, err := h.stores.User.Get(ctx, GetUserFilter{
-		Username: msg.GetUsername(),
+		Username: msg.GetSenderName(),
 	})
 	if err != nil {
 		logger.Error().Err(err).Msg("get user from store")
@@ -417,11 +404,10 @@ func (h handlerService) HandleCategoryDelete(ctx context.Context, msg botMessage
 			return fmt.Errorf("handle list categories flow step: %w", err)
 		}
 
-		err = h.services.Keyboard.CreateKeyboard(&CreateKeyboardOptions{
-			ChatID:  msg.Message.Chat.ID,
-			Type:    keyboardTypeRow,
-			Rows:    getKeyboardRows(categories, true),
-			Message: "Choose category to delete:",
+		err = h.apis.Messenger.SendWithKeyboard(SendWithKeyboardOptions{
+			ChatID:   msg.GetChatID(),
+			Message:  "Choose category to delete:",
+			Keyboard: getKeyboardRows(categories, true),
 		})
 		if err != nil {
 			logger.Error().Err(err).Msg("send message")
@@ -432,7 +418,7 @@ func (h handlerService) HandleCategoryDelete(ctx context.Context, msg botMessage
 	case models.ChooseCategoryFlowStep:
 		category, err := h.stores.Category.Get(ctx, GetCategoryFilter{
 			UserID: user.ID,
-			Title:  msg.Message.Text,
+			Title:  msg.GetText(),
 		})
 		if err != nil {
 			logger.Error().Err(err).Msg("get category from store")
@@ -451,11 +437,10 @@ func (h handlerService) HandleCategoryDelete(ctx context.Context, msg botMessage
 			return fmt.Errorf("delete category in store: %w", err)
 		}
 
-		err = h.services.Keyboard.CreateKeyboard(&CreateKeyboardOptions{
-			ChatID:  msg.GetChatID(),
-			Type:    keyboardTypeRow,
-			Rows:    defaultKeyboardRows,
-			Message: "Category deleted!",
+		err = h.apis.Messenger.SendWithKeyboard(SendWithKeyboardOptions{
+			ChatID:   msg.GetChatID(),
+			Message:  "Category deleted!",
+			Keyboard: defaultKeyboardRows,
 		})
 		if err != nil {
 			logger.Error().Err(err).Msg("send message")

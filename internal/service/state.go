@@ -32,18 +32,18 @@ func NewState(opts *StateOptions) *stateService {
 	}
 }
 
-func (s stateService) HandleState(ctx context.Context, message botMessage) (*HandleStateOutput, error) {
+func (s stateService) HandleState(ctx context.Context, message Message) (*HandleStateOutput, error) {
 	logger := s.logger.With().Str("name", "stateService.HandleState").Logger()
 
 	state, err := s.stores.State.Get(ctx, GetStateFilter{
-		UserID: message.GetUsername(),
+		UserID: message.GetSenderName(),
 	})
 	if err != nil {
 		logger.Error().Err(err).Msg("get state from store")
 		return nil, fmt.Errorf("get state from store: %w", err)
 	}
 
-	event := getEventFromMsg(&message)
+	event := getEventFromMsg(message)
 	logger.Debug().Any("event", event).Msg("got event based on bot message")
 
 	if state == nil {
@@ -52,7 +52,7 @@ func (s stateService) HandleState(ctx context.Context, message botMessage) (*Han
 
 		stateForCreate := &models.State{
 			ID:        uuid.NewString(),
-			UserID:    message.GetUsername(),
+			UserID:    message.GetSenderName(),
 			Flow:      flow,
 			Steps:     []models.FlowStep{models.StartFlowStep},
 			Metedata:  make(map[string]any),
@@ -60,8 +60,8 @@ func (s stateService) HandleState(ctx context.Context, message botMessage) (*Han
 			UpdatedAt: time.Now(),
 		}
 
-		if isBotCommand(message.Message.Text) {
-			firstFlowStep := models.CommadToFistFlowStep[message.Message.Text]
+		if isBotCommand(message.GetText()) {
+			firstFlowStep := models.CommadToFistFlowStep[message.GetText()]
 
 			// NOTE: We handle here only flows that require more than two step.
 			if firstFlowStep != "" {
@@ -94,7 +94,7 @@ func (s stateService) HandleState(ctx context.Context, message botMessage) (*Han
 
 		err = s.stores.State.Create(ctx, &models.State{
 			ID:        uuid.NewString(),
-			UserID:    message.GetUsername(),
+			UserID:    message.GetSenderName(),
 			Flow:      models.EventToFlow[event],
 			Steps:     []models.FlowStep{models.StartFlowStep, models.EndFlowStep},
 			Metedata:  make(map[string]any),
@@ -114,7 +114,7 @@ func (s stateService) HandleState(ctx context.Context, message botMessage) (*Han
 	}
 
 	// If we're not able to define the event based on message text and flow is not finished yet
-	// we should return the same state, since current flow is not finished and myabe we process other steps.
+	// we should return the same state, since current flow is not finished and maybe we process other steps.
 	if event == models.UnknownEvent && !state.IsFlowFinished() {
 		return &HandleStateOutput{
 			State: state,
@@ -122,8 +122,8 @@ func (s stateService) HandleState(ctx context.Context, message botMessage) (*Han
 		}, nil
 	}
 
-	// Received from database state is with finished flow and event that was received from message is not uknown.
-	// We should delete current stateand create new one with initial flow step.
+	// Received from database state is with finished flow and event that was received from message is not unknown.
+	// We should delete current state and create new one with initial flow step.
 	if event != models.UnknownEvent && state.IsFlowFinished() {
 		err := s.stores.State.Delete(ctx, state.ID)
 		if err != nil {
@@ -133,7 +133,7 @@ func (s stateService) HandleState(ctx context.Context, message botMessage) (*Han
 
 		stateForCreate := &models.State{
 			ID:        uuid.NewString(),
-			UserID:    message.GetUsername(),
+			UserID:    message.GetSenderName(),
 			Flow:      models.EventToFlow[event],
 			Steps:     []models.FlowStep{models.StartFlowStep},
 			Metedata:  make(map[string]any),
@@ -141,8 +141,8 @@ func (s stateService) HandleState(ctx context.Context, message botMessage) (*Han
 			UpdatedAt: time.Now(),
 		}
 
-		if isBotCommand(message.Message.Text) {
-			firstFlowStep := models.CommadToFistFlowStep[message.Message.Text]
+		if isBotCommand(message.GetText()) {
+			firstFlowStep := models.CommadToFistFlowStep[message.GetText()]
 
 			// NOTE: We handle here only flows that require more than two step.
 			if firstFlowStep != "" {
