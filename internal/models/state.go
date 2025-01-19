@@ -1,7 +1,11 @@
 package models
 
 import (
+	"strings"
 	"time"
+
+	"golang.org/x/text/cases"
+	"golang.org/x/text/language"
 )
 
 // State represents the current state of a user's interaction with the bot
@@ -16,6 +20,24 @@ type State struct {
 
 	CreatedAt time.Time `bson:"createdAt"`
 	UpdatedAt time.Time `bson:"updatedAt"`
+}
+
+func (s *State) GetFlowName() string {
+	parts := strings.Split(string(s.Flow), "_")
+
+	var result string
+	for index, part := range parts {
+		if index == 0 {
+			caser := cases.Title(language.English)
+			result += caser.String(part)
+
+			continue
+		}
+
+		result += " " + part
+	}
+
+	return result
 }
 
 // GetCurrentStep returns the current step in the flow
