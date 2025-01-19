@@ -107,38 +107,44 @@ type Update struct {
 
 // GetChatID returns the ID of the chat the message was sent to.
 func (t *Update) GetChatID() int {
-	messageChatID := t.update.Message.Chat.ID
-	callbackChatID := t.update.CallbackQuery.Message.Chat.ID
+	var chatID int
 
-	if messageChatID != 0 {
-		return int(messageChatID)
+	if t.update.Message != nil {
+		chatID = int(t.update.Message.Chat.ID)
+	}
+	if t.update.CallbackQuery != nil {
+		chatID = int(t.update.CallbackQuery.Message.Chat.ID)
 	}
 
-	return int(callbackChatID)
+	return chatID
 }
 
 // GetText returns the text content of the message or callback data.
 func (t *Update) GetText() string {
-	messageText := t.update.Message.Text
-	callbackText := t.update.CallbackQuery.Data
+	var text string
 
-	if messageText != "" {
-		return messageText
+	if t.update.Message != nil {
+		text = t.update.Message.Text
+	}
+	if t.update.CallbackQuery != nil {
+		text = t.update.CallbackQuery.Data
 	}
 
-	return callbackText
+	return text
 }
 
 // GetSenderName returns the name of the user who sent the message.
 func (t *Update) GetSenderName() string {
-	messageSenderName := t.update.Message.From.FirstName
-	callbackSenderName := t.update.CallbackQuery.From.FirstName
+	var senderName string
 
-	if messageSenderName != "" {
-		return messageSenderName
+	if t.update.Message != nil {
+		senderName = t.update.Message.From.Username
+	}
+	if t.update.CallbackQuery != nil {
+		senderName = t.update.CallbackQuery.From.Username
 	}
 
-	return callbackSenderName
+	return senderName
 }
 
 func (t *telegramMessenger) Close() error {
