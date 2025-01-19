@@ -51,6 +51,10 @@ func (e eventService) Listen(ctx context.Context) {
 
 				continue
 			}
+			if stateOutput == nil {
+				logger.Info().Msg("state output is empty, no need to react on event")
+				continue
+			}
 			logger.Debug().Any("stateOutput", stateOutput).Msg("handled request state")
 
 			ctx = context.WithValue(ctx, contextFieldNameState, stateOutput.State)

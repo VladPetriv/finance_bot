@@ -91,6 +91,7 @@ func (h handlerService) HandleBalanceCreate(ctx context.Context, msg Message) er
 			metadata:    stateMetaData,
 			currentStep: currentStep,
 			msg:         msg.GetText(),
+			chatID:      msg.GetChatID(),
 			finalMsg:    "Balance successfully created!",
 		})
 		if err != nil {
@@ -220,18 +221,21 @@ func (h handlerService) HandleBalanceUpdate(ctx context.Context, msg Message) er
 		stateMetaData[currentBalanceCurrencyMetadataKey] = balance.Currency
 		stateMetaData[currentBalanceAmountMetadataKey] = balance.Amount
 
-		messages := []string{
-			`Send '-' if you want to keep the current balance value. Otherwise, send your new value.
+		err := h.apis.Messenger.SendWithKeyboard(SendWithKeyboardOptions{
+			ChatID: msg.GetChatID(),
+			Message: `Send '-' if you want to keep the current balance value. Otherwise, send your new value.
 Please note: this symbol can be used for any balance value you don't want to change.`,
-			fmt.Sprintf("Enter new name for balance %s:", balance.Name),
+			Keyboard: rowKeyboardWithCancelButtonOnly,
+		})
+		if err != nil {
+			logger.Error().Err(err).Msg("send message with keyboard")
+			return fmt.Errorf("send message with keyboard: %w", err)
 		}
 
-		for _, message := range messages {
-			err := h.apis.Messenger.SendMessage(msg.GetChatID(), message)
-			if err != nil {
-				logger.Error().Err(err).Msg("send message")
-				return fmt.Errorf("send message: %w", err)
-			}
+		err = h.apis.Messenger.SendMessage(msg.GetChatID(), fmt.Sprintf("Enter new name for balance %s:", balance.Name))
+		if err != nil {
+			logger.Error().Err(err).Msg("send message")
+			return fmt.Errorf("send message: %w", err)
 		}
 
 		nextStep = models.EnterBalanceNameFlowStep
@@ -260,6 +264,7 @@ Please note: this symbol can be used for any balance value you don't want to cha
 		step, err := h.processBalanceUpdate(ctx, processBalanceUpdateOptions{
 			metadata:    stateMetaData,
 			currentStep: currentStep,
+			chatID:      msg.GetChatID(),
 			msg:         text,
 			finalMsg:    "Balance successfully updated!",
 		})

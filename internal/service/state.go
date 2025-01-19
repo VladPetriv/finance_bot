@@ -14,6 +14,7 @@ import (
 type stateService struct {
 	logger *logger.Logger
 	stores Stores
+	apis   APIs
 }
 
 var _ StateService = (*stateService)(nil)
@@ -22,6 +23,7 @@ var _ StateService = (*stateService)(nil)
 type StateOptions struct {
 	Logger *logger.Logger
 	Stores Stores
+	APIs   APIs
 }
 
 // NewState returns new instance of state service.
@@ -29,6 +31,7 @@ func NewState(opts *StateOptions) *stateService {
 	return &stateService{
 		logger: opts.Logger,
 		stores: opts.Stores,
+		apis:   opts.APIs,
 	}
 }
 
@@ -83,7 +86,7 @@ func (s stateService) HandleState(ctx context.Context, message Message) (*Handle
 	}
 	logger.Debug().Any("state", state).Msg("got state from store")
 
-	// For simple events that require only one steop we should delete current state and create a new finished state to start next flow properly.
+	// For simple events that require only one step we should delete current state and create a new finished state to start next flow properly.
 	switch event {
 	case models.CancelEvent, models.BalanceEvent, models.CategoryEvent, models.OperationEvent:
 		err := s.stores.State.Delete(ctx, state.ID)
@@ -111,6 +114,21 @@ func (s stateService) HandleState(ctx context.Context, message Message) (*Handle
 			State: state,
 			Event: event,
 		}, nil
+	}
+
+	// User send a command while his previous flow is not finished.
+	// We should ask user to finish previously started flow or cancel it before running new one.
+	if !state.IsFlowFinished() && isBotCommand(message.GetText()) {
+		err := s.apis.Messenger.SendMessage(
+			message.GetChatID(),
+			fmt.Sprintf("You're previous flow(%s) is not finished. Please, finish it or cancel it before running new one.", state.GetFlowName()),
+		)
+		if err != nil {
+			logger.Error().Err(err).Msg("send message to user")
+			return nil, fmt.Errorf("send message to user: %w", err)
+		}
+
+		return nil, nil
 	}
 
 	// If we're not able to define the event based on message text and flow is not finished yet

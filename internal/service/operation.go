@@ -50,7 +50,17 @@ func (h handlerService) HandleOperationCreate(ctx context.Context, msg Message) 
 
 	switch currentStep {
 	case models.CreateOperationFlowStep:
+		// Send an empty message with updated keyboard to avoid unexpected user behavior after clicking on previously generated keyboard.
 		err := h.apis.Messenger.SendWithKeyboard(SendWithKeyboardOptions{
+			ChatID:   msg.GetChatID(),
+			Message:  emptyMessage,
+			Keyboard: rowKeyboardWithCancelButtonOnly,
+		})
+		if err != nil {
+			logger.Error().Err(err).Msg("create keyboard with welcome message")
+			return fmt.Errorf("create keyboard with welcome message: %w", err)
+		}
+		err = h.apis.Messenger.SendWithKeyboard(SendWithKeyboardOptions{
 			ChatID:  msg.GetChatID(),
 			Message: "Choose operation type:",
 			InlineKeyboard: []InlineKeyboardRow{
@@ -58,15 +68,12 @@ func (h handlerService) HandleOperationCreate(ctx context.Context, msg Message) 
 					Buttons: []InlineKeyboardButton{
 						{
 							Text: models.BotCreateIncomingOperationCommand,
-							Data: string(models.OperationTypeIncoming),
 						},
 						{
 							Text: models.BotCreateSpendingOperationCommand,
-							Data: string(models.OperationTypeSpending),
 						},
 						{
 							Text: models.BotCreateTransferOperationCommand,
-							Data: string(models.OperationTypeTransfer),
 						},
 					},
 				},
@@ -113,7 +120,7 @@ func (h handlerService) HandleOperationCreate(ctx context.Context, msg Message) 
 		err = h.apis.Messenger.SendWithKeyboard(SendWithKeyboardOptions{
 			ChatID:   msg.GetChatID(),
 			Message:  "Choose operation category:",
-			Keyboard: getKeyboardRows(categories, false),
+			Keyboard: getKeyboardRows(categories, true),
 		})
 		if err != nil {
 			logger.Error().Err(err).Msg("create row keyboard")
@@ -282,7 +289,7 @@ func (h handlerService) handleProcessOperationTypeFlowStep(opts handleProcessOpe
 	logger := h.logger.With().Str("name", "handlerService.handleProcessOperationTypeFlowStep").Logger()
 	logger.Debug().Any("opts", opts).Msg("got args")
 
-	operationType := models.OperationType(opts.msg.GetText())
+	operationType := models.OperationCommandToOperationType[opts.msg.GetText()]
 	opts.metaData[operationTypeMetadataKey] = operationType
 
 	var (
