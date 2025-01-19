@@ -1,6 +1,7 @@
 package models
 
 import (
+	"slices"
 	"strings"
 	"time"
 
@@ -49,6 +50,20 @@ func (s *State) GetCurrentStep() FlowStep {
 // IsFlowFinished checks if the current flow has reached its end
 func (s *State) IsFlowFinished() bool {
 	return s.Steps[len(s.Steps)-1] == EndFlowStep
+}
+
+// IsCommandAllowedDuringFlow checks if the command is allowed during the current flow
+func (s *State) IsCommandAllowedDuringFlow(command string) bool {
+	switch s.Flow {
+	case CreateOperationFlow:
+		if s.GetCurrentStep() == ProcessOperationTypeFlowStep {
+			return slices.Contains([]string{BotCreateIncomingOperationCommand, BotCreateSpendingOperationCommand, BotCreateTransferOperationCommand}, command)
+		}
+
+		return false
+	default:
+		return false
+	}
 }
 
 const indexOfInitialFlowStep = 1
@@ -187,7 +202,7 @@ const (
 	// CreateOperationFlowStep represents the step for creating a new operation
 	CreateOperationFlowStep FlowStep = "create_operation"
 	// ProcessOperationTypeFlowStep represents the step for processing operation type
-	ProcessOperationTypeFlowStep FlowStep = "process_opration_type"
+	ProcessOperationTypeFlowStep FlowStep = "process_operation_type"
 	// ChooseBalanceFromFlowStep represents the step for choosing balance from which transfer operation will be created
 	ChooseBalanceFromFlowStep FlowStep = "choose_balance_from_for_transfer_operation"
 	// ChooseBalanceToFlowStep represents the step for choosing balance to which transfer operation will be created
