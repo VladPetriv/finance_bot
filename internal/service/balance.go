@@ -91,6 +91,7 @@ func (h handlerService) HandleBalanceCreate(ctx context.Context, msg Message) er
 			metadata:    stateMetaData,
 			currentStep: currentStep,
 			msg:         msg.GetText(),
+			chatID:      msg.GetChatID(),
 			finalMsg:    "Balance successfully created!",
 		})
 		if err != nil {
@@ -137,38 +138,24 @@ func (h *handlerService) handleCreateBalanceFlowStep(ctx context.Context, opts h
 		return fmt.Errorf("create balance in store: %w", err)
 	}
 
-	var (
-		outputText          string
-		sendDefaultKeyboard bool
-	)
+	options := SendWithKeyboardOptions{
+		ChatID: opts.msg.GetChatID(),
+	}
 
 	switch opts.isInitial {
 	case true:
-		outputText = "Initial balance successfully created!"
-		sendDefaultKeyboard = true
+		options.Message = "Initial balance successfully created!"
+		options.Keyboard = defaultKeyboardRows
 	case false:
-		outputText = "Please enter balance name!"
 		opts.metadata[balanceIDMetadataKey] = balanceID
+		options.Message = "Please enter balance name!"
+		options.Keyboard = rowKeyboardWithCancelButtonOnly
 	}
 
-	if sendDefaultKeyboard {
-		err := h.apis.Messenger.SendWithKeyboard(SendWithKeyboardOptions{
-			ChatID:   opts.msg.GetChatID(),
-			Message:  outputText,
-			Keyboard: defaultKeyboardRows,
-		})
-		if err != nil {
-			logger.Error().Err(err).Msg("create keyboard")
-			return fmt.Errorf("create keyboard: %w", err)
-		}
-
-		return nil
-	}
-
-	err = h.apis.Messenger.SendMessage(opts.msg.GetChatID(), outputText)
+	err = h.apis.Messenger.SendWithKeyboard(options)
 	if err != nil {
-		logger.Error().Err(err).Msg("send message")
-		return fmt.Errorf("send message: %w", err)
+		logger.Error().Err(err).Msg("create keyboard")
+		return fmt.Errorf("create keyboard: %w", err)
 	}
 
 	return nil
@@ -234,18 +221,21 @@ func (h handlerService) HandleBalanceUpdate(ctx context.Context, msg Message) er
 		stateMetaData[currentBalanceCurrencyMetadataKey] = balance.Currency
 		stateMetaData[currentBalanceAmountMetadataKey] = balance.Amount
 
-		messages := []string{
-			`Send '-' if you want to keep the current balance value. Otherwise, send your new value.
+		err := h.apis.Messenger.SendWithKeyboard(SendWithKeyboardOptions{
+			ChatID: msg.GetChatID(),
+			Message: `Send '-' if you want to keep the current balance value. Otherwise, send your new value.
 Please note: this symbol can be used for any balance value you don't want to change.`,
-			fmt.Sprintf("Enter new name for balance %s:", balance.Name),
+			Keyboard: rowKeyboardWithCancelButtonOnly,
+		})
+		if err != nil {
+			logger.Error().Err(err).Msg("send message with keyboard")
+			return fmt.Errorf("send message with keyboard: %w", err)
 		}
 
-		for _, message := range messages {
-			err := h.apis.Messenger.SendMessage(msg.GetChatID(), message)
-			if err != nil {
-				logger.Error().Err(err).Msg("send message")
-				return fmt.Errorf("send message: %w", err)
-			}
+		err = h.apis.Messenger.SendMessage(msg.GetChatID(), fmt.Sprintf("Enter new name for balance %s:", balance.Name))
+		if err != nil {
+			logger.Error().Err(err).Msg("send message")
+			return fmt.Errorf("send message: %w", err)
 		}
 
 		nextStep = models.EnterBalanceNameFlowStep
@@ -274,6 +264,7 @@ Please note: this symbol can be used for any balance value you don't want to cha
 		step, err := h.processBalanceUpdate(ctx, processBalanceUpdateOptions{
 			metadata:    stateMetaData,
 			currentStep: currentStep,
+			chatID:      msg.GetChatID(),
 			msg:         text,
 			finalMsg:    "Balance successfully updated!",
 		})
@@ -496,6 +487,8 @@ func (h handlerService) processGetBalanceInfo(ctx context.Context, msg Message) 
 	return nil
 }
 
+const emptyMessage = "ㅤ"
+
 func (h handlerService) HandleBalanceDelete(ctx context.Context, msg Message) error {
 	logger := h.logger.With().Str("name", "handlerService.HandleBalanceDelete").Logger()
 
@@ -563,27 +556,37 @@ func (h handlerService) HandleBalanceDelete(ctx context.Context, msg Message) er
 	case models.ConfirmBalanceDeletionFlowStep:
 		stateMetaData[balanceNameMetadataKey] = msg.GetText()
 
-		inlineKeyboard := []InlineKeyboardRow{
-			{
-				Buttons: []InlineKeyboardButton{
-					{
-						Text: "Yes",
-						Data: "true",
-					},
-					{
-						Text: "No",
-						Data: "false",
-					},
-				},
-			},
-		}
+		// Send an empty message with updated keyboard to avoid unexpected user behavior after clicking on previously generated keyboard.
 		err := h.apis.Messenger.SendWithKeyboard(SendWithKeyboardOptions{
+			ChatID:   msg.GetChatID(),
+			Message:  emptyMessage,
+			Keyboard: rowKeyboardWithCancelButtonOnly,
+		})
+		if err != nil {
+			logger.Error().Err(err).Msg("create keyboard with welcome message")
+			return fmt.Errorf("create keyboard with welcome message: %w", err)
+		}
+
+		err = h.apis.Messenger.SendWithKeyboard(SendWithKeyboardOptions{
 			ChatID: msg.GetChatID(),
 			Message: fmt.Sprintf(
 				"Are you sure you want to delete balance %s?\nPlease note that all its operations will be deleted as well.",
 				msg.GetText(),
 			),
-			InlineKeyboard: inlineKeyboard,
+			InlineKeyboard: []InlineKeyboardRow{
+				{
+					Buttons: []InlineKeyboardButton{
+						{
+							Text: "Yes",
+							Data: "true",
+						},
+						{
+							Text: "No",
+							Data: "false",
+						},
+					},
+				},
+			},
 		})
 		if err != nil {
 			logger.Error().Err(err).Msg("create keyboard with welcome message")

@@ -6,8 +6,8 @@ type Event string
 const (
 	// StartEvent represents the event when user starts interacting with the bot
 	StartEvent Event = "start"
-	// BackEvent represents the event when user goes back to previous state
-	BackEvent Event = "back"
+	// CancelEvent represents the event when user wants to stop the current floe
+	CancelEvent Event = "cancel"
 	// UnknownEvent represents an unrecognized or unsupported event
 	UnknownEvent Event = "unknown"
 
@@ -45,8 +45,8 @@ const (
 // EventToFlow maps events to their corresponding flows
 var EventToFlow = map[Event]Flow{
 	// General
-	StartEvent: StartFlow,
-	BackEvent:  BackFlow,
+	StartEvent:  StartFlow,
+	CancelEvent: CancelFlow,
 
 	// Wrappers
 	BalanceEvent:   BalanceFlow,

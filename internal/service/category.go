@@ -44,7 +44,11 @@ func (h handlerService) HandleCategoryCreate(ctx context.Context, msg Message) e
 
 	switch currentStep {
 	case models.CreateCategoryFlowStep:
-		err := h.apis.Messenger.SendMessage(msg.GetChatID(), "Enter category name:")
+		err := h.apis.Messenger.SendWithKeyboard(SendWithKeyboardOptions{
+			ChatID:   msg.GetChatID(),
+			Message:  "Enter category name:",
+			Keyboard: rowKeyboardWithCancelButtonOnly,
+		})
 		if err != nil {
 			logger.Error().Err(err).Msg("send message")
 			return fmt.Errorf("send message: %w", err)
@@ -285,7 +289,7 @@ func (h handlerService) HandleCategoryUpdate(ctx context.Context, msg Message) e
 			Message: "Enter updated category name:",
 			Keyboard: []KeyboardRow{
 				{
-					Buttons: []string{models.BotBackCommand},
+					Buttons: []string{models.BotCancelCommand},
 				},
 			},
 		})

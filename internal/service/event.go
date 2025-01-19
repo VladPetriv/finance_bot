@@ -51,6 +51,10 @@ func (e eventService) Listen(ctx context.Context) {
 
 				continue
 			}
+			if stateOutput == nil {
+				logger.Info().Msg("state output is empty, no need to react on event")
+				continue
+			}
 			logger.Debug().Any("stateOutput", stateOutput).Msg("handled request state")
 
 			ctx = context.WithValue(ctx, contextFieldNameState, stateOutput.State)
@@ -113,11 +117,11 @@ func (e eventService) ReactOnEvent(ctx context.Context, event models.Event, msg 
 			return fmt.Errorf("handle event event unknown: %w", err)
 		}
 
-	case models.BackEvent:
-		err := e.services.Handler.HandleBack(ctx, msg)
+	case models.CancelEvent:
+		err := e.services.Handler.HandleCancel(ctx, msg)
 		if err != nil {
-			logger.Error().Err(err).Msg("handle event back")
-			return fmt.Errorf("handle event back: %w", err)
+			logger.Error().Err(err).Msg("handle event cancel")
+			return fmt.Errorf("handle event cancel: %w", err)
 		}
 
 	case models.BalanceEvent, models.CategoryEvent, models.OperationEvent:

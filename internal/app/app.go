@@ -52,6 +52,7 @@ func Run(ctx context.Context, cfg *config.Config, logger *logger.Logger) {
 	stateService := service.NewState(&service.StateOptions{
 		Logger: logger,
 		Stores: stores,
+		APIs:   apis,
 	})
 
 	services := service.Services{

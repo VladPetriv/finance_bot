@@ -104,8 +104,8 @@ func (h handlerService) HandleStart(ctx context.Context, msg Message) error {
 	return nil
 }
 
-func (h handlerService) HandleBack(ctx context.Context, msg Message) error {
-	logger := h.logger.With().Str("name", "handlerService.HandleBack").Logger()
+func (h handlerService) HandleCancel(ctx context.Context, msg Message) error {
+	logger := h.logger.With().Str("name", "handlerService.HandleCancel").Logger()
 
 	err := h.apis.Messenger.SendWithKeyboard(SendWithKeyboardOptions{
 		ChatID:   msg.GetChatID(),
@@ -175,7 +175,7 @@ func (h handlerService) HandleWrappers(ctx context.Context, event models.Event, 
 				Buttons: []string{models.BotUpdateBalanceCommand, models.BotDeleteBalanceCommand},
 			},
 			{
-				Buttons: []string{models.BotBackCommand},
+				Buttons: []string{models.BotCancelCommand},
 			},
 		}
 		message = "Please choose balance command to execute:"
@@ -188,7 +188,7 @@ func (h handlerService) HandleWrappers(ctx context.Context, event models.Event, 
 				Buttons: []string{models.BotUpdateCategoryCommand, models.BotDeleteCategoryCommand},
 			},
 			{
-				Buttons: []string{models.BotBackCommand},
+				Buttons: []string{models.BotCancelCommand},
 			},
 		}
 		message = "Please choose category command to execute:"
@@ -198,7 +198,7 @@ func (h handlerService) HandleWrappers(ctx context.Context, event models.Event, 
 				Buttons: []string{models.BotCreateOperationCommand, models.BotGetOperationsHistory},
 			},
 			{
-				Buttons: []string{models.BotBackCommand},
+				Buttons: []string{models.BotCancelCommand},
 			},
 		}
 		message = "Please choose operation command to execute:"
@@ -225,7 +225,7 @@ type named interface {
 
 const maxBalancesPerRow = 3
 
-func getKeyboardRows[T named](data []T, includeRowWithBackButton bool) []KeyboardRow {
+func getKeyboardRows[T named](data []T, includeRowWithCancelButton bool) []KeyboardRow {
 	keyboardRows := make([]KeyboardRow, 0)
 
 	var currentRow KeyboardRow
@@ -239,9 +239,9 @@ func getKeyboardRows[T named](data []T, includeRowWithBackButton bool) []Keyboar
 		}
 	}
 
-	if includeRowWithBackButton {
+	if includeRowWithCancelButton {
 		keyboardRows = append(keyboardRows, KeyboardRow{
-			Buttons: []string{models.BotBackCommand},
+			Buttons: []string{models.BotCancelCommand},
 		})
 	}
 
