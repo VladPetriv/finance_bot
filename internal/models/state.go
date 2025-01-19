@@ -22,6 +22,7 @@ type State struct {
 	UpdatedAt time.Time `bson:"updatedAt"`
 }
 
+// GetFlowName returns the flow name in pretty format.
 func (s *State) GetFlowName() string {
 	parts := strings.Split(string(s.Flow), "_")
 
