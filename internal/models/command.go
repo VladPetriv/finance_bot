@@ -51,7 +51,7 @@ var AvailableCommands = []string{
 	BotBalanceCommand, BotCategoryCommand, BotOperationCommand,
 	BotGetBalanceCommand, BotCreateBalanceCommand, BotUpdateBalanceCommand, BotDeleteBalanceCommand,
 	BotCreateCategoryCommand, BotListCategoriesCommand, BotUpdateCategoryCommand, BotDeleteCategoryCommand,
-	BotCreateOperationCommand, BotCreateIncomingOperationCommand, BotCreateSpendingOperationCommand, BotGetOperationsHistory,
+	BotCreateOperationCommand, BotCreateIncomingOperationCommand, BotCreateSpendingOperationCommand, BotGetOperationsHistory, BotCreateTransferOperationCommand,
 	BotCancelCommand,
 }
 
@@ -100,4 +100,11 @@ var CommandToFistFlowStep = map[string]FlowStep{
 	// Operation
 	BotCreateOperationCommand: CreateOperationFlowStep,
 	BotGetOperationsHistory:   GetOperationsHistoryFlowStep,
+}
+
+// OperationCommandToOperationType maps operation commands to their corresponding operation types
+var OperationCommandToOperationType = map[string]OperationType{
+	BotCreateIncomingOperationCommand: OperationTypeIncoming,
+	BotCreateSpendingOperationCommand: OperationTypeSpending,
+	BotCreateTransferOperationCommand: OperationTypeTransfer,
 }
