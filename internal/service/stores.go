@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"time"
 
 	"github.com/VladPetriv/finance_bot/internal/models"
 )
@@ -58,6 +59,8 @@ type GetBalanceFilter struct {
 type OperationStore interface {
 	// Create creates a new operation.
 	Create(ctx context.Context, operation *models.Operation) error
+	// Get returns a operation from store by filter.
+	Get(ctx context.Context, filter GetOperationFilter) (*models.Operation, error)
 	// GetAll returns all operations from store by balance id.
 	List(ctx context.Context, filter ListOperationsFilter) ([]models.Operation, error)
 	// Update updates an operation in store.
@@ -66,10 +69,18 @@ type OperationStore interface {
 	Delete(ctx context.Context, operationID string) error
 }
 
+// GetOperationFilter represents a filters for Get operation method.
+type GetOperationFilter struct {
+	ID string
+}
+
 // ListOperationsFilter represents filters for list operations from store.
 type ListOperationsFilter struct {
-	BalanceID      string
-	CreationPeriod *models.CreationPeriod
+	BalanceID           string
+	CreationPeriod      *models.CreationPeriod
+	Limit               int
+	CreatedAtFrom       time.Time
+	SortByCreatedAtDesc bool
 }
 
 // CategoryStore provides functionality for work with categories store.
