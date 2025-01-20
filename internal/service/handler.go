@@ -5,7 +5,6 @@ import (
 	"fmt"
 
 	"github.com/VladPetriv/finance_bot/internal/models"
-	"github.com/VladPetriv/finance_bot/pkg/bot"
 	"github.com/VladPetriv/finance_bot/pkg/errs"
 	"github.com/VladPetriv/finance_bot/pkg/logger"
 	"github.com/google/uuid"
@@ -14,6 +13,7 @@ import (
 type handlerService struct {
 	logger   *logger.Logger
 	services Services
+	apis     APIs
 	stores   Stores
 }
 
@@ -23,6 +23,7 @@ var _ HandlerService = (*handlerService)(nil)
 type HandlerOptions struct {
 	Logger   *logger.Logger
 	Services Services
+	APIs     APIs
 	Stores   Stores
 }
 
@@ -31,11 +32,12 @@ func NewHandler(opts *HandlerOptions) *handlerService {
 	return &handlerService{
 		logger:   opts.Logger,
 		services: opts.Services,
+		apis:     opts.APIs,
 		stores:   opts.Stores,
 	}
 }
 
-func (h handlerService) HandleStart(ctx context.Context, msg botMessage) error {
+func (h handlerService) HandleStart(ctx context.Context, msg Message) error {
 	logger := h.logger.With().Str("name", "handlerService.HandleStart").Logger()
 
 	var nextStep models.FlowStep
@@ -50,7 +52,7 @@ func (h handlerService) HandleStart(ctx context.Context, msg botMessage) error {
 		logger.Debug().Any("updatedState", updatedState).Msg("updated state in store")
 	}()
 
-	username := msg.GetUsername()
+	username := msg.GetSenderName()
 	chatID := msg.GetChatID()
 
 	user, err := h.stores.User.Get(ctx, GetUserFilter{
@@ -63,11 +65,10 @@ func (h handlerService) HandleStart(ctx context.Context, msg botMessage) error {
 
 	// Handle case when user already exists
 	if user != nil {
-		err = h.services.Keyboard.CreateKeyboard(&CreateKeyboardOptions{
-			ChatID:  chatID,
-			Message: fmt.Sprintf("Happy to see you again @%s!", username),
-			Type:    keyboardTypeRow,
-			Rows:    defaultKeyboardRows,
+		err := h.apis.Messenger.SendWithKeyboard(SendWithKeyboardOptions{
+			ChatID:   chatID,
+			Message:  fmt.Sprintf("Happy to see you again @%s!", username),
+			Keyboard: defaultKeyboardRows,
 		})
 		if err != nil {
 			logger.Error().Err(err).Msg("create keyboard")
@@ -92,10 +93,7 @@ func (h handlerService) HandleStart(ctx context.Context, msg botMessage) error {
 
 	messagesToSend := []string{welcomeMessage, enterBalanceNameMessage}
 	for _, message := range messagesToSend {
-		err = h.services.Message.SendMessage(&SendMessageOptions{
-			ChatID: chatID,
-			Text:   message,
-		})
+		err := h.apis.Messenger.SendMessage(chatID, message)
 		if err != nil {
 			logger.Error().Err(err).Msg("send message")
 			return fmt.Errorf("send message: %w", err)
@@ -106,14 +104,13 @@ func (h handlerService) HandleStart(ctx context.Context, msg botMessage) error {
 	return nil
 }
 
-func (h handlerService) HandleBack(ctx context.Context, msg botMessage) error {
-	logger := h.logger.With().Str("name", "handlerService.HandleBack").Logger()
+func (h handlerService) HandleCancel(ctx context.Context, msg Message) error {
+	logger := h.logger.With().Str("name", "handlerService.HandleCancel").Logger()
 
-	err := h.services.Keyboard.CreateKeyboard(&CreateKeyboardOptions{
-		ChatID:  msg.Message.Chat.ID,
-		Message: "Please choose command to execute:",
-		Type:    keyboardTypeRow,
-		Rows:    defaultKeyboardRows,
+	err := h.apis.Messenger.SendWithKeyboard(SendWithKeyboardOptions{
+		ChatID:   msg.GetChatID(),
+		Message:  "Please choose command to execute:",
+		Keyboard: defaultKeyboardRows,
 	})
 	if err != nil {
 		logger.Error().Err(err).Msg("create keyboard")
@@ -123,13 +120,10 @@ func (h handlerService) HandleBack(ctx context.Context, msg botMessage) error {
 	return nil
 }
 
-func (h handlerService) HandleUnknown(msg botMessage) error {
+func (h handlerService) HandleUnknown(msg Message) error {
 	logger := h.logger.With().Str("name", "handlerService.HandleUnknown").Logger()
 
-	err := h.services.Message.SendMessage(&SendMessageOptions{
-		ChatID: msg.Message.Chat.ID,
-		Text:   "Didn't understand you!\nCould you please check available commands!",
-	})
+	err := h.apis.Messenger.SendMessage(msg.GetChatID(), "Didn't understand you!\nCould you please check available commands!")
 	if err != nil {
 		logger.Error().Err(err).Msg("send message")
 		return fmt.Errorf("send message: %w", err)
@@ -138,14 +132,11 @@ func (h handlerService) HandleUnknown(msg botMessage) error {
 	return nil
 }
 
-func (h handlerService) HandleError(ctx context.Context, receivedErr error, msg botMessage) error {
+func (h handlerService) HandleError(ctx context.Context, receivedErr error, msg Message) error {
 	logger := h.logger.With().Str("name", "handlerService.HandleError").Logger()
 
 	if errs.IsExpected(receivedErr) {
-		err := h.services.Message.SendMessage(&SendMessageOptions{
-			ChatID: msg.GetChatID(),
-			Text:   receivedErr.Error(),
-		})
+		err := h.apis.Messenger.SendMessage(msg.GetChatID(), receivedErr.Error())
 		if err != nil {
 			logger.Error().Err(err).Msg("send message")
 			return fmt.Errorf("send message: %w", err)
@@ -155,10 +146,7 @@ func (h handlerService) HandleError(ctx context.Context, receivedErr error, msg 
 		return nil
 	}
 
-	err := h.services.Message.SendMessage(&SendMessageOptions{
-		ChatID: msg.GetChatID(),
-		Text:   "Something went wrong!\nPlease try again later!",
-	})
+	err := h.apis.Messenger.SendMessage(msg.GetChatID(), "Something went wrong!\nPlease try again later!")
 	if err != nil {
 		logger.Error().Err(err).Msg("send message")
 		return fmt.Errorf("send message: %w", err)
@@ -167,19 +155,19 @@ func (h handlerService) HandleError(ctx context.Context, receivedErr error, msg 
 	return nil
 }
 
-func (h handlerService) HandleWrappers(ctx context.Context, event models.Event, msg botMessage) error {
+func (h handlerService) HandleWrappers(ctx context.Context, event models.Event, msg Message) error {
 	logger := h.logger.With().Str("name", "handlerService.HandleWrappers").Logger()
 	logger.Debug().Any("msg", msg).Any("event", event).Msg("got args")
 
 	var (
-		rows    []bot.KeyboardRow
+		rows    []KeyboardRow
 		message string
 	)
 
 	switch event {
 	case models.BalanceEvent:
 
-		rows = []bot.KeyboardRow{
+		rows = []KeyboardRow{
 			{
 				Buttons: []string{models.BotCreateBalanceCommand, models.BotGetBalanceCommand},
 			},
@@ -187,12 +175,12 @@ func (h handlerService) HandleWrappers(ctx context.Context, event models.Event, 
 				Buttons: []string{models.BotUpdateBalanceCommand, models.BotDeleteBalanceCommand},
 			},
 			{
-				Buttons: []string{models.BotBackCommand},
+				Buttons: []string{models.BotCancelCommand},
 			},
 		}
 		message = "Please choose balance command to execute:"
 	case models.CategoryEvent:
-		rows = []bot.KeyboardRow{
+		rows = []KeyboardRow{
 			{
 				Buttons: []string{models.BotCreateCategoryCommand, models.BotListCategoriesCommand},
 			},
@@ -200,12 +188,12 @@ func (h handlerService) HandleWrappers(ctx context.Context, event models.Event, 
 				Buttons: []string{models.BotUpdateCategoryCommand, models.BotDeleteCategoryCommand},
 			},
 			{
-				Buttons: []string{models.BotBackCommand},
+				Buttons: []string{models.BotCancelCommand},
 			},
 		}
 		message = "Please choose category command to execute:"
 	case models.OperationEvent:
-		rows = []bot.KeyboardRow{
+		rows = []KeyboardRow{
 			{
 				Buttons: []string{models.BotCreateOperationCommand, models.BotGetOperationsHistory},
 			},
@@ -213,7 +201,7 @@ func (h handlerService) HandleWrappers(ctx context.Context, event models.Event, 
 				Buttons: []string{models.BotDeleteOperationCommand},
 			},
 			{
-				Buttons: []string{models.BotBackCommand},
+				Buttons: []string{models.BotCancelCommand},
 			},
 		}
 		message = "Please choose operation command to execute:"
@@ -221,11 +209,10 @@ func (h handlerService) HandleWrappers(ctx context.Context, event models.Event, 
 		return fmt.Errorf("unknown wrappers event: %s", event)
 	}
 
-	err := h.services.Keyboard.CreateKeyboard(&CreateKeyboardOptions{
-		ChatID:  msg.GetChatID(),
-		Message: message,
-		Type:    keyboardTypeRow,
-		Rows:    rows,
+	err := h.apis.Messenger.SendWithKeyboard(SendWithKeyboardOptions{
+		ChatID:   msg.GetChatID(),
+		Message:  message,
+		Keyboard: rows,
 	})
 	if err != nil {
 		logger.Error().Err(err).Msg("create keyboard")
@@ -241,23 +228,23 @@ type named interface {
 
 const maxBalancesPerRow = 3
 
-func getKeyboardRows[T named](data []T, includeRowWithBackButton bool) []bot.KeyboardRow {
-	keyboardRows := make([]bot.KeyboardRow, 0)
+func getKeyboardRows[T named](data []T, includeRowWithCancelButton bool) []KeyboardRow {
+	keyboardRows := make([]KeyboardRow, 0)
 
-	var currentRow bot.KeyboardRow
+	var currentRow KeyboardRow
 	for i, entry := range data {
 		currentRow.Buttons = append(currentRow.Buttons, entry.GetName())
 
 		// When row is full or we're at the last data item, append row
 		if len(currentRow.Buttons) == maxBalancesPerRow || i == len(data)-1 {
 			keyboardRows = append(keyboardRows, currentRow)
-			currentRow = bot.KeyboardRow{} // Reset current row
+			currentRow = KeyboardRow{} // Reset current row
 		}
 	}
 
-	if includeRowWithBackButton {
-		keyboardRows = append(keyboardRows, bot.KeyboardRow{
-			Buttons: []string{models.BotBackCommand},
+	if includeRowWithCancelButton {
+		keyboardRows = append(keyboardRows, KeyboardRow{
+			Buttons: []string{models.BotCancelCommand},
 		})
 	}
 

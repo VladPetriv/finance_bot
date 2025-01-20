@@ -4,56 +4,53 @@ import (
 	"context"
 
 	"github.com/VladPetriv/finance_bot/internal/models"
-	"github.com/VladPetriv/finance_bot/pkg/bot"
 	"github.com/VladPetriv/finance_bot/pkg/errs"
 )
 
 // Services represents structure with all services.
 type Services struct {
-	Event    EventService
-	Handler  HandlerService
-	Message  MessageService
-	Keyboard KeyboardService
-	State    StateService
+	Event   EventService
+	Handler HandlerService
+	State   StateService
 }
 
 // HandlerService provides functionally for handling bot events.
 type HandlerService interface {
 	// HandleError is used to send the user a message that something went wrong while processing the event.
-	HandleError(ctx context.Context, err error, msg botMessage) error
+	HandleError(ctx context.Context, err error, msg Message) error
 	// HandleUnknown inform user that provided event is unknown and notify him about available events.
-	HandleUnknown(msg botMessage) error
+	HandleUnknown(msg Message) error
 
 	// HandleStart initialize new user, his balance and send welcome message.
-	HandleStart(ctx context.Context, msg botMessage) error
-	// HandleBack resets user interface to main menu.
-	HandleBack(ctx context.Context, msg botMessage) error
+	HandleStart(ctx context.Context, msg Message) error
+	// HandlecanCel cancel current user flow and returns the default keyboard
+	HandleCancel(ctx context.Context, msg Message) error
 	// HandleWrappers processes main keyboard selections, where each button (Balance/Operations/Categories)
 	// maps to corresponding model wrapper to handle its specific actions.
-	HandleWrappers(ctx context.Context, event models.Event, msg botMessage) error
+	HandleWrappers(ctx context.Context, event models.Event, msg Message) error
 
 	// HandleBalanceCreate processes new balance entry creation
-	HandleBalanceCreate(ctx context.Context, msg botMessage) error
+	HandleBalanceCreate(ctx context.Context, msg Message) error
 	// HandleBalanceUpdate processes balance modification
-	HandleBalanceUpdate(ctx context.Context, msg botMessage) error
+	HandleBalanceUpdate(ctx context.Context, msg Message) error
 	// HandleBalanceGet retrieves current balance information
-	HandleBalanceGet(ctx context.Context, msg botMessage) error
+	HandleBalanceGet(ctx context.Context, msg Message) error
 	// HandleBalanceDelete processes balance entry removal
-	HandleBalanceDelete(ctx context.Context, msg botMessage) error
+	HandleBalanceDelete(ctx context.Context, msg Message) error
 
 	// HandleCategoryCreate processes new category creation
-	HandleCategoryCreate(ctx context.Context, msg botMessage) error
+	HandleCategoryCreate(ctx context.Context, msg Message) error
 	// HandleCategoryList retrieves all available categories
-	HandleCategoryList(ctx context.Context, msg botMessage) error
+	HandleCategoryList(ctx context.Context, msg Message) error
 	// HandleCategoryUpdate processes category modification
-	HandleCategoryUpdate(ctx context.Context, msg botMessage) error
+	HandleCategoryUpdate(ctx context.Context, msg Message) error
 	// HandleCategoryDelete processes category removal
-	HandleCategoryDelete(ctx context.Context, msg botMessage) error
+	HandleCategoryDelete(ctx context.Context, msg Message) error
 
 	// HandleOperationCreate processes new operation creation
-	HandleOperationCreate(ctx context.Context, msg botMessage) error
+	HandleOperationCreate(ctx context.Context, msg Message) error
 	// HandleOperationHistory retrieves operation transaction history
-	HandleOperationHistory(ctx context.Context, msg botMessage) error
+	HandleOperationHistory(ctx context.Context, msg Message) error
 }
 
 // EventService provides functionally for receiving an updates from bot and reacting on it.
@@ -61,105 +58,25 @@ type EventService interface {
 	// Listen is used to receive all updates from bot.
 	Listen(ctx context.Context)
 	// ReactOnEven is used to react on event by his name.
-	ReactOnEvent(ctx context.Context, eventName models.Event, msg botMessage) error
+	ReactOnEvent(ctx context.Context, eventName models.Event, msg Message) error
 }
 
 type contextFieldName string
 
 const contextFieldNameState contextFieldName = "state"
 
-type botMessage struct {
-	Message struct {
-		Chat chat   `json:"chat"`
-		From from   `json:"from"`
-		Text string `json:"text"`
-	} `json:"message"`
-	CallbackQuery struct {
-		ID      string `json:"id"`
-		From    from   `json:"from"`
-		Message struct {
-			Chat chat `json:"chat"`
-		} `json:"message"`
-		Data string `json:"data"`
-	} `json:"callback_query"`
-}
-
-// GetUsername is used to get actual username from message.
-func (h botMessage) GetUsername() string {
-	if h.Message.From.Username != "" {
-		return h.Message.From.Username
-	}
-
-	if h.CallbackQuery.From.Username != "" {
-		return h.CallbackQuery.From.Username
-	}
-
-	return ""
-}
-
-// GetChatID is used to get actual chat id from message.
-func (h botMessage) GetChatID() int64 {
-	if h.Message.Chat.ID != 0 {
-		return h.Message.Chat.ID
-	}
-
-	if h.CallbackQuery.Message.Chat.ID != 0 {
-		return h.CallbackQuery.Message.Chat.ID
-	}
-
-	return 0
-}
-
-type chat struct {
-	ID int64 `json:"id"`
-}
-
-type from struct {
-	ID       int    `json:"id"`
-	Username string `json:"username"`
-}
-
-// MessageService provides functionally for sending messages.
-type MessageService interface {
-	// SendMessage is used to send messages for specific chat.
-	SendMessage(opts *SendMessageOptions) error
-}
-
-// SendMessageOptions represents input structure for CreateKeyboard method.
-type SendMessageOptions struct {
-	ChatID int64
-	Text   string
-}
-
-// KeyboardService provides functionally rendering keyboard.
-type KeyboardService interface {
-	// CreateRowKeyboard is used to create keyboard and send message with it..
-	CreateKeyboard(opts *CreateKeyboardOptions) error
-}
-
-// CreateKeyboardOptions represents input structure for CreateKeyboard method.
-type CreateKeyboardOptions struct {
-	ChatID     int64
-	Message    string
-	Type       KeyboardType
-	Rows       []bot.KeyboardRow
-	InlineRows []bot.InlineKeyboardRow
-}
-
-// KeyboardType represents available keyboard types.
-type KeyboardType string
-
-const (
-	keyboardTypeInline KeyboardType = "inline"
-	keyboardTypeRow    KeyboardType = "row"
-)
-
-var defaultKeyboardRows = []bot.KeyboardRow{
+var defaultKeyboardRows = []KeyboardRow{
 	{
 		Buttons: []string{models.BotBalanceCommand, models.BotCategoryCommand},
 	},
 	{
 		Buttons: []string{models.BotOperationCommand},
+	},
+}
+
+var rowKeyboardWithCancelButtonOnly = []KeyboardRow{
+	{
+		Buttons: []string{models.BotCancelCommand},
 	},
 }
 
@@ -211,9 +128,9 @@ const (
 	operationTypeMetadataKey        = "operation_type"
 )
 
-// StateService represents a service for managing and handling complex bot flow using statesstates.
+// StateService represents a service for managing and handling complex bot flow using state.
 type StateService interface {
-	HandleState(ctx context.Context, message botMessage) (*HandleStateOutput, error)
+	HandleState(ctx context.Context, message Message) (*HandleStateOutput, error)
 }
 
 // HandleStateOutput represents an output structure for StateService.HandleState method.

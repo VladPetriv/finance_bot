@@ -43,8 +43,8 @@ const (
 	// BotDeleteOperationCommand represents the command to delete an operation
 	BotDeleteOperationCommand string = "Delete Operation ❌"
 
-	// BotBackCommand represents the command to go back to previous state
-	BotBackCommand string = "Back ⬅️"
+	// BotCancelCommand represents the command that will cancel the current flow
+	BotCancelCommand string = "Cancel action ⬅️"
 )
 
 // AvailableCommands is a list of all available bot commands.
@@ -53,16 +53,15 @@ var AvailableCommands = []string{
 	BotBalanceCommand, BotCategoryCommand, BotOperationCommand,
 	BotGetBalanceCommand, BotCreateBalanceCommand, BotUpdateBalanceCommand, BotDeleteBalanceCommand,
 	BotCreateCategoryCommand, BotListCategoriesCommand, BotUpdateCategoryCommand, BotDeleteCategoryCommand,
-	BotCreateOperationCommand, BotCreateIncomingOperationCommand, BotCreateSpendingOperationCommand, BotGetOperationsHistory,
-	BotDeleteOperationCommand,
-	BotBackCommand,
+	BotCreateOperationCommand, BotCreateIncomingOperationCommand, BotCreateSpendingOperationCommand, BotGetOperationsHistory, BotCreateTransferOperationCommand,
+	BotCancelCommand,
 }
 
 // CommandToEvent maps bot commands to their corresponding events
 var CommandToEvent = map[string]Event{
 	// General
-	BotStartCommand: StartEvent,
-	BotBackCommand:  BackEvent,
+	BotStartCommand:  StartEvent,
+	BotCancelCommand: CancelEvent,
 
 	// Wrappers
 	BotBalanceCommand:   BalanceEvent,
@@ -87,8 +86,8 @@ var CommandToEvent = map[string]Event{
 	BotDeleteOperationCommand: DeleteOperationEvent,
 }
 
-// CommadToFistFlowStep maps commands to their initial flow steps
-var CommadToFistFlowStep = map[string]FlowStep{
+// CommandToFistFlowStep maps commands to their initial flow steps
+var CommandToFistFlowStep = map[string]FlowStep{
 	// Balance
 	BotCreateBalanceCommand: CreateBalanceFlowStep,
 	BotUpdateBalanceCommand: UpdateBalanceFlowStep,
@@ -105,4 +104,11 @@ var CommadToFistFlowStep = map[string]FlowStep{
 	BotCreateOperationCommand: CreateOperationFlowStep,
 	BotGetOperationsHistory:   GetOperationsHistoryFlowStep,
 	BotDeleteOperationCommand: DeleteOperationFlowStep,
+}
+
+// OperationCommandToOperationType maps operation commands to their corresponding operation types
+var OperationCommandToOperationType = map[string]OperationType{
+	BotCreateIncomingOperationCommand: OperationTypeIncoming,
+	BotCreateSpendingOperationCommand: OperationTypeSpending,
+	BotCreateTransferOperationCommand: OperationTypeTransfer,
 }

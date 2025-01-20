@@ -7,13 +7,12 @@ import (
 	"time"
 
 	"github.com/VladPetriv/finance_bot/internal/models"
-	"github.com/VladPetriv/finance_bot/pkg/bot"
 	"github.com/VladPetriv/finance_bot/pkg/errs"
 	"github.com/VladPetriv/finance_bot/pkg/money"
 	"github.com/google/uuid"
 )
 
-func (h handlerService) HandleOperationCreate(ctx context.Context, msg botMessage) error {
+func (h handlerService) HandleOperationCreate(ctx context.Context, msg Message) error {
 	logger := h.logger.With().Str("name", "handlerService.HandleOperationCreate").Logger()
 
 	var nextStep models.FlowStep
@@ -33,7 +32,7 @@ func (h handlerService) HandleOperationCreate(ctx context.Context, msg botMessag
 	}()
 
 	user, err := h.stores.User.Get(ctx, GetUserFilter{
-		Username:        msg.GetUsername(),
+		Username:        msg.GetSenderName(),
 		PreloadBalances: true,
 	})
 	if err != nil {
@@ -51,24 +50,30 @@ func (h handlerService) HandleOperationCreate(ctx context.Context, msg botMessag
 
 	switch currentStep {
 	case models.CreateOperationFlowStep:
-		err := h.services.Keyboard.CreateKeyboard(&CreateKeyboardOptions{
+		// Send an empty message with updated keyboard to avoid unexpected user behavior after clicking on previously generated keyboard.
+		err := h.apis.Messenger.SendWithKeyboard(SendWithKeyboardOptions{
+			ChatID:   msg.GetChatID(),
+			Message:  emptyMessage,
+			Keyboard: rowKeyboardWithCancelButtonOnly,
+		})
+		if err != nil {
+			logger.Error().Err(err).Msg("create keyboard with welcome message")
+			return fmt.Errorf("create keyboard with welcome message: %w", err)
+		}
+		err = h.apis.Messenger.SendWithKeyboard(SendWithKeyboardOptions{
 			ChatID:  msg.GetChatID(),
 			Message: "Choose operation type:",
-			Type:    keyboardTypeInline,
-			InlineRows: []bot.InlineKeyboardRow{
+			InlineKeyboard: []InlineKeyboardRow{
 				{
-					Buttons: []bot.InlineKeyboardButton{
+					Buttons: []InlineKeyboardButton{
 						{
 							Text: models.BotCreateIncomingOperationCommand,
-							Data: string(models.OperationTypeIncoming),
 						},
 						{
 							Text: models.BotCreateSpendingOperationCommand,
-							Data: string(models.OperationTypeSpending),
 						},
 						{
 							Text: models.BotCreateTransferOperationCommand,
-							Data: string(models.OperationTypeTransfer),
 						},
 					},
 				},
@@ -79,9 +84,9 @@ func (h handlerService) HandleOperationCreate(ctx context.Context, msg botMessag
 			return fmt.Errorf("create inline keyboard: %w", err)
 		}
 
-		nextStep = models.ProcessOprationTypeFlowStep
-	case models.ProcessOprationTypeFlowStep:
-		step, err := h.handleProcessOprationTypeFlowStep(handleProcessOprationTypeFlowStepOptions{
+		nextStep = models.ProcessOperationTypeFlowStep
+	case models.ProcessOperationTypeFlowStep:
+		step, err := h.handleProcessOperationTypeFlowStep(handleProcessOperationTypeFlowStepOptions{
 			user:     user,
 			metaData: stateMetaData,
 			msg:      msg,
@@ -98,7 +103,7 @@ func (h handlerService) HandleOperationCreate(ctx context.Context, msg botMessag
 
 		nextStep = step
 	case models.ChooseBalanceFlowStep:
-		stateMetaData[balanceNameMetadataKey] = msg.Message.Text
+		stateMetaData[balanceNameMetadataKey] = msg.GetText()
 		categories, err := h.stores.Category.List(ctx, &ListCategoriesFilter{
 			UserID: user.ID,
 		})
@@ -112,11 +117,10 @@ func (h handlerService) HandleOperationCreate(ctx context.Context, msg botMessag
 		}
 		logger.Debug().Any("categories", categories).Msg("got categories from store")
 
-		err = h.services.Keyboard.CreateKeyboard(&CreateKeyboardOptions{
-			ChatID:  msg.GetChatID(),
-			Message: "Choose operation category:",
-			Type:    keyboardTypeRow,
-			Rows:    getKeyboardRows(categories, false),
+		err = h.apis.Messenger.SendWithKeyboard(SendWithKeyboardOptions{
+			ChatID:   msg.GetChatID(),
+			Message:  "Choose operation category:",
+			Keyboard: getKeyboardRows(categories, true),
 		})
 		if err != nil {
 			logger.Error().Err(err).Msg("create row keyboard")
@@ -125,17 +129,16 @@ func (h handlerService) HandleOperationCreate(ctx context.Context, msg botMessag
 
 		nextStep = models.ChooseCategoryFlowStep
 	case models.ChooseBalanceFromFlowStep:
-		stateMetaData[balanceFromMetadataKey] = msg.Message.Text
+		stateMetaData[balanceFromMetadataKey] = msg.GetText()
 
 		userBalancesWithoutBalanceFrom := slices.DeleteFunc(user.Balances, func(balance models.Balance) bool {
-			return balance.Name == msg.Message.Text
+			return balance.Name == msg.GetText()
 		})
 
-		err := h.services.Keyboard.CreateKeyboard(&CreateKeyboardOptions{
-			ChatID:  msg.GetChatID(),
-			Message: "Choose balance to which transfer operation should be performed:",
-			Type:    keyboardTypeRow,
-			Rows:    getKeyboardRows(userBalancesWithoutBalanceFrom, true),
+		err := h.apis.Messenger.SendWithKeyboard(SendWithKeyboardOptions{
+			ChatID:   msg.GetChatID(),
+			Message:  "Choose balance to which transfer operation should be performed:",
+			Keyboard: getKeyboardRows(userBalancesWithoutBalanceFrom, true),
 		})
 		if err != nil {
 			logger.Error().Err(err).Msg("create row keyboard")
@@ -144,10 +147,10 @@ func (h handlerService) HandleOperationCreate(ctx context.Context, msg botMessag
 
 		nextStep = models.ChooseBalanceToFlowStep
 	case models.ChooseBalanceToFlowStep:
-		stateMetaData[balanceToMetadataKey] = msg.Message.Text
+		stateMetaData[balanceToMetadataKey] = msg.GetText()
 
 		balanceFrom := user.GetBalance(stateMetaData[balanceFromMetadataKey].(string))
-		balanceTo := user.GetBalance(msg.Message.Text)
+		balanceTo := user.GetBalance(msg.GetText())
 
 		if balanceFrom.Currency != balanceTo.Currency {
 			parsedBalanceFromAmount, err := money.NewFromString(balanceFrom.Amount)
@@ -157,10 +160,7 @@ func (h handlerService) HandleOperationCreate(ctx context.Context, msg botMessag
 			}
 			parsedBalanceFromAmount.Mul(money.NewFromInt(4))
 
-			err = h.services.Message.SendMessage(&SendMessageOptions{
-				ChatID: msg.GetChatID(),
-				Text: fmt.Sprintf(`⚠️ Different Currency Transfer ⚠️
-
+			err = h.apis.Messenger.SendMessage(msg.GetChatID(), fmt.Sprintf(`⚠️ Different Currency Transfer ⚠️
 Source Balance: %s
 Currency: %s
 Amount: %v %s
@@ -178,24 +178,23 @@ Example:
 - This means %v %s will be converted to %v %s
 
 Please enter the current exchange rate:`,
-					balanceFrom.Name,
-					balanceFrom.Currency,
-					balanceFrom.Amount,
-					balanceFrom.Currency,
-					balanceTo.Name,
-					balanceTo.Currency,
-					balanceFrom.Currency,
-					balanceTo.Currency,
-					balanceTo.Currency,
-					balanceFrom.Currency,
-					balanceFrom.Currency,
-					balanceTo.Currency,
-					balanceFrom.Amount,
-					balanceFrom.Currency,
-					parsedBalanceFromAmount.StringFixed(),
-					balanceTo.Currency,
-				),
-			})
+				balanceFrom.Name,
+				balanceFrom.Currency,
+				balanceFrom.Amount,
+				balanceFrom.Currency,
+				balanceTo.Name,
+				balanceTo.Currency,
+				balanceFrom.Currency,
+				balanceTo.Currency,
+				balanceTo.Currency,
+				balanceFrom.Currency,
+				balanceFrom.Currency,
+				balanceTo.Currency,
+				balanceFrom.Amount,
+				balanceFrom.Currency,
+				parsedBalanceFromAmount.StringFixed(),
+				balanceTo.Currency,
+			))
 			if err != nil {
 				logger.Error().Err(err).Msg("send message")
 				return fmt.Errorf("send message: %w", err)
@@ -205,9 +204,10 @@ Please enter the current exchange rate:`,
 			break
 		}
 
-		err = h.services.Message.SendMessage(&SendMessageOptions{
-			ChatID: msg.GetChatID(),
-			Text:   "Enter operation amount:",
+		err := h.apis.Messenger.SendWithKeyboard(SendWithKeyboardOptions{
+			ChatID:   msg.GetChatID(),
+			Message:  "Enter operation amount:",
+			Keyboard: rowKeyboardWithCancelButtonOnly,
 		})
 		if err != nil {
 			logger.Error().Err(err).Msg("send message")
@@ -216,7 +216,7 @@ Please enter the current exchange rate:`,
 
 		nextStep = models.EnterOperationAmountFlowStep
 	case models.EnterCurrencyExchangeRateFlowStep:
-		exchangeRate, err := money.NewFromString(msg.Message.Text)
+		exchangeRate, err := money.NewFromString(msg.GetText())
 		if err != nil {
 			logger.Error().Err(err).Msg("parse exchange rate")
 			return ErrInvalidExchangeRateFormat
@@ -224,13 +224,10 @@ Please enter the current exchange rate:`,
 		stateMetaData[exchangeRateMetadataKey] = exchangeRate.String()
 		logger.Debug().Any("exchangeRate", exchangeRate).Msg("parsed exchange rate")
 
-		err = h.services.Message.SendMessage(&SendMessageOptions{
-			ChatID: msg.GetChatID(),
-			Text: fmt.Sprintf(
-				"Enter operation amount(currency: %s): ",
-				user.GetBalance(stateMetaData[balanceFromMetadataKey].(string)).Currency,
-			),
-		})
+		err = h.apis.Messenger.SendMessage(msg.GetChatID(), fmt.Sprintf(
+			"Enter operation amount(currency: %s): ",
+			user.GetBalance(stateMetaData[balanceFromMetadataKey].(string)).Currency,
+		))
 		if err != nil {
 			logger.Error().Err(err).Msg("send message")
 			return fmt.Errorf("send message: %w", err)
@@ -238,11 +235,12 @@ Please enter the current exchange rate:`,
 
 		nextStep = models.EnterOperationAmountFlowStep
 	case models.ChooseCategoryFlowStep:
-		stateMetaData[categoryTitleMetadataKey] = msg.Message.Text
+		stateMetaData[categoryTitleMetadataKey] = msg.GetText()
 
-		err = h.services.Message.SendMessage(&SendMessageOptions{
-			ChatID: msg.GetChatID(),
-			Text:   "Enter operation description:",
+		err := h.apis.Messenger.SendWithKeyboard(SendWithKeyboardOptions{
+			ChatID:   msg.GetChatID(),
+			Message:  "Enter operation description:",
+			Keyboard: rowKeyboardWithCancelButtonOnly,
 		})
 		if err != nil {
 			logger.Error().Err(err).Msg("send message")
@@ -251,12 +249,9 @@ Please enter the current exchange rate:`,
 
 		nextStep = models.EnterOperationDescriptionFlowStep
 	case models.EnterOperationDescriptionFlowStep:
-		stateMetaData[operationDescriptionMetadataKey] = msg.Message.Text
+		stateMetaData[operationDescriptionMetadataKey] = msg.GetText()
 
-		err = h.services.Message.SendMessage(&SendMessageOptions{
-			ChatID: msg.GetChatID(),
-			Text:   "Enter operation amount:",
-		})
+		err := h.apis.Messenger.SendMessage(msg.GetChatID(), "Enter operation amount:")
 		if err != nil {
 			logger.Error().Err(err).Msg("send message")
 			return fmt.Errorf("send message: %w", err)
@@ -284,17 +279,17 @@ Please enter the current exchange rate:`,
 	return nil
 }
 
-type handleProcessOprationTypeFlowStepOptions struct {
+type handleProcessOperationTypeFlowStepOptions struct {
 	user     *models.User
 	metaData map[string]any
-	msg      botMessage
+	msg      Message
 }
 
-func (h handlerService) handleProcessOprationTypeFlowStep(opts handleProcessOprationTypeFlowStepOptions) (models.FlowStep, error) {
-	logger := h.logger.With().Str("name", "handlerService.handleProcessOprationTypeFlowStep").Logger()
+func (h handlerService) handleProcessOperationTypeFlowStep(opts handleProcessOperationTypeFlowStepOptions) (models.FlowStep, error) {
+	logger := h.logger.With().Str("name", "handlerService.handleProcessOperationTypeFlowStep").Logger()
 	logger.Debug().Any("opts", opts).Msg("got args")
 
-	operationType := models.OperationType(opts.msg.CallbackQuery.Data)
+	operationType := models.OperationCommandToOperationType[opts.msg.GetText()]
 	opts.metaData[operationTypeMetadataKey] = operationType
 
 	var (
@@ -311,11 +306,10 @@ func (h handlerService) handleProcessOprationTypeFlowStep(opts handleProcessOpra
 		nextStep = models.ChooseBalanceFromFlowStep
 	}
 
-	err := h.services.Keyboard.CreateKeyboard(&CreateKeyboardOptions{
-		ChatID:  opts.msg.GetChatID(),
-		Message: message,
-		Type:    keyboardTypeRow,
-		Rows:    getKeyboardRows(opts.user.Balances, true),
+	err := h.apis.Messenger.SendWithKeyboard(SendWithKeyboardOptions{
+		ChatID:   opts.msg.GetChatID(),
+		Message:  message,
+		Keyboard: getKeyboardRows(opts.user.Balances, true),
 	})
 	if err != nil {
 		logger.Error().Err(err).Msg("create row keyboard")
@@ -328,14 +322,14 @@ func (h handlerService) handleProcessOprationTypeFlowStep(opts handleProcessOpra
 type handleEnterOperationAmountFlowStep struct {
 	user     *models.User
 	metaData map[string]any
-	msg      botMessage
+	msg      Message
 }
 
 func (h handlerService) handleEnterOperationAmountFlowStep(ctx context.Context, opts handleEnterOperationAmountFlowStep) error {
 	logger := h.logger.With().Str("name", "handlerService.handleEnterOperationAmountFlowStep").Logger()
 	logger.Debug().Any("opts", opts).Msg("got args")
 
-	operationAmount, err := money.NewFromString(opts.msg.Message.Text)
+	operationAmount, err := money.NewFromString(opts.msg.GetText())
 	if err != nil {
 		logger.Error().Err(err).Msg("parse operation amount")
 		return ErrInvalidAmountFormat
@@ -374,11 +368,10 @@ func (h handlerService) handleEnterOperationAmountFlowStep(ctx context.Context, 
 		return fmt.Errorf("received unknown operation type: %s", operationType)
 	}
 
-	err = h.services.Keyboard.CreateKeyboard(&CreateKeyboardOptions{
-		ChatID:  opts.msg.GetChatID(),
-		Type:    keyboardTypeRow,
-		Rows:    defaultKeyboardRows,
-		Message: "Operation created!",
+	err = h.apis.Messenger.SendWithKeyboard(SendWithKeyboardOptions{
+		ChatID:   opts.msg.GetChatID(),
+		Message:  "Operation created!",
+		Keyboard: defaultKeyboardRows,
 	})
 	if err != nil {
 		logger.Error().Err(err).Msg("send message")
@@ -563,7 +556,7 @@ func (h handlerService) processTransferOperation(ctx context.Context, opts proce
 	return nil
 }
 
-func (h handlerService) HandleOperationHistory(ctx context.Context, msg botMessage) error {
+func (h handlerService) HandleOperationHistory(ctx context.Context, msg Message) error {
 	logger := h.logger.With().Str("name", "handlerService.HandleOperationHistory").Logger()
 
 	var nextStep models.FlowStep
@@ -583,7 +576,7 @@ func (h handlerService) HandleOperationHistory(ctx context.Context, msg botMessa
 	}()
 
 	user, err := h.stores.User.Get(ctx, GetUserFilter{
-		Username:        msg.GetUsername(),
+		Username:        msg.GetSenderName(),
 		PreloadBalances: true,
 	})
 	if err != nil {
@@ -601,11 +594,10 @@ func (h handlerService) HandleOperationHistory(ctx context.Context, msg botMessa
 
 	switch currentStep {
 	case models.GetOperationsHistoryFlowStep:
-		err := h.services.Keyboard.CreateKeyboard(&CreateKeyboardOptions{
-			ChatID:  msg.GetChatID(),
-			Message: "Choose balance to view operations history for:",
-			Type:    keyboardTypeRow,
-			Rows:    getKeyboardRows(user.Balances, true),
+		err := h.apis.Messenger.SendWithKeyboard(SendWithKeyboardOptions{
+			ChatID:   msg.GetChatID(),
+			Message:  "Choose balance to view operations history for:",
+			Keyboard: getKeyboardRows(user.Balances, true),
 		})
 		if err != nil {
 			logger.Error().Err(err).Msg("create row keyboard")
@@ -614,12 +606,12 @@ func (h handlerService) HandleOperationHistory(ctx context.Context, msg botMessa
 
 		nextStep = models.ChooseBalanceFlowStep
 	case models.ChooseBalanceFlowStep:
-		stateMetaData[balanceNameMetadataKey] = msg.Message.Text
-		err := h.services.Keyboard.CreateKeyboard(&CreateKeyboardOptions{
+		stateMetaData[balanceNameMetadataKey] = msg.GetText()
+
+		err := h.apis.Messenger.SendWithKeyboard(SendWithKeyboardOptions{
 			ChatID:  msg.GetChatID(),
 			Message: "Please select a period for operation history!",
-			Type:    keyboardTypeRow,
-			Rows: []bot.KeyboardRow{
+			Keyboard: []KeyboardRow{
 				{
 					Buttons: []string{
 						string(models.CreationPeriodDay),
@@ -630,7 +622,7 @@ func (h handlerService) HandleOperationHistory(ctx context.Context, msg botMessa
 				},
 				{
 					Buttons: []string{
-						models.BotBackCommand,
+						models.BotCancelCommand,
 					},
 				},
 			},
@@ -665,7 +657,7 @@ func (h handlerService) HandleOperationHistory(ctx context.Context, msg botMessa
 type handlerChooseTimePeriodForOperationsHistoryFlowStepOptions struct {
 	user     *models.User
 	metaData map[string]any
-	msg      botMessage
+	msg      Message
 }
 
 func (h handlerService) handlerChooseTimePeriodForOperationsHistoryFlowStep(ctx context.Context, opts handlerChooseTimePeriodForOperationsHistoryFlowStepOptions) error {
@@ -679,7 +671,7 @@ func (h handlerService) handlerChooseTimePeriodForOperationsHistoryFlowStep(ctx 
 	}
 	logger.Debug().Any("balance", balance).Msg("got balance")
 
-	creationPeriod := models.GetCreationPeriodFromText(opts.msg.Message.Text)
+	creationPeriod := models.GetCreationPeriodFromText(opts.msg.GetText())
 	operations, err := h.stores.Operation.List(ctx, ListOperationsFilter{
 		BalanceID:      balance.ID,
 		CreationPeriod: creationPeriod,
@@ -702,11 +694,10 @@ func (h handlerService) handlerChooseTimePeriodForOperationsHistoryFlowStep(ctx 
 		)
 	}
 
-	err = h.services.Keyboard.CreateKeyboard(&CreateKeyboardOptions{
-		ChatID:  opts.msg.GetChatID(),
-		Type:    keyboardTypeRow,
-		Rows:    defaultKeyboardRows,
-		Message: resultMessage,
+	err = h.apis.Messenger.SendWithKeyboard(SendWithKeyboardOptions{
+		ChatID:   opts.msg.GetChatID(),
+		Message:  resultMessage,
+		Keyboard: defaultKeyboardRows,
 	})
 	if err != nil {
 		logger.Error().Err(err).Msg("send message")
