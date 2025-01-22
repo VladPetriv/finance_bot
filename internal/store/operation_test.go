@@ -333,7 +333,10 @@ func TestOperation_Get(t *testing.T) {
 	operationStore := store.NewOperation(db)
 
 	var (
-		operationID1, operationID2, operationID3 = uuid.NewString(), uuid.NewString(), uuid.NewString()
+		operationID1,
+		operationID2,
+		operationID3,
+		operationID4 = uuid.NewString(), uuid.NewString(), uuid.NewString(), uuid.NewString()
 	)
 
 	now := time.Now()
@@ -343,7 +346,6 @@ func TestOperation_Get(t *testing.T) {
 		preconditions *models.Operation
 		input         service.GetOperationFilter
 		expected      *models.Operation
-		expectError   bool
 	}{
 		{
 			desc: "positive: operation found by id",
@@ -362,7 +364,6 @@ func TestOperation_Get(t *testing.T) {
 				Amount:    "100",
 				BalanceID: "balance-1",
 			},
-			expectError: false,
 		},
 		{
 			desc: "positive: operation found by type",
@@ -381,7 +382,6 @@ func TestOperation_Get(t *testing.T) {
 				Amount:    "100",
 				BalanceID: "balance-2",
 			},
-			expectError: false,
 		},
 		{
 			desc: "positive: operation found by createdAtFrom and createdAtTo",
@@ -402,15 +402,31 @@ func TestOperation_Get(t *testing.T) {
 				Amount:    "100",
 				BalanceID: "balance-3",
 			},
-			expectError: false,
+		},
+		{
+			desc: "positive: operation found by balances ids filter",
+			preconditions: &models.Operation{
+				ID:        operationID4,
+				Type:      models.OperationTypeTransfer,
+				Amount:    "100",
+				BalanceID: "balance-4",
+			},
+			input: service.GetOperationFilter{
+				BalanceIDs: []string{"balance-4"},
+			},
+			expected: &models.Operation{
+				ID:        operationID4,
+				Type:      models.OperationTypeTransfer,
+				Amount:    "100",
+				BalanceID: "balance-4",
+			},
 		},
 		{
 			desc: "negative: operation not found",
 			input: service.GetOperationFilter{
 				ID: "not-existed-id",
 			},
-			expected:    nil,
-			expectError: true,
+			expected: nil,
 		},
 	}
 
@@ -432,16 +448,16 @@ func TestOperation_Get(t *testing.T) {
 			})
 
 			actual, err := operationStore.Get(ctx, tc.input)
-			if tc.expectError {
-				assert.Error(t, err)
+			assert.NoError(t, err)
+			if tc.expected == nil {
 				assert.Nil(t, actual)
-			} else {
-				assert.NoError(t, err)
-				assert.Equal(t, tc.expected.ID, actual.ID)
-				assert.Equal(t, tc.expected.Type, actual.Type)
-				assert.Equal(t, tc.expected.Amount, actual.Amount)
-				assert.Equal(t, tc.expected.BalanceID, actual.BalanceID)
+				return
 			}
+
+			assert.Equal(t, tc.expected.ID, actual.ID)
+			assert.Equal(t, tc.expected.Type, actual.Type)
+			assert.Equal(t, tc.expected.Amount, actual.Amount)
+			assert.Equal(t, tc.expected.BalanceID, actual.BalanceID)
 		})
 	}
 }

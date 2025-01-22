@@ -75,6 +75,7 @@ type GetOperationFilter struct {
 	Type         models.OperationType
 	CreateAtFrom time.Time
 	CreateAtTo   time.Time
+	BalanceIDs   []string
 }
 
 // ListOperationsFilter represents filters for list operations from store.

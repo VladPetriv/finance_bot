@@ -2,12 +2,14 @@ package store
 
 import (
 	"context"
+	"errors"
 	"time"
 
 	"github.com/VladPetriv/finance_bot/internal/models"
 	"github.com/VladPetriv/finance_bot/internal/service"
 	"github.com/VladPetriv/finance_bot/pkg/database"
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
@@ -102,6 +104,9 @@ func (o operationStore) Get(ctx context.Context, filter service.GetOperationFilt
 	if filter.Type != "" {
 		stmt["type"] = filter.Type
 	}
+	if len(filter.BalanceIDs) != 0 {
+		stmt["balanceId"] = bson.M{"$in": filter.BalanceIDs}
+	}
 	if !filter.CreateAtFrom.IsZero() {
 		stmt["createdAt"] = bson.M{
 			"$gte": filter.CreateAtFrom,
@@ -116,6 +121,10 @@ func (o operationStore) Get(ctx context.Context, filter service.GetOperationFilt
 	var operation models.Operation
 	err := o.DB.Collection(collectionOperation).FindOne(ctx, stmt).Decode(&operation)
 	if err != nil {
+		if errors.Is(err, mongo.ErrNoDocuments) {
+			return nil, nil
+		}
+
 		return nil, err
 	}
 
