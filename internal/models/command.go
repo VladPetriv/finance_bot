@@ -42,6 +42,8 @@ const (
 	BotGetOperationsHistory string = "Get Operations History 📖"
 	// BotDeleteOperationCommand represents the command to delete an operation
 	BotDeleteOperationCommand string = "Delete Operation ❌"
+	// BotShowMoreOperationsForDeleteCommand represents the command to select more operations
+	BotShowMoreOperationsForDeleteCommand string = "Show More Operations For Delete ➡️"
 
 	// BotCancelCommand represents the command that will cancel the current flow
 	BotCancelCommand string = "Cancel action ⬅️"
@@ -54,6 +56,7 @@ var AvailableCommands = []string{
 	BotGetBalanceCommand, BotCreateBalanceCommand, BotUpdateBalanceCommand, BotDeleteBalanceCommand,
 	BotCreateCategoryCommand, BotListCategoriesCommand, BotUpdateCategoryCommand, BotDeleteCategoryCommand,
 	BotCreateOperationCommand, BotCreateIncomingOperationCommand, BotCreateSpendingOperationCommand, BotGetOperationsHistory, BotCreateTransferOperationCommand,
+	BotDeleteOperationCommand, BotShowMoreOperationsForDeleteCommand,
 	BotCancelCommand,
 }
 

@@ -61,6 +61,13 @@ func (s *State) IsCommandAllowedDuringFlow(command string) bool {
 		}
 
 		return false
+
+	case DeleteOperationFlow:
+		if s.GetCurrentStep() == ChooseOperationToDeleteFlowStep {
+			return slices.Contains([]string{BotShowMoreOperationsForDeleteCommand}, command)
+		}
+
+		return false
 	default:
 		return false
 	}
@@ -99,6 +106,8 @@ func (s *State) GetEvent() Event {
 		return DeleteCategoryEvent
 	case CreateOperationFlowStep:
 		return CreateOperationEvent
+	case DeleteOperationFlowStep:
+		return DeleteOperationEvent
 	case GetOperationsHistoryFlowStep:
 		return GetOperationsHistoryEvent
 	default:
@@ -221,4 +230,8 @@ const (
 	ChooseTimePeriodForOperationsHistoryFlowStep FlowStep = "choose_time_period_for_operations_history"
 	// DeleteOperationFlowStep represents the step for deleting an operation
 	DeleteOperationFlowStep FlowStep = "delete_operation"
+	// ChooseOperationToDeleteFlowStep represents the step for choosing operation to delete
+	ChooseOperationToDeleteFlowStep FlowStep = "choose_operation_to_delete"
+	// ConfirmOperationDeletionFlowStep represents the step for confirming operation deletion
+	ConfirmOperationDeletionFlowStep FlowStep = "confirm_operation_deletion"
 )
