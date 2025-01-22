@@ -4,12 +4,14 @@ import (
 	"context"
 	"fmt"
 	"slices"
+	"strconv"
 	"time"
 
 	"github.com/VladPetriv/finance_bot/internal/models"
 	"github.com/VladPetriv/finance_bot/pkg/errs"
 	"github.com/VladPetriv/finance_bot/pkg/money"
 	"github.com/google/uuid"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 func (h handlerService) HandleOperationCreate(ctx context.Context, msg Message) error {
@@ -702,6 +704,420 @@ func (h handlerService) handlerChooseTimePeriodForOperationsHistoryFlowStep(ctx 
 	if err != nil {
 		logger.Error().Err(err).Msg("send message")
 		return fmt.Errorf("send message: %w", err)
+	}
+
+	return nil
+}
+
+func (h handlerService) HandleOperationDelete(ctx context.Context, msg Message) error {
+	logger := h.logger.With().Str("name", "handlerService.HandleOperationDelete").Logger()
+
+	var nextStep models.FlowStep
+	stateMetaData := ctx.Value(contextFieldNameState).(*models.State).Metedata
+	defer func() {
+		state := ctx.Value(contextFieldNameState).(*models.State)
+		if nextStep != "" {
+			state.Steps = append(state.Steps, nextStep)
+		}
+		state.Metedata = stateMetaData
+		updatedState, err := h.stores.State.Update(ctx, state)
+		if err != nil {
+			logger.Error().Err(err).Msg("update state in store")
+			return
+		}
+		logger.Debug().Any("updatedState", updatedState).Msg("updated state in store")
+	}()
+
+	user, err := h.stores.User.Get(ctx, GetUserFilter{
+		Username:        msg.GetSenderName(),
+		PreloadBalances: true,
+	})
+	if err != nil {
+		logger.Error().Err(err).Msg("get user from store")
+		return fmt.Errorf("get user from store: %w", err)
+	}
+	if user == nil {
+		logger.Info().Msg("user not found")
+		return ErrUserNotFound
+	}
+	logger.Debug().Any("user", user).Msg("got user from store")
+
+	currentStep := ctx.Value(contextFieldNameState).(*models.State).GetCurrentStep()
+	logger.Debug().Any("currentStep", currentStep).Msg("got current step on create operation flow")
+
+	switch currentStep {
+	case models.DeleteOperationFlowStep:
+		err := h.apis.Messenger.SendWithKeyboard(SendWithKeyboardOptions{
+			ChatID:   msg.GetChatID(),
+			Message:  "Choose balance to delete operation from:",
+			Keyboard: getKeyboardRows(user.Balances, 3, true),
+		})
+		if err != nil {
+			logger.Error().Err(err).Msg("create row keyboard")
+			return fmt.Errorf("create row keyboard: %w", err)
+		}
+
+		nextStep = models.ChooseBalanceFlowStep
+	case models.ChooseBalanceFlowStep:
+		stateMetaData[balanceNameMetadataKey] = msg.GetText()
+
+		err := h.showCancelButton(msg.GetChatID())
+		if err != nil {
+			logger.Error().Err(err).Msg("show cancel button")
+			return fmt.Errorf("show cancel button: %w", err)
+		}
+
+		err = h.sendListOfOperationsWithAbilityToPaginate(ctx, sendListOfOperationsWithAbilityToPaginateOptions{
+			balanceID:     user.GetBalance(msg.GetText()).ID,
+			chatID:        msg.GetChatID(),
+			stateMetadata: stateMetaData,
+		})
+		if err != nil {
+			if errs.IsExpected(err) {
+				logger.Info().Msg(err.Error())
+				return err
+			}
+			logger.Error().Err(err).Msg("choose balance for delete operation flow step")
+			return fmt.Errorf("choose balance for delete operation flow step: %w", err)
+		}
+
+		nextStep = models.ChooseOperationToDeleteFlowStep
+	case models.ChooseOperationToDeleteFlowStep:
+		step, err := h.chooseOperationToDeleteFlowStep(ctx, chooseOperationToDeleteFlowStepOptions{
+			user:     user,
+			msg:      msg,
+			metaData: stateMetaData,
+		})
+		if err != nil {
+			if errs.IsExpected(err) {
+				logger.Info().Msg(err.Error())
+				return err
+			}
+			logger.Error().Err(err).Msg("handle choose operation to delete flow step")
+			return fmt.Errorf("handle choose operation to delete flow step: %w", err)
+		}
+
+		nextStep = step
+
+	case models.ConfirmOperationDeletionFlowStep:
+		confirmOperationDeletion, err := strconv.ParseBool(msg.GetText())
+		if err != nil {
+			logger.Error().Err(err).Msg("parse callback data to bool")
+			return fmt.Errorf("parse callback data to bool: %w", err)
+		}
+
+		if !confirmOperationDeletion {
+			logger.Info().Msg("user did not confirm balance deletion")
+			nextStep = models.EndFlowStep
+			return h.notifyCancellationAndShowMenu(msg.GetChatID())
+		}
+
+		err = h.deleteOperation(ctx, deleteOperationOptions{
+			user:        user,
+			balanceName: stateMetaData[balanceNameMetadataKey].(string),
+			operationID: stateMetaData[operationIDMetadataKey].(string),
+		})
+		if err != nil {
+			logger.Error().Err(err).Msg("delete operation")
+			return fmt.Errorf("delete operation: %w", err)
+		}
+
+		err = h.apis.Messenger.SendWithKeyboard(SendWithKeyboardOptions{
+			ChatID:   msg.GetChatID(),
+			Message:  "Operation deleted!",
+			Keyboard: defaultKeyboardRows,
+		})
+		if err != nil {
+			logger.Error().Err(err).Msg("send message")
+			return fmt.Errorf("send message: %w", err)
+		}
+
+		nextStep = models.EndFlowStep
+	}
+
+	return nil
+}
+
+type chooseOperationToDeleteFlowStepOptions struct {
+	user     *models.User
+	msg      Message
+	metaData map[string]any
+}
+
+func (h handlerService) chooseOperationToDeleteFlowStep(ctx context.Context, opts chooseOperationToDeleteFlowStepOptions) (models.FlowStep, error) {
+	logger := h.logger.With().Str("name", "handlerService.chooseOperationToDeleteFlowStep").Logger()
+	logger.Debug().Any("opts", opts).Msg("got args")
+
+	if opts.msg.GetText() == models.BotShowMoreOperationsForDeleteCommand {
+		err := h.sendListOfOperationsWithAbilityToPaginate(ctx, sendListOfOperationsWithAbilityToPaginateOptions{
+			balanceID:                      opts.user.GetBalance(opts.metaData[balanceNameMetadataKey].(string)).ID,
+			chatID:                         opts.msg.GetChatID(),
+			includeLastShowedOperationDate: true,
+			stateMetadata:                  opts.metaData,
+		})
+		if err != nil {
+			if errs.IsExpected(err) {
+				logger.Info().Msg(err.Error())
+				return "", err
+			}
+
+			logger.Error().Err(err).Msg("send list of operations with ability to paginate")
+			return "", fmt.Errorf("send list of operations with ability to paginate: %w", err)
+		}
+
+		return models.ChooseOperationToDeleteFlowStep, nil
+	}
+
+	operation, err := h.stores.Operation.Get(ctx, GetOperationFilter{
+		ID: opts.msg.GetText(),
+	})
+	if err != nil {
+		logger.Error().Err(err).Msg("get operation from store")
+		return "", fmt.Errorf("get operation from store: %w", err)
+	}
+	if operation == nil {
+		logger.Info().Msg("operation not found")
+		return "", ErrOperationNotFound
+	}
+
+	opts.metaData[operationIDMetadataKey] = operation.ID
+
+	err = h.sendMessageWithConfirmationInlineKeyboard(
+		opts.msg.GetChatID(),
+		operation.GetDeletionMessage(),
+	)
+	if err != nil {
+		logger.Error().Err(err).Msg("send message with confirmation inline keyboard")
+		return "", fmt.Errorf("send message with confirmation inline keyboard: %w", err)
+	}
+
+	return models.ConfirmOperationDeletionFlowStep, nil
+}
+
+type sendListOfOperationsWithAbilityToPaginateOptions struct {
+	balanceID                      string
+	chatID                         int
+	includeLastShowedOperationDate bool
+	stateMetadata                  map[string]any
+}
+
+const operationsPerMessage = 10
+
+func (h handlerService) sendListOfOperationsWithAbilityToPaginate(ctx context.Context, opts sendListOfOperationsWithAbilityToPaginateOptions) error {
+	logger := h.logger.With().Str("name", "handlerService.sendListOfOperationsWithAbilityToPaginate").Logger()
+	logger.Debug().Any("opts", opts).Msg("got args")
+
+	filter := ListOperationsFilter{
+		BalanceID:           opts.balanceID,
+		SortByCreatedAtDesc: true,
+		Limit:               operationsPerMessage,
+	}
+
+	if opts.includeLastShowedOperationDate {
+		lastOperationTime, ok := opts.stateMetadata[lastOperationDateMetadataKey].(primitive.DateTime)
+		if ok {
+			filter.CreatedAtLessThan = lastOperationTime.Time()
+		}
+	}
+
+	operations, err := h.stores.Operation.List(ctx, filter)
+	if err != nil {
+		logger.Error().Err(err).Msg("list operations from store")
+		return fmt.Errorf("list operations from store: %w", err)
+	}
+	if len(operations) == 0 {
+		logger.Info().Any("balanceID", opts.balanceID).Msg("operations not found")
+		return ErrOperationsNotFound
+	}
+
+	// Store the timestamp of the most recent operation in metadata.
+	// This timestamp serves as a pagination cursor, enabling the retrieval
+	// of subsequent operations in chronological order.
+	opts.stateMetadata[lastOperationDateMetadataKey] = operations[len(operations)-1].CreatedAt
+
+	err = h.apis.Messenger.SendWithKeyboard(SendWithKeyboardOptions{
+		ChatID:         opts.chatID,
+		Message:        "Select operation to delete:",
+		InlineKeyboard: convertOperationsToInlineKeyboardRowsWithPagination(operations, operationsPerMessage),
+	})
+	if err != nil {
+		logger.Error().Err(err).Msg("create inline keyboard")
+		return fmt.Errorf("create inline keyboard: %w", err)
+	}
+
+	return nil
+}
+
+type deleteOperationOptions struct {
+	user        *models.User
+	balanceName string
+	operationID string
+}
+
+func (h handlerService) deleteOperation(ctx context.Context, opts deleteOperationOptions) error {
+	logger := h.logger.With().Str("name", "handlerService.deleteOperation").Logger()
+	logger.Debug().Any("opts", opts).Msg("got args")
+
+	operation, err := h.stores.Operation.Get(ctx, GetOperationFilter{
+		ID: opts.operationID,
+	})
+	if err != nil {
+		logger.Error().Err(err).Msg("get operation from store")
+		return fmt.Errorf("get operation from store: %w", err)
+	}
+	if operation == nil {
+		logger.Info().Msg("operation not found")
+		return ErrOperationNotFound
+	}
+
+	balance := opts.user.GetBalance(opts.balanceName)
+	if balance == nil {
+		logger.Error().Msg("balance not found")
+		return ErrBalanceNotFound
+	}
+
+	switch operation.Type {
+	case models.OperationTypeTransferIn, models.OperationTypeTransferOut:
+		return h.deleteTransferOperation(ctx, operation, opts.user)
+	case models.OperationTypeSpending, models.OperationTypeIncoming:
+
+		err = h.deleteSpendingOrIncomeOperation(ctx, operation, balance)
+		if err != nil {
+			logger.Error().Err(err).Msgf("delete %s operation", operation.Type)
+			return fmt.Errorf("delete %s operation: %w", operation.Type, err)
+		}
+	}
+
+	return nil
+}
+
+// deleteTransferOperation handles the deletion of a transfer operation and its paired counterpart, adjusting the balances accordingly
+func (h handlerService) deleteTransferOperation(ctx context.Context, initialOperation *models.Operation, user *models.User) error {
+	logger := h.logger.With().Str("name", "handlerService.deleteTransferOperation").Logger()
+	logger.Debug().Any("operation", initialOperation).Any("user", user).Msg("got args")
+
+	filter := GetOperationFilter{
+		BalanceIDs:   user.GetBalancesIDs(),
+		CreateAtFrom: initialOperation.CreatedAt,
+		CreateAtTo:   initialOperation.CreatedAt.Add(1 * time.Second),
+	}
+
+	// Determine the type of paired operation to look for
+	switch initialOperation.Type {
+	case models.OperationTypeTransferIn:
+		filter.Type = models.OperationTypeTransferOut
+	case models.OperationTypeTransferOut:
+		filter.Type = models.OperationTypeTransferIn
+	}
+
+	pairedTransferOperation, err := h.stores.Operation.Get(ctx, filter)
+	if err != nil {
+		logger.Error().Err(err).Msg("get operation from store")
+		return fmt.Errorf("get operation from store: %w", err)
+	}
+	if pairedTransferOperation == nil {
+		logger.Info().Msg("reversed transfer operation not found")
+		return ErrOperationNotFound
+	}
+
+	pairedBalance := user.GetBalance(pairedTransferOperation.BalanceID)
+	if pairedBalance == nil {
+		logger.Info().Msg("paired balance not found")
+		return ErrBalanceNotFound
+	}
+
+	initialBalance := user.GetBalance(initialOperation.BalanceID)
+	if initialBalance == nil {
+		logger.Info().Msg("initial balance not found")
+		return ErrBalanceNotFound
+	}
+
+	operationAmount, err := money.NewFromString(initialOperation.Amount)
+	if err != nil {
+		logger.Error().Err(err).Msg("parse operation amount")
+		return fmt.Errorf("parse operation amount: %w", err)
+	}
+
+	initialBalanceAmount, err := money.NewFromString(initialBalance.Amount)
+	if err != nil {
+		logger.Error().Err(err).Msg("parse balance amount")
+		return fmt.Errorf("parse balance amount: %w", err)
+	}
+
+	pairedBalanceAmount, err := money.NewFromString(pairedBalance.Amount)
+	if err != nil {
+		logger.Error().Err(err).Msg("parse balance amount")
+		return fmt.Errorf("parse balance amount: %w", err)
+	}
+
+	switch initialOperation.Type {
+	case models.OperationTypeTransferIn:
+		initialBalance.Amount = initialBalanceAmount.Sub(operationAmount).StringFixed()
+		pairedBalanceAmount.Inc(operationAmount)
+		pairedBalance.Amount = pairedBalanceAmount.StringFixed()
+	case models.OperationTypeTransferOut:
+		initialBalanceAmount.Inc(operationAmount)
+		initialBalance.Amount = initialBalanceAmount.StringFixed()
+		pairedBalance.Amount = pairedBalanceAmount.Sub(operationAmount).StringFixed()
+	}
+
+	for _, operation := range []string{initialOperation.ID, pairedTransferOperation.ID} {
+		err = h.stores.Operation.Delete(ctx, operation)
+		if err != nil {
+			logger.Error().Err(err).Msg("delete operation from store")
+			return fmt.Errorf("delete operation from store: %w", err)
+		}
+	}
+
+	for _, balance := range []*models.Balance{initialBalance, pairedBalance} {
+		err = h.stores.Balance.Update(ctx, balance)
+		if err != nil {
+			logger.Error().Err(err).Msg("delete balance from store")
+			return fmt.Errorf("delete balance from store: %w", err)
+		}
+	}
+
+	return nil
+}
+
+// deleteSpendingOrIncomeOperation handles the deletion of a spending or income operation
+// and updates the associated balance accordingly. For spending operations, it adds the
+// amount back to the balance, and for income operations, it subtracts the amount from the balance.
+func (h handlerService) deleteSpendingOrIncomeOperation(ctx context.Context, operation *models.Operation, balance *models.Balance) error {
+	logger := h.logger.With().Str("name", "handlerService.deleteSpendingOrIncomeOperation").Logger()
+	logger.Debug().Any("operation", operation).Any("balance", balance).Msg("got args")
+
+	balanceAmount, err := money.NewFromString(balance.Amount)
+	if err != nil {
+		logger.Error().Err(err).Msg("parse balance amount")
+		return fmt.Errorf("parse balance amount: %w", err)
+	}
+
+	operationAmount, err := money.NewFromString(operation.Amount)
+	if err != nil {
+		logger.Error().Err(err).Msg("parse operation amount")
+		return fmt.Errorf("parse operation amount: %w", err)
+	}
+
+	switch operation.Type {
+	case models.OperationTypeSpending:
+		balanceAmount.Inc(operationAmount)
+		balance.Amount = balanceAmount.StringFixed()
+	case models.OperationTypeIncoming:
+		calculatedAmount := balanceAmount.Sub(operationAmount)
+		balance.Amount = calculatedAmount.StringFixed()
+	}
+
+	err = h.stores.Balance.Update(ctx, balance)
+	if err != nil {
+		logger.Error().Err(err).Msg("update balance in store")
+		return fmt.Errorf("update balance in store: %w", err)
+	}
+
+	err = h.stores.Operation.Delete(ctx, operation.ID)
+	if err != nil {
+		logger.Error().Err(err).Msg("delete operation from store")
+		return fmt.Errorf("delete operation from store: %w", err)
 	}
 
 	return nil

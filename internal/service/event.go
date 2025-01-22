@@ -248,6 +248,19 @@ func (e eventService) ReactOnEvent(ctx context.Context, event models.Event, msg 
 			logger.Error().Err(err).Msg("handle event get operations history")
 			return fmt.Errorf("handle event get operations history: %w", err)
 		}
+
+	case models.DeleteOperationEvent:
+		err := e.services.Handler.HandleOperationDelete(ctx, msg)
+		if err != nil {
+			if errs.IsExpected(err) {
+				logger.Info().Err(err).Msg(err.Error())
+				return err
+			}
+
+			logger.Error().Err(err).Msg("handle event operation deleted")
+			return fmt.Errorf("handle event operation deleted: %w", err)
+		}
+
 	default:
 		logger.Error().Any("event", event).Msg("receive unexpected event")
 		return fmt.Errorf("receive unexpected event: %v", event)

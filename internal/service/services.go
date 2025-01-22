@@ -49,6 +49,8 @@ type HandlerService interface {
 
 	// HandleOperationCreate processes new operation creation
 	HandleOperationCreate(ctx context.Context, msg Message) error
+	// HandleOperationDelete processes operation removal
+	HandleOperationDelete(ctx context.Context, msg Message) error
 	// HandleOperationHistory retrieves operation transaction history
 	HandleOperationHistory(ctx context.Context, msg Message) error
 }
@@ -100,6 +102,8 @@ var (
 
 	// ErrOperationsNotFound happens when don't receive operations from store.
 	ErrOperationsNotFound = errs.New("Operations not found")
+	// ErrOperationNotFound happens when don't receive operation from store.
+	ErrOperationNotFound = errs.New("Operation not found. Please try to select another operation.")
 
 	// ErrInvalidAmountFormat happens when use enters amount with invalid format
 	ErrInvalidAmountFormat = errs.New("Invalid amount format! Please try again.")
@@ -126,6 +130,8 @@ const (
 	exchangeRateMetadataKey         = "exchange_rate"
 	operationDescriptionMetadataKey = "operation_description"
 	operationTypeMetadataKey        = "operation_type"
+	lastOperationDateMetadataKey    = "last_operation_date"
+	operationIDMetadataKey          = "operation_id"
 )
 
 // StateService represents a service for managing and handling complex bot flow using state.

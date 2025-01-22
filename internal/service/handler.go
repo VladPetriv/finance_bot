@@ -294,3 +294,36 @@ func getKeyboardRows[T named](data []T, elementLimitPerRow int, includeRowWithCa
 
 	return keyboardRows
 }
+
+// convertOperationsToInlineKeyboardRowsWithPagination converts a slice of operations into inline keyboard rows with pagination support.
+// If there are more operations than the per-message limit, it adds a "Show More" button.
+func convertOperationsToInlineKeyboardRowsWithPagination(operations []models.Operation, limitPerMessage int) []InlineKeyboardRow {
+	inlineKeyboardRows := make([]InlineKeyboardRow, 0, len(operations))
+	for _, operation := range operations {
+		inlineKeyboardRows = append(inlineKeyboardRows, InlineKeyboardRow{
+			Buttons: []InlineKeyboardButton{
+				{
+					Text: operation.GetName(),
+					Data: operation.ID,
+				},
+			},
+		})
+	}
+
+	// No need to show models.BotShowMoreOperationsForDeleteCommand, since we already have less operations than operationsPerMessage limit.
+	if len(operations) <= limitPerMessage {
+		return inlineKeyboardRows
+	}
+
+	inlineKeyboardRows = append(inlineKeyboardRows, []InlineKeyboardRow{
+		{
+			Buttons: []InlineKeyboardButton{
+				{
+					Text: models.BotShowMoreOperationsForDeleteCommand,
+				},
+			},
+		},
+	}...)
+
+	return inlineKeyboardRows
+}
