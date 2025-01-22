@@ -120,7 +120,7 @@ func (h handlerService) HandleOperationCreate(ctx context.Context, msg Message) 
 		err = h.apis.Messenger.SendWithKeyboard(SendWithKeyboardOptions{
 			ChatID:   msg.GetChatID(),
 			Message:  "Choose operation category:",
-			Keyboard: getKeyboardRows(categories, true),
+			Keyboard: getKeyboardRows(categories, 3, true),
 		})
 		if err != nil {
 			logger.Error().Err(err).Msg("create row keyboard")
@@ -138,7 +138,7 @@ func (h handlerService) HandleOperationCreate(ctx context.Context, msg Message) 
 		err := h.apis.Messenger.SendWithKeyboard(SendWithKeyboardOptions{
 			ChatID:   msg.GetChatID(),
 			Message:  "Choose balance to which transfer operation should be performed:",
-			Keyboard: getKeyboardRows(userBalancesWithoutBalanceFrom, true),
+			Keyboard: getKeyboardRows(userBalancesWithoutBalanceFrom, 3, true),
 		})
 		if err != nil {
 			logger.Error().Err(err).Msg("create row keyboard")
@@ -309,7 +309,7 @@ func (h handlerService) handleProcessOperationTypeFlowStep(opts handleProcessOpe
 	err := h.apis.Messenger.SendWithKeyboard(SendWithKeyboardOptions{
 		ChatID:   opts.msg.GetChatID(),
 		Message:  message,
-		Keyboard: getKeyboardRows(opts.user.Balances, true),
+		Keyboard: getKeyboardRows(opts.user.Balances, 3, true),
 	})
 	if err != nil {
 		logger.Error().Err(err).Msg("create row keyboard")
@@ -597,7 +597,7 @@ func (h handlerService) HandleOperationHistory(ctx context.Context, msg Message)
 		err := h.apis.Messenger.SendWithKeyboard(SendWithKeyboardOptions{
 			ChatID:   msg.GetChatID(),
 			Message:  "Choose balance to view operations history for:",
-			Keyboard: getKeyboardRows(user.Balances, true),
+			Keyboard: getKeyboardRows(user.Balances, 3, true),
 		})
 		if err != nil {
 			logger.Error().Err(err).Msg("create row keyboard")

@@ -202,7 +202,7 @@ func (h handlerService) HandleBalanceUpdate(ctx context.Context, msg Message) er
 		err := h.apis.Messenger.SendWithKeyboard(SendWithKeyboardOptions{
 			ChatID:   msg.GetChatID(),
 			Message:  "Choose balance to update:",
-			Keyboard: getKeyboardRows(user.Balances, true),
+			Keyboard: getKeyboardRows(user.Balances, 3, true),
 		})
 		if err != nil {
 			logger.Error().Err(err).Msg("create keyboard with welcome message")
@@ -435,7 +435,7 @@ func (h handlerService) HandleBalanceGet(ctx context.Context, msg Message) error
 		err := h.apis.Messenger.SendWithKeyboard(SendWithKeyboardOptions{
 			ChatID:   msg.GetChatID(),
 			Message:  "Select a balance to view information:",
-			Keyboard: getKeyboardRows(user.Balances, true),
+			Keyboard: getKeyboardRows(user.Balances, 3, true),
 		})
 		if err != nil {
 			logger.Error().Err(err).Msg("create keyboard with welcome message")
@@ -486,8 +486,6 @@ func (h handlerService) processGetBalanceInfo(ctx context.Context, msg Message) 
 
 	return nil
 }
-
-const emptyMessage = "ㅤ"
 
 func (h handlerService) HandleBalanceDelete(ctx context.Context, msg Message) error {
 	logger := h.logger.With().Str("name", "handlerService.HandleBalanceDelete").Logger()
@@ -545,7 +543,7 @@ func (h handlerService) HandleBalanceDelete(ctx context.Context, msg Message) er
 		err := h.apis.Messenger.SendWithKeyboard(SendWithKeyboardOptions{
 			ChatID:   msg.GetChatID(),
 			Message:  "Choose balance to delete:",
-			Keyboard: getKeyboardRows(user.Balances, true),
+			Keyboard: getKeyboardRows(user.Balances, 3, true),
 		})
 		if err != nil {
 			logger.Error().Err(err).Msg("create keyboard with welcome message")
@@ -556,38 +554,18 @@ func (h handlerService) HandleBalanceDelete(ctx context.Context, msg Message) er
 	case models.ConfirmBalanceDeletionFlowStep:
 		stateMetaData[balanceNameMetadataKey] = msg.GetText()
 
-		// Send an empty message with updated keyboard to avoid unexpected user behavior after clicking on previously generated keyboard.
-		err := h.apis.Messenger.SendWithKeyboard(SendWithKeyboardOptions{
-			ChatID:   msg.GetChatID(),
-			Message:  emptyMessage,
-			Keyboard: rowKeyboardWithCancelButtonOnly,
-		})
+		err := h.showCancelButton(msg.GetChatID())
 		if err != nil {
-			logger.Error().Err(err).Msg("create keyboard with welcome message")
-			return fmt.Errorf("create keyboard with welcome message: %w", err)
+			logger.Error().Err(err).Msg("show cancel button")
+			return fmt.Errorf("show cancel button: %w", err)
 		}
 
-		err = h.apis.Messenger.SendWithKeyboard(SendWithKeyboardOptions{
-			ChatID: msg.GetChatID(),
-			Message: fmt.Sprintf(
+		err = h.sendMessageWithConfirmationInlineKeyboard(
+			msg.GetChatID(),
+			fmt.Sprintf(
 				"Are you sure you want to delete balance %s?\nPlease note that all its operations will be deleted as well.",
 				msg.GetText(),
-			),
-			InlineKeyboard: []InlineKeyboardRow{
-				{
-					Buttons: []InlineKeyboardButton{
-						{
-							Text: "Yes",
-							Data: "true",
-						},
-						{
-							Text: "No",
-							Data: "false",
-						},
-					},
-				},
-			},
-		})
+			))
 		if err != nil {
 			logger.Error().Err(err).Msg("create keyboard with welcome message")
 			return fmt.Errorf("create keyboard with welcome message: %w", err)
@@ -629,17 +607,7 @@ func (h handlerService) handleChooseBalanceFlowStepForDeletionFlow(ctx context.C
 
 	if !confirmBalanceDeletion {
 		logger.Info().Msg("user did not confirm balance deletion")
-		err := h.apis.Messenger.SendWithKeyboard(SendWithKeyboardOptions{
-			ChatID:   opts.msg.GetChatID(),
-			Message:  "Action cancelled!\nPlease choose new command to execute:",
-			Keyboard: defaultKeyboardRows,
-		})
-		if err != nil {
-			logger.Error().Err(err).Msg("send message")
-			return fmt.Errorf("send message: %w", err)
-		}
-
-		return nil
+		return h.notifyCancellationAndShowMenu(opts.msg.GetChatID())
 	}
 
 	balance := opts.user.GetBalance(opts.metaData[balanceNameMetadataKey].(string))

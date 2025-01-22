@@ -273,7 +273,7 @@ func (h handlerService) HandleCategoryUpdate(ctx context.Context, msg Message) e
 		err = h.apis.Messenger.SendWithKeyboard(SendWithKeyboardOptions{
 			ChatID:   msg.GetChatID(),
 			Message:  "Choose category to update:",
-			Keyboard: getKeyboardRows(categories, true),
+			Keyboard: getKeyboardRows(categories, 3, true),
 		})
 		if err != nil {
 			logger.Error().Err(err).Msg("send message")
@@ -411,7 +411,7 @@ func (h handlerService) HandleCategoryDelete(ctx context.Context, msg Message) e
 		err = h.apis.Messenger.SendWithKeyboard(SendWithKeyboardOptions{
 			ChatID:   msg.GetChatID(),
 			Message:  "Choose category to delete:",
-			Keyboard: getKeyboardRows(categories, true),
+			Keyboard: getKeyboardRows(categories, 3, true),
 		})
 		if err != nil {
 			logger.Error().Err(err).Msg("send message")
