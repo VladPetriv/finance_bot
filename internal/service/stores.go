@@ -79,7 +79,7 @@ type ListOperationsFilter struct {
 	BalanceID           string
 	CreationPeriod      *models.CreationPeriod
 	Limit               int
-	CreatedAtFrom       time.Time
+	CreatedAtLessThan   time.Time
 	SortByCreatedAtDesc bool
 }
 

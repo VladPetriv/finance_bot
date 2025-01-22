@@ -192,7 +192,7 @@ func TestOperation_List(t *testing.T) {
 			},
 		},
 		{
-			desc: "positive: received all operations where time is greater than input time",
+			desc: "positive: received all operations where time less than input time",
 			preconditions: []models.Operation{
 				{ID: "1.5", BalanceID: "id5", CreatedAt: time.Now().Add(-48 * time.Hour)},
 				{ID: "2.5", BalanceID: "id5", CreatedAt: time.Now().Add(-24 * time.Hour)},
@@ -201,14 +201,13 @@ func TestOperation_List(t *testing.T) {
 			},
 			input: input{
 				filter: service.ListOperationsFilter{
-					BalanceID:     "id5",
-					CreatedAtFrom: time.Now().Add(-30 * time.Hour),
+					BalanceID:         "id5",
+					CreatedAtLessThan: time.Now().Add(-10 * time.Hour),
 				},
 			},
 			expected: []models.Operation{
+				{ID: "1.5", BalanceID: "id5", CreatedAt: time.Now().Add(-48 * time.Hour)},
 				{ID: "2.5", BalanceID: "id5", CreatedAt: time.Now().Add(-24 * time.Hour)},
-				{ID: "3.5", BalanceID: "id5", CreatedAt: time.Now().Add(-1 * time.Hour)},
-				{ID: "4.5", BalanceID: "id5", CreatedAt: time.Now()},
 			},
 		},
 		{

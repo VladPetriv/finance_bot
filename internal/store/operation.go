@@ -41,9 +41,9 @@ func (o operationStore) List(ctx context.Context, filter service.ListOperationsF
 		}
 	}
 
-	if !filter.CreatedAtFrom.IsZero() {
+	if !filter.CreatedAtLessThan.IsZero() {
 		stmt["createdAt"] = bson.M{
-			"$gte": filter.CreatedAtFrom,
+			"$lt": filter.CreatedAtLessThan,
 		}
 	}
 
