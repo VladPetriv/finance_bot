@@ -99,6 +99,19 @@ func (o operationStore) Get(ctx context.Context, filter service.GetOperationFilt
 	if filter.ID != "" {
 		stmt["_id"] = filter.ID
 	}
+	if filter.Type != "" {
+		stmt["type"] = filter.Type
+	}
+	if !filter.CreateAtFrom.IsZero() {
+		stmt["createdAt"] = bson.M{
+			"$gte": filter.CreateAtFrom,
+		}
+	}
+	if !filter.CreateAtTo.IsZero() {
+		stmt["createdAt"] = bson.M{
+			"$lt": filter.CreateAtTo,
+		}
+	}
 
 	var operation models.Operation
 	err := o.DB.Collection(collectionOperation).FindOne(ctx, stmt).Decode(&operation)

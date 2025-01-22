@@ -71,7 +71,10 @@ type OperationStore interface {
 
 // GetOperationFilter represents a filters for Get operation method.
 type GetOperationFilter struct {
-	ID string
+	ID           string
+	Type         models.OperationType
+	CreateAtFrom time.Time
+	CreateAtTo   time.Time
 }
 
 // ListOperationsFilter represents filters for list operations from store.

@@ -325,14 +325,18 @@ func TestOperation_Delete(t *testing.T) {
 func TestOperation_Get(t *testing.T) {
 	t.Parallel()
 
-	ctx := context.Background()
+	ctx := context.Background() //nolint: forbidigo
 	cfg := config.Get()
 
 	db, err := database.NewMongoDB(ctx, cfg.MongoDB.URI, cfg.MongoDB.Database)
 	require.NoError(t, err)
 	operationStore := store.NewOperation(db)
 
-	operationID := uuid.NewString()
+	var (
+		operationID1, operationID2, operationID3 = uuid.NewString(), uuid.NewString(), uuid.NewString()
+	)
+
+	now := time.Now()
 
 	testCases := []struct {
 		desc          string
@@ -344,19 +348,59 @@ func TestOperation_Get(t *testing.T) {
 		{
 			desc: "positive: operation found by id",
 			preconditions: &models.Operation{
-				ID:        operationID,
+				ID:        operationID1,
 				Type:      models.OperationTypeIncoming,
 				Amount:    "100",
 				BalanceID: "balance-1",
 			},
 			input: service.GetOperationFilter{
-				ID: operationID,
+				ID: operationID1,
 			},
 			expected: &models.Operation{
-				ID:        operationID,
+				ID:        operationID1,
 				Type:      models.OperationTypeIncoming,
 				Amount:    "100",
 				BalanceID: "balance-1",
+			},
+			expectError: false,
+		},
+		{
+			desc: "positive: operation found by type",
+			preconditions: &models.Operation{
+				ID:        operationID2,
+				Type:      models.OperationTypeSpending,
+				Amount:    "100",
+				BalanceID: "balance-2",
+			},
+			input: service.GetOperationFilter{
+				Type: models.OperationTypeSpending,
+			},
+			expected: &models.Operation{
+				ID:        operationID2,
+				Type:      models.OperationTypeSpending,
+				Amount:    "100",
+				BalanceID: "balance-2",
+			},
+			expectError: false,
+		},
+		{
+			desc: "positive: operation found by createdAtFrom and createdAtTo",
+			preconditions: &models.Operation{
+				ID:        operationID3,
+				Type:      models.OperationTypeTransfer,
+				Amount:    "100",
+				BalanceID: "balance-3",
+				CreatedAt: now.Add(-3 * time.Hour),
+			},
+			input: service.GetOperationFilter{
+				CreateAtFrom: now.Add(-4 * time.Hour),
+				CreateAtTo:   now.Add(-1 * time.Hour),
+			},
+			expected: &models.Operation{
+				ID:        operationID3,
+				Type:      models.OperationTypeTransfer,
+				Amount:    "100",
+				BalanceID: "balance-3",
 			},
 			expectError: false,
 		},
