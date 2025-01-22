@@ -153,7 +153,7 @@ const (
 	CreateOperationFlow Flow = "create_operation"
 	// GetOperationsHistoryFlow represents the flow for getting operations history
 	GetOperationsHistoryFlow Flow = "get_operations_history"
-	//DeleteOperationFlow represents the flow for deleting an operation
+	// DeleteOperationFlow represents the flow for deleting an operation
 	DeleteOperationFlow Flow = "delete_operation"
 )
 

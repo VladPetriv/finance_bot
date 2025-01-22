@@ -332,12 +332,10 @@ func TestOperation_Get(t *testing.T) {
 	require.NoError(t, err)
 	operationStore := store.NewOperation(db)
 
-	var (
-		operationID1,
+	operationID1,
 		operationID2,
 		operationID3,
-		operationID4 = uuid.NewString(), uuid.NewString(), uuid.NewString(), uuid.NewString()
-	)
+		operationID4 := uuid.NewString(), uuid.NewString(), uuid.NewString(), uuid.NewString()
 
 	now := time.Now()
 
