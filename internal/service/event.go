@@ -80,10 +80,13 @@ func (e eventService) handleMessage(ctx context.Context, msg Message) {
 	err = e.ReactOnEvent(msgCtx, stateOutput.Event, msg)
 	if err != nil {
 		logger.Error().Err(err).Msg("react on event")
-		e.services.Handler.HandleError(msgCtx, HandleErrorOptions{
+		err := e.services.Handler.HandleError(msgCtx, HandleErrorOptions{
 			Err: err,
 			Msg: msg,
 		})
+		if err != nil {
+			logger.Error().Err(err).Msg("handle error")
+		}
 	}
 }
 
