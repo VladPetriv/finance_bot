@@ -310,7 +310,7 @@ func convertOperationsToInlineKeyboardRowsWithPagination(operations []models.Ope
 		})
 	}
 
-	// No need to show models.BotShowMoreOperationsForDeleteCommand, since we already have less operations than operationsPerMessage limit.
+	// Skip BotShowMoreOperationsForDeleteCommand if operations are within the operationsPerMessage limit.
 	if len(operations) <= limitPerMessage {
 		return inlineKeyboardRows
 	}

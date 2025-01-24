@@ -798,7 +798,6 @@ func (h handlerService) HandleOperationDelete(ctx context.Context, msg Message) 
 		}
 
 		nextStep = step
-
 	case models.ConfirmOperationDeletionFlowStep:
 		confirmOperationDeletion, err := strconv.ParseBool(msg.GetText())
 		if err != nil {
@@ -980,8 +979,7 @@ func (h handlerService) deleteOperation(ctx context.Context, opts deleteOperatio
 	case models.OperationTypeTransferIn, models.OperationTypeTransferOut:
 		return h.deleteTransferOperation(ctx, operation, opts.user)
 	case models.OperationTypeSpending, models.OperationTypeIncoming:
-
-		err = h.deleteSpendingOrIncomeOperation(ctx, operation, balance)
+		err := h.deleteSpendingOrIncomeOperation(ctx, operation, balance)
 		if err != nil {
 			logger.Error().Err(err).Msgf("delete %s operation", operation.Type)
 			return fmt.Errorf("delete %s operation: %w", operation.Type, err)
@@ -1016,7 +1014,9 @@ func (h handlerService) deleteTransferOperation(ctx context.Context, initialOper
 		return fmt.Errorf("get operation from store: %w", err)
 	}
 	if pairedTransferOperation == nil {
-		logger.Info().Msg("reversed transfer operation not found")
+
+		logger.Info().Msg("paired transfer operation not found")
+
 		return ErrOperationNotFound
 	}
 

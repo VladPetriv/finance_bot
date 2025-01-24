@@ -18,7 +18,7 @@ func (u *User) GetBalancesIDs() []string {
 	return ids
 }
 
-// GetBalance returns the balance by trying to match it by input value with the name or an id.
+// GetBalance returns the balance by matching the input with a name or ID.
 func (u *User) GetBalance(value string) *Balance {
 	for _, balance := range u.Balances {
 		if balance.Name == value || balance.ID == value {
