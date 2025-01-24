@@ -132,11 +132,11 @@ func (h handlerService) HandleUnknown(msg Message) error {
 	return nil
 }
 
-func (h handlerService) HandleError(ctx context.Context, receivedErr error, msg Message) error {
+func (h handlerService) HandleError(ctx context.Context, opts HandleErrorOptions) error {
 	logger := h.logger.With().Str("name", "handlerService.HandleError").Logger()
 
-	if errs.IsExpected(receivedErr) {
-		err := h.apis.Messenger.SendMessage(msg.GetChatID(), receivedErr.Error())
+	if errs.IsExpected(opts.Err) {
+		err := h.apis.Messenger.SendMessage(opts.Msg.GetChatID(), opts.Err.Error())
 		if err != nil {
 			logger.Error().Err(err).Msg("send message")
 			return fmt.Errorf("send message: %w", err)
@@ -146,13 +146,17 @@ func (h handlerService) HandleError(ctx context.Context, receivedErr error, msg 
 		return nil
 	}
 
-	err := h.apis.Messenger.SendMessage(msg.GetChatID(), "Something went wrong!\nPlease try again later!")
-	if err != nil {
-		logger.Error().Err(err).Msg("send message")
-		return fmt.Errorf("send message: %w", err)
+	message := "Something went wrong!\nPlease try again later!"
+
+	if opts.SendDefaultKeyboard {
+		return h.apis.Messenger.SendWithKeyboard(SendWithKeyboardOptions{
+			ChatID:   opts.Msg.GetChatID(),
+			Message:  message,
+			Keyboard: defaultKeyboardRows,
+		})
 	}
 
-	return nil
+	return h.apis.Messenger.SendMessage(opts.Msg.GetChatID(), "Something went wrong!\nPlease try again later!")
 }
 
 func (h handlerService) HandleWrappers(ctx context.Context, event models.Event, msg Message) error {

@@ -17,7 +17,7 @@ type Services struct {
 // HandlerService provides functionally for handling bot events.
 type HandlerService interface {
 	// HandleError is used to send the user a message that something went wrong while processing the event.
-	HandleError(ctx context.Context, err error, msg Message) error
+	HandleError(ctx context.Context, opts HandleErrorOptions) error
 	// HandleUnknown inform user that provided event is unknown and notify him about available events.
 	HandleUnknown(msg Message) error
 
@@ -53,6 +53,13 @@ type HandlerService interface {
 	HandleOperationDelete(ctx context.Context, msg Message) error
 	// HandleOperationHistory retrieves operation transaction history
 	HandleOperationHistory(ctx context.Context, msg Message) error
+}
+
+// HandleErrorOptions represents input structure for HandleError method.
+type HandleErrorOptions struct {
+	Err                 error
+	Msg                 Message
+	SendDefaultKeyboard bool
 }
 
 // EventService provides functionally for receiving an updates from bot and reacting on it.
@@ -137,6 +144,7 @@ const (
 // StateService represents a service for managing and handling complex bot flow using state.
 type StateService interface {
 	HandleState(ctx context.Context, message Message) (*HandleStateOutput, error)
+	DeleteState(ctx context.Context, message Message) error
 }
 
 // HandleStateOutput represents an output structure for StateService.HandleState method.

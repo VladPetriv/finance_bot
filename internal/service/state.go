@@ -183,3 +183,32 @@ func (s stateService) createNewFlow(ctx context.Context, message Message, state 
 func isBotCommand(command string) bool {
 	return strings.Contains(strings.Join(models.AvailableCommands, " "), command)
 }
+
+func (s stateService) DeleteState(ctx context.Context, message Message) error {
+	logger := s.logger.With().Str("name", "stateService.DeleteState").Logger()
+
+	state, err := s.stores.State.Get(ctx, GetStateFilter{
+		UserID: message.GetSenderName(),
+	})
+	if err != nil {
+		logger.Error().Err(err).Msg("get state from store")
+		return fmt.Errorf("get state from store: %w", err)
+	}
+	if state == nil {
+		logger.Info().Msg("state not found, no deletion needed")
+		return nil
+	}
+	logger.Debug().Any("state", state).Msg("got state from store")
+
+	if state.IsFlowFinished() {
+		logger.Warn().Msg("deleting not finished state")
+	}
+
+	err = s.stores.State.Delete(ctx, state.ID)
+	if err != nil {
+		logger.Error().Err(err).Msg("delete state from store")
+		return fmt.Errorf("delete state from store: %w", err)
+	}
+
+	return nil
+}

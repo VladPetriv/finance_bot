@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 	"fmt"
+	"runtime/debug"
 	"strings"
 
 	"github.com/VladPetriv/finance_bot/internal/models"
@@ -40,36 +41,75 @@ func (e eventService) Listen(ctx context.Context) {
 	updatesCH := make(chan Message)
 	errorsCH := make(chan error)
 
-	go e.apis.Messenger.ReadUpdates(updatesCH, errorsCH)
+	go func() {
+		defer close(updatesCH)
+		defer close(errorsCH)
+		e.apis.Messenger.ReadUpdates(updatesCH, errorsCH)
+	}()
 
 	for {
 		select {
-		case update := <-updatesCH:
-			stateOutput, err := e.services.State.HandleState(ctx, update)
-			if err != nil {
-				logger.Error().Err(err).Msg("handle state")
-
-				continue
-			}
-			if stateOutput == nil {
-				logger.Info().Msg("state output is empty, no need to react on event")
-				continue
-			}
-			logger.Debug().Any("stateOutput", stateOutput).Msg("handled request state")
-
-			ctx = context.WithValue(ctx, contextFieldNameState, stateOutput.State)
-			err = e.ReactOnEvent(ctx, stateOutput.Event, update)
-			if err != nil {
-				logger.Error().Err(err).Msg("react on event")
-
-				handleErr := e.services.Handler.HandleError(ctx, err, update)
-				if handleErr != nil {
-					logger.Error().Err(err).Msg("handle error")
-				}
-			}
+		case <-ctx.Done():
+			logger.Info().Msg("shutting down Listen")
+			return
+		case msg := <-updatesCH:
+			e.handleMessage(ctx, msg)
 		case err := <-errorsCH:
 			logger.Error().Err(err).Msg("read updates")
 		}
+	}
+}
+
+func (e eventService) handleMessage(ctx context.Context, msg Message) {
+	logger := e.logger.With().Str("name", "eventService.handleMessage").Logger()
+
+	defer func() {
+		if r := recover(); r != nil {
+			e.handlePanic(ctx, msg, r)
+		}
+	}()
+
+	stateOutput, err := e.services.State.HandleState(ctx, msg)
+	if err != nil {
+		logger.Error().Err(err).Msg("handle state")
+		return
+	}
+	logger.Debug().Any("stateOutput", stateOutput).Msg("handled request state")
+
+	msgCtx := context.WithValue(ctx, contextFieldNameState, stateOutput.State)
+	err = e.ReactOnEvent(msgCtx, stateOutput.Event, msg)
+	if err != nil {
+		logger.Error().Err(err).Msg("react on event")
+		err := e.services.Handler.HandleError(msgCtx, HandleErrorOptions{
+			Err: err,
+			Msg: msg,
+		})
+		if err != nil {
+			logger.Error().Err(err).Msg("handle error")
+		}
+	}
+}
+
+func (e eventService) handlePanic(ctx context.Context, msg Message, r any) {
+	logger := e.logger.With().Str("name", "eventService.handlePanic").Logger()
+	logger.Error().
+		Any("panic", r).
+		Str("stack", string(debug.Stack())).
+		Msg("recovered from panic")
+
+	if msg.GetSenderName() != "" {
+		err := e.services.State.DeleteState(ctx, msg)
+		if err != nil {
+			logger.Error().Err(err).Msg("delete state")
+		}
+	}
+
+	if err := e.services.Handler.HandleError(ctx, HandleErrorOptions{
+		Err:                 fmt.Errorf("internal error"),
+		Msg:                 msg,
+		SendDefaultKeyboard: true,
+	}); err != nil {
+		logger.Error().Err(err).Msg("handle error")
 	}
 }
 
