@@ -5,7 +5,6 @@ import (
 	"fmt"
 
 	"github.com/VladPetriv/finance_bot/internal/models"
-	"github.com/VladPetriv/finance_bot/pkg/bot"
 	"github.com/VladPetriv/finance_bot/pkg/errs"
 	"github.com/VladPetriv/finance_bot/pkg/logger"
 	"github.com/google/uuid"
@@ -14,6 +13,7 @@ import (
 type handlerService struct {
 	logger   *logger.Logger
 	services Services
+	apis     APIs
 	stores   Stores
 }
 
@@ -23,6 +23,7 @@ var _ HandlerService = (*handlerService)(nil)
 type HandlerOptions struct {
 	Logger   *logger.Logger
 	Services Services
+	APIs     APIs
 	Stores   Stores
 }
 
@@ -31,12 +32,13 @@ func NewHandler(opts *HandlerOptions) *handlerService {
 	return &handlerService{
 		logger:   opts.Logger,
 		services: opts.Services,
+		apis:     opts.APIs,
 		stores:   opts.Stores,
 	}
 }
 
-func (h handlerService) HandleEventStart(ctx context.Context, msg botMessage) error {
-	logger := h.logger.With().Str("name", "handlerService.HandleEventStart").Logger()
+func (h handlerService) HandleStart(ctx context.Context, msg Message) error {
+	logger := h.logger.With().Str("name", "handlerService.HandleStart").Logger()
 
 	var nextStep models.FlowStep
 	defer func() {
@@ -50,7 +52,7 @@ func (h handlerService) HandleEventStart(ctx context.Context, msg botMessage) er
 		logger.Debug().Any("updatedState", updatedState).Msg("updated state in store")
 	}()
 
-	username := msg.GetUsername()
+	username := msg.GetSenderName()
 	chatID := msg.GetChatID()
 
 	user, err := h.stores.User.Get(ctx, GetUserFilter{
@@ -63,11 +65,10 @@ func (h handlerService) HandleEventStart(ctx context.Context, msg botMessage) er
 
 	// Handle case when user already exists
 	if user != nil {
-		err = h.services.Keyboard.CreateKeyboard(&CreateKeyboardOptions{
-			ChatID:  chatID,
-			Message: fmt.Sprintf("Happy to see you again @%s!", username),
-			Type:    keyboardTypeRow,
-			Rows:    defaultKeyboardRows,
+		err := h.apis.Messenger.SendWithKeyboard(SendWithKeyboardOptions{
+			ChatID:   chatID,
+			Message:  fmt.Sprintf("Happy to see you again @%s!", username),
+			Keyboard: defaultKeyboardRows,
 		})
 		if err != nil {
 			logger.Error().Err(err).Msg("create keyboard")
@@ -92,10 +93,7 @@ func (h handlerService) HandleEventStart(ctx context.Context, msg botMessage) er
 
 	messagesToSend := []string{welcomeMessage, enterBalanceNameMessage}
 	for _, message := range messagesToSend {
-		err = h.services.Message.SendMessage(&SendMessageOptions{
-			ChatID: chatID,
-			Text:   message,
-		})
+		err := h.apis.Messenger.SendMessage(chatID, message)
 		if err != nil {
 			logger.Error().Err(err).Msg("send message")
 			return fmt.Errorf("send message: %w", err)
@@ -106,14 +104,13 @@ func (h handlerService) HandleEventStart(ctx context.Context, msg botMessage) er
 	return nil
 }
 
-func (h handlerService) HandleEventBack(ctx context.Context, msg botMessage) error {
-	logger := h.logger.With().Str("name", "handlerService.HandleEventBack").Logger()
+func (h handlerService) HandleCancel(ctx context.Context, msg Message) error {
+	logger := h.logger.With().Str("name", "handlerService.HandleCancel").Logger()
 
-	err := h.services.Keyboard.CreateKeyboard(&CreateKeyboardOptions{
-		ChatID:  msg.Message.Chat.ID,
-		Message: "Please choose command to execute:",
-		Type:    keyboardTypeRow,
-		Rows:    defaultKeyboardRows,
+	err := h.apis.Messenger.SendWithKeyboard(SendWithKeyboardOptions{
+		ChatID:   msg.GetChatID(),
+		Message:  "Please choose command to execute:",
+		Keyboard: defaultKeyboardRows,
 	})
 	if err != nil {
 		logger.Error().Err(err).Msg("create keyboard")
@@ -123,13 +120,10 @@ func (h handlerService) HandleEventBack(ctx context.Context, msg botMessage) err
 	return nil
 }
 
-func (h handlerService) HandleEventUnknown(msg botMessage) error {
-	logger := h.logger.With().Str("name", "handlerService.HandleEventUnknown").Logger()
+func (h handlerService) HandleUnknown(msg Message) error {
+	logger := h.logger.With().Str("name", "handlerService.HandleUnknown").Logger()
 
-	err := h.services.Message.SendMessage(&SendMessageOptions{
-		ChatID: msg.Message.Chat.ID,
-		Text:   "Didn't understand you!\nCould you please check available commands!",
-	})
+	err := h.apis.Messenger.SendMessage(msg.GetChatID(), "Didn't understand you!\nCould you please check available commands!")
 	if err != nil {
 		logger.Error().Err(err).Msg("send message")
 		return fmt.Errorf("send message: %w", err)
@@ -142,10 +136,7 @@ func (h handlerService) HandleError(ctx context.Context, opts HandleErrorOptions
 	logger := h.logger.With().Str("name", "handlerService.HandleError").Logger()
 
 	if errs.IsExpected(opts.Err) {
-		err := h.services.Message.SendMessage(&SendMessageOptions{
-			ChatID: opts.Msg.GetChatID(),
-			Text:   opts.Err.Error(),
-		})
+		err := h.apis.Messenger.SendMessage(opts.Msg.GetChatID(), opts.Err.Error())
 		if err != nil {
 			logger.Error().Err(err).Msg("send message")
 			return fmt.Errorf("send message: %w", err)
@@ -158,57 +149,185 @@ func (h handlerService) HandleError(ctx context.Context, opts HandleErrorOptions
 	message := "Something went wrong!\nPlease try again later!"
 
 	if opts.SendDefaultKeyboard {
-		err := h.services.Keyboard.CreateKeyboard(&CreateKeyboardOptions{
-			ChatID:  opts.Msg.GetChatID(),
-			Message: message,
-			Type:    keyboardTypeRow,
-			Rows:    defaultKeyboardRows,
+		return h.apis.Messenger.SendWithKeyboard(SendWithKeyboardOptions{
+			ChatID:   opts.Msg.GetChatID(),
+			Message:  message,
+			Keyboard: defaultKeyboardRows,
 		})
-		if err != nil {
-			logger.Error().Err(err).Msg("create keyboard")
-			return fmt.Errorf("create keyboard: %w", err)
-		}
-
-		return nil
 	}
 
-	err := h.services.Message.SendMessage(&SendMessageOptions{
-		ChatID: opts.Msg.GetChatID(),
-		Text:   "Something went wrong!\nPlease try again later!",
+	return h.apis.Messenger.SendMessage(opts.Msg.GetChatID(), "Something went wrong!\nPlease try again later!")
+}
+
+func (h handlerService) HandleWrappers(ctx context.Context, event models.Event, msg Message) error {
+	logger := h.logger.With().Str("name", "handlerService.HandleWrappers").Logger()
+	logger.Debug().Any("msg", msg).Any("event", event).Msg("got args")
+
+	var (
+		rows    []KeyboardRow
+		message string
+	)
+
+	switch event {
+	case models.BalanceEvent:
+
+		rows = []KeyboardRow{
+			{
+				Buttons: []string{models.BotCreateBalanceCommand, models.BotGetBalanceCommand},
+			},
+			{
+				Buttons: []string{models.BotUpdateBalanceCommand, models.BotDeleteBalanceCommand},
+			},
+			{
+				Buttons: []string{models.BotCancelCommand},
+			},
+		}
+		message = "Please choose balance command to execute:"
+	case models.CategoryEvent:
+		rows = []KeyboardRow{
+			{
+				Buttons: []string{models.BotCreateCategoryCommand, models.BotListCategoriesCommand},
+			},
+			{
+				Buttons: []string{models.BotUpdateCategoryCommand, models.BotDeleteCategoryCommand},
+			},
+			{
+				Buttons: []string{models.BotCancelCommand},
+			},
+		}
+		message = "Please choose category command to execute:"
+	case models.OperationEvent:
+		rows = []KeyboardRow{
+			{
+				Buttons: []string{models.BotCreateOperationCommand, models.BotGetOperationsHistory},
+			},
+			{
+				Buttons: []string{models.BotDeleteOperationCommand},
+			},
+			{
+				Buttons: []string{models.BotCancelCommand},
+			},
+		}
+		message = "Please choose operation command to execute:"
+	default:
+		return fmt.Errorf("unknown wrappers event: %s", event)
+	}
+
+	err := h.apis.Messenger.SendWithKeyboard(SendWithKeyboardOptions{
+		ChatID:   msg.GetChatID(),
+		Message:  message,
+		Keyboard: rows,
 	})
 	if err != nil {
-		logger.Error().Err(err).Msg("send message")
-		return fmt.Errorf("send message: %w", err)
+		logger.Error().Err(err).Msg("create keyboard")
+		return fmt.Errorf("create keyboard: %w", err)
 	}
 
 	return nil
+}
+
+// sendMessageWithConfirmationInlineKeyboard sends a message to the specified chat with Yes/No inline keyboard buttons.
+func (h handlerService) sendMessageWithConfirmationInlineKeyboard(chatID int, message string) error {
+	return h.apis.Messenger.SendWithKeyboard(SendWithKeyboardOptions{
+		ChatID:  chatID,
+		Message: message,
+		InlineKeyboard: []InlineKeyboardRow{
+			{
+				Buttons: []InlineKeyboardButton{
+					{
+						Text: "Yes",
+						Data: "true",
+					},
+					{
+						Text: "No",
+						Data: "false",
+					},
+				},
+			},
+		},
+	})
+}
+
+// notifyCancellationAndShowMenu sends a cancellation message and displays the main menu.
+// It informs the user that their current action was cancelled and presents available commands
+// through the default keyboard interface.
+func (h handlerService) notifyCancellationAndShowMenu(chatID int) error {
+	return h.apis.Messenger.SendWithKeyboard(SendWithKeyboardOptions{
+		ChatID:   chatID,
+		Message:  "Action cancelled!\nPlease choose new command to execute:",
+		Keyboard: defaultKeyboardRows,
+	})
+}
+
+const emptyMessage = "ㅤ"
+
+// showCancelButton displays a single "Cancel" button in the chat interface,
+// replacing any previous keyboard. This prevents users from interacting with
+// outdated keyboard buttons that may still be visible from previous messages.
+func (h handlerService) showCancelButton(chatID int) error {
+	return h.apis.Messenger.SendWithKeyboard(SendWithKeyboardOptions{
+		ChatID:   chatID,
+		Message:  emptyMessage,
+		Keyboard: rowKeyboardWithCancelButtonOnly,
+	})
 }
 
 type named interface {
 	GetName() string
 }
 
-const maxBalancesPerRow = 3
+func getKeyboardRows[T named](data []T, elementLimitPerRow int, includeRowWithCancelButton bool) []KeyboardRow {
+	keyboardRows := make([]KeyboardRow, 0)
 
-func getKeyboardRows[T named](data []T, includeRowWithBackButton bool) []bot.KeyboardRow {
-	keyboardRows := make([]bot.KeyboardRow, 0)
-
-	var currentRow bot.KeyboardRow
+	var currentRow KeyboardRow
 	for i, entry := range data {
 		currentRow.Buttons = append(currentRow.Buttons, entry.GetName())
 
 		// When row is full or we're at the last data item, append row
-		if len(currentRow.Buttons) == maxBalancesPerRow || i == len(data)-1 {
+		if len(currentRow.Buttons) == elementLimitPerRow || i == len(data)-1 {
 			keyboardRows = append(keyboardRows, currentRow)
-			currentRow = bot.KeyboardRow{} // Reset current row
+			currentRow = KeyboardRow{} // Reset current row
 		}
 	}
 
-	if includeRowWithBackButton {
-		keyboardRows = append(keyboardRows, bot.KeyboardRow{
-			Buttons: []string{models.BotBackCommand},
+	if includeRowWithCancelButton {
+		keyboardRows = append(keyboardRows, KeyboardRow{
+			Buttons: []string{models.BotCancelCommand},
 		})
 	}
 
 	return keyboardRows
+}
+
+// convertOperationsToInlineKeyboardRowsWithPagination converts a slice of operations into inline keyboard rows with pagination support.
+// If there are more operations than the per-message limit, it adds a "Show More" button.
+func convertOperationsToInlineKeyboardRowsWithPagination(operations []models.Operation, limitPerMessage int) []InlineKeyboardRow {
+	inlineKeyboardRows := make([]InlineKeyboardRow, 0, len(operations))
+	for _, operation := range operations {
+		inlineKeyboardRows = append(inlineKeyboardRows, InlineKeyboardRow{
+			Buttons: []InlineKeyboardButton{
+				{
+					Text: operation.GetName(),
+					Data: operation.ID,
+				},
+			},
+		})
+	}
+
+	// Skip BotShowMoreOperationsForDeleteCommand if operations are within the operationsPerMessage limit.
+	if len(operations) <= limitPerMessage {
+		return inlineKeyboardRows
+	}
+
+	inlineKeyboardRows = append(inlineKeyboardRows, []InlineKeyboardRow{
+		{
+			Buttons: []InlineKeyboardButton{
+				{
+					Text: models.BotShowMoreOperationsForDeleteCommand,
+				},
+			},
+		},
+	}...)
+
+	return inlineKeyboardRows
 }

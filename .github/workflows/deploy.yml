@@ -1,0 +1,91 @@
+name: Deploy
+
+on:
+  push:
+    branches:
+      - production
+
+permissions:
+  checks: read
+  contents: read
+  pull-requests: read
+
+jobs:
+  wait-for-checks:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Wait for build and test checks
+        uses: lewagon/wait-on-check-action@v1.3.1
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          check-name: build_and_test
+          repo-token: ${{ secrets.PAT_TOKEN }}
+          wait-interval: 20
+          allowed-conclusions: success
+          running-workflow-name: Deploy
+
+      - name: Wait for lint checks
+        uses: lewagon/wait-on-check-action@v1.3.1
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          check-name: lint
+          repo-token: ${{ secrets.PAT_TOKEN }}
+          wait-interval: 20
+          allowed-conclusions: success
+          running-workflow-name: Deploy
+
+  deploy:
+    needs: [wait-for-checks]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Create SSH key
+        run: |
+          install -m 600 -D /dev/null ~/.ssh/id_rsa
+          echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
+
+      - name: Add known hosts
+        run: |
+          mkdir -p ~/.ssh
+          touch ~/.ssh/known_hosts
+          ssh-keyscan -H ${{ secrets.PRODUCTION_SERVER }} >> ~/.ssh/known_hosts
+
+      - name: Deploy to production server
+        run: |
+          ssh ${{ secrets.PRODUCTION_USER }}@${{ secrets.PRODUCTION_SERVER }} '
+            echo "Stop the existing service"
+            sudo systemctl stop finance-bot.service || true
+
+            echo "Remove previous repo if exists"
+            rm -rf finance_bot || true
+
+            echo "Clone new repo"
+            git clone git@github.com:VladPetriv/finance_bot.git
+
+            echo "Change directory"
+            cd finance_bot
+
+            echo "Checkout to production branch"
+            git checkout production
+
+            echo "Create env file"
+            echo "${{ secrets.ENV }}" > env.sh
+            chmod +x env.sh
+
+            echo "Build application"
+            make build
+
+            echo "Reload systemd daemon"
+            sudo systemctl daemon-reload
+
+            echo "Start the service"
+            sudo systemctl start finance-bot.service
+
+            echo "Enable service on boot"
+            sudo systemctl enable finance-bot.service
+
+            echo "Check service status"
+            sudo systemctl status finance-bot.service
+          '

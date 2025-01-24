@@ -8,10 +8,20 @@ type User struct {
 	Balances []Balance `bson:"balances,omitempty"`
 }
 
-// GetBalance returns the balance by the given name.
-func (u *User) GetBalance(name string) *Balance {
+// GetBalancesIDs returns the balances IDs.
+func (u *User) GetBalancesIDs() []string {
+	ids := make([]string, 0, len(u.Balances))
 	for _, balance := range u.Balances {
-		if balance.Name == name {
+		ids = append(ids, balance.ID)
+	}
+
+	return ids
+}
+
+// GetBalance returns the balance by matching the input with a name or ID.
+func (u *User) GetBalance(value string) *Balance {
+	for _, balance := range u.Balances {
+		if balance.Name == value || balance.ID == value {
 			return &balance
 		}
 	}

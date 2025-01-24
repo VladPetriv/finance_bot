@@ -4,6 +4,14 @@ package models
 const (
 	// BotStartCommand represents the command to start the bot
 	BotStartCommand string = "/start"
+
+	// BotBalanceCommand represents the wrapper command for balances action
+	BotBalanceCommand string = "💰 Balance"
+	// BotCategoryCommand represents the wrapper command for categories action
+	BotCategoryCommand string = "📂 Category"
+	// BotOperationCommand represents the wrapper command for operations action
+	BotOperationCommand string = "💸 Operation"
+
 	// BotCreateBalanceCommand represents the command to create a new balance
 	BotCreateBalanceCommand string = "Create Balance 💰"
 	// BotUpdateBalanceCommand represents the command to update balance
@@ -32,48 +40,73 @@ const (
 	BotCreateTransferOperationCommand string = "Transfer ➡️"
 	// BotGetOperationsHistory represents the command to get operations history
 	BotGetOperationsHistory string = "Get Operations History 📖"
+	// BotDeleteOperationCommand represents the command to delete an operation
+	BotDeleteOperationCommand string = "Delete Operation ❌"
+	// BotShowMoreOperationsForDeleteCommand represents the command to select more operations
+	BotShowMoreOperationsForDeleteCommand string = "Show More Operations For Delete ➡️"
 
-	// BotBackCommand represents the command to go back to previous state
-	BotBackCommand string = "Back ❌"
+	// BotCancelCommand represents the command that will cancel the current flow
+	BotCancelCommand string = "Cancel action ⬅️"
 )
 
 // AvailableCommands is a list of all available bot commands.
 var AvailableCommands = []string{
 	BotStartCommand,
+	BotBalanceCommand, BotCategoryCommand, BotOperationCommand,
 	BotGetBalanceCommand, BotCreateBalanceCommand, BotUpdateBalanceCommand, BotDeleteBalanceCommand,
 	BotCreateCategoryCommand, BotListCategoriesCommand, BotUpdateCategoryCommand, BotDeleteCategoryCommand,
-	BotCreateOperationCommand, BotCreateIncomingOperationCommand, BotCreateSpendingOperationCommand, BotGetOperationsHistory,
-	BotBackCommand,
+	BotCreateOperationCommand, BotCreateIncomingOperationCommand, BotCreateSpendingOperationCommand, BotGetOperationsHistory, BotCreateTransferOperationCommand,
+	BotDeleteOperationCommand, BotShowMoreOperationsForDeleteCommand,
+	BotCancelCommand,
 }
 
 // CommandToEvent maps bot commands to their corresponding events
 var CommandToEvent = map[string]Event{
-	BotStartCommand:           StartEvent,
-	BotCreateBalanceCommand:   CreateBalanceEvent,
-	BotUpdateBalanceCommand:   UpdateBalanceEvent,
-	BotGetBalanceCommand:      GetBalanceEvent,
-	BotDeleteBalanceCommand:   DeleteBalanceEvent,
-	BotCreateCategoryCommand:  CreateCategoryEvent,
-	BotListCategoriesCommand:  ListCategoriesEvent,
-	BotUpdateCategoryCommand:  UpdateCategoryEvent,
-	BotDeleteCategoryCommand:  DeleteCategoryEvent,
+	// General
+	BotStartCommand:  StartEvent,
+	BotCancelCommand: CancelEvent,
+
+	// Wrappers
+	BotBalanceCommand:   BalanceEvent,
+	BotCategoryCommand:  CategoryEvent,
+	BotOperationCommand: OperationEvent,
+
+	// Balance
+	BotCreateBalanceCommand: CreateBalanceEvent,
+	BotUpdateBalanceCommand: UpdateBalanceEvent,
+	BotGetBalanceCommand:    GetBalanceEvent,
+	BotDeleteBalanceCommand: DeleteBalanceEvent,
+
+	// Category
+	BotCreateCategoryCommand: CreateCategoryEvent,
+	BotListCategoriesCommand: ListCategoriesEvent,
+	BotUpdateCategoryCommand: UpdateCategoryEvent,
+	BotDeleteCategoryCommand: DeleteCategoryEvent,
+
+	// Operation
 	BotCreateOperationCommand: CreateOperationEvent,
 	BotGetOperationsHistory:   GetOperationsHistoryEvent,
-	BotBackCommand:            BackEvent,
+	BotDeleteOperationCommand: DeleteOperationEvent,
 }
 
-// CommadToFistFlowStep maps commands to their initial flow steps
-var CommadToFistFlowStep = map[string]FlowStep{
-	BotCreateBalanceCommand:   CreateBalanceFlowStep,
-	BotUpdateBalanceCommand:   UpdateBalanceFlowStep,
-	BotGetBalanceCommand:      GetBalanceFlowStep,
-	BotDeleteBalanceCommand:   DeleteBalanceFlowStep,
-	BotCreateCategoryCommand:  CreateCategoryFlowStep,
-	BotListCategoriesCommand:  ListCategoriesFlowStep,
-	BotUpdateCategoryCommand:  UpdateCategoryFlowStep,
-	BotDeleteCategoryCommand:  DeleteCategoryFlowStep,
+// CommandToFistFlowStep maps commands to their initial flow steps
+var CommandToFistFlowStep = map[string]FlowStep{
+	// Balance
+	BotCreateBalanceCommand: CreateBalanceFlowStep,
+	BotUpdateBalanceCommand: UpdateBalanceFlowStep,
+	BotGetBalanceCommand:    GetBalanceFlowStep,
+	BotDeleteBalanceCommand: DeleteBalanceFlowStep,
+
+	// Category
+	BotCreateCategoryCommand: CreateCategoryFlowStep,
+	BotListCategoriesCommand: ListCategoriesFlowStep,
+	BotUpdateCategoryCommand: UpdateCategoryFlowStep,
+	BotDeleteCategoryCommand: DeleteCategoryFlowStep,
+
+	// Operation
 	BotCreateOperationCommand: CreateOperationFlowStep,
 	BotGetOperationsHistory:   GetOperationsHistoryFlowStep,
+	BotDeleteOperationCommand: DeleteOperationFlowStep,
 }
 
 // OperationCommandToOperationType maps operation commands to their corresponding operation types

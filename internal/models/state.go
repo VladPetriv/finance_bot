@@ -1,7 +1,12 @@
 package models
 
 import (
+	"slices"
+	"strings"
 	"time"
+
+	"golang.org/x/text/cases"
+	"golang.org/x/text/language"
 )
 
 // State represents the current state of a user's interaction with the bot
@@ -18,6 +23,25 @@ type State struct {
 	UpdatedAt time.Time `bson:"updatedAt"`
 }
 
+// GetFlowName returns the flow name in pretty format.
+func (s *State) GetFlowName() string {
+	parts := strings.Split(string(s.Flow), "_")
+
+	var result string
+	for index, part := range parts {
+		if index == 0 {
+			caser := cases.Title(language.English)
+			result += caser.String(part)
+
+			continue
+		}
+
+		result += " " + part
+	}
+
+	return result
+}
+
 // GetCurrentStep returns the current step in the flow
 func (s *State) GetCurrentStep() FlowStep {
 	return s.Steps[len(s.Steps)-1]
@@ -28,6 +52,27 @@ func (s *State) IsFlowFinished() bool {
 	return s.Steps[len(s.Steps)-1] == EndFlowStep
 }
 
+// IsCommandAllowedDuringFlow checks if the command is allowed during the current flow
+func (s *State) IsCommandAllowedDuringFlow(command string) bool {
+	switch s.Flow {
+	case CreateOperationFlow:
+		if s.GetCurrentStep() == ProcessOperationTypeFlowStep {
+			return slices.Contains([]string{BotCreateIncomingOperationCommand, BotCreateSpendingOperationCommand, BotCreateTransferOperationCommand}, command)
+		}
+
+		return false
+
+	case DeleteOperationFlow:
+		if s.GetCurrentStep() == ChooseOperationToDeleteFlowStep {
+			return slices.Contains([]string{BotShowMoreOperationsForDeleteCommand}, command)
+		}
+
+		return false
+	default:
+		return false
+	}
+}
+
 const indexOfInitialFlowStep = 1
 
 // GetEvent determines the current event based on the flow state
@@ -36,8 +81,8 @@ func (s *State) GetEvent() Event {
 		return CreateBalanceEvent
 	}
 
-	if s.Flow == BackFlow && len(s.Steps) == 1 {
-		return BackEvent
+	if s.Flow == CancelFlow && len(s.Steps) == 1 {
+		return CancelEvent
 	}
 
 	switch s.Steps[indexOfInitialFlowStep] {
@@ -61,6 +106,8 @@ func (s *State) GetEvent() Event {
 		return DeleteCategoryEvent
 	case CreateOperationFlowStep:
 		return CreateOperationEvent
+	case DeleteOperationFlowStep:
+		return DeleteOperationEvent
 	case GetOperationsHistoryFlowStep:
 		return GetOperationsHistoryEvent
 	default:
@@ -74,8 +121,15 @@ type Flow string
 const (
 	// StartFlow represents the initial flow when starting the bot
 	StartFlow Flow = "start"
-	// BackFlow represents the flow for stopping cuurent flow
-	BackFlow Flow = "back"
+	// CancelFlow represents the flow for stopping current flow
+	CancelFlow Flow = "cancel"
+
+	// BalanceFlow represents the flow for getting balance actions
+	BalanceFlow Flow = "balance"
+	// CategoryFlow represents the flow for getting category actions
+	CategoryFlow Flow = "category"
+	// OperationFlow represents the flow for getting operation actions
+	OperationFlow Flow = "operation"
 
 	// CreateBalanceFlow represents the flow for creating a new balance
 	CreateBalanceFlow Flow = "create_balance"
@@ -99,6 +153,8 @@ const (
 	CreateOperationFlow Flow = "create_operation"
 	// GetOperationsHistoryFlow represents the flow for getting operations history
 	GetOperationsHistoryFlow Flow = "get_operations_history"
+	// DeleteOperationFlow represents the flow for deleting an operation
+	DeleteOperationFlow Flow = "delete_operation"
 )
 
 // FlowStep represents a specific step within a flow
@@ -156,8 +212,8 @@ const (
 
 	// CreateOperationFlowStep represents the step for creating a new operation
 	CreateOperationFlowStep FlowStep = "create_operation"
-	// ProcessOprationTypeFlowStep represents the step for processing operation type
-	ProcessOprationTypeFlowStep FlowStep = "process_opration_type"
+	// ProcessOperationTypeFlowStep represents the step for processing operation type
+	ProcessOperationTypeFlowStep FlowStep = "process_operation_type"
 	// ChooseBalanceFromFlowStep represents the step for choosing balance from which transfer operation will be created
 	ChooseBalanceFromFlowStep FlowStep = "choose_balance_from_for_transfer_operation"
 	// ChooseBalanceToFlowStep represents the step for choosing balance to which transfer operation will be created
@@ -172,4 +228,10 @@ const (
 	GetOperationsHistoryFlowStep FlowStep = "get_operations_history"
 	// ChooseTimePeriodForOperationsHistoryFlowStep represents the step for choosing time period for operations history
 	ChooseTimePeriodForOperationsHistoryFlowStep FlowStep = "choose_time_period_for_operations_history"
+	// DeleteOperationFlowStep represents the step for deleting an operation
+	DeleteOperationFlowStep FlowStep = "delete_operation"
+	// ChooseOperationToDeleteFlowStep represents the step for choosing operation to delete
+	ChooseOperationToDeleteFlowStep FlowStep = "choose_operation_to_delete"
+	// ConfirmOperationDeletionFlowStep represents the step for confirming operation deletion
+	ConfirmOperationDeletionFlowStep FlowStep = "confirm_operation_deletion"
 )

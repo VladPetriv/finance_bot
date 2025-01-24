@@ -8,20 +8,27 @@ import (
 	"syscall"
 
 	"github.com/VladPetriv/finance_bot/config"
+	"github.com/VladPetriv/finance_bot/internal/api/telegram"
 	"github.com/VladPetriv/finance_bot/internal/service"
 	"github.com/VladPetriv/finance_bot/internal/store"
-	"github.com/VladPetriv/finance_bot/pkg/bot"
 	"github.com/VladPetriv/finance_bot/pkg/database"
 	"github.com/VladPetriv/finance_bot/pkg/logger"
 )
 
 // Run is used to start the application.
 func Run(ctx context.Context, cfg *config.Config, logger *logger.Logger) {
-	b := bot.NewTelegramBot(cfg.Telegram.BotToken, cfg.Telegram.WebhookURL, cfg.Telegram.SeverAddress)
-
-	botAPI, err := b.NewAPI()
+	telegram, err := telegram.New(telegram.Options{
+		Token:         cfg.Telegram.BotToken,
+		UpdatesType:   cfg.Telegram.UpdatesType,
+		ServerAddress: cfg.Telegram.SeverAddress,
+		WebhookURL:    cfg.Telegram.WebhookURL,
+	})
 	if err != nil {
-		logger.Fatal().Err(err).Msg("create new bot api")
+		logger.Fatal().Err(err).Msg("create new telegram api")
+	}
+
+	apis := service.APIs{
+		Messenger: telegram,
 	}
 
 	mongoDB, err := database.NewMongoDB(ctx, cfg.MongoDB.URI, cfg.MongoDB.Database)
@@ -42,30 +49,28 @@ func Run(ctx context.Context, cfg *config.Config, logger *logger.Logger) {
 		State:     store.NewState(mongoDB),
 	}
 
-	messageService := service.NewMessage(botAPI, logger)
-	keyboardService := service.NewKeyboard(botAPI, logger)
 	stateService := service.NewState(&service.StateOptions{
 		Logger: logger,
 		Stores: stores,
+		APIs:   apis,
 	})
 
 	services := service.Services{
-		Message:  messageService,
-		Keyboard: keyboardService,
-		State:    stateService,
+		State: stateService,
 	}
 
 	handlerService := service.NewHandler(&service.HandlerOptions{
 		Logger:   logger,
 		Services: services,
+		APIs:     apis,
 		Stores:   stores,
 	})
+	services.Handler = handlerService
 
 	eventService := service.NewEvent(&service.EventOptions{
-		BotAPI:         botAPI,
-		Logger:         logger,
-		HandlerService: handlerService,
-		StateService:   stateService,
+		Logger:   logger,
+		APIs:     apis,
+		Services: services,
 	})
 
 	go eventService.Listen(ctx)
@@ -102,7 +107,7 @@ func Run(ctx context.Context, cfg *config.Config, logger *logger.Logger) {
 
 	<-signals
 
-	err = botAPI.Close()
+	err = telegram.Close()
 	if err != nil {
 		logger.Error().Err(err).Msg("close telegram bot connection")
 	}
