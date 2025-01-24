@@ -2,12 +2,15 @@ package store
 
 import (
 	"context"
+	"errors"
 	"time"
 
 	"github.com/VladPetriv/finance_bot/internal/models"
 	"github.com/VladPetriv/finance_bot/internal/service"
 	"github.com/VladPetriv/finance_bot/pkg/database"
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
 type operationStore struct {
@@ -40,7 +43,21 @@ func (o operationStore) List(ctx context.Context, filter service.ListOperationsF
 		}
 	}
 
-	cursor, err := o.DB.Collection(collectionOperation).Find(ctx, stmt)
+	if !filter.CreatedAtLessThan.IsZero() {
+		stmt["createdAt"] = bson.M{
+			"$lt": filter.CreatedAtLessThan,
+		}
+	}
+
+	findOptions := &options.FindOptions{}
+	if filter.Limit != 0 {
+		findOptions = findOptions.SetLimit(int64(filter.Limit))
+	}
+	if filter.SortByCreatedAtDesc {
+		findOptions = findOptions.SetSort(bson.D{{Key: "createdAt", Value: -1}})
+	}
+
+	cursor, err := o.DB.Collection(collectionOperation).Find(ctx, stmt, findOptions)
 	if err != nil {
 		return nil, err
 	}
@@ -76,6 +93,42 @@ func calculateTimeRange(period models.CreationPeriod) (startTime, endTime time.T
 	}
 
 	return startTime, endTime
+}
+
+func (o operationStore) Get(ctx context.Context, filter service.GetOperationFilter) (*models.Operation, error) {
+	stmt := bson.M{}
+
+	if filter.ID != "" {
+		stmt["_id"] = filter.ID
+	}
+	if filter.Type != "" {
+		stmt["type"] = filter.Type
+	}
+	if len(filter.BalanceIDs) != 0 {
+		stmt["balanceId"] = bson.M{"$in": filter.BalanceIDs}
+	}
+	if !filter.CreateAtFrom.IsZero() {
+		stmt["createdAt"] = bson.M{
+			"$gte": filter.CreateAtFrom,
+		}
+	}
+	if !filter.CreateAtTo.IsZero() {
+		stmt["createdAt"] = bson.M{
+			"$lt": filter.CreateAtTo,
+		}
+	}
+
+	var operation models.Operation
+	err := o.DB.Collection(collectionOperation).FindOne(ctx, stmt).Decode(&operation)
+	if err != nil {
+		if errors.Is(err, mongo.ErrNoDocuments) {
+			return nil, nil
+		}
+
+		return nil, err
+	}
+
+	return &operation, nil
 }
 
 func (o operationStore) Create(ctx context.Context, operation *models.Operation) error {

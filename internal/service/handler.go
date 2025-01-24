@@ -198,6 +198,9 @@ func (h handlerService) HandleWrappers(ctx context.Context, event models.Event, 
 				Buttons: []string{models.BotCreateOperationCommand, models.BotGetOperationsHistory},
 			},
 			{
+				Buttons: []string{models.BotDeleteOperationCommand},
+			},
+			{
 				Buttons: []string{models.BotCancelCommand},
 			},
 		}
@@ -219,13 +222,57 @@ func (h handlerService) HandleWrappers(ctx context.Context, event models.Event, 
 	return nil
 }
 
+// sendMessageWithConfirmationInlineKeyboard sends a message to the specified chat with Yes/No inline keyboard buttons.
+func (h handlerService) sendMessageWithConfirmationInlineKeyboard(chatID int, message string) error {
+	return h.apis.Messenger.SendWithKeyboard(SendWithKeyboardOptions{
+		ChatID:  chatID,
+		Message: message,
+		InlineKeyboard: []InlineKeyboardRow{
+			{
+				Buttons: []InlineKeyboardButton{
+					{
+						Text: "Yes",
+						Data: "true",
+					},
+					{
+						Text: "No",
+						Data: "false",
+					},
+				},
+			},
+		},
+	})
+}
+
+// notifyCancellationAndShowMenu sends a cancellation message and displays the main menu.
+// It informs the user that their current action was cancelled and presents available commands
+// through the default keyboard interface.
+func (h handlerService) notifyCancellationAndShowMenu(chatID int) error {
+	return h.apis.Messenger.SendWithKeyboard(SendWithKeyboardOptions{
+		ChatID:   chatID,
+		Message:  "Action cancelled!\nPlease choose new command to execute:",
+		Keyboard: defaultKeyboardRows,
+	})
+}
+
+const emptyMessage = "ㅤ"
+
+// showCancelButton displays a single "Cancel" button in the chat interface,
+// replacing any previous keyboard. This prevents users from interacting with
+// outdated keyboard buttons that may still be visible from previous messages.
+func (h handlerService) showCancelButton(chatID int) error {
+	return h.apis.Messenger.SendWithKeyboard(SendWithKeyboardOptions{
+		ChatID:   chatID,
+		Message:  emptyMessage,
+		Keyboard: rowKeyboardWithCancelButtonOnly,
+	})
+}
+
 type named interface {
 	GetName() string
 }
 
-const maxBalancesPerRow = 3
-
-func getKeyboardRows[T named](data []T, includeRowWithCancelButton bool) []KeyboardRow {
+func getKeyboardRows[T named](data []T, elementLimitPerRow int, includeRowWithCancelButton bool) []KeyboardRow {
 	keyboardRows := make([]KeyboardRow, 0)
 
 	var currentRow KeyboardRow
@@ -233,7 +280,7 @@ func getKeyboardRows[T named](data []T, includeRowWithCancelButton bool) []Keybo
 		currentRow.Buttons = append(currentRow.Buttons, entry.GetName())
 
 		// When row is full or we're at the last data item, append row
-		if len(currentRow.Buttons) == maxBalancesPerRow || i == len(data)-1 {
+		if len(currentRow.Buttons) == elementLimitPerRow || i == len(data)-1 {
 			keyboardRows = append(keyboardRows, currentRow)
 			currentRow = KeyboardRow{} // Reset current row
 		}
@@ -246,4 +293,37 @@ func getKeyboardRows[T named](data []T, includeRowWithCancelButton bool) []Keybo
 	}
 
 	return keyboardRows
+}
+
+// convertOperationsToInlineKeyboardRowsWithPagination converts a slice of operations into inline keyboard rows with pagination support.
+// If there are more operations than the per-message limit, it adds a "Show More" button.
+func convertOperationsToInlineKeyboardRowsWithPagination(operations []models.Operation, limitPerMessage int) []InlineKeyboardRow {
+	inlineKeyboardRows := make([]InlineKeyboardRow, 0, len(operations))
+	for _, operation := range operations {
+		inlineKeyboardRows = append(inlineKeyboardRows, InlineKeyboardRow{
+			Buttons: []InlineKeyboardButton{
+				{
+					Text: operation.GetName(),
+					Data: operation.ID,
+				},
+			},
+		})
+	}
+
+	// Skip BotShowMoreOperationsForDeleteCommand if operations are within the operationsPerMessage limit.
+	if len(operations) <= limitPerMessage {
+		return inlineKeyboardRows
+	}
+
+	inlineKeyboardRows = append(inlineKeyboardRows, []InlineKeyboardRow{
+		{
+			Buttons: []InlineKeyboardButton{
+				{
+					Text: models.BotShowMoreOperationsForDeleteCommand,
+				},
+			},
+		},
+	}...)
+
+	return inlineKeyboardRows
 }

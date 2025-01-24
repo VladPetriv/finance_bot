@@ -1,6 +1,7 @@
 package models
 
 import (
+	"fmt"
 	"time"
 )
 
@@ -15,6 +16,69 @@ type Operation struct {
 	Description string        `bson:"description,omitempty"`
 
 	CreatedAt time.Time `bson:"createdAt,omitempty"`
+}
+
+var typeShort = map[OperationType]string{
+	OperationTypeIncoming:    "IN",
+	OperationTypeSpending:    "OUT",
+	OperationTypeTransfer:    "TRF",
+	OperationTypeTransferIn:  "TRF-IN",
+	OperationTypeTransferOut: "TRF-OUT",
+}
+
+// GetName returns a string representation of the operation.
+func (o *Operation) GetName() string {
+	truncatedDescription := o.Description
+	if len(o.Description) > 10 {
+		truncatedDescription = o.Description[:10] + "..."
+	}
+
+	return fmt.Sprintf("%s, %s, %s, %s",
+		o.CreatedAt.Format("02.01 15:04:05"),
+		o.Amount,
+		typeShort[o.Type],
+		truncatedDescription,
+	)
+}
+
+// GetDeletionMessage generates a confirmation message for operation deletion,
+// including operation details and warnings about balance impacts based on the
+// operation type (transfer, spending, or incoming).
+func (o *Operation) GetDeletionMessage() string {
+	var balanceImpactMsg string
+	switch o.Type {
+	case OperationTypeTransferIn, OperationTypeTransferOut:
+		balanceImpactMsg = fmt.Sprintf(
+			"⚠️ Warning: Deleting this transfer operation will:\n"+
+				"• Increase balance of source account by %s\n"+
+				"• Decrease balance of destination account by %s",
+			o.Amount,
+			o.Amount)
+	case OperationTypeSpending, OperationTypeIncoming:
+		var effect string
+		if o.Type == "income" {
+			effect = "decrease"
+		} else {
+			effect = "increase"
+		}
+		balanceImpactMsg = fmt.Sprintf(
+			"⚠️ Warning: Deleting this %s operation will %s your balance by %s",
+			o.Type,
+			effect,
+			o.Amount)
+	}
+
+	return fmt.Sprintf(
+		"Are you sure you want to proceed with the selected operation?\n\n"+
+			"Operation Details:\n"+
+			"Type: %s\n"+
+			"Amount: %s\n"+
+			"Description: %s\n\n"+
+			"%s\n\n"+
+			"This action cannot be undone.",
+		o.Type, o.Amount, o.Description,
+		balanceImpactMsg,
+	)
 }
 
 // OperationType represents the type of an operation, which can be either incoming, spending or transfer.

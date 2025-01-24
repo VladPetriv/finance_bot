@@ -192,6 +192,25 @@ func TestOperation_List(t *testing.T) {
 			},
 		},
 		{
+			desc: "positive: received all operations where time less than input time",
+			preconditions: []models.Operation{
+				{ID: "1.5", BalanceID: "id5", CreatedAt: time.Now().Add(-48 * time.Hour)},
+				{ID: "2.5", BalanceID: "id5", CreatedAt: time.Now().Add(-24 * time.Hour)},
+				{ID: "3.5", BalanceID: "id5", CreatedAt: time.Now().Add(-1 * time.Hour)},
+				{ID: "4.5", BalanceID: "id5", CreatedAt: time.Now()},
+			},
+			input: input{
+				filter: service.ListOperationsFilter{
+					BalanceID:         "id5",
+					CreatedAtLessThan: time.Now().Add(-10 * time.Hour),
+				},
+			},
+			expected: []models.Operation{
+				{ID: "1.5", BalanceID: "id5", CreatedAt: time.Now().Add(-48 * time.Hour)},
+				{ID: "2.5", BalanceID: "id5", CreatedAt: time.Now().Add(-24 * time.Hour)},
+			},
+		},
+		{
 			desc: "negative: operations not found",
 			input: input{
 				filter: service.ListOperationsFilter{
@@ -299,6 +318,144 @@ func TestOperation_Delete(t *testing.T) {
 				assert.NoError(t, err)
 				assert.NotNil(t, operation)
 			}
+		})
+	}
+}
+
+func TestOperation_Get(t *testing.T) {
+	t.Parallel()
+
+	ctx := context.Background() //nolint: forbidigo
+	cfg := config.Get()
+
+	db, err := database.NewMongoDB(ctx, cfg.MongoDB.URI, cfg.MongoDB.Database)
+	require.NoError(t, err)
+	operationStore := store.NewOperation(db)
+
+	operationID1,
+		operationID2,
+		operationID3,
+		operationID4 := uuid.NewString(), uuid.NewString(), uuid.NewString(), uuid.NewString()
+
+	now := time.Now()
+
+	testCases := []struct {
+		desc          string
+		preconditions *models.Operation
+		input         service.GetOperationFilter
+		expected      *models.Operation
+	}{
+		{
+			desc: "positive: operation found by id",
+			preconditions: &models.Operation{
+				ID:        operationID1,
+				Type:      models.OperationTypeIncoming,
+				Amount:    "100",
+				BalanceID: "balance-1",
+			},
+			input: service.GetOperationFilter{
+				ID: operationID1,
+			},
+			expected: &models.Operation{
+				ID:        operationID1,
+				Type:      models.OperationTypeIncoming,
+				Amount:    "100",
+				BalanceID: "balance-1",
+			},
+		},
+		{
+			desc: "positive: operation found by type",
+			preconditions: &models.Operation{
+				ID:        operationID2,
+				Type:      models.OperationTypeSpending,
+				Amount:    "100",
+				BalanceID: "balance-2",
+			},
+			input: service.GetOperationFilter{
+				Type: models.OperationTypeSpending,
+			},
+			expected: &models.Operation{
+				ID:        operationID2,
+				Type:      models.OperationTypeSpending,
+				Amount:    "100",
+				BalanceID: "balance-2",
+			},
+		},
+		{
+			desc: "positive: operation found by createdAtFrom and createdAtTo",
+			preconditions: &models.Operation{
+				ID:        operationID3,
+				Type:      models.OperationTypeTransfer,
+				Amount:    "100",
+				BalanceID: "balance-3",
+				CreatedAt: now.Add(-3 * time.Hour),
+			},
+			input: service.GetOperationFilter{
+				CreateAtFrom: now.Add(-4 * time.Hour),
+				CreateAtTo:   now.Add(-1 * time.Hour),
+			},
+			expected: &models.Operation{
+				ID:        operationID3,
+				Type:      models.OperationTypeTransfer,
+				Amount:    "100",
+				BalanceID: "balance-3",
+			},
+		},
+		{
+			desc: "positive: operation found by balances ids filter",
+			preconditions: &models.Operation{
+				ID:        operationID4,
+				Type:      models.OperationTypeTransfer,
+				Amount:    "100",
+				BalanceID: "balance-4",
+			},
+			input: service.GetOperationFilter{
+				BalanceIDs: []string{"balance-4"},
+			},
+			expected: &models.Operation{
+				ID:        operationID4,
+				Type:      models.OperationTypeTransfer,
+				Amount:    "100",
+				BalanceID: "balance-4",
+			},
+		},
+		{
+			desc: "negative: operation not found",
+			input: service.GetOperationFilter{
+				ID: "not-existed-id",
+			},
+			expected: nil,
+		},
+	}
+
+	for _, tc := range testCases {
+		tc := tc
+		t.Run(tc.desc, func(t *testing.T) {
+			t.Parallel()
+
+			if tc.preconditions != nil {
+				err := operationStore.Create(ctx, tc.preconditions)
+				assert.NoError(t, err)
+			}
+
+			t.Cleanup(func() {
+				if tc.preconditions != nil {
+					err := operationStore.Delete(ctx, tc.preconditions.ID)
+					assert.NoError(t, err)
+				}
+			})
+
+			actual, err := operationStore.Get(ctx, tc.input)
+			assert.NoError(t, err)
+			if tc.expected == nil {
+				assert.Nil(t, actual)
+				return
+			}
+
+			assert.Equal(t, tc.expected.ID, actual.ID)
+			assert.Equal(t, tc.expected.Type, actual.Type)
+			assert.Equal(t, tc.expected.Amount, actual.Amount)
+			assert.Equal(t, tc.expected.BalanceID, actual.BalanceID)
 		})
 	}
 }
