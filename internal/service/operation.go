@@ -1014,9 +1014,7 @@ func (h handlerService) deleteTransferOperation(ctx context.Context, initialOper
 		return fmt.Errorf("get operation from store: %w", err)
 	}
 	if pairedTransferOperation == nil {
-
 		logger.Info().Msg("paired transfer operation not found")
-
 		return ErrOperationNotFound
 	}
 
