@@ -42,6 +42,8 @@ const (
 	GetOperationsHistoryEvent Event = "operation/get_history"
 	// DeleteOperationEvent represents the event for deleting an operation
 	DeleteOperationEvent Event = "operation/delete"
+	// UpdateOperationEvent represents the event for updating an operation
+	UpdateOperationEvent Event = "operation/update"
 )
 
 // EventToFlow maps events to their corresponding flows
@@ -71,4 +73,5 @@ var EventToFlow = map[Event]Flow{
 	CreateOperationEvent:      CreateOperationFlow,
 	GetOperationsHistoryEvent: GetOperationsHistoryFlow,
 	DeleteOperationEvent:      DeleteOperationFlow,
+	UpdateOperationEvent:      UpdateOperationFlow,
 }

@@ -57,14 +57,20 @@ func (s *State) IsCommandAllowedDuringFlow(command string) bool {
 	switch s.Flow {
 	case CreateOperationFlow:
 		if s.GetCurrentStep() == ProcessOperationTypeFlowStep {
-			return slices.Contains([]string{BotCreateIncomingOperationCommand, BotCreateSpendingOperationCommand, BotCreateTransferOperationCommand}, command)
+			return slices.Contains(
+				[]string{BotCreateIncomingOperationCommand, BotCreateSpendingOperationCommand, BotCreateTransferOperationCommand},
+				command,
+			)
 		}
 
 		return false
 
 	case DeleteOperationFlow:
 		if s.GetCurrentStep() == ChooseOperationToDeleteFlowStep {
-			return slices.Contains([]string{BotShowMoreOperationsForDeleteCommand}, command)
+			return slices.Contains(
+				[]string{BotShowMoreOperationsForDeleteCommand},
+				command,
+			)
 		}
 
 		return false
@@ -110,6 +116,8 @@ func (s *State) GetEvent() Event {
 		return DeleteOperationEvent
 	case GetOperationsHistoryFlowStep:
 		return GetOperationsHistoryEvent
+	case UpdateOperationFlowStep:
+		return UpdateOperationEvent
 	default:
 		return UnknownEvent
 	}
@@ -155,6 +163,8 @@ const (
 	GetOperationsHistoryFlow Flow = "get_operations_history"
 	// DeleteOperationFlow represents the flow for deleting an operation
 	DeleteOperationFlow Flow = "delete_operation"
+	// UpdateOperationFlow represents the flow for updating an operation
+	UpdateOperationFlow Flow = "update_operation"
 )
 
 // FlowStep represents a specific step within a flow
@@ -234,4 +244,6 @@ const (
 	ChooseOperationToDeleteFlowStep FlowStep = "choose_operation_to_delete"
 	// ConfirmOperationDeletionFlowStep represents the step for confirming operation deletion
 	ConfirmOperationDeletionFlowStep FlowStep = "confirm_operation_deletion"
+	// UpdateOperationFlowStep represents the step for updating an operation
+	UpdateOperationFlowStep FlowStep = "update_operation"
 )
