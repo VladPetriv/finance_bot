@@ -89,6 +89,7 @@ var CommandToEvent = map[string]Event{
 	BotCreateOperationCommand: CreateOperationEvent,
 	BotGetOperationsHistory:   GetOperationsHistoryEvent,
 	BotDeleteOperationCommand: DeleteOperationEvent,
+	BotUpdateOperationCommand: UpdateOperationEvent,
 }
 
 // CommandToFistFlowStep maps commands to their initial flow steps
