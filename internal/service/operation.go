@@ -237,11 +237,6 @@ Please enter the current exchange rate:`,
 			return fmt.Errorf("show cancel button with text: %w", err)
 		}
 
-		if err != nil {
-			logger.Error().Err(err).Msg("send message")
-			return fmt.Errorf("send message: %w", err)
-		}
-
 		nextStep = models.EnterOperationDescriptionFlowStep
 	case models.EnterOperationDescriptionFlowStep:
 		stateMetaData[operationDescriptionMetadataKey] = msg.GetText()
