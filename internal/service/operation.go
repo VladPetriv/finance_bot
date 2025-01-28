@@ -52,16 +52,12 @@ func (h handlerService) HandleOperationCreate(ctx context.Context, msg Message) 
 
 	switch currentStep {
 	case models.CreateOperationFlowStep:
-		// Send an empty message with updated keyboard to avoid unexpected user behavior after clicking on previously generated keyboard.
-		err := h.apis.Messenger.SendWithKeyboard(SendWithKeyboardOptions{
-			ChatID:   msg.GetChatID(),
-			Message:  emptyMessage,
-			Keyboard: rowKeyboardWithCancelButtonOnly,
-		})
+		err := h.showCancelButton(msg.GetChatID(), "")
 		if err != nil {
-			logger.Error().Err(err).Msg("create keyboard with welcome message")
-			return fmt.Errorf("create keyboard with welcome message: %w", err)
+			logger.Error().Err(err).Msg("show cancel button")
+			return fmt.Errorf("show cancel button: %w", err)
 		}
+
 		err = h.apis.Messenger.SendWithKeyboard(SendWithKeyboardOptions{
 			ChatID:  msg.GetChatID(),
 			Message: "Choose operation type:",
@@ -206,14 +202,10 @@ Please enter the current exchange rate:`,
 			break
 		}
 
-		err := h.apis.Messenger.SendWithKeyboard(SendWithKeyboardOptions{
-			ChatID:   msg.GetChatID(),
-			Message:  "Enter operation amount:",
-			Keyboard: rowKeyboardWithCancelButtonOnly,
-		})
+		err := h.showCancelButton(msg.GetChatID(), "Enter operation amount:")
 		if err != nil {
-			logger.Error().Err(err).Msg("send message")
-			return fmt.Errorf("send message: %w", err)
+			logger.Error().Err(err).Msg("show cancel button with text")
+			return fmt.Errorf("show cancel button with text: %w", err)
 		}
 
 		nextStep = models.EnterOperationAmountFlowStep
@@ -239,11 +231,12 @@ Please enter the current exchange rate:`,
 	case models.ChooseCategoryFlowStep:
 		stateMetaData[categoryTitleMetadataKey] = msg.GetText()
 
-		err := h.apis.Messenger.SendWithKeyboard(SendWithKeyboardOptions{
-			ChatID:   msg.GetChatID(),
-			Message:  "Enter operation description:",
-			Keyboard: rowKeyboardWithCancelButtonOnly,
-		})
+		err := h.showCancelButton(msg.GetChatID(), "Enter operation description:")
+		if err != nil {
+			logger.Error().Err(err).Msg("show cancel button with text")
+			return fmt.Errorf("show cancel button with text: %w", err)
+		}
+
 		if err != nil {
 			logger.Error().Err(err).Msg("send message")
 			return fmt.Errorf("send message: %w", err)
@@ -370,17 +363,7 @@ func (h handlerService) handleEnterOperationAmountFlowStep(ctx context.Context, 
 		return fmt.Errorf("received unknown operation type: %s", operationType)
 	}
 
-	err = h.apis.Messenger.SendWithKeyboard(SendWithKeyboardOptions{
-		ChatID:   opts.msg.GetChatID(),
-		Message:  "Operation created!",
-		Keyboard: defaultKeyboardRows,
-	})
-	if err != nil {
-		logger.Error().Err(err).Msg("send message")
-		return fmt.Errorf("send message: %w", err)
-	}
-
-	return nil
+	return h.sendMessageWithDefaultKeyboard(opts.msg.GetChatID(), "Operation created!")
 }
 
 type processSpendingAndIncomingOperationOptions struct {
@@ -687,26 +670,16 @@ func (h handlerService) handlerChooseTimePeriodForOperationsHistoryFlowStep(ctx 
 		return ErrOperationsNotFound
 	}
 
-	resultMessage := fmt.Sprintf("Balance Amount: %v%s\nPeriod: %v\n", balance.Amount, balance.Currency, *creationPeriod)
+	outputMessage := fmt.Sprintf("Balance Amount: %v%s\nPeriod: %v\n", balance.Amount, balance.Currency, *creationPeriod)
 
 	for _, o := range operations {
-		resultMessage += fmt.Sprintf(
+		outputMessage += fmt.Sprintf(
 			"\nOperation: %s\nDescription: %s\nCategory: %s\nAmount: %v%s\nCreation date: %v\n- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -",
 			o.Type, o.Description, o.CategoryID, o.Amount, balance.Currency, o.CreatedAt.Format(time.ANSIC),
 		)
 	}
 
-	err = h.apis.Messenger.SendWithKeyboard(SendWithKeyboardOptions{
-		ChatID:   opts.msg.GetChatID(),
-		Message:  resultMessage,
-		Keyboard: defaultKeyboardRows,
-	})
-	if err != nil {
-		logger.Error().Err(err).Msg("send message")
-		return fmt.Errorf("send message: %w", err)
-	}
-
-	return nil
+	return h.sendMessageWithDefaultKeyboard(opts.msg.GetChatID(), outputMessage)
 }
 
 func (h handlerService) HandleOperationDelete(ctx context.Context, msg Message) error {
@@ -761,7 +734,7 @@ func (h handlerService) HandleOperationDelete(ctx context.Context, msg Message) 
 	case models.ChooseBalanceFlowStep:
 		stateMetaData[balanceNameMetadataKey] = msg.GetText()
 
-		err := h.showCancelButton(msg.GetChatID())
+		err := h.showCancelButton(msg.GetChatID(), "")
 		if err != nil {
 			logger.Error().Err(err).Msg("show cancel button")
 			return fmt.Errorf("show cancel button: %w", err)
@@ -821,14 +794,10 @@ func (h handlerService) HandleOperationDelete(ctx context.Context, msg Message) 
 			return fmt.Errorf("delete operation: %w", err)
 		}
 
-		err = h.apis.Messenger.SendWithKeyboard(SendWithKeyboardOptions{
-			ChatID:   msg.GetChatID(),
-			Message:  "Operation deleted!",
-			Keyboard: defaultKeyboardRows,
-		})
+		err = h.sendMessageWithDefaultKeyboard(msg.GetChatID(), "Operation deleted!")
 		if err != nil {
-			logger.Error().Err(err).Msg("send message")
-			return fmt.Errorf("send message: %w", err)
+			logger.Error().Err(err).Msg("send message with default keyboard")
+			return fmt.Errorf("send message with default keyboard: %w", err)
 		}
 
 		nextStep = models.EndFlowStep
@@ -881,16 +850,10 @@ func (h handlerService) chooseOperationToDeleteFlowStep(ctx context.Context, opt
 
 	opts.metaData[operationIDMetadataKey] = operation.ID
 
-	err = h.sendMessageWithConfirmationInlineKeyboard(
+	return models.ConfirmOperationDeletionFlowStep, h.sendMessageWithConfirmationInlineKeyboard(
 		opts.msg.GetChatID(),
 		operation.GetDeletionMessage(),
 	)
-	if err != nil {
-		logger.Error().Err(err).Msg("send message with confirmation inline keyboard")
-		return "", fmt.Errorf("send message with confirmation inline keyboard: %w", err)
-	}
-
-	return models.ConfirmOperationDeletionFlowStep, nil
 }
 
 type sendListOfOperationsWithAbilityToPaginateOptions struct {

@@ -65,18 +65,8 @@ func (h handlerService) HandleStart(ctx context.Context, msg Message) error {
 
 	// Handle case when user already exists
 	if user != nil {
-		err := h.apis.Messenger.SendWithKeyboard(SendWithKeyboardOptions{
-			ChatID:   chatID,
-			Message:  fmt.Sprintf("Happy to see you again @%s!", username),
-			Keyboard: defaultKeyboardRows,
-		})
-		if err != nil {
-			logger.Error().Err(err).Msg("create keyboard")
-			return fmt.Errorf("create keyboard: %w", err)
-		}
-
 		nextStep = models.EndFlowStep
-		return nil
+		return h.sendMessageWithDefaultKeyboard(chatID, fmt.Sprintf("Happy to see you again @%s!", username))
 	}
 
 	err = h.stores.User.Create(ctx, &models.User{
@@ -105,25 +95,16 @@ func (h handlerService) HandleStart(ctx context.Context, msg Message) error {
 }
 
 func (h handlerService) HandleCancel(ctx context.Context, msg Message) error {
-	logger := h.logger.With().Str("name", "handlerService.HandleCancel").Logger()
-
-	err := h.apis.Messenger.SendWithKeyboard(SendWithKeyboardOptions{
-		ChatID:   msg.GetChatID(),
-		Message:  "Please choose command to execute:",
-		Keyboard: defaultKeyboardRows,
-	})
-	if err != nil {
-		logger.Error().Err(err).Msg("create keyboard")
-		return fmt.Errorf("create keyboard: %w", err)
-	}
-
-	return nil
+	return h.sendMessageWithDefaultKeyboard(msg.GetChatID(), "Please choose command to execute:")
 }
 
 func (h handlerService) HandleUnknown(msg Message) error {
 	logger := h.logger.With().Str("name", "handlerService.HandleUnknown").Logger()
 
-	err := h.apis.Messenger.SendMessage(msg.GetChatID(), "Didn't understand you!\nCould you please check available commands!")
+	err := h.apis.Messenger.SendMessage(
+		msg.GetChatID(),
+		"Didn't understand you!\nCould you please check available commands!",
+	)
 	if err != nil {
 		logger.Error().Err(err).Msg("send message")
 		return fmt.Errorf("send message: %w", err)
@@ -149,11 +130,7 @@ func (h handlerService) HandleError(ctx context.Context, opts HandleErrorOptions
 	message := "Something went wrong!\nPlease try again later!"
 
 	if opts.SendDefaultKeyboard {
-		return h.apis.Messenger.SendWithKeyboard(SendWithKeyboardOptions{
-			ChatID:   opts.Msg.GetChatID(),
-			Message:  message,
-			Keyboard: defaultKeyboardRows,
-		})
+		return h.sendMessageWithDefaultKeyboard(opts.Msg.GetChatID(), message)
 	}
 
 	return h.apis.Messenger.SendMessage(opts.Msg.GetChatID(), "Something went wrong!\nPlease try again later!")
@@ -170,7 +147,6 @@ func (h handlerService) HandleWrappers(ctx context.Context, event models.Event, 
 
 	switch event {
 	case models.BalanceEvent:
-
 		rows = []KeyboardRow{
 			{
 				Buttons: []string{models.BotCreateBalanceCommand, models.BotGetBalanceCommand},
@@ -213,17 +189,11 @@ func (h handlerService) HandleWrappers(ctx context.Context, event models.Event, 
 		return fmt.Errorf("unknown wrappers event: %s", event)
 	}
 
-	err := h.apis.Messenger.SendWithKeyboard(SendWithKeyboardOptions{
+	return h.apis.Messenger.SendWithKeyboard(SendWithKeyboardOptions{
 		ChatID:   msg.GetChatID(),
 		Message:  message,
 		Keyboard: rows,
 	})
-	if err != nil {
-		logger.Error().Err(err).Msg("create keyboard")
-		return fmt.Errorf("create keyboard: %w", err)
-	}
-
-	return nil
 }
 
 // sendMessageWithConfirmationInlineKeyboard sends a message to the specified chat with Yes/No inline keyboard buttons.
@@ -262,12 +232,16 @@ func (h handlerService) notifyCancellationAndShowMenu(chatID int) error {
 const emptyMessage = "ㅤ"
 
 // showCancelButton displays a single "Cancel" button in the chat interface,
-// replacing any previous keyboard. This prevents users from interacting with
+// replacing any previous keyboard and sends a message if provided. This prevents users from interacting with
 // outdated keyboard buttons that may still be visible from previous messages.
-func (h handlerService) showCancelButton(chatID int) error {
+func (h handlerService) showCancelButton(chatID int, message string) error {
+	if message == "" {
+		message = emptyMessage
+	}
+
 	return h.apis.Messenger.SendWithKeyboard(SendWithKeyboardOptions{
 		ChatID:   chatID,
-		Message:  emptyMessage,
+		Message:  message,
 		Keyboard: rowKeyboardWithCancelButtonOnly,
 	})
 }
@@ -330,4 +304,13 @@ func convertOperationsToInlineKeyboardRowsWithPagination(operations []models.Ope
 	}...)
 
 	return inlineKeyboardRows
+}
+
+// sendMessageWithDefaultKeyboard sends a message to the specified chat with the default keyboard interface.
+func (h handlerService) sendMessageWithDefaultKeyboard(chatID int, message string) error {
+	return h.apis.Messenger.SendWithKeyboard(SendWithKeyboardOptions{
+		ChatID:   chatID,
+		Message:  message,
+		Keyboard: defaultKeyboardRows,
+	})
 }
