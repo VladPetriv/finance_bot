@@ -55,6 +55,12 @@ type HandlerService interface {
 	HandleOperationHistory(ctx context.Context, msg Message) error
 }
 
+type flowProcessingOptions struct {
+	user          *models.User
+	stateMetaData map[string]any
+	message       Message
+}
+
 // HandleErrorOptions represents input structure for HandleError method.
 type HandleErrorOptions struct {
 	Err                 error
