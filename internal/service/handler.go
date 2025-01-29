@@ -63,19 +63,41 @@ func NewHandler(opts *HandlerOptions) *handlerService {
 	return &handler
 }
 
+func (h handlerService) HandleError(ctx context.Context, opts HandleErrorOptions) error {
+	logger := h.logger.With().Str("name", "handlerService.HandleError").Logger()
+
+	if errs.IsExpected(opts.Err) {
+		logger.Info().Err(opts.Err).Msg("handled expected error")
+		return h.apis.Messenger.SendMessage(opts.Msg.GetChatID(), opts.Err.Error())
+	}
+
+	message := "Something went wrong!\nPlease try again later!"
+
+	if opts.SendDefaultKeyboard {
+		return h.sendMessageWithDefaultKeyboard(opts.Msg.GetChatID(), message)
+	}
+
+	return h.apis.Messenger.SendMessage(opts.Msg.GetChatID(), message)
+}
+
+func (h handlerService) HandleUnknown(msg Message) error {
+	return h.sendMessageWithDefaultKeyboard(msg.GetChatID(), "Didn't understand you!\nCould you please check available commands!")
+}
+
 func (h handlerService) HandleStart(ctx context.Context, msg Message) error {
 	logger := h.logger.With().Str("name", "handlerService.HandleStart").Logger()
 
 	var nextStep models.FlowStep
+	state, err := getStateFromContext(ctx)
+	if err != nil {
+		logger.Error().Err(err).Msg("get state from context")
+		return fmt.Errorf("get state from context: %w", err)
+	}
 	defer func() {
-		state := ctx.Value(contextFieldNameState).(*models.State)
-		state.Steps = append(state.Steps, nextStep)
-		updatedState, err := h.stores.State.Update(ctx, state)
-		if err != nil {
-			logger.Error().Err(err).Msg("update state in store")
-			return
-		}
-		logger.Debug().Any("updatedState", updatedState).Msg("updated state in store")
+		h.updateState(ctx, updateStateOptions{
+			updatedStep:  nextStep,
+			initialState: state,
+		})
 	}()
 
 	username := msg.GetSenderName()
@@ -122,27 +144,6 @@ func (h handlerService) HandleStart(ctx context.Context, msg Message) error {
 
 func (h handlerService) HandleCancel(ctx context.Context, msg Message) error {
 	return h.sendMessageWithDefaultKeyboard(msg.GetChatID(), "Please choose command to execute:")
-}
-
-func (h handlerService) HandleUnknown(msg Message) error {
-	return h.sendMessageWithDefaultKeyboard(msg.GetChatID(), "Didn't understand you!\nCould you please check available commands!")
-}
-
-func (h handlerService) HandleError(ctx context.Context, opts HandleErrorOptions) error {
-	logger := h.logger.With().Str("name", "handlerService.HandleError").Logger()
-
-	if errs.IsExpected(opts.Err) {
-		logger.Info().Err(opts.Err).Msg("handled expected error")
-		return h.apis.Messenger.SendMessage(opts.Msg.GetChatID(), opts.Err.Error())
-	}
-
-	message := "Something went wrong!\nPlease try again later!"
-
-	if opts.SendDefaultKeyboard {
-		return h.sendMessageWithDefaultKeyboard(opts.Msg.GetChatID(), message)
-	}
-
-	return h.apis.Messenger.SendMessage(opts.Msg.GetChatID(), "Something went wrong!\nPlease try again later!")
 }
 
 func (h handlerService) HandleWrappers(ctx context.Context, event models.Event, msg Message) error {
