@@ -80,20 +80,58 @@ type contextFieldName string
 
 const contextFieldNameState contextFieldName = "state"
 
-var defaultKeyboardRows = []KeyboardRow{
-	{
-		Buttons: []string{models.BotBalanceCommand, models.BotCategoryCommand},
-	},
-	{
-		Buttons: []string{models.BotOperationCommand},
-	},
-}
+var (
+	defaultKeyboardRows = []KeyboardRow{
+		{
+			Buttons: []string{models.BotBalanceCommand, models.BotCategoryCommand},
+		},
+		{
+			Buttons: []string{models.BotOperationCommand},
+		},
+	}
 
-var rowKeyboardWithCancelButtonOnly = []KeyboardRow{
-	{
-		Buttons: []string{models.BotCancelCommand},
-	},
-}
+	rowKeyboardWithCancelButtonOnly = []KeyboardRow{
+		{
+			Buttons: []string{models.BotCancelCommand},
+		},
+	}
+
+	balanceKeyboardRows = []KeyboardRow{
+		{
+			Buttons: []string{models.BotCreateBalanceCommand, models.BotGetBalanceCommand},
+		},
+		{
+			Buttons: []string{models.BotUpdateBalanceCommand, models.BotDeleteBalanceCommand},
+		},
+		{
+			Buttons: []string{models.BotCancelCommand},
+		},
+	}
+
+	categoryKeyboardRows = []KeyboardRow{
+		{
+			Buttons: []string{models.BotCreateCategoryCommand, models.BotListCategoriesCommand},
+		},
+		{
+			Buttons: []string{models.BotUpdateCategoryCommand, models.BotDeleteCategoryCommand},
+		},
+		{
+			Buttons: []string{models.BotCancelCommand},
+		},
+	}
+
+	operationKeyboardRows = []KeyboardRow{
+		{
+			Buttons: []string{models.BotCreateOperationCommand, models.BotGetOperationsHistory},
+		},
+		{
+			Buttons: []string{models.BotDeleteOperationCommand},
+		},
+		{
+			Buttons: []string{models.BotCancelCommand},
+		},
+	}
+)
 
 var (
 	// ErrUserAlreadyExists happens when user already exists in system.

@@ -156,43 +156,13 @@ func (h handlerService) HandleWrappers(ctx context.Context, event models.Event, 
 
 	switch event {
 	case models.BalanceEvent:
-		rows = []KeyboardRow{
-			{
-				Buttons: []string{models.BotCreateBalanceCommand, models.BotGetBalanceCommand},
-			},
-			{
-				Buttons: []string{models.BotUpdateBalanceCommand, models.BotDeleteBalanceCommand},
-			},
-			{
-				Buttons: []string{models.BotCancelCommand},
-			},
-		}
+		rows = balanceKeyboardRows
 		message = "Please choose balance command to execute:"
 	case models.CategoryEvent:
-		rows = []KeyboardRow{
-			{
-				Buttons: []string{models.BotCreateCategoryCommand, models.BotListCategoriesCommand},
-			},
-			{
-				Buttons: []string{models.BotUpdateCategoryCommand, models.BotDeleteCategoryCommand},
-			},
-			{
-				Buttons: []string{models.BotCancelCommand},
-			},
-		}
+		rows = categoryKeyboardRows
 		message = "Please choose category command to execute:"
 	case models.OperationEvent:
-		rows = []KeyboardRow{
-			{
-				Buttons: []string{models.BotCreateOperationCommand, models.BotGetOperationsHistory},
-			},
-			{
-				Buttons: []string{models.BotDeleteOperationCommand},
-			},
-			{
-				Buttons: []string{models.BotCancelCommand},
-			},
-		}
+		rows = operationKeyboardRows
 		message = "Please choose operation command to execute:"
 	default:
 		return fmt.Errorf("unknown wrappers event: %s", event)
