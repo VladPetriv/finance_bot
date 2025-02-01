@@ -31,10 +31,10 @@ type HandlerService interface {
 
 	// HandleBalanceCreate processes new balance entry creation
 	HandleBalanceCreate(ctx context.Context, msg Message) error
-	// HandleBalanceUpdate processes balance modification
-	HandleBalanceUpdate(ctx context.Context, msg Message) error
 	// HandleBalanceGet retrieves current balance information
 	HandleBalanceGet(ctx context.Context, msg Message) error
+	// HandleBalanceUpdate processes balance modification
+	HandleBalanceUpdate(ctx context.Context, msg Message) error
 	// HandleBalanceDelete processes balance entry removal
 	HandleBalanceDelete(ctx context.Context, msg Message) error
 

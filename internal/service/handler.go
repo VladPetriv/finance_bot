@@ -41,6 +41,35 @@ func NewHandler(opts *HandlerOptions) *handlerService {
 	}
 
 	handler.flowWithFlowStepsHandlers = map[models.Flow]map[models.FlowStep]flowStepHandlerFunc{
+		// Flows with balances
+		models.StartFlow: {
+			models.CreateInitialBalanceFlowStep: handler.handleCreateBalanceFlowStep,
+			models.EnterBalanceAmountFlowStep:   handler.handleEnterBalanceAmountFlowStep,
+			models.EnterBalanceCurrencyFlowStep: handler.handleEnterBalanceCurrencyFlowStep,
+		},
+		models.CreateBalanceFlow: {
+			models.CreateBalanceFlowStep:        handler.handleCreateBalanceFlowStep,
+			models.EnterBalanceNameFlowStep:     handler.handleEnterBalanceNameFlowStep,
+			models.EnterBalanceAmountFlowStep:   handler.handleEnterBalanceAmountFlowStep,
+			models.EnterBalanceCurrencyFlowStep: handler.handleEnterBalanceCurrencyFlowStep,
+		},
+		models.GetBalanceFlow: {
+			models.GetBalanceFlowStep:    handler.handleGetBalanceFlowStep,
+			models.ChooseBalanceFlowStep: handler.handleChooseBalanceFlowStepForGetBalance,
+		},
+		models.UpdateBalanceFlow: {
+			models.UpdateBalanceFlowStep:        handler.handleUpdateBalanceFlowStep,
+			models.ChooseBalanceFlowStep:        handler.handleChooseBalanceFlowStepForUpdate,
+			models.EnterBalanceNameFlowStep:     handler.handleEnterBalanceNameFlowStep,
+			models.EnterBalanceAmountFlowStep:   handler.handleEnterBalanceAmountFlowStep,
+			models.EnterBalanceCurrencyFlowStep: handler.handleEnterBalanceCurrencyFlowStep,
+		},
+		models.DeleteBalanceFlow: {
+			models.DeleteBalanceFlowStep:          handler.handleDeleteBalanceFlowStep,
+			models.ConfirmBalanceDeletionFlowStep: handler.handleConfirmBalanceDeletionFlowStep,
+			models.ChooseBalanceFlowStep:          handler.handleChooseBalanceFlowStepForDelete,
+		},
+
 		// Flows with categories
 		models.CreateCategoryFlow: {
 			models.CreateCategoryFlowStep:    handler.handleCreateCategoryFlowStep,
@@ -174,6 +203,122 @@ func (h handlerService) HandleWrappers(ctx context.Context, event models.Event, 
 		Message:  message,
 		Keyboard: rows,
 	})
+}
+
+func (h handlerService) HandleBalanceCreate(ctx context.Context, msg Message) error {
+	logger := h.logger.With().Str("name", "handlerService.HandleBalanceCreate").Logger()
+
+	var nextStep models.FlowStep
+	state, err := getStateFromContext(ctx)
+	if err != nil {
+		logger.Error().Err(err).Msg("get state from context")
+		return fmt.Errorf("get state from context: %w", err)
+	}
+	defer func() {
+		h.updateState(ctx, updateStateOptions{
+			updatedStep:  nextStep,
+			initialState: state,
+		})
+	}()
+
+	nextStep, err = h.processHandler(ctx, state, msg)
+	if err != nil {
+		if errs.IsExpected(err) {
+			logger.Info().Err(err).Msg(err.Error())
+			return err
+		}
+		logger.Error().Err(err).Msg("process handler")
+		return fmt.Errorf("process handler: %w", err)
+	}
+
+	return nil
+}
+
+func (h handlerService) HandleBalanceGet(ctx context.Context, msg Message) error {
+	logger := h.logger.With().Str("name", "handlerService.HandleBalanceGet").Logger()
+
+	var nextStep models.FlowStep
+	state, err := getStateFromContext(ctx)
+	if err != nil {
+		logger.Error().Err(err).Msg("get state from context")
+		return fmt.Errorf("get state from context: %w", err)
+	}
+	defer func() {
+		h.updateState(ctx, updateStateOptions{
+			updatedStep:  nextStep,
+			initialState: state,
+		})
+	}()
+
+	nextStep, err = h.processHandler(ctx, state, msg)
+	if err != nil {
+		if errs.IsExpected(err) {
+			logger.Info().Err(err).Msg(err.Error())
+			return err
+		}
+		logger.Error().Err(err).Msg("process handler")
+		return fmt.Errorf("process handler: %w", err)
+	}
+
+	return nil
+}
+
+func (h handlerService) HandleBalanceUpdate(ctx context.Context, msg Message) error {
+	logger := h.logger.With().Str("name", "handlerService.HandleBalanceUpdate").Logger()
+
+	var nextStep models.FlowStep
+	state, err := getStateFromContext(ctx)
+	if err != nil {
+		logger.Error().Err(err).Msg("get state from context")
+		return fmt.Errorf("get state from context: %w", err)
+	}
+	defer func() {
+		h.updateState(ctx, updateStateOptions{
+			updatedStep:  nextStep,
+			initialState: state,
+		})
+	}()
+
+	nextStep, err = h.processHandler(ctx, state, msg)
+	if err != nil {
+		if errs.IsExpected(err) {
+			logger.Info().Err(err).Msg(err.Error())
+			return err
+		}
+		logger.Error().Err(err).Msg("process handler")
+		return fmt.Errorf("process handler: %w", err)
+	}
+
+	return nil
+}
+
+func (h handlerService) HandleBalanceDelete(ctx context.Context, msg Message) error {
+	logger := h.logger.With().Str("name", "handlerService.HandleBalanceDelete").Logger()
+
+	var nextStep models.FlowStep
+	state, err := getStateFromContext(ctx)
+	if err != nil {
+		logger.Error().Err(err).Msg("get state from context")
+		return fmt.Errorf("get state from context: %w", err)
+	}
+	defer func() {
+		h.updateState(ctx, updateStateOptions{
+			updatedStep:  nextStep,
+			initialState: state,
+		})
+	}()
+
+	nextStep, err = h.processHandler(ctx, state, msg)
+	if err != nil {
+		if errs.IsExpected(err) {
+			logger.Info().Err(err).Msg(err.Error())
+			return err
+		}
+		logger.Error().Err(err).Msg("process handler")
+		return fmt.Errorf("process handler: %w", err)
+	}
+
+	return nil
 }
 
 func (h handlerService) HandleCategoryCreate(ctx context.Context, msg Message) error {
@@ -321,7 +466,7 @@ func (h handlerService) processHandler(ctx context.Context, state *models.State,
 	logger.Debug().Any("user", user).Msg("got user from store")
 
 	currentStep := state.GetCurrentStep()
-	logger.Debug().Any("currentStep", currentStep).Msg("got current step on create category flow")
+	logger.Debug().Any("currentStep", currentStep).Msg("got current step")
 
 	flowHandlers, ok := h.flowWithFlowStepsHandlers[state.Flow]
 	if !ok {
@@ -329,7 +474,13 @@ func (h handlerService) processHandler(ctx context.Context, state *models.State,
 		return "", fmt.Errorf("flow not found")
 	}
 
-	nextStep, err := flowHandlers[currentStep](ctx, flowProcessingOptions{
+	stepHandler, ok := flowHandlers[currentStep]
+	if !ok {
+		logger.Error().Msg("step handler not found")
+		return "", fmt.Errorf("step handler not found")
+	}
+
+	nextStep, err := stepHandler(ctx, flowProcessingOptions{
 		user:          user,
 		stateMetaData: state.Metedata,
 		message:       message,
