@@ -103,7 +103,6 @@ func (h handlerService) handleChooseCategoryFlowStepForUpdate(ctx context.Contex
 	logger.Debug().Any("opts", opts).Msg("got args")
 
 	opts.stateMetaData[previousCategoryTitleMetadataKey] = opts.message.GetText()
-
 	return models.EnterUpdatedCategoryNameFlowStep, h.showCancelButton(opts.message.GetChatID(), "Enter updated category name:")
 }
 

@@ -32,24 +32,20 @@ func (h *handlerService) handleCreateBalanceFlowStep(ctx context.Context, opts f
 		return "", fmt.Errorf("create balance in store: %w", err)
 	}
 
-	options := SendWithKeyboardOptions{
-		ChatID:   opts.message.GetChatID(),
-		Keyboard: rowKeyboardWithCancelButtonOnly,
-	}
-
 	opts.stateMetaData[balanceIDMetadataKey] = balanceID
 
-	var nextStep models.FlowStep
 	switch opts.message.GetText() == models.BotCreateBalanceCommand {
 	case true:
-		options.Message = "Please enter balance name:"
-		nextStep = models.EnterBalanceNameFlowStep
+		return models.EnterBalanceNameFlowStep, h.apis.Messenger.SendWithKeyboard(SendWithKeyboardOptions{
+			ChatID:   opts.message.GetChatID(),
+			Message:  "Please enter balance name:",
+			Keyboard: rowKeyboardWithCancelButtonOnly,
+		})
 	case false:
-		options.Message = "Please enter balance amount:"
-		nextStep = models.EnterBalanceAmountFlowStep
+		return models.EnterBalanceAmountFlowStep, h.apis.Messenger.SendMessage(opts.message.GetChatID(), "Please enter balance amount:")
+	default:
+		return "", nil
 	}
-
-	return nextStep, h.apis.Messenger.SendWithKeyboard(options)
 }
 
 func (h handlerService) handleGetBalanceFlowStep(ctx context.Context, opts flowProcessingOptions) (models.FlowStep, error) {

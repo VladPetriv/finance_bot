@@ -26,36 +26,14 @@ type HandlerService interface {
 
 	// HandleStart initialize new user, his balance and send welcome message.
 	HandleStart(ctx context.Context, msg Message) error
-	// HandlecanCel cancel current user flow and returns the default keyboard
+	// HandleCancel cancel current user flow and returns the default keyboard
 	HandleCancel(ctx context.Context, msg Message) error
 	// HandleWrappers processes main keyboard selections, where each button (Balance/Operations/Categories)
 	// maps to corresponding model wrapper to handle its specific actions.
 	HandleWrappers(ctx context.Context, event models.Event, msg Message) error
 
-	// HandleBalanceCreate processes new balance entry creation
-	HandleBalanceCreate(ctx context.Context, msg Message) error
-	// HandleBalanceGet retrieves current balance information
-	HandleBalanceGet(ctx context.Context, msg Message) error
-	// HandleBalanceUpdate processes balance modification
-	HandleBalanceUpdate(ctx context.Context, msg Message) error
-	// HandleBalanceDelete processes balance entry removal
-	HandleBalanceDelete(ctx context.Context, msg Message) error
-
-	// HandleCategoryCreate processes new category creation
-	HandleCategoryCreate(ctx context.Context, msg Message) error
-	// HandleCategoryList retrieves all available categories
-	HandleCategoryList(ctx context.Context, msg Message) error
-	// HandleCategoryUpdate processes category modification
-	HandleCategoryUpdate(ctx context.Context, msg Message) error
-	// HandleCategoryDelete processes category removal
-	HandleCategoryDelete(ctx context.Context, msg Message) error
-
-	// HandleOperationCreate processes new operation creation
-	HandleOperationCreate(ctx context.Context, msg Message) error
-	// HandleOperationHistory retrieves operation transaction history
-	HandleOperationHistory(ctx context.Context, msg Message) error
-	// HandleOperationDelete processes operation removal
-	HandleOperationDelete(ctx context.Context, msg Message) error
+	// HandleAction process user actions with app entities (balance, category, operation).
+	HandleAction(ctx context.Context, msg Message) error
 }
 
 type flowProcessingOptions struct {
