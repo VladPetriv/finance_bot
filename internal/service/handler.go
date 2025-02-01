@@ -41,7 +41,7 @@ func NewHandler(opts *HandlerOptions) *handlerService {
 	}
 }
 
-func (h handlerService) RegisterHandlers() {
+func (h *handlerService) RegisterHandlers() {
 	h.flowWithFlowStepsHandlers = map[models.Flow]map[models.FlowStep]flowStepHandlerFunc{
 		// Flows with balances
 		models.StartFlow: {
@@ -88,6 +88,30 @@ func (h handlerService) RegisterHandlers() {
 		models.DeleteCategoryFlow: {
 			models.DeleteCategoryFlowStep: h.handleDeleteCategoryFlowStep,
 			models.ChooseCategoryFlowStep: h.handleChooseCategoryFlowStepForDelete,
+		},
+
+		// Flows with operations
+		models.CreateOperationFlow: {
+			models.CreateOperationFlowStep:           h.handleCreateOperationFlowStep,
+			models.ProcessOperationTypeFlowStep:      h.handleProcessOperationTypeFlowStep,
+			models.ChooseBalanceFlowStep:             h.handleChooseBalanceFlowStepForCreatingOperation,
+			models.ChooseBalanceFromFlowStep:         h.handleChooseBalanceFromFlowStep,
+			models.ChooseBalanceToFlowStep:           h.handleChooseBalanceToFlowStep,
+			models.EnterCurrencyExchangeRateFlowStep: h.handleEnterCurrencyExchangeRateFlowStep,
+			models.ChooseCategoryFlowStep:            h.handleChooseCategoryFlowStep,
+			models.EnterOperationDescriptionFlowStep: h.handleEnterOperationDescriptionFlowStep,
+			models.EnterOperationAmountFlowStep:      h.handleEnterOperationAmountFlowStep,
+		},
+		models.GetOperationsHistoryFlow: {
+			models.GetOperationsHistoryFlowStep:                 h.handleGetOperationsHistoryFlowStep,
+			models.ChooseBalanceFlowStep:                        h.handleChooseBalanceFlowStepForGetOperationsHistory,
+			models.ChooseTimePeriodForOperationsHistoryFlowStep: h.handleChooseTimePeriodForOperationsHistoryFlowStep,
+		},
+		models.DeleteOperationFlow: {
+			models.DeleteOperationFlowStep:          h.handleDeleteOperationFlowStep,
+			models.ChooseBalanceFlowStep:            h.handleChooseBalanceFlowStepForDeleteOperation,
+			models.ChooseOperationToDeleteFlowStep:  h.handleChooseOperationToDeleteFlowStep,
+			models.ConfirmOperationDeletionFlowStep: h.handleConfirmOperationDeletionFlowStep,
 		},
 	}
 }
@@ -407,19 +431,101 @@ func (h handlerService) HandleCategoryUpdate(ctx context.Context, msg Message) e
 		return fmt.Errorf("process handler: %w", err)
 	}
 
-	currentStep := ctx.Value(contextFieldNameState).(*models.State).GetCurrentStep()
-	logger.Debug().Any("currentStep", currentStep).Msg("got current step on update category flow")
-
-	switch currentStep {
-	case models.ChooseCategoryFlowStep:
-		state.Metedata[previousCategoryTitleMetadataKey] = msg.GetText()
-	}
-
 	return nil
 }
 
 func (h handlerService) HandleCategoryDelete(ctx context.Context, msg Message) error {
 	logger := h.logger.With().Str("name", "handlerService.HandleCategoryDelete").Logger()
+
+	var nextStep models.FlowStep
+	state, err := getStateFromContext(ctx)
+	if err != nil {
+		logger.Error().Err(err).Msg("get state from context")
+		return fmt.Errorf("get state from context: %w", err)
+	}
+	defer func() {
+		h.updateState(ctx, updateStateOptions{
+			updatedStep:     nextStep,
+			initialState:    state,
+			updatedMetadata: state.Metedata,
+		})
+	}()
+
+	nextStep, err = h.processHandler(ctx, state, msg)
+	if err != nil {
+		if errs.IsExpected(err) {
+			logger.Info().Err(err).Msg(err.Error())
+			return err
+		}
+		logger.Error().Err(err).Msg("process handler")
+		return fmt.Errorf("process handler: %w", err)
+	}
+
+	return nil
+}
+
+func (h handlerService) HandleOperationCreate(ctx context.Context, msg Message) error {
+	logger := h.logger.With().Str("name", "handlerService.HandleOperationCreate").Logger()
+
+	var nextStep models.FlowStep
+	state, err := getStateFromContext(ctx)
+	if err != nil {
+		logger.Error().Err(err).Msg("get state from context")
+		return fmt.Errorf("get state from context: %w", err)
+	}
+	defer func() {
+		h.updateState(ctx, updateStateOptions{
+			updatedStep:     nextStep,
+			initialState:    state,
+			updatedMetadata: state.Metedata,
+		})
+	}()
+
+	nextStep, err = h.processHandler(ctx, state, msg)
+	if err != nil {
+		if errs.IsExpected(err) {
+			logger.Info().Err(err).Msg(err.Error())
+			return err
+		}
+		logger.Error().Err(err).Msg("process handler")
+		return fmt.Errorf("process handler: %w", err)
+	}
+
+	return nil
+}
+
+func (h handlerService) HandleOperationHistory(ctx context.Context, msg Message) error {
+	logger := h.logger.With().Str("name", "handlerService.HandleOperationHistory").Logger()
+
+	var nextStep models.FlowStep
+	state, err := getStateFromContext(ctx)
+	if err != nil {
+		logger.Error().Err(err).Msg("get state from context")
+		return fmt.Errorf("get state from context: %w", err)
+	}
+	defer func() {
+		h.updateState(ctx, updateStateOptions{
+			updatedStep:     nextStep,
+			initialState:    state,
+			updatedMetadata: state.Metedata,
+		})
+	}()
+
+	nextStep, err = h.processHandler(ctx, state, msg)
+	if err != nil {
+		if errs.IsExpected(err) {
+			logger.Info().Err(err).Msg(err.Error())
+			return err
+		}
+		logger.Error().Err(err).Msg("process handler")
+		return fmt.Errorf("process handler: %w", err)
+	}
+
+	return nil
+}
+
+func (h handlerService) HandleOperationDelete(ctx context.Context, msg Message) error {
+	logger := h.logger.With().Str("name", "handlerService.HandleOperationDelete").Logger()
 
 	var nextStep models.FlowStep
 	state, err := getStateFromContext(ctx)
@@ -470,7 +576,7 @@ func (h handlerService) processHandler(ctx context.Context, state *models.State,
 
 	flowHandlers, ok := h.flowWithFlowStepsHandlers[state.Flow]
 	if !ok {
-		logger.Error().Msg("flow not found")
+		logger.Error().Any("flow", state.Flow).Msg("flow not found")
 		return "", fmt.Errorf("flow not found")
 	}
 

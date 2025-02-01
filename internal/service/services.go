@@ -52,10 +52,10 @@ type HandlerService interface {
 
 	// HandleOperationCreate processes new operation creation
 	HandleOperationCreate(ctx context.Context, msg Message) error
-	// HandleOperationDelete processes operation removal
-	HandleOperationDelete(ctx context.Context, msg Message) error
 	// HandleOperationHistory retrieves operation transaction history
 	HandleOperationHistory(ctx context.Context, msg Message) error
+	// HandleOperationDelete processes operation removal
+	HandleOperationDelete(ctx context.Context, msg Message) error
 }
 
 type flowProcessingOptions struct {
