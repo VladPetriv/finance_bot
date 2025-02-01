@@ -9,196 +9,61 @@ import (
 	"github.com/google/uuid"
 )
 
-func (h handlerService) HandleCategoryCreate(ctx context.Context, msg Message) error {
-	logger := h.logger.With().Str("name", "handlerService.HandleCategoryCreate").Logger()
+func (h handlerService) handleCreateCategoryFlowStep(ctx context.Context, opts flowProcessingOptions) (models.FlowStep, error) {
+	logger := h.logger.With().Str("name", "handlerService.handleCreateCategoryFlowStep").Logger()
+	logger.Debug().Any("opts", opts).Msg("got args")
 
-	var nextStep models.FlowStep
-	defer func() {
-		state := ctx.Value(contextFieldNameState).(*models.State)
-		if nextStep != "" {
-			state.Steps = append(state.Steps, nextStep)
-		}
-		updatedState, err := h.stores.State.Update(ctx, state)
-		if err != nil {
-			logger.Error().Err(err).Msg("update state in store")
-			return
-		}
-		logger.Debug().Any("updatedState", updatedState).Msg("updated state in store")
-	}()
-
-	user, err := h.stores.User.Get(ctx, GetUserFilter{
-		Username: msg.GetSenderName(),
-	})
+	err := h.showCancelButton(opts.message.GetChatID(), "Enter category name:")
 	if err != nil {
-		logger.Error().Err(err).Msg("get user from store")
-		return fmt.Errorf("get user from store: %w", err)
-	}
-	if user == nil {
-		logger.Info().Msg("user not found")
-		return ErrUserNotFound
-	}
-	logger.Debug().Any("user", user).Msg("got user from store")
-
-	currentStep := ctx.Value(contextFieldNameState).(*models.State).GetCurrentStep()
-	logger.Debug().Any("currentStep", currentStep).Msg("got current step on create category flow")
-
-	switch currentStep {
-	case models.CreateCategoryFlowStep:
-		err := h.apis.Messenger.SendWithKeyboard(SendWithKeyboardOptions{
-			ChatID:   msg.GetChatID(),
-			Message:  "Enter category name:",
-			Keyboard: rowKeyboardWithCancelButtonOnly,
-		})
-		if err != nil {
-			logger.Error().Err(err).Msg("send message")
-			return fmt.Errorf("send message: %w", err)
-		}
-
-		nextStep = models.EnterCategoryNameFlowStep
-	case models.EnterCategoryNameFlowStep:
-		err := h.handleEnterCategoryNameFlowStep(ctx, handleEnterCategoryNameFlowStepOptions{
-			userID: user.ID,
-			msg:    msg,
-		})
-		if err != nil {
-			if errs.IsExpected(err) {
-				logger.Info().Err(err).Msg(err.Error())
-				return err
-			}
-
-			logger.Error().Err(err).Msg("handle enter category name flow step")
-			return fmt.Errorf("handle enter category name flow step: %w", err)
-		}
-
-		nextStep = models.EndFlowStep
+		logger.Error().Err(err).Msg("show cancel button")
+		return "", fmt.Errorf("show cancel button: %w", err)
 	}
 
-	return nil
+	return models.EnterCategoryNameFlowStep, nil
 }
 
-type handleEnterCategoryNameFlowStepOptions struct {
-	userID string
-	msg    Message
-}
-
-func (h handlerService) handleEnterCategoryNameFlowStep(ctx context.Context, opts handleEnterCategoryNameFlowStepOptions) error {
+func (h handlerService) handleEnterCategoryNameFlowStep(ctx context.Context, opts flowProcessingOptions) (models.FlowStep, error) {
 	logger := h.logger.With().Str("name", "handlerService.handleEnterCategoryNameFlowStep").Logger()
 	logger.Debug().Any("opts", opts).Msg("got args")
 
 	category, err := h.stores.Category.Get(ctx, GetCategoryFilter{
-		UserID: opts.userID,
-		Title:  opts.msg.GetText(),
+		UserID: opts.user.ID,
+		Title:  opts.message.GetText(),
 	})
 	if err != nil {
 		logger.Error().Err(err).Msg("get category from store")
-		return fmt.Errorf("get category from store: %w", err)
+		return "", fmt.Errorf("get category from store: %w", err)
 	}
 	if category != nil {
 		logger.Info().Msg("category already exists")
-		return ErrCategoryAlreadyExists
+		return "", ErrCategoryAlreadyExists
 	}
 
 	err = h.stores.Category.Create(ctx, &models.Category{
 		ID:     uuid.NewString(),
-		UserID: opts.userID,
-		Title:  opts.msg.GetText(),
+		UserID: opts.user.ID,
+		Title:  opts.message.GetText(),
 	})
 	if err != nil {
 		logger.Error().Err(err).Msg("create category in store")
-		return fmt.Errorf("create category in store: %w", err)
+		return "", fmt.Errorf("create category in store: %w", err)
 	}
 
-	err = h.apis.Messenger.SendWithKeyboard(SendWithKeyboardOptions{
-		ChatID:   opts.msg.GetChatID(),
-		Message:  "Category created!",
-		Keyboard: defaultKeyboardRows,
-	})
-	if err != nil {
-		logger.Error().Err(err).Msg("send message")
-		return fmt.Errorf("send message: %w", err)
-	}
-
-	return nil
+	return models.EndFlowStep, h.sendMessageWithDefaultKeyboard(opts.message.GetChatID(), "Category created!")
 }
 
-func (h handlerService) HandleCategoryList(ctx context.Context, msg Message) error {
-	logger := h.logger.With().Str("name", "handlerService.HandleCategoryList").Logger()
-
-	var nextStep models.FlowStep
-	defer func() {
-		state := ctx.Value(contextFieldNameState).(*models.State)
-		if nextStep != "" {
-			state.Steps = append(state.Steps, nextStep)
-		}
-		updatedState, err := h.stores.State.Update(ctx, state)
-		if err != nil {
-			logger.Error().Err(err).Msg("update state in store")
-			return
-		}
-		logger.Debug().Any("updatedState", updatedState).Msg("updated state in store")
-	}()
-
-	user, err := h.stores.User.Get(ctx, GetUserFilter{
-		Username: msg.GetSenderName(),
-	})
-	if err != nil {
-		logger.Error().Err(err).Msg("get user from store")
-		return fmt.Errorf("get user from store: %w", err)
-	}
-	if user == nil {
-		logger.Info().Msg("user not found")
-		return ErrUserNotFound
-	}
-	logger.Debug().Any("user", user).Msg("got user from store")
-
-	currentStep := ctx.Value(contextFieldNameState).(*models.State).GetCurrentStep()
-	logger.Debug().Any("currentStep", currentStep).Msg("got current step on list categories flow")
-
-	switch currentStep {
-	case models.ListCategoriesFlowStep:
-		err := h.handleListCategoriesFlowStep(ctx, handleListCategoriesFlowStepOptions{
-			userID: user.ID,
-			msg:    msg,
-		})
-		if err != nil {
-			if errs.IsExpected(err) {
-				logger.Info().Err(err).Msg(err.Error())
-				return err
-			}
-
-			logger.Error().Err(err).Msg("handle list categories flow step")
-			return fmt.Errorf("handle list categories flow step: %w", err)
-		}
-
-		nextStep = models.EndFlowStep
-	}
-
-	return nil
-}
-
-type handleListCategoriesFlowStepOptions struct {
-	userID string
-	msg    Message
-}
-
-func (h handlerService) handleListCategoriesFlowStep(ctx context.Context, opts handleListCategoriesFlowStepOptions) error {
+func (h handlerService) handleListCategoriesFlowStep(ctx context.Context, opts flowProcessingOptions) (models.FlowStep, error) {
 	logger := h.logger.With().Str("name", "handlerService.handleListCategoriesFlowStep").Logger()
 	logger.Debug().Any("opts", opts).Msg("got args")
 
-	categories, err := h.listCategories(ctx, opts.userID)
+	categories, err := h.listCategories(ctx, opts.user.ID)
 	if err != nil {
 		if errs.IsExpected(err) {
-			err := h.apis.Messenger.SendMessage(opts.msg.GetChatID(), "You don't have any create categories yet!")
-			if err != nil {
-				logger.Error().Err(err).Msg("send message")
-				return fmt.Errorf("send message: %w", err)
-			}
-
-			return nil
+			return models.EndFlowStep, h.apis.Messenger.SendMessage(opts.message.GetChatID(), "You don't have any created categories yet!")
 		}
 
 		logger.Error().Err(err).Msg("handle list categories flow step")
-		return fmt.Errorf("handle list categories flow step: %w", err)
+		return "", fmt.Errorf("handle list categories flow step: %w", err)
 	}
 
 	outputMessage := "Categories: \n"
@@ -209,252 +74,114 @@ func (h handlerService) handleListCategoriesFlowStep(ctx context.Context, opts h
 	}
 	logger.Debug().Any("outputMessage", outputMessage).Msg("built output message")
 
-	err = h.apis.Messenger.SendWithKeyboard(SendWithKeyboardOptions{
-		ChatID:   opts.msg.GetChatID(),
-		Message:  outputMessage,
-		Keyboard: defaultKeyboardRows,
-	})
+	return models.EndFlowStep, h.sendMessageWithDefaultKeyboard(opts.message.GetChatID(), outputMessage)
+}
+
+func (h handlerService) handleUpdateCategoryFlowStep(ctx context.Context, opts flowProcessingOptions) (models.FlowStep, error) {
+	logger := h.logger.With().Str("name", "handlerService.handleUpdateCategoryFlowStep").Logger()
+	logger.Debug().Any("opts", opts).Msg("got args")
+
+	categories, err := h.listCategories(ctx, opts.user.ID)
 	if err != nil {
-		logger.Error().Err(err).Msg("send message")
-		return fmt.Errorf("send message: %w", err)
+		if errs.IsExpected(err) {
+			return models.EndFlowStep, h.apis.Messenger.SendMessage(opts.message.GetChatID(), "You don't have any created categories yet!")
+		}
+
+		logger.Error().Err(err).Msg("handle list categories flow step")
+		return "", fmt.Errorf("handle list categories flow step: %w", err)
 	}
 
-	return nil
-}
-
-func (h handlerService) HandleCategoryUpdate(ctx context.Context, msg Message) error {
-	logger := h.logger.With().Str("name", "handlerService.HandleCategoryUpdate").Logger()
-
-	var nextStep models.FlowStep
-	stateMetaData := ctx.Value(contextFieldNameState).(*models.State).Metedata
-	defer func() {
-		state := ctx.Value(contextFieldNameState).(*models.State)
-		if nextStep != "" {
-			state.Steps = append(state.Steps, nextStep)
-		}
-		state.Metedata = stateMetaData
-		updatedState, err := h.stores.State.Update(ctx, state)
-		if err != nil {
-			logger.Error().Err(err).Msg("update state in store")
-			return
-		}
-		logger.Debug().Any("updatedState", updatedState).Msg("updated state in store")
-	}()
-
-	user, err := h.stores.User.Get(ctx, GetUserFilter{
-		Username: msg.GetSenderName(),
+	return models.ChooseCategoryFlowStep, h.apis.Messenger.SendWithKeyboard(SendWithKeyboardOptions{
+		ChatID:   opts.message.GetChatID(),
+		Message:  "Choose category to update:",
+		Keyboard: getKeyboardRows(categories, 3, true),
 	})
-	if err != nil {
-		logger.Error().Err(err).Msg("get user from store")
-		return fmt.Errorf("get user from store: %w", err)
-	}
-	if user == nil {
-		logger.Info().Msg("user not found")
-		return ErrUserNotFound
-	}
-	logger.Debug().Any("user", user).Msg("got user from store")
-
-	currentStep := ctx.Value(contextFieldNameState).(*models.State).GetCurrentStep()
-	logger.Debug().Any("currentStep", currentStep).Msg("got current step on update category flow")
-
-	switch currentStep {
-	case models.UpdateCategoryFlowStep:
-		categories, err := h.listCategories(ctx, user.ID)
-		if err != nil {
-			if errs.IsExpected(err) {
-				logger.Info().Err(err).Msg(err.Error())
-				return err
-			}
-
-			logger.Error().Err(err).Msg("handle list categories flow step")
-			return fmt.Errorf("handle list categories flow step: %w", err)
-		}
-
-		err = h.apis.Messenger.SendWithKeyboard(SendWithKeyboardOptions{
-			ChatID:   msg.GetChatID(),
-			Message:  "Choose category to update:",
-			Keyboard: getKeyboardRows(categories, 3, true),
-		})
-		if err != nil {
-			logger.Error().Err(err).Msg("send message")
-			return fmt.Errorf("send message: %w", err)
-		}
-
-		nextStep = models.ChooseCategoryFlowStep
-	case models.ChooseCategoryFlowStep:
-		stateMetaData[previousCategoryTitleMetadataKey] = msg.GetText()
-
-		err := h.apis.Messenger.SendWithKeyboard(SendWithKeyboardOptions{
-			ChatID:  msg.GetChatID(),
-			Message: "Enter updated category name:",
-			Keyboard: []KeyboardRow{
-				{
-					Buttons: []string{models.BotCancelCommand},
-				},
-			},
-		})
-		if err != nil {
-			logger.Error().Err(err).Msg("send message")
-			return fmt.Errorf("send message: %w", err)
-		}
-
-		nextStep = models.EnterUpdatedCategoryNameFlowStep
-	case models.EnterUpdatedCategoryNameFlowStep:
-		err := h.handleEnterUpdatedCategoryNameFlowStep(ctx, handleEnterUpdatedCategoryNameFlowStepOptions{
-			userID:   user.ID,
-			metaData: stateMetaData,
-			msg:      msg,
-		})
-		if err != nil {
-			logger.Error().Err(err).Msg("handle enter updated category name flow step")
-			return fmt.Errorf("handle enter updated category name flow step: %w", err)
-		}
-
-		nextStep = models.EndFlowStep
-	}
-
-	return nil
 }
 
-type handleEnterUpdatedCategoryNameFlowStepOptions struct {
-	userID   string
-	metaData map[string]any
-	msg      Message
+func (h handlerService) handleChooseCategoryFlowStepForUpdate(ctx context.Context, opts flowProcessingOptions) (models.FlowStep, error) {
+	logger := h.logger.With().Str("name", "handlerService.handleChooseCategoryFlowStep").Logger()
+	logger.Debug().Any("opts", opts).Msg("got args")
+
+	opts.stateMetaData[previousCategoryTitleMetadataKey] = opts.message.GetText()
+	return models.EnterUpdatedCategoryNameFlowStep, h.showCancelButton(opts.message.GetChatID(), "Enter updated category name:")
 }
 
-func (h handlerService) handleEnterUpdatedCategoryNameFlowStep(ctx context.Context, opts handleEnterUpdatedCategoryNameFlowStepOptions) error {
+func (h handlerService) handleEnterUpdatedCategoryNameFlowStep(ctx context.Context, opts flowProcessingOptions) (models.FlowStep, error) {
 	logger := h.logger.With().Str("name", "handlerService.handleEnterUpdatedCategoryNameFlowStep").Logger()
 	logger.Debug().Any("opts", opts).Msg("got args")
 
 	category, err := h.stores.Category.Get(ctx, GetCategoryFilter{
-		UserID: opts.userID,
-		Title:  opts.metaData[previousCategoryTitleMetadataKey].(string),
+		UserID: opts.user.ID,
+		Title:  opts.stateMetaData[previousCategoryTitleMetadataKey].(string),
 	})
 	if err != nil {
 		logger.Error().Err(err).Msg("get category from store")
-		return fmt.Errorf("get category from store: %w", err)
+		return "", fmt.Errorf("get category from store: %w", err)
 	}
 	if category == nil {
 		logger.Info().Msg("category not found")
-		return ErrCategoryNotFound
+		return "", ErrCategoryNotFound
 	}
 	logger.Debug().Any("category", category).Msg("got category from store")
 
-	category.Title = opts.msg.GetText()
+	category.Title = opts.message.GetText()
 
 	err = h.stores.Category.Update(ctx, category)
 	if err != nil {
 		logger.Error().Err(err).Msg("update category in store")
-		return fmt.Errorf("update category in store: %w", err)
+		return "", fmt.Errorf("update category in store: %w", err)
 	}
 
-	err = h.apis.Messenger.SendWithKeyboard(SendWithKeyboardOptions{
-		ChatID:   opts.msg.GetChatID(),
-		Message:  "Category updated!",
-		Keyboard: defaultKeyboardRows,
-	})
-	if err != nil {
-		logger.Error().Err(err).Msg("send message")
-		return fmt.Errorf("send message: %w", err)
-	}
-
-	return nil
+	return models.EndFlowStep, h.sendMessageWithDefaultKeyboard(opts.message.GetChatID(), "Category updated!")
 }
 
-func (h handlerService) HandleCategoryDelete(ctx context.Context, msg Message) error {
-	logger := h.logger.With().Str("name", "handlerService.HandleCategoryDelete").Logger()
+func (h handlerService) handleDeleteCategoryFlowStep(ctx context.Context, opts flowProcessingOptions) (models.FlowStep, error) {
+	logger := h.logger.With().Str("name", "handlerService.handleDeleteCategoryFlowStep").Logger()
+	logger.Debug().Any("opts", opts).Msg("got args")
 
-	var nextStep models.FlowStep
-	defer func() {
-		state := ctx.Value(contextFieldNameState).(*models.State)
-		if nextStep != "" {
-			state.Steps = append(state.Steps, nextStep)
+	categories, err := h.listCategories(ctx, opts.user.ID)
+	if err != nil {
+		if errs.IsExpected(err) {
+			logger.Info().Err(err).Msg(err.Error())
+			return models.EndFlowStep, err
 		}
-		updatedState, err := h.stores.State.Update(ctx, state)
-		if err != nil {
-			logger.Error().Err(err).Msg("update state in store")
-			return
-		}
-		logger.Debug().Any("updatedState", updatedState).Msg("updated state in store")
-	}()
 
-	user, err := h.stores.User.Get(ctx, GetUserFilter{
-		Username: msg.GetSenderName(),
+		logger.Error().Err(err).Msg("handle list categories flow step")
+		return "", fmt.Errorf("handle list categories flow step: %w", err)
+	}
+
+	return models.ChooseCategoryFlowStep, h.apis.Messenger.SendWithKeyboard(SendWithKeyboardOptions{
+		ChatID:   opts.message.GetChatID(),
+		Message:  "Choose category to delete:",
+		Keyboard: getKeyboardRows(categories, 3, true),
+	})
+}
+
+func (h handlerService) handleChooseCategoryFlowStepForDelete(ctx context.Context, opts flowProcessingOptions) (models.FlowStep, error) {
+	logger := h.logger.With().Str("name", "handlerService.handleChooseCategoryFlowStepForDelete").Logger()
+	logger.Debug().Any("opts", opts).Msg("got args")
+
+	category, err := h.stores.Category.Get(ctx, GetCategoryFilter{
+		UserID: opts.user.ID,
+		Title:  opts.message.GetText(),
 	})
 	if err != nil {
-		logger.Error().Err(err).Msg("get user from store")
-		return fmt.Errorf("get user from store: %w", err)
+		logger.Error().Err(err).Msg("get category from store")
+		return "", fmt.Errorf("get category from store: %w", err)
 	}
-	if user == nil {
-		logger.Info().Msg("user not found")
-		return ErrUserNotFound
+	if category == nil {
+		logger.Info().Msg("category not found")
+		return models.EndFlowStep, ErrCategoryNotFound
 	}
-	logger.Debug().Any("user", user).Msg("got user from store")
+	logger.Debug().Any("category", category).Msg("got category from store")
 
-	currentStep := ctx.Value(contextFieldNameState).(*models.State).GetCurrentStep()
-	logger.Debug().Any("currentStep", currentStep).Msg("got current step on delete category flow")
-
-	switch currentStep {
-	case models.DeleteCategoryFlowStep:
-		categories, err := h.listCategories(ctx, user.ID)
-		if err != nil {
-			if errs.IsExpected(err) {
-				logger.Info().Err(err).Msg(err.Error())
-				nextStep = models.EndFlowStep
-				return err
-			}
-
-			logger.Error().Err(err).Msg("handle list categories flow step")
-			return fmt.Errorf("handle list categories flow step: %w", err)
-		}
-
-		err = h.apis.Messenger.SendWithKeyboard(SendWithKeyboardOptions{
-			ChatID:   msg.GetChatID(),
-			Message:  "Choose category to delete:",
-			Keyboard: getKeyboardRows(categories, 3, true),
-		})
-		if err != nil {
-			logger.Error().Err(err).Msg("send message")
-			return fmt.Errorf("send message: %w", err)
-		}
-
-		nextStep = models.ChooseCategoryFlowStep
-	case models.ChooseCategoryFlowStep:
-		category, err := h.stores.Category.Get(ctx, GetCategoryFilter{
-			UserID: user.ID,
-			Title:  msg.GetText(),
-		})
-		if err != nil {
-			logger.Error().Err(err).Msg("get category from store")
-			return fmt.Errorf("get category from store: %w", err)
-		}
-		if category == nil {
-			logger.Info().Msg("category not found")
-			nextStep = models.EndFlowStep
-			return ErrCategoryNotFound
-		}
-		logger.Debug().Any("category", category).Msg("got category from store")
-
-		err = h.stores.Category.Delete(ctx, category.ID)
-		if err != nil {
-			logger.Error().Err(err).Msg("delete category in store")
-			return fmt.Errorf("delete category in store: %w", err)
-		}
-
-		err = h.apis.Messenger.SendWithKeyboard(SendWithKeyboardOptions{
-			ChatID:   msg.GetChatID(),
-			Message:  "Category deleted!",
-			Keyboard: defaultKeyboardRows,
-		})
-		if err != nil {
-			logger.Error().Err(err).Msg("send message")
-			return fmt.Errorf("send message: %w", err)
-		}
-
-		nextStep = models.EndFlowStep
+	err = h.stores.Category.Delete(ctx, category.ID)
+	if err != nil {
+		logger.Error().Err(err).Msg("delete category in store")
+		return "", fmt.Errorf("delete category in store: %w", err)
 	}
 
-	return nil
+	return models.EndFlowStep, h.sendMessageWithDefaultKeyboard(opts.message.GetChatID(), "Category deleted!")
 }
 
 func (h handlerService) listCategories(ctx context.Context, userID string) ([]models.Category, error) {

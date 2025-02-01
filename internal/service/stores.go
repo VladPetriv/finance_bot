@@ -72,6 +72,7 @@ type OperationStore interface {
 // GetOperationFilter represents a filters for Get operation method.
 type GetOperationFilter struct {
 	ID           string
+	Amount       string
 	Type         models.OperationType
 	CreateAtFrom time.Time
 	CreateAtTo   time.Time

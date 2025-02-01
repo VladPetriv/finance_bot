@@ -104,6 +104,9 @@ func (o operationStore) Get(ctx context.Context, filter service.GetOperationFilt
 	if filter.Type != "" {
 		stmt["type"] = filter.Type
 	}
+	if filter.Amount != "" {
+		stmt["amount"] = filter.Amount
+	}
 	if len(filter.BalanceIDs) != 0 {
 		stmt["balanceId"] = bson.M{"$in": filter.BalanceIDs}
 	}

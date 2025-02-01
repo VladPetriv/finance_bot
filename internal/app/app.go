@@ -65,6 +65,7 @@ func Run(ctx context.Context, cfg *config.Config, logger *logger.Logger) {
 		APIs:     apis,
 		Stores:   stores,
 	})
+	handlerService.RegisterHandlers()
 	services.Handler = handlerService
 
 	eventService := service.NewEvent(&service.EventOptions{

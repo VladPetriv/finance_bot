@@ -10,11 +10,15 @@ import (
 	"github.com/google/uuid"
 )
 
+type flowStepHandlerFunc func(ctx context.Context, opts flowProcessingOptions) (models.FlowStep, error)
+
 type handlerService struct {
 	logger   *logger.Logger
 	services Services
 	apis     APIs
 	stores   Stores
+
+	flowWithFlowStepsHandlers map[models.Flow]map[models.FlowStep]flowStepHandlerFunc
 }
 
 var _ HandlerService = (*handlerService)(nil)
@@ -37,19 +41,116 @@ func NewHandler(opts *HandlerOptions) *handlerService {
 	}
 }
 
+func (h *handlerService) RegisterHandlers() {
+	h.flowWithFlowStepsHandlers = map[models.Flow]map[models.FlowStep]flowStepHandlerFunc{
+		// Flows with balances
+		models.StartFlow: {
+			models.CreateInitialBalanceFlowStep: h.handleCreateBalanceFlowStep,
+			models.EnterBalanceAmountFlowStep:   h.handleEnterBalanceAmountFlowStep,
+			models.EnterBalanceCurrencyFlowStep: h.handleEnterBalanceCurrencyFlowStep,
+		},
+		models.CreateBalanceFlow: {
+			models.CreateBalanceFlowStep:        h.handleCreateBalanceFlowStep,
+			models.EnterBalanceNameFlowStep:     h.handleEnterBalanceNameFlowStep,
+			models.EnterBalanceAmountFlowStep:   h.handleEnterBalanceAmountFlowStep,
+			models.EnterBalanceCurrencyFlowStep: h.handleEnterBalanceCurrencyFlowStep,
+		},
+		models.GetBalanceFlow: {
+			models.GetBalanceFlowStep:    h.handleGetBalanceFlowStep,
+			models.ChooseBalanceFlowStep: h.handleChooseBalanceFlowStepForGetBalance,
+		},
+		models.UpdateBalanceFlow: {
+			models.UpdateBalanceFlowStep:        h.handleUpdateBalanceFlowStep,
+			models.ChooseBalanceFlowStep:        h.handleChooseBalanceFlowStepForUpdate,
+			models.EnterBalanceNameFlowStep:     h.handleEnterBalanceNameFlowStep,
+			models.EnterBalanceAmountFlowStep:   h.handleEnterBalanceAmountFlowStep,
+			models.EnterBalanceCurrencyFlowStep: h.handleEnterBalanceCurrencyFlowStep,
+		},
+		models.DeleteBalanceFlow: {
+			models.DeleteBalanceFlowStep:          h.handleDeleteBalanceFlowStep,
+			models.ConfirmBalanceDeletionFlowStep: h.handleConfirmBalanceDeletionFlowStep,
+			models.ChooseBalanceFlowStep:          h.handleChooseBalanceFlowStepForDelete,
+		},
+
+		// Flows with categories
+		models.CreateCategoryFlow: {
+			models.CreateCategoryFlowStep:    h.handleCreateCategoryFlowStep,
+			models.EnterCategoryNameFlowStep: h.handleEnterCategoryNameFlowStep,
+		},
+		models.ListCategoriesFlow: {
+			models.ListCategoriesFlowStep: h.handleListCategoriesFlowStep,
+		},
+		models.UpdateCategoryFlow: {
+			models.UpdateCategoryFlowStep:           h.handleUpdateCategoryFlowStep,
+			models.ChooseCategoryFlowStep:           h.handleChooseCategoryFlowStepForUpdate,
+			models.EnterUpdatedCategoryNameFlowStep: h.handleEnterUpdatedCategoryNameFlowStep,
+		},
+		models.DeleteCategoryFlow: {
+			models.DeleteCategoryFlowStep: h.handleDeleteCategoryFlowStep,
+			models.ChooseCategoryFlowStep: h.handleChooseCategoryFlowStepForDelete,
+		},
+
+		// Flows with operations
+		models.CreateOperationFlow: {
+			models.CreateOperationFlowStep:           h.handleCreateOperationFlowStep,
+			models.ProcessOperationTypeFlowStep:      h.handleProcessOperationTypeFlowStep,
+			models.ChooseBalanceFlowStep:             h.handleChooseBalanceFlowStepForCreatingOperation,
+			models.ChooseBalanceFromFlowStep:         h.handleChooseBalanceFromFlowStep,
+			models.ChooseBalanceToFlowStep:           h.handleChooseBalanceToFlowStep,
+			models.EnterCurrencyExchangeRateFlowStep: h.handleEnterCurrencyExchangeRateFlowStep,
+			models.ChooseCategoryFlowStep:            h.handleChooseCategoryFlowStep,
+			models.EnterOperationDescriptionFlowStep: h.handleEnterOperationDescriptionFlowStep,
+			models.EnterOperationAmountFlowStep:      h.handleEnterOperationAmountFlowStep,
+		},
+		models.GetOperationsHistoryFlow: {
+			models.GetOperationsHistoryFlowStep:                 h.handleGetOperationsHistoryFlowStep,
+			models.ChooseBalanceFlowStep:                        h.handleChooseBalanceFlowStepForGetOperationsHistory,
+			models.ChooseTimePeriodForOperationsHistoryFlowStep: h.handleChooseTimePeriodForOperationsHistoryFlowStep,
+		},
+		models.DeleteOperationFlow: {
+			models.DeleteOperationFlowStep:          h.handleDeleteOperationFlowStep,
+			models.ChooseBalanceFlowStep:            h.handleChooseBalanceFlowStepForDeleteOperation,
+			models.ChooseOperationToDeleteFlowStep:  h.handleChooseOperationToDeleteFlowStep,
+			models.ConfirmOperationDeletionFlowStep: h.handleConfirmOperationDeletionFlowStep,
+		},
+	}
+}
+
+func (h handlerService) HandleError(ctx context.Context, opts HandleErrorOptions) error {
+	logger := h.logger.With().Str("name", "handlerService.HandleError").Logger()
+
+	if errs.IsExpected(opts.Err) {
+		logger.Info().Err(opts.Err).Msg("handled expected error")
+		return h.apis.Messenger.SendMessage(opts.Msg.GetChatID(), opts.Err.Error())
+	}
+
+	message := "Something went wrong!\nPlease try again later!"
+
+	if opts.SendDefaultKeyboard {
+		return h.sendMessageWithDefaultKeyboard(opts.Msg.GetChatID(), message)
+	}
+
+	return h.apis.Messenger.SendMessage(opts.Msg.GetChatID(), message)
+}
+
+func (h handlerService) HandleUnknown(msg Message) error {
+	return h.sendMessageWithDefaultKeyboard(msg.GetChatID(), "Didn't understand you!\nCould you please check available commands!")
+}
+
 func (h handlerService) HandleStart(ctx context.Context, msg Message) error {
 	logger := h.logger.With().Str("name", "handlerService.HandleStart").Logger()
 
 	var nextStep models.FlowStep
+	state, err := getStateFromContext(ctx)
+	if err != nil {
+		logger.Error().Err(err).Msg("get state from context")
+		return fmt.Errorf("get state from context: %w", err)
+	}
 	defer func() {
-		state := ctx.Value(contextFieldNameState).(*models.State)
-		state.Steps = append(state.Steps, nextStep)
-		updatedState, err := h.stores.State.Update(ctx, state)
-		if err != nil {
-			logger.Error().Err(err).Msg("update state in store")
-			return
-		}
-		logger.Debug().Any("updatedState", updatedState).Msg("updated state in store")
+		h.updateState(ctx, updateStateOptions{
+			updatedStep:  nextStep,
+			initialState: state,
+		})
 	}()
 
 	username := msg.GetSenderName()
@@ -65,18 +166,8 @@ func (h handlerService) HandleStart(ctx context.Context, msg Message) error {
 
 	// Handle case when user already exists
 	if user != nil {
-		err := h.apis.Messenger.SendWithKeyboard(SendWithKeyboardOptions{
-			ChatID:   chatID,
-			Message:  fmt.Sprintf("Happy to see you again @%s!", username),
-			Keyboard: defaultKeyboardRows,
-		})
-		if err != nil {
-			logger.Error().Err(err).Msg("create keyboard")
-			return fmt.Errorf("create keyboard: %w", err)
-		}
-
 		nextStep = models.EndFlowStep
-		return nil
+		return h.sendMessageWithDefaultKeyboard(chatID, fmt.Sprintf("Happy to see you again @%s!", username))
 	}
 
 	err = h.stores.User.Create(ctx, &models.User{
@@ -105,58 +196,7 @@ func (h handlerService) HandleStart(ctx context.Context, msg Message) error {
 }
 
 func (h handlerService) HandleCancel(ctx context.Context, msg Message) error {
-	logger := h.logger.With().Str("name", "handlerService.HandleCancel").Logger()
-
-	err := h.apis.Messenger.SendWithKeyboard(SendWithKeyboardOptions{
-		ChatID:   msg.GetChatID(),
-		Message:  "Please choose command to execute:",
-		Keyboard: defaultKeyboardRows,
-	})
-	if err != nil {
-		logger.Error().Err(err).Msg("create keyboard")
-		return fmt.Errorf("create keyboard: %w", err)
-	}
-
-	return nil
-}
-
-func (h handlerService) HandleUnknown(msg Message) error {
-	logger := h.logger.With().Str("name", "handlerService.HandleUnknown").Logger()
-
-	err := h.apis.Messenger.SendMessage(msg.GetChatID(), "Didn't understand you!\nCould you please check available commands!")
-	if err != nil {
-		logger.Error().Err(err).Msg("send message")
-		return fmt.Errorf("send message: %w", err)
-	}
-
-	return nil
-}
-
-func (h handlerService) HandleError(ctx context.Context, opts HandleErrorOptions) error {
-	logger := h.logger.With().Str("name", "handlerService.HandleError").Logger()
-
-	if errs.IsExpected(opts.Err) {
-		err := h.apis.Messenger.SendMessage(opts.Msg.GetChatID(), opts.Err.Error())
-		if err != nil {
-			logger.Error().Err(err).Msg("send message")
-			return fmt.Errorf("send message: %w", err)
-		}
-
-		logger.Info().Msg("handled expected error")
-		return nil
-	}
-
-	message := "Something went wrong!\nPlease try again later!"
-
-	if opts.SendDefaultKeyboard {
-		return h.apis.Messenger.SendWithKeyboard(SendWithKeyboardOptions{
-			ChatID:   opts.Msg.GetChatID(),
-			Message:  message,
-			Keyboard: defaultKeyboardRows,
-		})
-	}
-
-	return h.apis.Messenger.SendMessage(opts.Msg.GetChatID(), "Something went wrong!\nPlease try again later!")
+	return h.sendMessageWithDefaultKeyboard(msg.GetChatID(), "Please choose command to execute:")
 }
 
 func (h handlerService) HandleWrappers(ctx context.Context, event models.Event, msg Message) error {
@@ -170,60 +210,138 @@ func (h handlerService) HandleWrappers(ctx context.Context, event models.Event, 
 
 	switch event {
 	case models.BalanceEvent:
-
-		rows = []KeyboardRow{
-			{
-				Buttons: []string{models.BotCreateBalanceCommand, models.BotGetBalanceCommand},
-			},
-			{
-				Buttons: []string{models.BotUpdateBalanceCommand, models.BotDeleteBalanceCommand},
-			},
-			{
-				Buttons: []string{models.BotCancelCommand},
-			},
-		}
+		rows = balanceKeyboardRows
 		message = "Please choose balance command to execute:"
 	case models.CategoryEvent:
-		rows = []KeyboardRow{
-			{
-				Buttons: []string{models.BotCreateCategoryCommand, models.BotListCategoriesCommand},
-			},
-			{
-				Buttons: []string{models.BotUpdateCategoryCommand, models.BotDeleteCategoryCommand},
-			},
-			{
-				Buttons: []string{models.BotCancelCommand},
-			},
-		}
+		rows = categoryKeyboardRows
 		message = "Please choose category command to execute:"
 	case models.OperationEvent:
-		rows = []KeyboardRow{
-			{
-				Buttons: []string{models.BotCreateOperationCommand, models.BotGetOperationsHistory},
-			},
-			{
-				Buttons: []string{models.BotDeleteOperationCommand},
-			},
-			{
-				Buttons: []string{models.BotCancelCommand},
-			},
-		}
+		rows = operationKeyboardRows
 		message = "Please choose operation command to execute:"
 	default:
 		return fmt.Errorf("unknown wrappers event: %s", event)
 	}
 
-	err := h.apis.Messenger.SendWithKeyboard(SendWithKeyboardOptions{
+	return h.apis.Messenger.SendWithKeyboard(SendWithKeyboardOptions{
 		ChatID:   msg.GetChatID(),
 		Message:  message,
 		Keyboard: rows,
 	})
+}
+
+func (h handlerService) HandleAction(ctx context.Context, msg Message) error {
+	logger := h.logger.With().Str("name", "handlerService.HandleAction").Logger()
+
+	var nextStep models.FlowStep
+	state, err := getStateFromContext(ctx)
 	if err != nil {
-		logger.Error().Err(err).Msg("create keyboard")
-		return fmt.Errorf("create keyboard: %w", err)
+		logger.Error().Err(err).Msg("get state from context")
+		return fmt.Errorf("get state from context: %w", err)
+	}
+	defer func() {
+		h.updateState(ctx, updateStateOptions{
+			updatedStep:  nextStep,
+			initialState: state,
+		})
+	}()
+
+	nextStep, err = h.processHandler(ctx, state, msg)
+	if err != nil {
+		if errs.IsExpected(err) {
+			logger.Info().Err(err).Msg(err.Error())
+			return err
+		}
+		logger.Error().Err(err).Msg("process handler")
+		return fmt.Errorf("process handler: %w", err)
 	}
 
 	return nil
+}
+
+func (h handlerService) processHandler(ctx context.Context, state *models.State, message Message) (models.FlowStep, error) {
+	logger := h.logger.With().Str("name", "handlerService.processHandler").Logger()
+
+	user, err := h.stores.User.Get(ctx, GetUserFilter{
+		Username:        message.GetSenderName(),
+		PreloadBalances: true,
+	})
+	if err != nil {
+		logger.Error().Err(err).Msg("get user from store")
+		return "", fmt.Errorf("get user from store: %w", err)
+	}
+	if user == nil {
+		logger.Info().Msg("user not found")
+		return "", ErrUserNotFound
+	}
+	logger.Debug().Any("user", user).Msg("got user from store")
+
+	currentStep := state.GetCurrentStep()
+	logger.Debug().Any("currentStep", currentStep).Msg("got current step")
+
+	flowHandlers, ok := h.flowWithFlowStepsHandlers[state.Flow]
+	if !ok {
+		logger.Error().Any("flow", state.Flow).Msg("flow not found")
+		return "", fmt.Errorf("flow not found")
+	}
+
+	stepHandler, ok := flowHandlers[currentStep]
+	if !ok {
+		logger.Error().Msg("step handler not found")
+		return "", fmt.Errorf("step handler not found")
+	}
+
+	nextStep, err := stepHandler(ctx, flowProcessingOptions{
+		user:          user,
+		stateMetaData: state.Metedata,
+		message:       message,
+	})
+	if err != nil {
+		if errs.IsExpected(err) {
+			logger.Info().Msg(err.Error())
+			return nextStep, err
+		}
+
+		logger.Error().Err(err).Msg("handle flow step")
+		return "", fmt.Errorf("handle %s flow step: %w", currentStep, err)
+	}
+
+	return nextStep, nil
+}
+
+func getStateFromContext(ctx context.Context) (*models.State, error) {
+	state, ok := ctx.Value(contextFieldNameState).(*models.State)
+	if !ok {
+		return nil, fmt.Errorf("state not found in context")
+	}
+
+	return state, nil
+}
+
+type updateStateOptions struct {
+	updatedStep     models.FlowStep
+	updatedMetadata map[string]any
+	initialState    *models.State
+}
+
+func (h handlerService) updateState(ctx context.Context, opts updateStateOptions) {
+	logger := h.logger.With().Str("name", "handlerService.updateState").Logger()
+	logger.Debug().Any("opts", opts).Msg("got args")
+
+	if opts.updatedStep != "" {
+		opts.initialState.Steps = append(opts.initialState.Steps, opts.updatedStep)
+	}
+
+	if len(opts.updatedMetadata) > 0 {
+		opts.initialState.Metedata = opts.updatedMetadata
+	}
+
+	updatedState, err := h.stores.State.Update(ctx, opts.initialState)
+	if err != nil {
+		logger.Error().Err(err).Msg("update state in store")
+		return
+	}
+
+	logger.Debug().Any("updatedState", updatedState).Msg("updated state in store")
 }
 
 // sendMessageWithConfirmationInlineKeyboard sends a message to the specified chat with Yes/No inline keyboard buttons.
@@ -262,12 +380,16 @@ func (h handlerService) notifyCancellationAndShowMenu(chatID int) error {
 const emptyMessage = "ㅤ"
 
 // showCancelButton displays a single "Cancel" button in the chat interface,
-// replacing any previous keyboard. This prevents users from interacting with
+// replacing any previous keyboard and sends a message if provided. This prevents users from interacting with
 // outdated keyboard buttons that may still be visible from previous messages.
-func (h handlerService) showCancelButton(chatID int) error {
+func (h handlerService) showCancelButton(chatID int, message string) error {
+	if message == "" {
+		message = emptyMessage
+	}
+
 	return h.apis.Messenger.SendWithKeyboard(SendWithKeyboardOptions{
 		ChatID:   chatID,
-		Message:  emptyMessage,
+		Message:  message,
 		Keyboard: rowKeyboardWithCancelButtonOnly,
 	})
 }
@@ -330,4 +452,13 @@ func convertOperationsToInlineKeyboardRowsWithPagination(operations []models.Ope
 	}...)
 
 	return inlineKeyboardRows
+}
+
+// sendMessageWithDefaultKeyboard sends a message to the specified chat with the default keyboard interface.
+func (h handlerService) sendMessageWithDefaultKeyboard(chatID int, message string) error {
+	return h.apis.Messenger.SendWithKeyboard(SendWithKeyboardOptions{
+		ChatID:   chatID,
+		Message:  message,
+		Keyboard: defaultKeyboardRows,
+	})
 }
