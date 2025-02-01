@@ -33,63 +33,63 @@ type HandlerOptions struct {
 
 // NewHandler returns new instance of handler service.
 func NewHandler(opts *HandlerOptions) *handlerService {
-	handler := handlerService{
+	return &handlerService{
 		logger:   opts.Logger,
 		services: opts.Services,
 		apis:     opts.APIs,
 		stores:   opts.Stores,
 	}
+}
 
-	handler.flowWithFlowStepsHandlers = map[models.Flow]map[models.FlowStep]flowStepHandlerFunc{
+func (h handlerService) RegisterHandlers() {
+	h.flowWithFlowStepsHandlers = map[models.Flow]map[models.FlowStep]flowStepHandlerFunc{
 		// Flows with balances
 		models.StartFlow: {
-			models.CreateInitialBalanceFlowStep: handler.handleCreateBalanceFlowStep,
-			models.EnterBalanceAmountFlowStep:   handler.handleEnterBalanceAmountFlowStep,
-			models.EnterBalanceCurrencyFlowStep: handler.handleEnterBalanceCurrencyFlowStep,
+			models.CreateInitialBalanceFlowStep: h.handleCreateBalanceFlowStep,
+			models.EnterBalanceAmountFlowStep:   h.handleEnterBalanceAmountFlowStep,
+			models.EnterBalanceCurrencyFlowStep: h.handleEnterBalanceCurrencyFlowStep,
 		},
 		models.CreateBalanceFlow: {
-			models.CreateBalanceFlowStep:        handler.handleCreateBalanceFlowStep,
-			models.EnterBalanceNameFlowStep:     handler.handleEnterBalanceNameFlowStep,
-			models.EnterBalanceAmountFlowStep:   handler.handleEnterBalanceAmountFlowStep,
-			models.EnterBalanceCurrencyFlowStep: handler.handleEnterBalanceCurrencyFlowStep,
+			models.CreateBalanceFlowStep:        h.handleCreateBalanceFlowStep,
+			models.EnterBalanceNameFlowStep:     h.handleEnterBalanceNameFlowStep,
+			models.EnterBalanceAmountFlowStep:   h.handleEnterBalanceAmountFlowStep,
+			models.EnterBalanceCurrencyFlowStep: h.handleEnterBalanceCurrencyFlowStep,
 		},
 		models.GetBalanceFlow: {
-			models.GetBalanceFlowStep:    handler.handleGetBalanceFlowStep,
-			models.ChooseBalanceFlowStep: handler.handleChooseBalanceFlowStepForGetBalance,
+			models.GetBalanceFlowStep:    h.handleGetBalanceFlowStep,
+			models.ChooseBalanceFlowStep: h.handleChooseBalanceFlowStepForGetBalance,
 		},
 		models.UpdateBalanceFlow: {
-			models.UpdateBalanceFlowStep:        handler.handleUpdateBalanceFlowStep,
-			models.ChooseBalanceFlowStep:        handler.handleChooseBalanceFlowStepForUpdate,
-			models.EnterBalanceNameFlowStep:     handler.handleEnterBalanceNameFlowStep,
-			models.EnterBalanceAmountFlowStep:   handler.handleEnterBalanceAmountFlowStep,
-			models.EnterBalanceCurrencyFlowStep: handler.handleEnterBalanceCurrencyFlowStep,
+			models.UpdateBalanceFlowStep:        h.handleUpdateBalanceFlowStep,
+			models.ChooseBalanceFlowStep:        h.handleChooseBalanceFlowStepForUpdate,
+			models.EnterBalanceNameFlowStep:     h.handleEnterBalanceNameFlowStep,
+			models.EnterBalanceAmountFlowStep:   h.handleEnterBalanceAmountFlowStep,
+			models.EnterBalanceCurrencyFlowStep: h.handleEnterBalanceCurrencyFlowStep,
 		},
 		models.DeleteBalanceFlow: {
-			models.DeleteBalanceFlowStep:          handler.handleDeleteBalanceFlowStep,
-			models.ConfirmBalanceDeletionFlowStep: handler.handleConfirmBalanceDeletionFlowStep,
-			models.ChooseBalanceFlowStep:          handler.handleChooseBalanceFlowStepForDelete,
+			models.DeleteBalanceFlowStep:          h.handleDeleteBalanceFlowStep,
+			models.ConfirmBalanceDeletionFlowStep: h.handleConfirmBalanceDeletionFlowStep,
+			models.ChooseBalanceFlowStep:          h.handleChooseBalanceFlowStepForDelete,
 		},
 
 		// Flows with categories
 		models.CreateCategoryFlow: {
-			models.CreateCategoryFlowStep:    handler.handleCreateCategoryFlowStep,
-			models.EnterCategoryNameFlowStep: handler.handleEnterCategoryNameFlowStep,
+			models.CreateCategoryFlowStep:    h.handleCreateCategoryFlowStep,
+			models.EnterCategoryNameFlowStep: h.handleEnterCategoryNameFlowStep,
 		},
 		models.ListCategoriesFlow: {
-			models.ListCategoriesFlowStep: handler.handleListCategoriesFlowStep,
+			models.ListCategoriesFlowStep: h.handleListCategoriesFlowStep,
 		},
 		models.UpdateCategoryFlow: {
-			models.UpdateCategoryFlowStep:           handler.handleUpdateCategoryFlowStep,
-			models.ChooseCategoryFlowStep:           handler.handleChooseCategoryFlowStepForUpdate,
-			models.EnterUpdatedCategoryNameFlowStep: handler.handleEnterUpdatedCategoryNameFlowStep,
+			models.UpdateCategoryFlowStep:           h.handleUpdateCategoryFlowStep,
+			models.ChooseCategoryFlowStep:           h.handleChooseCategoryFlowStepForUpdate,
+			models.EnterUpdatedCategoryNameFlowStep: h.handleEnterUpdatedCategoryNameFlowStep,
 		},
 		models.DeleteCategoryFlow: {
-			models.DeleteCategoryFlowStep: handler.handleDeleteCategoryFlowStep,
-			models.ChooseCategoryFlowStep: handler.handleChooseCategoryFlowStepForDelete,
+			models.DeleteCategoryFlowStep: h.handleDeleteCategoryFlowStep,
+			models.ChooseCategoryFlowStep: h.handleChooseCategoryFlowStepForDelete,
 		},
 	}
-
-	return &handler
 }
 
 func (h handlerService) HandleError(ctx context.Context, opts HandleErrorOptions) error {

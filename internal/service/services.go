@@ -16,6 +16,9 @@ type Services struct {
 
 // HandlerService provides functionally for handling bot events.
 type HandlerService interface {
+	// RegisterHandlers registers handlers for all flows and steps.
+	RegisterHandlers()
+
 	// HandleError is used to send the user a message that something went wrong while processing the event.
 	HandleError(ctx context.Context, opts HandleErrorOptions) error
 	// HandleUnknown inform user that provided event is unknown and notify him about available events.
