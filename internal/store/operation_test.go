@@ -335,7 +335,8 @@ func TestOperation_Get(t *testing.T) {
 	operationID1,
 		operationID2,
 		operationID3,
-		operationID4 := uuid.NewString(), uuid.NewString(), uuid.NewString(), uuid.NewString()
+		operationID4,
+		operationID5 := uuid.NewString(), uuid.NewString(), uuid.NewString(), uuid.NewString(), uuid.NewString()
 
 	now := time.Now()
 
@@ -417,6 +418,24 @@ func TestOperation_Get(t *testing.T) {
 				Type:      models.OperationTypeTransfer,
 				Amount:    "100",
 				BalanceID: "balance-4",
+			},
+		},
+		{
+			desc: "positive: operation found by amount filter",
+			preconditions: &models.Operation{
+				ID:        operationID5,
+				Type:      models.OperationTypeTransfer,
+				Amount:    "50",
+				BalanceID: "balance-5",
+			},
+			input: service.GetOperationFilter{
+				Amount: "50",
+			},
+			expected: &models.Operation{
+				ID:        operationID5,
+				Type:      models.OperationTypeTransfer,
+				Amount:    "50",
+				BalanceID: "balance-5",
 			},
 		},
 		{

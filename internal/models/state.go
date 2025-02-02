@@ -92,9 +92,7 @@ func (s *State) GetEvent() Event {
 	}
 
 	switch s.Steps[indexOfInitialFlowStep] {
-	case CreateInitialBalanceFlowStep:
-		return CreateBalanceEvent
-	case CreateBalanceFlowStep:
+	case CreateInitialBalanceFlowStep, CreateBalanceFlowStep:
 		return CreateBalanceEvent
 	case UpdateBalanceFlowStep:
 		return UpdateBalanceEvent
