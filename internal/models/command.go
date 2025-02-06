@@ -42,8 +42,18 @@ const (
 	BotGetOperationsHistory string = "Get Operations History 📖"
 	// BotDeleteOperationCommand represents the command to delete an operation
 	BotDeleteOperationCommand string = "Delete Operation ❌"
-	// BotShowMoreOperationsForDeleteCommand represents the command to select more operations
-	BotShowMoreOperationsForDeleteCommand string = "Show More Operations For Delete ➡️"
+	// BotShowMoreOperationsCommand represents the command to select more operations
+	BotShowMoreOperationsCommand string = "Show More Operations ➡️"
+	// BotUpdateOperationCommand represents the command to update an operation
+	BotUpdateOperationCommand string = "Update Operation ✏️"
+	// BotUpdateOperationAmountCommand represents the command to update operation amount
+	BotUpdateOperationAmountCommand string = "Update Amount 💰"
+	// BotUpdateOperationDescriptionCommand represents the command to update operation description
+	BotUpdateOperationDescriptionCommand string = "Update Description 📝"
+	// BotUpdateOperationDateCommand represents the command to update operation date
+	BotUpdateOperationDateCommand string = "Update Date 📅"
+	// BotUpdateOperationCategoryCommand represents the command to update operation category
+	BotUpdateOperationCategoryCommand string = "Update Category 🏷️"
 
 	// BotCancelCommand represents the command that will cancel the current flow
 	BotCancelCommand string = "Cancel action ⬅️"
@@ -56,7 +66,8 @@ var AvailableCommands = []string{
 	BotGetBalanceCommand, BotCreateBalanceCommand, BotUpdateBalanceCommand, BotDeleteBalanceCommand,
 	BotCreateCategoryCommand, BotListCategoriesCommand, BotUpdateCategoryCommand, BotDeleteCategoryCommand,
 	BotCreateOperationCommand, BotCreateIncomingOperationCommand, BotCreateSpendingOperationCommand, BotGetOperationsHistory, BotCreateTransferOperationCommand,
-	BotDeleteOperationCommand, BotShowMoreOperationsForDeleteCommand,
+	BotDeleteOperationCommand, BotShowMoreOperationsCommand, BotUpdateOperationCommand, BotUpdateOperationAmountCommand, BotUpdateOperationDescriptionCommand,
+	BotUpdateOperationDateCommand, BotUpdateOperationCategoryCommand,
 	BotCancelCommand,
 }
 
@@ -87,6 +98,7 @@ var CommandToEvent = map[string]Event{
 	BotCreateOperationCommand: CreateOperationEvent,
 	BotGetOperationsHistory:   GetOperationsHistoryEvent,
 	BotDeleteOperationCommand: DeleteOperationEvent,
+	BotUpdateOperationCommand: UpdateOperationEvent,
 }
 
 // CommandToFistFlowStep maps commands to their initial flow steps
@@ -107,6 +119,7 @@ var CommandToFistFlowStep = map[string]FlowStep{
 	BotCreateOperationCommand: CreateOperationFlowStep,
 	BotGetOperationsHistory:   GetOperationsHistoryFlowStep,
 	BotDeleteOperationCommand: DeleteOperationFlowStep,
+	BotUpdateOperationCommand: UpdateOperationFlowStep,
 }
 
 // OperationCommandToOperationType maps operation commands to their corresponding operation types

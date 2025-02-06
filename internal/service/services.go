@@ -106,10 +106,57 @@ var (
 			Buttons: []string{models.BotCreateOperationCommand, models.BotGetOperationsHistory},
 		},
 		{
-			Buttons: []string{models.BotDeleteOperationCommand},
+			Buttons: []string{models.BotUpdateOperationCommand, models.BotDeleteOperationCommand},
 		},
 		{
 			Buttons: []string{models.BotCancelCommand},
+		},
+	}
+
+	updateOperationOptionsKeyboardForIncomingAndSpendingOperations = []InlineKeyboardRow{
+		{
+			Buttons: []InlineKeyboardButton{
+				{
+					Text: models.BotUpdateOperationAmountCommand,
+				},
+			},
+		},
+		{
+			Buttons: []InlineKeyboardButton{
+				{
+					Text: models.BotUpdateOperationDescriptionCommand,
+				},
+			},
+		},
+		{
+			Buttons: []InlineKeyboardButton{
+				{
+					Text: models.BotUpdateOperationCategoryCommand,
+				},
+			},
+		},
+		{
+			Buttons: []InlineKeyboardButton{
+				{
+					Text: models.BotUpdateOperationDateCommand,
+				},
+			},
+		},
+	}
+	updateOperationOptionsKeyboardForTransferOperations = []InlineKeyboardRow{
+		{
+			Buttons: []InlineKeyboardButton{
+				{
+					Text: models.BotUpdateOperationAmountCommand,
+				},
+			},
+		},
+		{
+			Buttons: []InlineKeyboardButton{
+				{
+					Text: models.BotUpdateOperationDateCommand,
+				},
+			},
 		},
 	}
 )
@@ -126,6 +173,8 @@ var (
 	ErrCategoriesNotFound = errs.New("Categories not found")
 	// ErrCategoryNotFound happens when received not category from store.
 	ErrCategoryNotFound = errs.New("Category not found")
+	// ErrNotEnoughCategories happens when received 0 categories after filtering.
+	ErrNotEnoughCategories = errs.New("Not enough categories.")
 
 	// ErrBalanceNotFound happens when don't receive balance from store.
 	ErrBalanceNotFound = errs.New("Balance not found")
@@ -139,6 +188,8 @@ var (
 
 	// ErrInvalidAmountFormat happens when use enters amount with invalid format
 	ErrInvalidAmountFormat = errs.New("Invalid amount format! Please try again.")
+	// ErrInvalidDateFormat happens when user enters date with invalid format
+	ErrInvalidDateFormat = errs.New("Invalid date format! Please try again.")
 
 	// ErrInvalidExchangeRateFormat happens when user enters exchange rate with invalid format
 	ErrInvalidExchangeRateFormat = errs.New("Invalid exchange rate format! Please try again.")

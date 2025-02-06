@@ -57,17 +57,42 @@ func (s *State) IsCommandAllowedDuringFlow(command string) bool {
 	switch s.Flow {
 	case CreateOperationFlow:
 		if s.GetCurrentStep() == ProcessOperationTypeFlowStep {
-			return slices.Contains([]string{BotCreateIncomingOperationCommand, BotCreateSpendingOperationCommand, BotCreateTransferOperationCommand}, command)
+			return slices.Contains(
+				[]string{BotCreateIncomingOperationCommand, BotCreateSpendingOperationCommand, BotCreateTransferOperationCommand},
+				command,
+			)
 		}
 
 		return false
 
 	case DeleteOperationFlow:
 		if s.GetCurrentStep() == ChooseOperationToDeleteFlowStep {
-			return slices.Contains([]string{BotShowMoreOperationsForDeleteCommand}, command)
+			return slices.Contains(
+				[]string{BotShowMoreOperationsCommand},
+				command,
+			)
 		}
 
 		return false
+
+	case UpdateOperationFlow:
+		switch s.GetCurrentStep() {
+		case ChooseOperationToUpdateFlowStep:
+			return slices.Contains(
+				[]string{BotShowMoreOperationsCommand},
+				command,
+			)
+		case ChooseUpdateOperationOptionFlowStep:
+			return slices.Contains(
+				[]string{
+					BotUpdateOperationAmountCommand, BotUpdateOperationDescriptionCommand,
+					BotUpdateOperationCategoryCommand, BotUpdateOperationDateCommand,
+				},
+				command,
+			)
+		default:
+			return false
+		}
 	default:
 		return false
 	}
@@ -108,6 +133,8 @@ func (s *State) GetEvent() Event {
 		return DeleteOperationEvent
 	case GetOperationsHistoryFlowStep:
 		return GetOperationsHistoryEvent
+	case UpdateOperationFlowStep:
+		return UpdateOperationEvent
 	default:
 		return UnknownEvent
 	}
@@ -153,6 +180,8 @@ const (
 	GetOperationsHistoryFlow Flow = "get_operations_history"
 	// DeleteOperationFlow represents the flow for deleting an operation
 	DeleteOperationFlow Flow = "delete_operation"
+	// UpdateOperationFlow represents the flow for updating an operation
+	UpdateOperationFlow Flow = "update_operation"
 )
 
 // FlowStep represents a specific step within a flow
@@ -232,4 +261,12 @@ const (
 	ChooseOperationToDeleteFlowStep FlowStep = "choose_operation_to_delete"
 	// ConfirmOperationDeletionFlowStep represents the step for confirming operation deletion
 	ConfirmOperationDeletionFlowStep FlowStep = "confirm_operation_deletion"
+	// UpdateOperationFlowStep represents the step for updating an operation
+	UpdateOperationFlowStep FlowStep = "update_operation"
+	// ChooseOperationToUpdateFlowStep represents the step for choosing operation to update
+	ChooseOperationToUpdateFlowStep FlowStep = "choose_operation_to_update"
+	// ChooseUpdateOperationOptionFlowStep represents the step for choosing update operation option
+	ChooseUpdateOperationOptionFlowStep FlowStep = "choose_update_operation_option"
+	// EnterOperationDateFlowStep represents the step for entering operation date
+	EnterOperationDateFlowStep FlowStep = "enter_operation_date"
 )

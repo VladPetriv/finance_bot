@@ -107,6 +107,16 @@ func (h *handlerService) RegisterHandlers() {
 			models.ChooseBalanceFlowStep:                        h.handleChooseBalanceFlowStepForGetOperationsHistory,
 			models.ChooseTimePeriodForOperationsHistoryFlowStep: h.handleChooseTimePeriodForOperationsHistoryFlowStep,
 		},
+		models.UpdateOperationFlow: {
+			models.UpdateOperationFlowStep:             h.handleUpdateOperationFlowStep,
+			models.ChooseBalanceFlowStep:               h.handleChooseBalanceFlowStepForUpdateOperation,
+			models.ChooseOperationToUpdateFlowStep:     h.handleChooseOperationToUpdateFlowStep,
+			models.ChooseUpdateOperationOptionFlowStep: h.handleChooseUpdateOperationOptionFlowStep,
+			models.EnterOperationAmountFlowStep:        h.handleEnterOperationAmountFlowStepForUpdate,
+			models.EnterOperationDescriptionFlowStep:   h.handleEnterOperationDescriptionFlowStepForUpdate,
+			models.ChooseCategoryFlowStep:              h.handleChooseCategoryFlowStepForOperationUpdate,
+			models.EnterOperationDateFlowStep:          h.handleEnterOperationDateFlowStep,
+		},
 		models.DeleteOperationFlow: {
 			models.DeleteOperationFlowStep:          h.handleDeleteOperationFlowStep,
 			models.ChooseBalanceFlowStep:            h.handleChooseBalanceFlowStepForDeleteOperation,
@@ -445,7 +455,7 @@ func convertOperationsToInlineKeyboardRowsWithPagination(operations []models.Ope
 		{
 			Buttons: []InlineKeyboardButton{
 				{
-					Text: models.BotShowMoreOperationsForDeleteCommand,
+					Text: models.BotShowMoreOperationsCommand,
 				},
 			},
 		},
