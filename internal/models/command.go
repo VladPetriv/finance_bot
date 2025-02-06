@@ -44,7 +44,7 @@ const (
 	BotDeleteOperationCommand string = "Delete Operation ❌"
 	// BotShowMoreOperationsCommand represents the command to select more operations
 	BotShowMoreOperationsCommand string = "Show More Operations ➡️"
-	// BotUpdateOperationCommand represents the command to update a category
+	// BotUpdateOperationCommand represents the command to update an operation
 	BotUpdateOperationCommand string = "Update Operation ✏️"
 	// BotUpdateOperationAmountCommand represents the command to update operation amount
 	BotUpdateOperationAmountCommand string = "Update Amount 💰"

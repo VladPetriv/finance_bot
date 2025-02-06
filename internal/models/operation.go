@@ -84,10 +84,7 @@ func (o *Operation) GetDeletionMessage() string {
 // GetDetails returns the operation details in string format.
 func (o *Operation) GetDetails() string {
 	return fmt.Sprintf(
-		"Operation Details:\n"+
-			"Type: %s\n"+
-			"Amount: %s\n"+
-			"Description: %s\n\n",
+		"Operation Details:\nType: %s\nAmount: %s\nDescription: %s",
 		o.Type, o.Amount, o.Description,
 	)
 }
