@@ -74,6 +74,9 @@ func (e eventService) handleMessage(ctx context.Context, msg Message) {
 		logger.Error().Err(err).Msg("handle state")
 		return
 	}
+	if stateOutput == nil {
+		return
+	}
 	logger.Debug().Any("stateOutput", stateOutput).Msg("handled request state")
 
 	msgCtx := context.WithValue(ctx, contextFieldNameState, stateOutput.State)
