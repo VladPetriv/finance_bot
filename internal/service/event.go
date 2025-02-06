@@ -179,6 +179,10 @@ func (e eventService) ReactOnEvent(ctx context.Context, event models.Event, msg 
 		models.CreateOperationEvent, models.GetOperationsHistoryEvent, models.DeleteOperationEvent:
 		err := e.services.Handler.HandleAction(ctx, msg)
 		if err != nil {
+			if errs.IsExpected(err) {
+				logger.Info().Err(err).Msg(err.Error())
+				return err
+			}
 			logger.Error().Err(err).Msg("handle action")
 			return fmt.Errorf("handle action: %w", err)
 		}
