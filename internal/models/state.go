@@ -74,6 +74,25 @@ func (s *State) IsCommandAllowedDuringFlow(command string) bool {
 		}
 
 		return false
+
+	case UpdateOperationFlow:
+		switch s.GetCurrentStep() {
+		case ChooseOperationToUpdateFlowStep:
+			return slices.Contains(
+				[]string{BotShowMoreOperationsCommand},
+				command,
+			)
+		case ChooseUpdateOperationOptionFlowStep:
+			return slices.Contains(
+				[]string{
+					BotUpdateOperationAmountCommand, BotUpdateOperationDescriptionCommand,
+					BotUpdateOperationCategoryCommand, BotUpdateOperationDateCommand,
+				},
+				command,
+			)
+		default:
+			return false
+		}
 	default:
 		return false
 	}
@@ -244,4 +263,10 @@ const (
 	ConfirmOperationDeletionFlowStep FlowStep = "confirm_operation_deletion"
 	// UpdateOperationFlowStep represents the step for updating an operation
 	UpdateOperationFlowStep FlowStep = "update_operation"
+	// ChooseOperationToUpdateFlowStep represents the step for choosing operation to update
+	ChooseOperationToUpdateFlowStep FlowStep = "choose_operation_to_update"
+	// ChooseUpdateOperationOptionFlowStep represents the step for choosing update operation option
+	ChooseUpdateOperationOptionFlowStep FlowStep = "choose_update_operation_option"
+	// EnterOperationDateFlowStep represents the step for entering operation date
+	EnterOperationDateFlowStep FlowStep = "enter_operation_date"
 )

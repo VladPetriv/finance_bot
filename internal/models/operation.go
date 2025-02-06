@@ -81,6 +81,16 @@ func (o *Operation) GetDeletionMessage() string {
 	)
 }
 
+func (o *Operation) GetDetails() string {
+	return fmt.Sprintf(
+		"Operation Details:\n"+
+			"Type: %s\n"+
+			"Amount: %s\n"+
+			"Description: %s\n\n",
+		o.Type, o.Amount, o.Description,
+	)
+}
+
 // OperationType represents the type of an operation, which can be either incoming, spending or transfer.
 type OperationType string
 
