@@ -68,7 +68,7 @@ func (s *State) IsCommandAllowedDuringFlow(command string) bool {
 	case DeleteOperationFlow:
 		if s.GetCurrentStep() == ChooseOperationToDeleteFlowStep {
 			return slices.Contains(
-				[]string{BotShowMoreOperationsForDeleteCommand},
+				[]string{BotShowMoreOperationsCommand},
 				command,
 			)
 		}
