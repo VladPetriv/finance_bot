@@ -176,7 +176,7 @@ func (e eventService) ReactOnEvent(ctx context.Context, event models.Event, msg 
 
 	case models.CreateBalanceEvent, models.GetBalanceEvent, models.UpdateBalanceEvent, models.DeleteBalanceEvent,
 		models.CreateCategoryEvent, models.ListCategoriesEvent, models.UpdateCategoryEvent, models.DeleteCategoryEvent,
-		models.CreateOperationEvent, models.GetOperationsHistoryEvent, models.DeleteOperationEvent:
+		models.CreateOperationEvent, models.GetOperationsHistoryEvent, models.DeleteOperationEvent, models.UpdateOperationEvent:
 		err := e.services.Handler.HandleAction(ctx, msg)
 		if err != nil {
 			if errs.IsExpected(err) {
