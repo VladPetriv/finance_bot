@@ -166,11 +166,12 @@ func (h handlerService) handleEnterBalanceNameFlowStepForUpdate(ctx context.Cont
 
 	switch text == "-" {
 	case true:
-		if !currentBalanceNameExistsInMetadata {
-			logger.Warn().Msg("current balance name not found in metadata")
-		} else {
+		if currentBalanceNameExistsInMetadata {
 			text = currentBalanceName
+			break
 		}
+		logger.Warn().Msg("current balance name does not exists in state metadata")
+
 	case false:
 		if currentBalanceName != "" && text == currentBalanceName {
 			break
