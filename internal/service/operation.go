@@ -1273,6 +1273,16 @@ func (h handlerService) sendListOfOperationsWithAbilityToPaginate(ctx context.Co
 		}
 	}
 
+	operationsCount, err := h.stores.Operation.Count(ctx, filter)
+	if err != nil {
+		logger.Error().Err(err).Msg("count operations")
+		return fmt.Errorf("count operations: %w", err)
+	}
+	if operationsCount == 0 {
+		logger.Info().Any("balanceID", opts.balanceID).Msg("operations not found")
+		return ErrOperationsNotFound
+	}
+
 	operations, err := h.stores.Operation.List(ctx, filter)
 	if err != nil {
 		logger.Error().Err(err).Msg("list operations from store")
@@ -1291,7 +1301,7 @@ func (h handlerService) sendListOfOperationsWithAbilityToPaginate(ctx context.Co
 	err = h.apis.Messenger.SendWithKeyboard(SendWithKeyboardOptions{
 		ChatID:         opts.chatID,
 		Message:        "Select operation to delete:",
-		InlineKeyboard: convertOperationsToInlineKeyboardRowsWithPagination(operations, operationsPerMessage),
+		InlineKeyboard: convertOperationsToInlineKeyboardRowsWithPagination(operationsCount, operations, operationsPerMessage),
 	})
 	if err != nil {
 		logger.Error().Err(err).Msg("create inline keyboard")

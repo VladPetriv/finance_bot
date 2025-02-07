@@ -61,6 +61,8 @@ type OperationStore interface {
 	Create(ctx context.Context, operation *models.Operation) error
 	// Get returns a operation from store by filter.
 	Get(ctx context.Context, filter GetOperationFilter) (*models.Operation, error)
+	// Count returns a count of operations from store by filter.
+	Count(ctx context.Context, filter ListOperationsFilter) (int, error)
 	// GetAll returns all operations from store by balance id.
 	List(ctx context.Context, filter ListOperationsFilter) ([]models.Operation, error)
 	// Update updates an operation in store.

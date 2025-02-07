@@ -478,3 +478,118 @@ func TestOperation_Get(t *testing.T) {
 		})
 	}
 }
+
+func TestOperation_Count(t *testing.T) {
+	t.Parallel()
+
+	ctx := context.Background() //nolint: forbidigo
+	cfg := config.Get()
+
+	db, err := database.NewMongoDB(ctx, cfg.MongoDB.URI, cfg.MongoDB.Database)
+	require.NoError(t, err)
+
+	operationStore := store.NewOperation(db)
+
+	type input struct {
+		filter service.ListOperationsFilter
+	}
+
+	testCases := []struct {
+		desc          string
+		preconditions []models.Operation
+		input         input
+		expected      int
+	}{
+		{
+			desc: "positive: count operations by only balance id",
+			preconditions: []models.Operation{
+				{ID: "count_test_1", BalanceID: "count_test_id"},
+				{ID: "count_test_2", BalanceID: "count_test_id"},
+			},
+			input: input{
+				filter: service.ListOperationsFilter{
+					BalanceID: "count_test_id",
+				},
+			},
+			expected: 2,
+		},
+		{
+			desc: "positive: count operations by day as a creation period",
+			preconditions: []models.Operation{
+				{ID: "count_test_1.1", BalanceID: "count_test_id1", CreatedAt: time.Now().Add(-23 * time.Hour)},
+				{ID: "count_test_2.1", BalanceID: "count_test_id1", CreatedAt: time.Now()},
+				{ID: "count_test_3.1", BalanceID: "count_test_id1", CreatedAt: time.Now().Add(-48 * time.Hour)},
+			},
+			input: input{
+				filter: service.ListOperationsFilter{
+					BalanceID:      "count_test_id1",
+					CreationPeriod: &models.CreationPeriodDay,
+				},
+			},
+			expected: 2,
+		},
+		{
+			desc: "positive: count operations by week as a creation period",
+			preconditions: []models.Operation{
+				{ID: "count_test_1.2", BalanceID: "count_test_id2", CreatedAt: time.Now().Add(-168 * time.Hour)},
+				{ID: "count_test_2.2", BalanceID: "count_test_id2", CreatedAt: time.Now().Add(-100 * time.Hour)},
+				{ID: "count_test_3.2", BalanceID: "count_test_id2", CreatedAt: time.Now().Add(-48 * time.Hour)},
+			},
+			input: input{
+				filter: service.ListOperationsFilter{
+					BalanceID:      "count_test_id2",
+					CreationPeriod: &models.CreationPeriodWeek,
+				},
+			},
+			expected: 2,
+		},
+		{
+			desc: "positive: count operations where time less than input time",
+			preconditions: []models.Operation{
+				{ID: "count_test_1.5", BalanceID: "count_test_id5", CreatedAt: time.Now().Add(-48 * time.Hour)},
+				{ID: "count_test_2.5", BalanceID: "count_test_id5", CreatedAt: time.Now().Add(-24 * time.Hour)},
+				{ID: "count_test_3.5", BalanceID: "count_test_id5", CreatedAt: time.Now().Add(-1 * time.Hour)},
+				{ID: "count_test_4.5", BalanceID: "count_test_id5", CreatedAt: time.Now()},
+			},
+			input: input{
+				filter: service.ListOperationsFilter{
+					BalanceID:         "count_test_id5",
+					CreatedAtLessThan: time.Now().Add(-10 * time.Hour),
+				},
+			},
+			expected: 2,
+		},
+		{
+			desc: "negative: no operations found",
+			input: input{
+				filter: service.ListOperationsFilter{
+					BalanceID:      "count_test_not_found",
+					CreationPeriod: &models.CreationPeriodYear,
+				},
+			},
+			expected: 0,
+		},
+	}
+	for _, tc := range testCases {
+		tc := tc
+		t.Run(tc.desc, func(t *testing.T) {
+			t.Parallel()
+
+			if tc.preconditions != nil {
+				for _, o := range tc.preconditions {
+					err := operationStore.Create(ctx, &o)
+					require.NoError(t, err)
+				}
+			}
+
+			t.Cleanup(func() {
+				_, err := operationStore.DB.Collection("Operations").DeleteMany(ctx, bson.M{"balanceId": tc.input.filter.BalanceID})
+				assert.NoError(t, err)
+			})
+
+			actual, err := operationStore.Count(ctx, tc.input.filter)
+			assert.NoError(t, err)
+			assert.Equal(t, tc.expected, actual)
+		})
+	}
+}
