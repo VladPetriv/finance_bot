@@ -48,6 +48,41 @@ func (h *handlerService) handleCreateBalanceFlowStep(ctx context.Context, opts f
 	}
 }
 
+func (h handlerService) handleEnterBalanceNameFlowStep(ctx context.Context, opts flowProcessingOptions) (models.FlowStep, error) {
+	logger := h.logger.With().Str("name", "handlerService.handleEnterBalanceNameFlowStep").Logger()
+	logger.Debug().Any("opts", opts).Msg("got args")
+
+	balance, err := h.stores.Balance.Get(ctx, GetBalanceFilter{
+		Name:   opts.message.GetText(),
+		UserID: opts.user.ID,
+	})
+	if err != nil {
+		logger.Error().Err(err).Msg("get balance from store")
+		return "", fmt.Errorf("get balance from store: %w", err)
+	}
+	if balance != nil {
+		logger.Info().Msg("balance with entered name already exists")
+		return models.EnterBalanceNameFlowStep, ErrBalanceAlreadyExists
+	}
+
+	_, err = h.updateBalance(ctx, updateBalanceOptions{
+		balanceID: opts.stateMetaData[balanceIDMetadataKey].(string),
+		step:      models.EnterBalanceNameFlowStep,
+		data:      opts.message.GetText(),
+	})
+	if err != nil {
+		if errs.IsExpected(err) {
+			logger.Info().Err(err).Msg(err.Error())
+			return "", err
+		}
+
+		logger.Error().Err(err).Msg("update balance in store")
+		return "", fmt.Errorf("update balance in store: %w", err)
+	}
+
+	return models.EnterBalanceAmountFlowStep, h.apis.Messenger.SendMessage(opts.message.GetChatID(), "Enter balance amount:")
+}
+
 func (h handlerService) handleGetBalanceFlowStep(ctx context.Context, opts flowProcessingOptions) (models.FlowStep, error) {
 	logger := h.logger.With().Str("name", "handlerService.handleGetBalanceFlowStep").Logger()
 	logger.Debug().Any("opts", opts).Msg("got args")
@@ -122,13 +157,26 @@ Please note: this symbol can be used for any balance value you don't want to cha
 	return models.EnterBalanceNameFlowStep, h.apis.Messenger.SendMessage(opts.message.GetChatID(), outputMessage)
 }
 
-func (h handlerService) handleEnterBalanceNameFlowStep(ctx context.Context, opts flowProcessingOptions) (models.FlowStep, error) {
-	logger := h.logger.With().Str("name", "handlerService.handleEnterBalanceNameFlowStep").Logger()
+func (h handlerService) handleEnterBalanceNameFlowStepForUpdate(ctx context.Context, opts flowProcessingOptions) (models.FlowStep, error) {
+	logger := h.logger.With().Str("name", "handlerService.handleEnterBalanceNameFlowStepForUpdate").Logger()
 	logger.Debug().Any("opts", opts).Msg("got args")
 
 	text := opts.message.GetText()
+	currentBalanceName, currentBalanceNameExistsInMetadata := opts.stateMetaData[currentBalanceNameMetadataKey].(string)
 
-	if text != "-" {
+	switch text == "-" {
+	case true:
+		if currentBalanceNameExistsInMetadata {
+			text = currentBalanceName
+			break
+		}
+		logger.Warn().Msg("current balance name does not exists in state metadata")
+
+	case false:
+		if currentBalanceName != "" && text == currentBalanceName {
+			break
+		}
+
 		balance, err := h.stores.Balance.Get(ctx, GetBalanceFilter{
 			Name:   text,
 			UserID: opts.user.ID,
@@ -141,15 +189,7 @@ func (h handlerService) handleEnterBalanceNameFlowStep(ctx context.Context, opts
 			logger.Info().Msg("balance with entered name already exists")
 			return models.EnterBalanceNameFlowStep, ErrBalanceAlreadyExists
 		}
-	}
 
-	if text == "-" {
-		currentBalanceName, ok := opts.stateMetaData[currentBalanceNameMetadataKey].(string)
-		if !ok {
-			logger.Warn().Msg("current balance name not found in metadata")
-		} else {
-			text = currentBalanceName
-		}
 	}
 
 	_, err := h.updateBalance(ctx, updateBalanceOptions{

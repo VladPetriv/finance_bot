@@ -62,7 +62,7 @@ func (h *handlerService) RegisterHandlers() {
 		models.UpdateBalanceFlow: {
 			models.UpdateBalanceFlowStep:        h.handleUpdateBalanceFlowStep,
 			models.ChooseBalanceFlowStep:        h.handleChooseBalanceFlowStepForUpdate,
-			models.EnterBalanceNameFlowStep:     h.handleEnterBalanceNameFlowStep,
+			models.EnterBalanceNameFlowStep:     h.handleEnterBalanceNameFlowStepForUpdate,
 			models.EnterBalanceAmountFlowStep:   h.handleEnterBalanceAmountFlowStep,
 			models.EnterBalanceCurrencyFlowStep: h.handleEnterBalanceCurrencyFlowStep,
 		},
