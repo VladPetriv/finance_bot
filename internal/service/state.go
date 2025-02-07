@@ -81,6 +81,10 @@ func (s stateService) handleNewState(ctx context.Context, message Message, event
 		UpdatedAt: time.Now(),
 	}
 
+	if s.isSimpleEvent(event) {
+		newState.Steps = append(newState.Steps, models.EndFlowStep)
+	}
+
 	if isBotCommand(message.GetText()) {
 		firstStep, ok := models.CommandToFistFlowStep[message.GetText()]
 		if ok {
