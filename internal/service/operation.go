@@ -1263,6 +1263,7 @@ func (h handlerService) sendListOfOperationsWithAbilityToPaginate(ctx context.Co
 	filter := ListOperationsFilter{
 		BalanceID:           opts.balanceID,
 		SortByCreatedAtDesc: true,
+		Limit:               operationsPerMessage,
 	}
 
 	if opts.includeLastShowedOperationDate {
@@ -1282,7 +1283,6 @@ func (h handlerService) sendListOfOperationsWithAbilityToPaginate(ctx context.Co
 		return ErrOperationsNotFound
 	}
 
-	filter.Limit = operationsPerMessage
 	operations, err := h.stores.Operation.List(ctx, filter)
 	if err != nil {
 		logger.Error().Err(err).Msg("list operations from store")
