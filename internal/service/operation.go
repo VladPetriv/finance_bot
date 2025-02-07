@@ -40,7 +40,6 @@ func (h handlerService) handleCreateOperationFlowStep(ctx context.Context, opts 
 		chooseOperationTypeKeyboard[0].Buttons = append(chooseOperationTypeKeyboard[0].Buttons, InlineKeyboardButton{
 			Text: models.BotCreateTransferOperationCommand,
 		})
-
 	}
 
 	return models.ProcessOperationTypeFlowStep, h.apis.Messenger.SendWithKeyboard(SendWithKeyboardOptions{
