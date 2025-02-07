@@ -23,24 +23,29 @@ func (h handlerService) handleCreateOperationFlowStep(ctx context.Context, opts 
 		return "", fmt.Errorf("show cancel button: %w", err)
 	}
 
-	return models.ProcessOperationTypeFlowStep, h.apis.Messenger.SendWithKeyboard(SendWithKeyboardOptions{
-		ChatID:  opts.message.GetChatID(),
-		Message: "Choose operation type:",
-		InlineKeyboard: []InlineKeyboardRow{
-			{
-				Buttons: []InlineKeyboardButton{
-					{
-						Text: models.BotCreateIncomingOperationCommand,
-					},
-					{
-						Text: models.BotCreateSpendingOperationCommand,
-					},
-					{
-						Text: models.BotCreateTransferOperationCommand,
-					},
+	chooseOperationTypeKeyboard := []InlineKeyboardRow{
+		{
+			Buttons: []InlineKeyboardButton{
+				{
+					Text: models.BotCreateIncomingOperationCommand,
+				},
+				{
+					Text: models.BotCreateSpendingOperationCommand,
 				},
 			},
 		},
+	}
+
+	if len(opts.user.Balances) > 1 {
+		chooseOperationTypeKeyboard[0].Buttons = append(chooseOperationTypeKeyboard[0].Buttons, InlineKeyboardButton{
+			Text: models.BotCreateTransferOperationCommand,
+		})
+	}
+
+	return models.ProcessOperationTypeFlowStep, h.apis.Messenger.SendWithKeyboard(SendWithKeyboardOptions{
+		ChatID:         opts.message.GetChatID(),
+		Message:        "Choose operation type:",
+		InlineKeyboard: chooseOperationTypeKeyboard,
 	})
 }
 
