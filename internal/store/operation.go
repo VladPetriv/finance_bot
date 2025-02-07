@@ -29,6 +29,39 @@ func NewOperation(db *database.MongoDB) *operationStore {
 }
 
 func (o operationStore) List(ctx context.Context, filter service.ListOperationsFilter) ([]models.Operation, error) {
+	stmt, findOptions := applyListOperationsFilter(filter)
+
+	cursor, err := o.DB.Collection(collectionOperation).Find(ctx, stmt, findOptions)
+	if err != nil {
+		return nil, err
+	}
+
+	var operations []models.Operation
+	err = cursor.All(ctx, &operations)
+	if err != nil {
+		return nil, err
+	}
+
+	err = cursor.Close(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	return operations, nil
+}
+
+func (o operationStore) Count(ctx context.Context, filter service.ListOperationsFilter) (int, error) {
+	stmt, _ := applyListOperationsFilter(filter)
+
+	count, err := o.DB.Collection(collectionOperation).CountDocuments(ctx, stmt)
+	if err != nil {
+		return 0, err
+	}
+
+	return int(count), nil
+}
+
+func applyListOperationsFilter(filter service.ListOperationsFilter) (*bson.M, *options.FindOptions) {
 	stmt := bson.M{}
 
 	if filter.BalanceID != "" {
@@ -53,27 +86,12 @@ func (o operationStore) List(ctx context.Context, filter service.ListOperationsF
 	if filter.Limit != 0 {
 		findOptions = findOptions.SetLimit(int64(filter.Limit))
 	}
+
 	if filter.SortByCreatedAtDesc {
 		findOptions = findOptions.SetSort(bson.D{{Key: "createdAt", Value: -1}})
 	}
 
-	cursor, err := o.DB.Collection(collectionOperation).Find(ctx, stmt, findOptions)
-	if err != nil {
-		return nil, err
-	}
-
-	var operations []models.Operation
-	err = cursor.All(ctx, &operations)
-	if err != nil {
-		return nil, err
-	}
-
-	err = cursor.Close(ctx)
-	if err != nil {
-		return nil, err
-	}
-
-	return operations, nil
+	return &stmt, findOptions
 }
 
 // calculateTimeRange is used to calculate start and end times based on a given period
