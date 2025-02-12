@@ -1,13 +1,15 @@
 package models
 
 import (
+	"fmt"
 	"testing"
+	"time"
 
 	"github.com/VladPetriv/finance_bot/pkg/money"
 	"github.com/stretchr/testify/assert"
 )
 
-func TestCalculateOperationsStatistics(t *testing.T) {
+func Test_calculateOperationsStatistics(t *testing.T) {
 	t.Parallel()
 
 	amount200, _ := money.NewFromString("200.00")
@@ -16,7 +18,7 @@ func TestCalculateOperationsStatistics(t *testing.T) {
 	amount50, _ := money.NewFromString("50.00")
 
 	type expected struct {
-		stats *OperationsStatistics
+		stats *operationsStatistics
 		err   bool
 	}
 
@@ -38,7 +40,7 @@ func TestCalculateOperationsStatistics(t *testing.T) {
 				{Type: OperationTypeTransferOut, Amount: "25.00"},
 			},
 			expected: expected{
-				stats: &OperationsStatistics{
+				stats: &operationsStatistics{
 					IncomingCount:    2,
 					SpendingCount:    2,
 					TransferInCount:  2,
@@ -54,7 +56,7 @@ func TestCalculateOperationsStatistics(t *testing.T) {
 			desc: "positive: calculate statistics with empty operations",
 			args: []Operation{},
 			expected: expected{
-				stats: &OperationsStatistics{
+				stats: &operationsStatistics{
 					IncomingTotal:    money.Zero,
 					SpendingTotal:    money.Zero,
 					TransferInTotal:  money.Zero,
@@ -79,7 +81,7 @@ func TestCalculateOperationsStatistics(t *testing.T) {
 		t.Run(tc.desc, func(t *testing.T) {
 			t.Parallel()
 
-			actual, err := CalculateOperationsStatistics(tc.args)
+			actual, err := calculateOperationsStatistics(tc.args)
 			if tc.expected.err {
 				assert.Error(t, err)
 				return
@@ -98,7 +100,7 @@ func TestCalculateOperationsStatistics(t *testing.T) {
 	}
 }
 
-func TestCalculateCategoryStatistics(t *testing.T) {
+func Test_calculateCategoryStatistics(t *testing.T) {
 	t.Parallel()
 
 	amount100, _ := money.NewFromString("100.00")
@@ -112,7 +114,7 @@ func TestCalculateCategoryStatistics(t *testing.T) {
 	}
 
 	type expected struct {
-		stats []CategoryStatistics
+		stats []categoryStatistics
 		err   bool
 	}
 
@@ -137,7 +139,7 @@ func TestCalculateCategoryStatistics(t *testing.T) {
 				},
 			},
 			expected: expected{
-				stats: []CategoryStatistics{
+				stats: []categoryStatistics{
 					{
 						Title:      "Food",
 						Amount:     amount70,
@@ -162,7 +164,7 @@ func TestCalculateCategoryStatistics(t *testing.T) {
 			},
 
 			expected: expected{
-				stats: []CategoryStatistics{},
+				stats: []categoryStatistics{},
 			},
 		},
 		{
@@ -187,7 +189,7 @@ func TestCalculateCategoryStatistics(t *testing.T) {
 		t.Run(tc.desc, func(t *testing.T) {
 			t.Parallel()
 
-			actual, err := CalculateCategoryStatistics(tc.args.totalAmount, tc.args.operations, tc.args.categories)
+			actual, err := calculateCategoryStatistics(tc.args.totalAmount, tc.args.operations, tc.args.categories)
 			if tc.expected.err {
 				assert.Error(t, err)
 				return
@@ -201,6 +203,246 @@ func TestCalculateCategoryStatistics(t *testing.T) {
 				assert.Equal(t, tc.expected.stats[i].Amount.StringFixed(), actual[i].Amount.StringFixed())
 				assert.Equal(t, tc.expected.stats[i].Percentage.StringFixed(), actual[i].Percentage.StringFixed())
 			}
+		})
+	}
+}
+
+func TestStatisticsMessageBuilder_Build(t *testing.T) {
+	t.Parallel()
+
+	type args struct {
+		balance    *Balance
+		operations []Operation
+		categories []Category
+	}
+
+	type expected struct {
+		message string
+		err     bool
+	}
+
+	testCases := [...]struct {
+		desc     string
+		args     args
+		expected expected
+	}{
+		{
+			desc: "positive: builds statistics message with all operation types",
+			args: args{
+				balance: &Balance{
+					Name:     "Main Balance",
+					Amount:   "1000.00",
+					Currency: "$",
+				},
+				operations: []Operation{
+					{Type: OperationTypeIncoming, Amount: "100.00", CategoryID: "1"},
+					{Type: OperationTypeSpending, Amount: "50.00", CategoryID: "2"},
+					{Type: OperationTypeTransferIn, Amount: "75.00"},
+					{Type: OperationTypeTransferOut, Amount: "25.00"},
+				},
+				categories: []Category{
+					{ID: "1", Title: "Salary"},
+					{ID: "2", Title: "Food"},
+				},
+			},
+			expected: expected{
+				message: fmt.Sprintf(`📊 Balance Statistics: *Main Balance*
+💰 Current Balance: `+"`1000.00$`"+`
+
+📅 Period: _%s - %s_
+
+📈 Summary:
+📥 Incoming Operations: `+"`100.00$`"+` *(1)*
+			- Salary: `+"`100.00$`"+` *(100.00%%)*
+
+💸 Spending Operations: `+"`50.00$`"+` *(1)*
+			- Food: `+"`50.00$`"+` *(100.00%%)*
+
+🔄 Transfers Operations *(2)*:
+		 ➡️ In: `+"`75.00$`"+` *(1)*
+			⬅️ Out: `+"`25.00$`"+` *(1)*
+	`, time.Date(time.Now().Year(), time.Now().Month(), 1, 0, 0, 0, 0, time.UTC).Format(dateFormat), time.Now().Format(dateFormat)),
+			},
+		},
+		{
+			desc: "positive: builds statistics message only incoming operation type",
+			args: args{
+				balance: &Balance{
+					Name:     "Main Balance",
+					Amount:   "1000.00",
+					Currency: "$",
+				},
+				operations: []Operation{
+					{Type: OperationTypeIncoming, Amount: "100.00", CategoryID: "1"},
+				},
+				categories: []Category{
+					{ID: "1", Title: "Salary"},
+					{ID: "2", Title: "Food"},
+				},
+			},
+			expected: expected{
+				message: fmt.Sprintf(`📊 Balance Statistics: *Main Balance*
+💰 Current Balance: `+"`1000.00$`"+`
+
+📅 Period: _%s - %s_
+
+📈 Summary:
+📥 Incoming Operations: `+"`100.00$`"+` *(1)*
+			- Salary: `+"`100.00$`"+` *(100.00%%)*
+
+💸 Spending Operations: `+"`0.00$`"+` *(0)*
+🔄 Transfers Operations *(0)*:
+		 ➡️ In: `+"`0.00$`"+` *(0)*
+			⬅️ Out: `+"`0.00$`"+` *(0)*
+	`, time.Date(time.Now().Year(), time.Now().Month(), 1, 0, 0, 0, 0, time.UTC).Format(dateFormat), time.Now().Format(dateFormat)),
+			},
+		},
+		{
+			desc: "positive: builds statistics message only spending operation type",
+			args: args{
+				balance: &Balance{
+					Name:     "Main Balance",
+					Amount:   "1000.00",
+					Currency: "$",
+				},
+				operations: []Operation{
+					{Type: OperationTypeSpending, Amount: "50.00", CategoryID: "2"},
+				},
+				categories: []Category{
+					{ID: "1", Title: "Salary"},
+					{ID: "2", Title: "Food"},
+				},
+			},
+			expected: expected{
+				message: fmt.Sprintf(`📊 Balance Statistics: *Main Balance*
+💰 Current Balance: `+"`1000.00$`"+`
+
+📅 Period: _%s - %s_
+
+📈 Summary:
+📥 Incoming Operations: `+"`0.00$`"+` *(0)*
+💸 Spending Operations: `+"`50.00$`"+` *(1)*
+			- Food: `+"`50.00$`"+` *(100.00%%)*
+
+🔄 Transfers Operations *(0)*:
+		 ➡️ In: `+"`0.00$`"+` *(0)*
+			⬅️ Out: `+"`0.00$`"+` *(0)*
+	`, time.Date(time.Now().Year(), time.Now().Month(), 1, 0, 0, 0, 0, time.UTC).Format(dateFormat), time.Now().Format(dateFormat)),
+			},
+		},
+		{
+			desc: "positive: builds statistics message only transfer in operation type",
+			args: args{
+				balance: &Balance{
+					Name:     "Main Balance",
+					Amount:   "1000.00",
+					Currency: "$",
+				},
+				operations: []Operation{
+					{Type: OperationTypeTransferIn, Amount: "75.00"},
+				},
+			},
+			expected: expected{
+				message: fmt.Sprintf(`📊 Balance Statistics: *Main Balance*
+💰 Current Balance: `+"`1000.00$`"+`
+
+📅 Period: _%s - %s_
+
+📈 Summary:
+📥 Incoming Operations: `+"`0.00$`"+` *(0)*
+💸 Spending Operations: `+"`0.00$`"+` *(0)*
+🔄 Transfers Operations *(1)*:
+		 ➡️ In: `+"`75.00$`"+` *(1)*
+			⬅️ Out: `+"`0.00$`"+` *(0)*
+	`, time.Date(time.Now().Year(), time.Now().Month(), 1, 0, 0, 0, 0, time.UTC).Format(dateFormat), time.Now().Format(dateFormat)),
+			},
+		},
+		{
+			desc: "positive: builds statistics message only transfer out operation type",
+			args: args{
+				balance: &Balance{
+					Name:     "Main Balance",
+					Amount:   "1000.00",
+					Currency: "$",
+				},
+				operations: []Operation{
+					{Type: OperationTypeTransferOut, Amount: "75.00"},
+				},
+			},
+			expected: expected{
+				message: fmt.Sprintf(`📊 Balance Statistics: *Main Balance*
+💰 Current Balance: `+"`1000.00$`"+`
+
+📅 Period: _%s - %s_
+
+📈 Summary:
+📥 Incoming Operations: `+"`0.00$`"+` *(0)*
+💸 Spending Operations: `+"`0.00$`"+` *(0)*
+🔄 Transfers Operations *(1)*:
+		 ➡️ In: `+"`0.00$`"+` *(0)*
+			⬅️ Out: `+"`75.00$`"+` *(1)*
+	`, time.Date(time.Now().Year(), time.Now().Month(), 1, 0, 0, 0, 0, time.UTC).Format(dateFormat), time.Now().Format(dateFormat)),
+			},
+		},
+		{
+			desc: "positive: builds statistics message with no operations",
+			args: args{
+				balance: &Balance{
+					Name:     "Empty Balance",
+					Amount:   "0.00",
+					Currency: "$",
+				},
+				operations: []Operation{},
+				categories: []Category{},
+			},
+			expected: expected{
+				message: fmt.Sprintf(`📊 Balance Statistics: *Empty Balance*
+💰 Current Balance: `+"`0.00$`"+`
+
+📅 Period: _%s - %s_
+
+📈 Summary:
+📥 Incoming Operations: `+"`0.00$`"+` *(0)*
+💸 Spending Operations: `+"`0.00$`"+` *(0)*
+🔄 Transfers Operations *(0)*:
+		 ➡️ In: `+"`0.00$`"+` *(0)*
+			⬅️ Out: `+"`0.00$`"+` *(0)*
+	`, time.Date(time.Now().Year(), time.Now().Month(), 1, 0, 0, 0, 0, time.UTC).Format(dateFormat), time.Now().Format(dateFormat)),
+			},
+		},
+		{
+			desc: "negative: invalid operation amount",
+			args: args{
+				balance: &Balance{
+					Name:     "Main Balance",
+					Amount:   "1000.00",
+					Currency: "$",
+				},
+				operations: []Operation{
+					{Type: OperationTypeIncoming, Amount: "invalid"},
+				},
+				categories: []Category{},
+			},
+			expected: expected{
+				err: true,
+			},
+		},
+	}
+	for _, tc := range testCases {
+		tc := tc
+		t.Run(tc.desc, func(t *testing.T) {
+			t.Parallel()
+
+			builder := NewStatisticsMessageBuilder(tc.args.balance, tc.args.operations, tc.args.categories)
+			message, err := builder.Build()
+
+			if tc.expected.err {
+				assert.Error(t, err)
+				return
+			}
+
+			assert.NoError(t, err)
+			assert.Equal(t, tc.expected.message, message)
 		})
 	}
 }
