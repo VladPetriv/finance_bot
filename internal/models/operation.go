@@ -134,4 +134,6 @@ var (
 	CreationPeriodMonth CreationPeriod = "month"
 	// CreationPeriodYear represents a yearly time period.
 	CreationPeriodYear CreationPeriod = "year"
+	// CreationPeriodCurrentMonth represents the current month.
+	CreationPeriodCurrentMonth CreationPeriod = "current_month"
 )
