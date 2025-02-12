@@ -160,23 +160,32 @@ func (t *telegramMessenger) SendMessage(chatID int, text string) error {
 
 func (t *telegramMessenger) SendWithKeyboard(opts service.SendWithKeyboardOptions) error {
 	return t.send(&sendOptions{
-		chatID:         int64(opts.ChatID),
-		message:        opts.Message,
-		keyboard:       opts.Keyboard,
-		inlineKeyboard: opts.InlineKeyboard,
+		chatID:           int64(opts.ChatID),
+		message:          opts.Message,
+		formatInMarkdown: opts.FormatMessageInMarkDown,
+		keyboard:         opts.Keyboard,
+		inlineKeyboard:   opts.InlineKeyboard,
 	})
 }
 
 type sendOptions struct {
-	chatID  int64
-	message string
+	chatID           int64
+	message          string
+	formatInMarkdown bool
 
 	keyboard       []service.KeyboardRow
 	inlineKeyboard []service.InlineKeyboardRow
 }
 
+const markdownFormat = "MarkdownV2"
+
 func (t *telegramMessenger) send(opts *sendOptions) error {
-	message := telegoutil.Message(telegoutil.ID(opts.chatID), opts.message)
+	message := telegoutil.
+		Message(telegoutil.ID(opts.chatID), opts.message)
+
+	if opts.formatInMarkdown {
+		message = message.WithParseMode(markdownFormat)
+	}
 
 	if len(opts.keyboard) != 0 {
 		message = message.WithReplyMarkup(t.createKeyboard(opts.keyboard))

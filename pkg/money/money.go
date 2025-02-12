@@ -49,6 +49,16 @@ func (m *Money) Mul(right Money) {
 	m.decimal = m.decimal.Mul(right.decimal)
 }
 
+// Div divides this Money value by another and updates the result in place
+func (m *Money) Div(right Money) {
+	m.decimal = m.decimal.Div(right.decimal)
+}
+
+// GreaterThan returns true if current value is greater than input one.
+func (m *Money) GreaterThan(right Money) bool {
+	return m.decimal.GreaterThan(right.decimal)
+}
+
 // StringFixed returns string representation of float with 2 places after digit.
 // Resulting string will be rounded to nearest.
 func (m Money) StringFixed() string {

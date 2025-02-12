@@ -108,6 +108,8 @@ func calculateTimeRange(period models.CreationPeriod) (startTime, endTime time.T
 		startTime = now.Add(-30 * 24 * time.Hour)
 	case models.CreationPeriodYear:
 		startTime = now.Add(-365 * 24 * time.Hour)
+	case models.CreationPeriodCurrentMonth:
+		startTime = time.Date(now.Year(), now.Month(), 1, 0, 0, 0, 0, time.Local)
 	}
 
 	return startTime, endTime

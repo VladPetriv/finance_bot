@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"strconv"
+	"strings"
 
 	"github.com/VladPetriv/finance_bot/internal/models"
 	"github.com/VladPetriv/finance_bot/pkg/errs"
@@ -109,11 +110,50 @@ func (h handlerService) handleChooseBalanceFlowStepForGetBalance(ctx context.Con
 		logger.Error().Msg("balance not found")
 		return "", fmt.Errorf("balance not found")
 	}
-	logger.Debug().Any("balance", balance).Msg("got balance from store")
 
-	// TODO: In the feature it would be great to add some statistics about operations on this balance.
-	outputMessage := fmt.Sprintf("Balance info(%s):\n - Amount: %v\n - Currency: %s", balance.Name, balance.Amount, balance.Currency)
-	return models.EndFlowStep, h.sendMessageWithDefaultKeyboard(opts.message.GetChatID(), outputMessage)
+	categories, err := h.stores.Category.List(ctx, &ListCategoriesFilter{
+		UserID: opts.user.ID,
+	})
+	if err != nil {
+		logger.Error().Err(err).Msg("list categories from store")
+		return "", fmt.Errorf("list categories from store: %w", err)
+	}
+	if len(categories) == 0 {
+		logger.Error().Msg("no categories found")
+		return "", ErrCategoriesNotFound
+	}
+
+	operations, err := h.stores.Operation.List(ctx, ListOperationsFilter{
+		BalanceID:      balance.ID,
+		CreationPeriod: &models.CreationPeriodCurrentMonth,
+	})
+	if err != nil {
+		logger.Error().Err(err).Msg("list operations from store")
+		return "", fmt.Errorf("list operations from store: %w", err)
+	}
+
+	outputMessage, err := models.
+		NewStatisticsMessageBuilder(balance, operations, categories).
+		Build()
+	if err != nil {
+		logger.Error().Err(err).Msg("build statistic message")
+		return "", fmt.Errorf("build statistic message: %w", err)
+	}
+
+	// Unescape markdown symbols.
+	outputMessage = strings.ReplaceAll(outputMessage, "(", `\(`)
+	outputMessage = strings.ReplaceAll(outputMessage, ")", `\)`)
+	outputMessage = strings.ReplaceAll(outputMessage, "!", `\!`)
+	outputMessage = strings.ReplaceAll(outputMessage, "-", `\-`)
+	outputMessage = strings.ReplaceAll(outputMessage, "+", `\+`)
+	outputMessage = strings.ReplaceAll(outputMessage, ".", `\.`)
+
+	return models.EndFlowStep, h.apis.Messenger.SendWithKeyboard(SendWithKeyboardOptions{
+		ChatID:                  opts.message.GetChatID(),
+		Message:                 outputMessage,
+		FormatMessageInMarkDown: true,
+		Keyboard:                defaultKeyboardRows,
+	})
 }
 
 func (h handlerService) handleUpdateBalanceFlowStep(ctx context.Context, opts flowProcessingOptions) (models.FlowStep, error) {
