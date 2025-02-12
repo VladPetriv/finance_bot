@@ -20,10 +20,11 @@ type Messenger interface {
 
 // SendWithKeyboardOptions represents options for sending a message with a keyboard.
 type SendWithKeyboardOptions struct {
-	ChatID         int
-	Message        string
-	Keyboard       []KeyboardRow
-	InlineKeyboard []InlineKeyboardRow
+	ChatID                  int
+	Message                 string
+	FormatMessageInMarkDown bool
+	Keyboard                []KeyboardRow
+	InlineKeyboard          []InlineKeyboardRow
 }
 
 // KeyboardRow represents keyboard row with buttons.
