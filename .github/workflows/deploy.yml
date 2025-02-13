@@ -1,6 +1,7 @@
 name: Deploy
 
 on:
+  pull_request:
   push:
     branches:
       - production
@@ -11,81 +12,60 @@ permissions:
   pull-requests: read
 
 jobs:
-  wait-for-checks:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Wait for build and test checks
-        uses: lewagon/wait-on-check-action@v1.3.1
-        with:
-          ref: ${{ github.event.pull_request.head.sha || github.sha }}
-          check-name: build_and_test
-          repo-token: ${{ secrets.PAT_TOKEN }}
-          wait-interval: 20
-          allowed-conclusions: success
-          running-workflow-name: Deploy
+  build_and_test:
+    uses: ./.github/workflows/go.yml
 
-      - name: Wait for lint checks
-        uses: lewagon/wait-on-check-action@v1.3.1
-        with:
-          ref: ${{ github.event.pull_request.head.sha || github.sha }}
-          check-name: lint
-          repo-token: ${{ secrets.PAT_TOKEN }}
-          wait-interval: 20
-          allowed-conclusions: success
-          running-workflow-name: Deploy
+  lint:
+    uses: ./.github/workflows/golangci-lint.yml
 
   deploy:
-    needs: [wait-for-checks]
     runs-on: ubuntu-latest
+
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
-      - name: Create SSH key
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v4
+        with:
+          context: .
+          push: true
+          tags: ${{ secrets.DOCKERHUB_USERNAME }}/${{ secrets.REPO_NAME }}:latest
+          cache-from: type=registry,ref=${{ secrets.DOCKERHUB_USERNAME }}/${{ secrets.REPO_NAME }}:buildcache
+          cache-to: type=registry,ref=${{ secrets.DOCKERHUB_USERNAME }}/${{ secrets.REPO_NAME }}:buildcache,mode=max
+
+      - name: Create config file
         run: |
-          install -m 600 -D /dev/null ~/.ssh/id_rsa
-          echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
+          echo "${{ secrets.ENV }}" > config/config.sh
 
-      - name: Add known hosts
-        run: |
-          mkdir -p ~/.ssh
-          touch ~/.ssh/known_hosts
-          ssh-keyscan -H ${{ secrets.PRODUCTION_SERVER }} >> ~/.ssh/known_hosts
+      - name: Deploy to VPS
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USERNAME }}
+          password: ${{ secrets.SSH_PRIVATE_KEY }}
+          script: |
+            # Pull the latest image
+            docker pull ${{ secrets.DOCKERHUB_USERNAME }}/${{ secrets.REPO_NAME }}:latest
 
-      - name: Deploy to production server
-        run: |
-          ssh ${{ secrets.PRODUCTION_USER }}@${{ secrets.PRODUCTION_SERVER }} '
-            echo "Stop the existing service"
-            sudo systemctl stop finance-bot.service || true
+            # Stop and remove the old container if it exists
+            docker stop finance_bot || true
+            docker rm finance_bot || true
 
-            echo "Remove previous repo if exists"
-            rm -rf finance_bot || true
+            # Start the new container
+            docker run -d \
+              --name finance_bot \
+              --restart unless-stopped \
+              -p 80:80 \
+              ${{ secrets.DOCKERHUB_USERNAME }}/${{ secrets.REPO_NAME }}:latest
 
-            echo "Clone new repo"
-            git clone git@github.com:VladPetriv/finance_bot.git
-
-            echo "Change directory"
-            cd finance_bot
-
-            echo "Checkout to production branch"
-            git checkout production
-
-            echo "Create env file"
-            echo "${{ secrets.ENV }}" > env.sh
-            chmod +x env.sh
-
-            echo "Build application"
-            make build
-
-            echo "Reload systemd daemon"
-            sudo systemctl daemon-reload
-
-            echo "Start the service"
-            sudo systemctl start finance-bot.service
-
-            echo "Enable service on boot"
-            sudo systemctl enable finance-bot.service
-
-            echo "Check service status"
-            sudo systemctl status finance-bot.service
-          '
+            # Clean up old images
+            docker image prune -f'
