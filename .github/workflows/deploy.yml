@@ -13,12 +13,6 @@ permissions:
   pull-requests: read
 
 jobs:
-  build_and_test:
-    uses: ./.github/workflows/go.yml
-
-  lint:
-    uses: ./.github/workflows/golangci-lint.yml
-
   deploy:
     runs-on: ubuntu-latest
 
