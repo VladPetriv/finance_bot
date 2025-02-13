@@ -1,6 +1,8 @@
 name: Deploy
 
 on:
+  pull_request:
+    branches: ["main"]
   push:
     branches:
       - production
@@ -48,6 +50,7 @@ jobs:
 
   deploy:
     needs: [build_and_test, golangci]
+    if: ${{ success() }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
