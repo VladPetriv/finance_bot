@@ -1,6 +1,6 @@
 module github.com/VladPetriv/finance_bot
 
-go 1.22
+go 1.23
 
 require (
 	github.com/fasthttp/router v1.4.18
