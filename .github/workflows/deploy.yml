@@ -37,16 +37,12 @@ jobs:
           cache-from: type=registry,ref=${{ secrets.DOCKERHUB_USERNAME }}/${{ secrets.REPO_NAME }}:buildcache
           cache-to: type=registry,ref=${{ secrets.DOCKERHUB_USERNAME }}/${{ secrets.REPO_NAME }}:buildcache,mode=max
 
-      - name: Create config file
-        run: |
-          echo "${{ secrets.ENV }}" > config/config.sh
-
       - name: Deploy to VPS
         uses: appleboy/ssh-action@v1.2.0
         with:
           host: ${{ secrets.VPS_HOST }}
           username: ${{ secrets.VPS_USERNAME }}
-          password: ${{ secrets.SSH_PRIVATE_KEY }}
+          password: ${{ secrets.VPS_PASSWORD }}
           script: |
             # Pull the latest image
             docker pull ${{ secrets.DOCKERHUB_USERNAME }}/${{ secrets.REPO_NAME }}:latest
@@ -55,11 +51,15 @@ jobs:
             docker stop finance_bot || true
             docker rm finance_bot || true
 
-            # Start the new container
+            echo "${{ secrets.PROD_ENV }}" > config.env
+            chmod +x config.env
+
+            # Start the new container with environment variables from config.sh
             docker run -d \
               --name finance_bot \
               --restart unless-stopped \
-              -p 80:80 \
+              -p 8443:8443 \
+              --env-file config.env \
               ${{ secrets.DOCKERHUB_USERNAME }}/${{ secrets.REPO_NAME }}:latest
 
             # Clean up old images
