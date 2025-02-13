@@ -1,8 +1,6 @@
 name: Deploy
 
 on:
-  pull_request:
-    branches: ["main"]
   push:
     branches:
       - production
@@ -13,9 +11,45 @@ permissions:
   pull-requests: read
 
 jobs:
-  deploy:
+  build_and_test:
     runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
 
+      - name: Set up Go
+        uses: actions/setup-go@v3
+        with:
+          go-version: "1.23"
+
+      - name: Install dependencies
+        run: go mod download
+
+      - name: Build
+        run: make build
+
+      - name: Setup mongodb
+        uses: supercharge/mongodb-github-action@1.9.0
+
+      - name: Test
+        run: make test
+
+  golangci:
+    name: lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/setup-go@v3
+        with:
+          go-version: "1.23"
+      - uses: actions/checkout@v3
+      - name: golangci-lint
+        uses: golangci/golangci-lint-action@v3
+        with:
+          version: latest
+
+  deploy:
+    needs: [build_and_test, golangci]
+    if: ${{ success() }}
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
 
@@ -45,7 +79,7 @@ jobs:
           password: ${{ secrets.VPS_PASSWORD }}
           script: |
             echo "${{ secrets.DOCKERHUB_TOKEN }}" | docker login -u ${{ secrets.DOCKERHUB_USERNAME }} --password-stdin
-            # Pull the latest image
+
             docker pull ${{ secrets.DOCKERHUB_USERNAME }}/${{ secrets.REPO_NAME }}:latest
 
             # Stop and remove the old container if it exists
@@ -55,7 +89,6 @@ jobs:
             echo "${{ secrets.PROD_ENV }}" > config.env
             chmod +x config.env
 
-            # Start the new container with environment variables from config.sh
             docker run -d \
               --name finance_bot \
               --restart unless-stopped \
@@ -63,5 +96,4 @@ jobs:
               --env-file config.env \
               ${{ secrets.DOCKERHUB_USERNAME }}/${{ secrets.REPO_NAME }}:latest
 
-            # Clean up old images
             docker image prune -f
