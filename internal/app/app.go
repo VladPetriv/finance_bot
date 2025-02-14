@@ -8,6 +8,7 @@ import (
 	"syscall"
 
 	"github.com/VladPetriv/finance_bot/config"
+	currencybeacon "github.com/VladPetriv/finance_bot/internal/api/currency_beacon"
 	"github.com/VladPetriv/finance_bot/internal/api/telegram"
 	"github.com/VladPetriv/finance_bot/internal/service"
 	"github.com/VladPetriv/finance_bot/internal/store"
@@ -28,7 +29,8 @@ func Run(ctx context.Context, cfg *config.Config, logger *logger.Logger) {
 	}
 
 	apis := service.APIs{
-		Messenger: telegram,
+		Messenger:         telegram,
+		CurrencyExchanger: currencybeacon.New(cfg.CurrencyBeacon.APIEndpoint, cfg.CurrencyBeacon.APIKey),
 	}
 
 	mongoDB, err := database.NewMongoDB(ctx, cfg.MongoDB.URI, cfg.MongoDB.Database)
