@@ -31,8 +31,8 @@ type MongoDB struct {
 
 // CurrencyBeacon represents a config for CurrencyBeacon API.
 type CurrencyBeacon struct {
-	APIKey      string `env:"FB_CURRENCY_BEACON_API_KEY" env-default:"https://api.currencybeacon.com"`
-	APIEndpoint string `env:"FB_CURRENCY_BEACON_API_ENDPOINT"`
+	APIKey      string `env:"FB_CURRENCY_BEACON_API_KEY"`
+	APIEndpoint string `env:"FB_CURRENCY_BEACON_API_ENDPOINT" env-default:"https://api.currencybeacon.com"`
 }
 
 // Logger represents a logger configuration.
