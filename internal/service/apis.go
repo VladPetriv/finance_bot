@@ -1,6 +1,9 @@
 package service
 
-import "github.com/VladPetriv/finance_bot/pkg/money"
+import (
+	"github.com/VladPetriv/finance_bot/pkg/errs"
+	"github.com/VladPetriv/finance_bot/pkg/money"
+)
 
 // APIs represents structure containing all the APIs that the application uses.
 type APIs struct {
@@ -70,3 +73,6 @@ type Currency struct {
 	Code   string
 	Symbol string
 }
+
+// ErrCurrencyExchangeRateNotFound happens when the CurrencyExchanger cannot find the exchange rate for the specified currency.
+var ErrCurrencyExchangeRateNotFound = errs.New("currency exchange rate not found")

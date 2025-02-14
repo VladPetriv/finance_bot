@@ -65,7 +65,7 @@ func (c *currencyBeacon) GetExchangeRate(baseCurrency, targetCurrency string) (*
 
 	exchangeRate, ok := result.Rates[targetCurrency]
 	if !ok {
-		return nil, fmt.Errorf("could not find exchange rate for %s", targetCurrency)
+		return nil, service.ErrCurrencyExchangeRateNotFound
 	}
 
 	convertedExchangeRate := money.NewFromFloat(exchangeRate)
