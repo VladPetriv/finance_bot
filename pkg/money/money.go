@@ -33,6 +33,12 @@ func NewFromInt(i int64) Money {
 	return Money{d}
 }
 
+// NewFromFloat returns decimal from float number.
+func NewFromFloat(i float64) Money {
+	d := decimal.NewFromFloat(i)
+	return Money{d}
+}
+
 // Sub returns left - right amounts.
 func (m Money) Sub(right Money) Money {
 	return Money{m.decimal.Sub(right.decimal)}

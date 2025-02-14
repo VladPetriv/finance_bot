@@ -9,9 +9,10 @@ import (
 
 // Config represents an app config.
 type Config struct {
-	Telegram Telegram
-	MongoDB  MongoDB
-	Logger   Logger
+	Telegram       Telegram
+	MongoDB        MongoDB
+	CurrencyBeacon CurrencyBeacon
+	Logger         Logger
 }
 
 // Telegram represents a telegram bot configuration.
@@ -26,6 +27,12 @@ type Telegram struct {
 type MongoDB struct {
 	URI      string `env:"FB_MONGODB_URI" env-default:"mongodb://localhost:27017"`
 	Database string `env:"FB_MONGODB_DATABASE" env-default:"api"`
+}
+
+// CurrencyBeacon represents a config for CurrencyBeacon API.
+type CurrencyBeacon struct {
+	APIKey      string `env:"FB_CURRENCY_BEACON_API_KEY" env-default:"https://api.currencybeacon.com"`
+	APIEndpoint string `env:"FB_CURRENCY_BEACON_API_ENDPOINT"`
 }
 
 // Logger represents a logger configuration.

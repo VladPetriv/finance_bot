@@ -1,8 +1,14 @@
 package service
 
+import (
+	"github.com/VladPetriv/finance_bot/pkg/errs"
+	"github.com/VladPetriv/finance_bot/pkg/money"
+)
+
 // APIs represents structure containing all the APIs that the application uses.
 type APIs struct {
-	Messenger Messenger
+	Messenger         Messenger
+	CurrencyExchanger CurrencyExchanger
 }
 
 // Messenger handles messaging operations between the application and messaging platform.
@@ -52,3 +58,21 @@ type Message interface {
 	// GetSenderName returns the name of the user who sent the message.
 	GetSenderName() string
 }
+
+// CurrencyExchanger handles currency exchange rates and supported currencies listing
+type CurrencyExchanger interface {
+	// FetchCurrencies returns a list of available currencies.
+	FetchCurrencies() ([]Currency, error)
+	// GetExchangeRate returns the exchange rate for the specified currency.
+	GetExchangeRate(baseCurrency, targetCurrency string) (*money.Money, error)
+}
+
+// Currency represents a structure that contains currency name, code and symbol.
+type Currency struct {
+	Name   string
+	Code   string
+	Symbol string
+}
+
+// ErrCurrencyExchangeRateNotFound happens when the CurrencyExchanger cannot find the exchange rate for the specified currency.
+var ErrCurrencyExchangeRateNotFound = errs.New("currency exchange rate not found")
