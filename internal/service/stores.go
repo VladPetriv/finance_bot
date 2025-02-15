@@ -14,6 +14,7 @@ type Stores struct {
 	Category  CategoryStore
 	User      UserStore
 	State     StateStore
+	Currency  CurrencyStore
 }
 
 // UserStore provides functionality for work with users store.
@@ -133,4 +134,14 @@ type StateStore interface {
 // GetStateFilter represents a filters for StateStore.Get method.
 type GetStateFilter struct {
 	UserID string
+}
+
+// CurrencyStore represents a store for currencies.
+type CurrencyStore interface {
+	// Create creates a new currency in store.
+	Create(ctx context.Context, currency *models.Currency) error
+	// Count returns a count of all currencies from store.
+	Count(ctx context.Context) (int, error)
+	// List returns a list of all currencies from store.
+	List(ctx context.Context) ([]models.Currency, error)
 }
