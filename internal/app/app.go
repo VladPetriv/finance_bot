@@ -49,6 +49,7 @@ func Run(ctx context.Context, cfg *config.Config, logger *logger.Logger) {
 		Balance:   store.NewBalance(mongoDB),
 		Operation: store.NewOperation(mongoDB),
 		State:     store.NewState(mongoDB),
+		Currency:  store.NewCurrency(mongoDB),
 	}
 
 	stateService := service.NewState(&service.StateOptions{
