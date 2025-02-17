@@ -96,6 +96,17 @@ func (t *telegramMessenger) ReadUpdates(result chan service.Message, errors chan
 	}
 
 	for update := range updates {
+		// Answer on callback query if it exists to avoid spam from telegram if user closes the application.
+		if update.CallbackQuery != nil {
+			err := t.api.AnswerCallbackQuery(&telego.AnswerCallbackQueryParams{
+				CallbackQueryID: update.CallbackQuery.ID,
+				ShowAlert:       false,
+			})
+			if err != nil {
+				errors <- fmt.Errorf("answer callback query: %w", err)
+			}
+		}
+
 		result <- &Update{update: update}
 	}
 }
