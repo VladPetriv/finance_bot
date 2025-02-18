@@ -52,6 +52,8 @@ func Run(ctx context.Context, cfg *config.Config, logger *logger.Logger) {
 		Currency:  store.NewCurrency(mongoDB),
 	}
 
+	currencyService := service.NewCurrency(logger, apis, stores)
+
 	stateService := service.NewState(&service.StateOptions{
 		Logger: logger,
 		Stores: stores,
@@ -59,7 +61,8 @@ func Run(ctx context.Context, cfg *config.Config, logger *logger.Logger) {
 	})
 
 	services := service.Services{
-		State: stateService,
+		State:    stateService,
+		Currency: currencyService,
 	}
 
 	handlerService := service.NewHandler(&service.HandlerOptions{
@@ -76,6 +79,11 @@ func Run(ctx context.Context, cfg *config.Config, logger *logger.Logger) {
 		APIs:     apis,
 		Services: services,
 	})
+
+	err = currencyService.InitCurrencies(ctx)
+	if err != nil {
+		logger.Fatal().Err(err).Msg("init currencies")
+	}
 
 	go eventService.Listen(ctx)
 
