@@ -12,7 +12,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/mongo"
 )
 
 func TestCurrency_Create(t *testing.T) {
@@ -23,9 +22,8 @@ func TestCurrency_Create(t *testing.T) {
 
 	db, err := database.NewMongoDB(ctx, cfg.MongoDB.URI, cfg.MongoDB.Database)
 	require.NoError(t, err)
-	currencyStore := store.NewCurrency(db)
 
-	currencyID := uuid.NewString()
+	currencyStore := store.NewCurrency(db)
 
 	testCases := []struct {
 		desc                 string
@@ -40,20 +38,6 @@ func TestCurrency_Create(t *testing.T) {
 				Name:   "US Dollar",
 				Symbol: "$",
 			},
-		},
-		{
-			desc: "negative: currency not created because already exists",
-			preconditions: &models.Currency{
-				ID:     currencyID,
-				Name:   "Euro",
-				Symbol: "€",
-			},
-			input: &models.Currency{
-				ID:     currencyID,
-				Name:   "Euro",
-				Symbol: "€",
-			},
-			expectDuplicateError: true,
 		},
 	}
 
@@ -73,11 +57,7 @@ func TestCurrency_Create(t *testing.T) {
 			})
 
 			err := currencyStore.Create(ctx, tc.input)
-			if tc.expectDuplicateError {
-				assert.True(t, mongo.IsDuplicateKeyError(err))
-			} else {
-				assert.NoError(t, err)
-			}
+			assert.NoError(t, err)
 		})
 	}
 }
@@ -107,11 +87,13 @@ func TestCurrency_Count(t *testing.T) {
 				{
 					ID:     uuid.NewString(),
 					Name:   "US Dollar",
+					Code:   "USD",
 					Symbol: "$",
 				},
 				{
 					ID:     uuid.NewString(),
 					Name:   "Euro",
+					Code:   "EUR",
 					Symbol: "€",
 				},
 			},

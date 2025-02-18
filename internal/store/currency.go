@@ -6,6 +6,7 @@ import (
 	"github.com/VladPetriv/finance_bot/internal/models"
 	"github.com/VladPetriv/finance_bot/pkg/database"
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
 type currencyStore struct {
@@ -22,12 +23,14 @@ func NewCurrency(db *database.MongoDB) *currencyStore {
 }
 
 func (c *currencyStore) Create(ctx context.Context, currency *models.Currency) error {
-	_, err := c.DB.Collection(collectionCurrency).InsertOne(ctx, currency)
-	if err != nil {
-		return err
+	opts := options.Update().SetUpsert(true)
+	filter := bson.M{"code": currency.Code}
+	update := bson.M{
+		"$setOnInsert": currency,
 	}
 
-	return nil
+	_, err := c.DB.Collection(collectionCurrency).UpdateOne(ctx, filter, update, opts)
+	return err
 }
 
 func (c *currencyStore) Count(ctx context.Context) (int, error) {
