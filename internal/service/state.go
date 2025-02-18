@@ -39,6 +39,11 @@ func NewState(opts *StateOptions) *stateService {
 
 func (s stateService) HandleState(ctx context.Context, message Message) (*HandleStateOutput, error) {
 	logger := s.logger.With().Str("name", "stateService.HandleState").Logger()
+	logger.Debug().
+		Any("message", message.GetText()).
+		Any("sender", message.GetSenderName()).
+		Any("chat_id", message.GetChatID()).
+		Msg("handling message")
 
 	state, err := s.stores.State.Get(ctx, GetStateFilter{
 		UserID: message.GetSenderName(),
