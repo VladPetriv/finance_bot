@@ -1,6 +1,6 @@
 package models
 
-// Currency represents currency
+// Currency represents currency model which contains currency name, code and symbol
 type Currency struct {
 	ID     string `bson:"_id"`
 	Name   string `bson:"name"`
