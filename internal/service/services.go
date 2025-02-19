@@ -239,6 +239,7 @@ type CurrencyService interface {
 	Convert(ctx context.Context, opts ConvertCurrencyOptions) (*money.Money, error)
 }
 
+// ConvertCurrencyOptions represents options for converting currency.
 type ConvertCurrencyOptions struct {
 	BaseCurrency   string
 	TargetCurrency string
