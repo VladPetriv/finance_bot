@@ -26,18 +26,35 @@ func TestCurrency_Create(t *testing.T) {
 	currencyStore := store.NewCurrency(db)
 
 	testCases := [...]struct {
-		desc                 string
-		preconditions        *models.Currency
-		input                *models.Currency
-		expectDuplicateError bool
+		desc                string
+		preconditions       *models.Currency
+		args                *models.Currency
+		createIsNotExpected bool
 	}{
 		{
 			desc: "positive: currency created",
-			input: &models.Currency{
+			args: &models.Currency{
 				ID:     uuid.NewString(),
 				Name:   "US Dollar",
+				Code:   "US",
 				Symbol: "$",
 			},
+		},
+		{
+			desc: "positive: currency with args symbol already exists, new currency won't be created",
+			preconditions: &models.Currency{
+				ID:     uuid.NewString(),
+				Name:   "US Dollar",
+				Code:   "US",
+				Symbol: "$",
+			},
+			args: &models.Currency{
+				ID:     uuid.NewString(),
+				Name:   "CAD Dollar",
+				Code:   "US",
+				Symbol: "$",
+			},
+			createIsNotExpected: true,
 		},
 	}
 	for _, tc := range testCases {
@@ -46,17 +63,40 @@ func TestCurrency_Create(t *testing.T) {
 			t.Parallel()
 
 			if tc.preconditions != nil {
-				err = currencyStore.Create(ctx, tc.preconditions)
+				err = currencyStore.CreateIfNotExists(ctx, tc.preconditions)
 				assert.NoError(t, err)
 			}
 
 			t.Cleanup(func() {
-				_, err := currencyStore.DB.Collection("Currencies").DeleteOne(ctx, bson.M{"_id": tc.input.ID})
+				_, err := currencyStore.DB.Collection("Currencies").DeleteOne(ctx, bson.M{"_id": tc.args.ID})
 				assert.NoError(t, err)
+
+				if tc.preconditions != nil {
+					_, err := currencyStore.DB.Collection("Currencies").DeleteOne(ctx, bson.M{"_id": tc.preconditions.ID})
+					assert.NoError(t, err)
+				}
 			})
 
-			err := currencyStore.Create(ctx, tc.input)
+			err := currencyStore.CreateIfNotExists(ctx, tc.args)
 			assert.NoError(t, err)
+
+			var (
+				currencyToCompareID string
+				currencyToCompare   models.Currency
+			)
+			switch tc.createIsNotExpected {
+			case true:
+				currencyToCompareID = tc.preconditions.ID
+				currencyToCompare = *tc.preconditions
+			case false:
+				currencyToCompareID = tc.args.ID
+				currencyToCompare = *tc.args
+			}
+
+			var createdCurrency models.Currency
+			err = db.DB.Collection("Currencies").FindOne(ctx, bson.M{"_id": currencyToCompareID}).Decode(&createdCurrency)
+			assert.NoError(t, err)
+			assert.Equal(t, currencyToCompare, createdCurrency)
 		})
 	}
 }
@@ -106,7 +146,7 @@ func TestCurrency_Count(t *testing.T) {
 
 			if len(tc.preconditions) > 0 {
 				for _, currency := range tc.preconditions {
-					err = currencyStore.Create(ctx, &currency)
+					err := currencyStore.CreateIfNotExists(ctx, &currency)
 					assert.NoError(t, err)
 				}
 			}
@@ -153,11 +193,13 @@ func TestCurrency_List(t *testing.T) {
 					ID:     uuid.NewString(),
 					Name:   "US Dollar",
 					Symbol: "$",
+					Code:   "USD",
 				},
 				{
 					ID:     uuid.NewString(),
 					Name:   "Euro",
 					Symbol: "€",
+					Code:   "EUR",
 				},
 			},
 			expected: []models.Currency{
@@ -165,11 +207,13 @@ func TestCurrency_List(t *testing.T) {
 					ID:     uuid.NewString(),
 					Name:   "US Dollar",
 					Symbol: "$",
+					Code:   "USD",
 				},
 				{
 					ID:     uuid.NewString(),
 					Name:   "Euro",
 					Symbol: "€",
+					Code:   "EUR",
 				},
 			},
 		},
@@ -181,7 +225,7 @@ func TestCurrency_List(t *testing.T) {
 
 			if len(tc.preconditions) > 0 {
 				for _, currency := range tc.preconditions {
-					err = currencyStore.Create(ctx, &currency)
+					err := currencyStore.CreateIfNotExists(ctx, &currency)
 					assert.NoError(t, err)
 				}
 			}
