@@ -25,7 +25,7 @@ func TestCurrency_Create(t *testing.T) {
 
 	currencyStore := store.NewCurrency(db)
 
-	testCases := []struct {
+	testCases := [...]struct {
 		desc                 string
 		preconditions        *models.Currency
 		input                *models.Currency
@@ -40,7 +40,6 @@ func TestCurrency_Create(t *testing.T) {
 			},
 		},
 	}
-
 	for _, tc := range testCases {
 		tc := tc
 		t.Run(tc.desc, func(t *testing.T) {
@@ -72,7 +71,7 @@ func TestCurrency_Count(t *testing.T) {
 	require.NoError(t, err)
 	currencyStore := store.NewCurrency(db)
 
-	testCases := []struct {
+	testCases := [...]struct {
 		desc          string
 		preconditions []models.Currency
 		expected      int
@@ -100,7 +99,6 @@ func TestCurrency_Count(t *testing.T) {
 			expected: 2,
 		},
 	}
-
 	for _, tc := range testCases {
 		tc := tc
 		t.Run(tc.desc, func(t *testing.T) {
@@ -139,7 +137,7 @@ func TestCurrency_List(t *testing.T) {
 	require.NoError(t, err)
 	currencyStore := store.NewCurrency(db)
 
-	testCases := []struct {
+	testCases := [...]struct {
 		desc          string
 		preconditions []models.Currency
 		expected      []models.Currency
@@ -176,7 +174,6 @@ func TestCurrency_List(t *testing.T) {
 			},
 		},
 	}
-
 	for _, tc := range testCases {
 		tc := tc
 		t.Run(tc.desc, func(t *testing.T) {
