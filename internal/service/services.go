@@ -5,13 +5,15 @@ import (
 
 	"github.com/VladPetriv/finance_bot/internal/models"
 	"github.com/VladPetriv/finance_bot/pkg/errs"
+	"github.com/VladPetriv/finance_bot/pkg/money"
 )
 
 // Services represents structure with all services.
 type Services struct {
-	Event   EventService
-	Handler HandlerService
-	State   StateService
+	Event    EventService
+	Handler  HandlerService
+	State    StateService
+	Currency CurrencyService
 }
 
 // HandlerService provides functionally for handling bot events.
@@ -227,4 +229,19 @@ type StateService interface {
 type HandleStateOutput struct {
 	State *models.State
 	Event models.Event
+}
+
+// CurrencyService represents a service for managing and handling currencies.
+type CurrencyService interface {
+	// InitCurrencies is used to initialize currencies by parsing them from the CurrencyExchanger API and saving them to the database.
+	InitCurrencies(ctx context.Context) error
+	// Convert is used to convert operations amount from base currency to target currency
+	Convert(ctx context.Context, opts ConvertCurrencyOptions) (*money.Money, error)
+}
+
+// ConvertCurrencyOptions represents options for converting currency.
+type ConvertCurrencyOptions struct {
+	BaseCurrency   string
+	TargetCurrency string
+	Amount         money.Money
 }
