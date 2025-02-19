@@ -54,7 +54,7 @@ func (c *currencyService) InitCurrencies(ctx context.Context) error {
 	}
 
 	for _, currency := range currencies {
-		err := c.storages.Currency.Create(ctx, &models.Currency{
+		err := c.storages.Currency.CreateIfNotExists(ctx, &models.Currency{
 			ID:     uuid.NewString(),
 			Name:   currency.Name,
 			Code:   currency.Code,

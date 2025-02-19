@@ -22,7 +22,7 @@ func NewCurrency(db *database.MongoDB) *currencyStore {
 	}
 }
 
-func (c *currencyStore) Create(ctx context.Context, currency *models.Currency) error {
+func (c *currencyStore) CreateIfNotExists(ctx context.Context, currency *models.Currency) error {
 	opts := options.Update().SetUpsert(true)
 	filter := bson.M{"code": currency.Code}
 	update := bson.M{

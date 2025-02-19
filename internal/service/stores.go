@@ -139,7 +139,7 @@ type GetStateFilter struct {
 // CurrencyStore represents a store for currencies.
 type CurrencyStore interface {
 	// Create creates a new currency in store(only in case if currency not exists).
-	Create(ctx context.Context, currency *models.Currency) error
+	CreateIfNotExists(ctx context.Context, currency *models.Currency) error
 	// Count returns a count of all currencies from store.
 	Count(ctx context.Context) (int, error)
 	// List returns a list of all currencies from store.
