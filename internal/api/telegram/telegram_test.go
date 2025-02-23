@@ -8,7 +8,6 @@ import (
 )
 
 func TestSplitInlineKeyboardRows(t *testing.T) {
-
 	type args struct {
 		rows       [][]telego.InlineKeyboardButton
 		maxButtons int
@@ -64,8 +63,24 @@ func TestSplitInlineKeyboardRows(t *testing.T) {
 			desc: "Single button per row, requiring multiple splits",
 			args: args{
 				rows: [][]telego.InlineKeyboardButton{
-					{createButton("A")}, {createButton("B")}, {createButton("C")},
-					{createButton("D")}, {createButton("E")}, {createButton("F")},
+					{
+						createButton("A"),
+					},
+					{
+						createButton("B"),
+					},
+					{
+						createButton("C"),
+					},
+					{
+						createButton("D"),
+					},
+					{
+						createButton("E"),
+					},
+					{
+						createButton("F"),
+					},
 				},
 				maxButtons: 2,
 			},

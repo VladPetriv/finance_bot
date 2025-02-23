@@ -259,7 +259,7 @@ func (t *telegramMessenger) createKeyboard(rows []service.KeyboardRow) *telego.R
 const maxButtonsPerMessage = 100
 
 func (t *telegramMessenger) createInlineKeyboard(rows []service.InlineKeyboardRow) []*telego.InlineKeyboardMarkup {
-	convertedRows := make([][]telego.InlineKeyboardButton, 0, 0)
+	convertedRows := make([][]telego.InlineKeyboardButton, 0)
 
 	var totalButtonsCount int
 
