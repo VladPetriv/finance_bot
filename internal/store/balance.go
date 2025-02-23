@@ -2,7 +2,7 @@ package store
 
 import (
 	"context"
-	"errors"
+	"fmt"
 
 	"github.com/VladPetriv/finance_bot/internal/models"
 	"github.com/VladPetriv/finance_bot/internal/service"
@@ -39,17 +39,55 @@ func (b balanceStore) Get(ctx context.Context, filter service.GetBalanceFilter) 
 		stmt["userId"] = filter.UserID
 	}
 
-	var balance models.Balance
-	err := b.DB.Collection(collectionBalance).FindOne(ctx, stmt).Decode(&balance)
-	if err != nil {
-		if errors.Is(err, mongo.ErrNoDocuments) {
-			return nil, nil
-		}
+	pipeLine := mongo.Pipeline{
+		bson.D{{Key: "$match", Value: stmt}},
+	}
 
+	if filter.PreloadCurrency {
+		pipeLine = append(pipeLine, bson.D{
+			{
+				Key: "$lookup",
+				Value: bson.M{
+					"from":         collectionCurrency,
+					"localField":   "currencyId",
+					"foreignField": "_id",
+					"as":           "currency",
+				},
+			},
+		})
+		pipeLine = append(pipeLine, bson.D{
+			{
+				Key: "$unwind",
+				Value: bson.M{
+					"path":                       "$currency",
+					"preserveNullAndEmptyArrays": true,
+				},
+			},
+		})
+	}
+
+	cursor, err := b.DB.Collection(collectionBalance).Aggregate(ctx, pipeLine)
+	if err != nil {
+		return nil, err
+	}
+	defer func() {
+		err := cursor.Close(ctx)
+		if err != nil {
+			fmt.Printf("error closing cursor: %v", err)
+		}
+	}()
+
+	var matches []models.Balance
+	err = cursor.All(ctx, &matches)
+	if err != nil {
 		return nil, err
 	}
 
-	return &balance, nil
+	if len(matches) == 0 {
+		return nil, nil
+	}
+
+	return &matches[0], nil
 }
 
 func (b balanceStore) Create(ctx context.Context, balance *models.Balance) error {
