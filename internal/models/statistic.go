@@ -50,7 +50,7 @@ func (b *StatisticsMessageBuilder) addHeader() *StatisticsMessageBuilder {
 💰 Current Balance: %s
 
 `
-	b.buffer.WriteString(fmt.Sprintf(template, b.balance.Name, formatAmount(balanceAmount, b.balance.Currency)))
+	b.buffer.WriteString(fmt.Sprintf(template, b.balance.Name, formatAmount(balanceAmount, b.balance.GetCurrency().Symbol)))
 
 	return b
 }
@@ -73,7 +73,7 @@ func (b *StatisticsMessageBuilder) addOperationsAndCategoriesStatistics(stats *o
 	b.buffer.WriteString(
 		fmt.Sprintf(
 			incomingOperationTemplate,
-			formatAmount(stats.IncomingTotal, b.balance.Currency),
+			formatAmount(stats.IncomingTotal, b.balance.GetCurrency().Symbol),
 			stats.IncomingCount,
 		),
 	)
@@ -86,7 +86,7 @@ func (b *StatisticsMessageBuilder) addOperationsAndCategoriesStatistics(stats *o
 	b.buffer.WriteString(
 		fmt.Sprintf(
 			spendingOperationTemplate,
-			formatAmount(stats.SpendingTotal, b.balance.Currency),
+			formatAmount(stats.SpendingTotal, b.balance.GetCurrency().Symbol),
 			stats.SpendingCount,
 		),
 	)
@@ -104,10 +104,10 @@ func (b *StatisticsMessageBuilder) addOperationsAndCategoriesStatistics(stats *o
 			transferOperationTemplate,
 			totalTransfers,
 
-			formatAmount(stats.TransferInTotal, b.balance.Currency),
+			formatAmount(stats.TransferInTotal, b.balance.GetCurrency().Symbol),
 			stats.TransferInCount,
 
-			formatAmount(stats.TransferOutTotal, b.balance.Currency),
+			formatAmount(stats.TransferOutTotal, b.balance.GetCurrency().Symbol),
 			stats.TransferOutCount,
 		),
 	)
@@ -133,7 +133,7 @@ func (b *StatisticsMessageBuilder) buildCategoriesStatisticsMessage(categoriesSt
 			fmt.Sprintf(
 				template,
 				category.Title,
-				formatAmount(category.Amount, b.balance.Currency),
+				formatAmount(category.Amount, b.balance.GetCurrency().Symbol),
 				category.Percentage.StringFixed(),
 			),
 		)

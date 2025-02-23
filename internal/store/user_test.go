@@ -117,10 +117,9 @@ func TestUser_Get(t *testing.T) {
 				Username: "test2",
 				Balances: []models.Balance{
 					{
-						ID:       balanceID,
-						UserID:   userID2,
-						Amount:   "10",
-						Currency: "$",
+						ID:     balanceID,
+						UserID: userID2,
+						Amount: "10",
 					},
 				},
 			},
@@ -133,10 +132,9 @@ func TestUser_Get(t *testing.T) {
 				Username: "test2",
 				Balances: []models.Balance{
 					{
-						ID:       balanceID,
-						UserID:   userID2,
-						Amount:   "10",
-						Currency: "$",
+						ID:     balanceID,
+						UserID: userID2,
+						Amount: "10",
 					},
 				},
 			},

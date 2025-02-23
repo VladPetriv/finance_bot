@@ -232,7 +232,7 @@ func TestStatisticsMessageBuilder_Build(t *testing.T) {
 				balance: &Balance{
 					Name:     "Main Balance",
 					Amount:   "1000.00",
-					Currency: "$",
+					Currency: &Currency{Symbol: "$"},
 				},
 				operations: []Operation{
 					{Type: OperationTypeIncoming, Amount: "100.00", CategoryID: "1"},
@@ -270,7 +270,7 @@ func TestStatisticsMessageBuilder_Build(t *testing.T) {
 				balance: &Balance{
 					Name:     "Main Balance",
 					Amount:   "1000.00",
-					Currency: "$",
+					Currency: &Currency{Symbol: "$"},
 				},
 				operations: []Operation{
 					{Type: OperationTypeIncoming, Amount: "100.00", CategoryID: "1"},
@@ -303,7 +303,7 @@ func TestStatisticsMessageBuilder_Build(t *testing.T) {
 				balance: &Balance{
 					Name:     "Main Balance",
 					Amount:   "1000.00",
-					Currency: "$",
+					Currency: &Currency{Symbol: "$"},
 				},
 				operations: []Operation{
 					{Type: OperationTypeSpending, Amount: "50.00", CategoryID: "2"},
@@ -336,7 +336,7 @@ func TestStatisticsMessageBuilder_Build(t *testing.T) {
 				balance: &Balance{
 					Name:     "Main Balance",
 					Amount:   "1000.00",
-					Currency: "$",
+					Currency: &Currency{Symbol: "$"},
 				},
 				operations: []Operation{
 					{Type: OperationTypeTransferIn, Amount: "75.00"},
@@ -363,7 +363,7 @@ func TestStatisticsMessageBuilder_Build(t *testing.T) {
 				balance: &Balance{
 					Name:     "Main Balance",
 					Amount:   "1000.00",
-					Currency: "$",
+					Currency: &Currency{Symbol: "$"},
 				},
 				operations: []Operation{
 					{Type: OperationTypeTransferOut, Amount: "75.00"},
@@ -390,7 +390,7 @@ func TestStatisticsMessageBuilder_Build(t *testing.T) {
 				balance: &Balance{
 					Name:     "Empty Balance",
 					Amount:   "0.00",
-					Currency: "$",
+					Currency: &Currency{Symbol: "$"},
 				},
 				operations: []Operation{},
 				categories: []Category{},
@@ -416,7 +416,7 @@ func TestStatisticsMessageBuilder_Build(t *testing.T) {
 				balance: &Balance{
 					Name:     "Main Balance",
 					Amount:   "1000.00",
-					Currency: "$",
+					Currency: &Currency{Symbol: "$"},
 				},
 				operations: []Operation{
 					{Type: OperationTypeIncoming, Amount: "invalid"},
