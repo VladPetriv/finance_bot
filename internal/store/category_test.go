@@ -22,8 +22,14 @@ func TestCategory_Create(t *testing.T) {
 	ctx := context.TODO() //nolint: forbidigo
 	cfg := config.Get()
 
-	db, err := database.NewMongoDB(ctx, cfg.MongoDB.URI, cfg.MongoDB.Database)
+	db, err := database.NewMongoDB(ctx, cfg.MongoDB.URI, "category_create_test")
 	require.NoError(t, err)
+
+	t.Cleanup(func() {
+		err := db.DB.Drop(ctx)
+		assert.NoError(t, err)
+	})
+
 	categoryStore := store.NewCategory(db)
 
 	categoryID := uuid.NewString()
@@ -83,8 +89,14 @@ func TestCategory_Get(t *testing.T) {
 	ctx := context.TODO() //nolint: forbidigo
 	cfg := config.Get()
 
-	db, err := database.NewMongoDB(ctx, cfg.MongoDB.URI, cfg.MongoDB.Database)
+	db, err := database.NewMongoDB(ctx, cfg.MongoDB.URI, "category_get_test")
 	require.NoError(t, err)
+
+	t.Cleanup(func() {
+		err := db.DB.Drop(ctx)
+		assert.NoError(t, err)
+	})
+
 	categoryStore := store.NewCategory(db)
 
 	categoryID1, categoryID2, categoryID3 := uuid.NewString(), uuid.NewString(), uuid.NewString()
@@ -186,8 +198,14 @@ func TestCategory_Delete(t *testing.T) {
 	ctx := context.TODO() //nolint: forbidigo
 	cfg := config.Get()
 
-	db, err := database.NewMongoDB(ctx, cfg.MongoDB.URI, cfg.MongoDB.Database)
+	db, err := database.NewMongoDB(ctx, cfg.MongoDB.URI, "category_delete_test")
 	require.NoError(t, err)
+
+	t.Cleanup(func() {
+		err := db.DB.Drop(ctx)
+		assert.NoError(t, err)
+	})
+
 	categoryStore := store.NewCategory(db)
 
 	categoryID := uuid.NewString()
@@ -251,8 +269,14 @@ func TestCategory_Update(t *testing.T) {
 	ctx := context.TODO() //nolint: forbidigo
 	cfg := config.Get()
 
-	db, err := database.NewMongoDB(ctx, cfg.MongoDB.URI, cfg.MongoDB.Database)
+	db, err := database.NewMongoDB(ctx, cfg.MongoDB.URI, "category_update_test")
 	require.NoError(t, err)
+
+	t.Cleanup(func() {
+		err := db.DB.Drop(ctx)
+		assert.NoError(t, err)
+	})
+
 	categoryStore := store.NewCategory(db)
 
 	categoryID1 := uuid.NewString()

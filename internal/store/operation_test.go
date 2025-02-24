@@ -24,8 +24,14 @@ func TestOperation_Create(t *testing.T) {
 	ctx := context.Background() //nolint: forbidigo
 	cfg := config.Get()
 
-	db, err := database.NewMongoDB(ctx, cfg.MongoDB.URI, cfg.MongoDB.Database)
+	db, err := database.NewMongoDB(ctx, cfg.MongoDB.URI, "operation_create_test")
 	require.NoError(t, err)
+
+	t.Cleanup(func() {
+		err := db.DB.Drop(ctx)
+		assert.NoError(t, err)
+	})
+
 	operationStore := store.NewOperation(db)
 
 	operationID := uuid.NewString()
@@ -88,8 +94,13 @@ func TestOperation_List(t *testing.T) {
 	ctx := context.Background() //nolint: forbidigo
 	cfg := config.Get()
 
-	db, err := database.NewMongoDB(ctx, cfg.MongoDB.URI, cfg.MongoDB.Database)
+	db, err := database.NewMongoDB(ctx, cfg.MongoDB.URI, "operation_list_test")
 	require.NoError(t, err)
+
+	t.Cleanup(func() {
+		err := db.DB.Drop(ctx)
+		assert.NoError(t, err)
+	})
 
 	operationStore := store.NewOperation(db)
 
@@ -263,8 +274,14 @@ func TestOperation_Delete(t *testing.T) {
 	ctx := context.Background() //nolint: forbidigo
 	cfg := config.Get()
 
-	db, err := database.NewMongoDB(ctx, cfg.MongoDB.URI, cfg.MongoDB.Database)
+	db, err := database.NewMongoDB(ctx, cfg.MongoDB.URI, "operation_delete_test")
 	require.NoError(t, err)
+
+	t.Cleanup(func() {
+		err := db.DB.Drop(ctx)
+		assert.NoError(t, err)
+	})
+
 	operationStore := store.NewOperation(db)
 
 	operationID := uuid.NewString()
@@ -328,8 +345,14 @@ func TestOperation_Get(t *testing.T) {
 	ctx := context.Background() //nolint: forbidigo
 	cfg := config.Get()
 
-	db, err := database.NewMongoDB(ctx, cfg.MongoDB.URI, cfg.MongoDB.Database)
+	db, err := database.NewMongoDB(ctx, cfg.MongoDB.URI, "operation_get_test")
 	require.NoError(t, err)
+
+	t.Cleanup(func() {
+		err := db.DB.Drop(ctx)
+		assert.NoError(t, err)
+	})
+
 	operationStore := store.NewOperation(db)
 
 	operationID1,
@@ -485,8 +508,13 @@ func TestOperation_Count(t *testing.T) {
 	ctx := context.Background() //nolint: forbidigo
 	cfg := config.Get()
 
-	db, err := database.NewMongoDB(ctx, cfg.MongoDB.URI, cfg.MongoDB.Database)
+	db, err := database.NewMongoDB(ctx, cfg.MongoDB.URI, "operation_count_test")
 	require.NoError(t, err)
+
+	t.Cleanup(func() {
+		err := db.DB.Drop(ctx)
+		assert.NoError(t, err)
+	})
 
 	operationStore := store.NewOperation(db)
 

@@ -24,7 +24,7 @@ type UserStore interface {
 	// Create creates a new user in store.
 	Create(ctx context.Context, user *models.User) error
 	// GetByUsername returns a user from store by username.
-	Get(ctx context.Context, filtera GetUserFilter) (*models.User, error)
+	Get(ctx context.Context, filters GetUserFilter) (*models.User, error)
 }
 
 // GetUserFilter represents a filters for GetUser method.

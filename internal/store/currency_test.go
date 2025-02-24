@@ -20,8 +20,13 @@ func TestCurrency_Create(t *testing.T) {
 	ctx := context.Background() //nolint: forbidigo
 	cfg := config.Get()
 
-	db, err := database.NewMongoDB(ctx, cfg.MongoDB.URI, cfg.MongoDB.Database)
+	db, err := database.NewMongoDB(ctx, cfg.MongoDB.URI, "currency_create_test")
 	require.NoError(t, err)
+
+	t.Cleanup(func() {
+		err := db.DB.Drop(ctx)
+		assert.NoError(t, err)
+	})
 
 	currencyStore := store.NewCurrency(db)
 
@@ -107,8 +112,14 @@ func TestCurrency_Count(t *testing.T) {
 	ctx := context.Background() //nolint: forbidigo
 	cfg := config.Get()
 
-	db, err := database.NewMongoDB(ctx, cfg.MongoDB.URI, cfg.MongoDB.Database)
+	db, err := database.NewMongoDB(ctx, cfg.MongoDB.URI, "currency_count_test")
 	require.NoError(t, err)
+
+	t.Cleanup(func() {
+		err := db.DB.Drop(ctx)
+		assert.NoError(t, err)
+	})
+
 	currencyStore := store.NewCurrency(db)
 
 	testCases := [...]struct {
@@ -173,8 +184,14 @@ func TestCurrency_List(t *testing.T) {
 	ctx := context.Background() //nolint: forbidigo
 	cfg := config.Get()
 
-	db, err := database.NewMongoDB(ctx, cfg.MongoDB.URI, cfg.MongoDB.Database)
+	db, err := database.NewMongoDB(ctx, cfg.MongoDB.URI, "currency_list_test")
 	require.NoError(t, err)
+
+	t.Cleanup(func() {
+		err := db.DB.Drop(ctx)
+		assert.NoError(t, err)
+	})
+
 	currencyStore := store.NewCurrency(db)
 
 	testCases := [...]struct {
