@@ -228,6 +228,8 @@ func (t *telegramMessenger) send(opts *sendOptions) error {
 
 			return nil
 		}
+
+		message = message.WithReplyMarkup(inlineKeyboards[0])
 	}
 
 	_, err := t.api.SendMessage(message)
