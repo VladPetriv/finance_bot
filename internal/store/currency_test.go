@@ -333,7 +333,6 @@ func TestCurrency_Exists(t *testing.T) {
 			actual, err := currencyStore.Exists(ctx, tc.args)
 			assert.NoError(t, err)
 			assert.Equal(t, tc.expected, actual)
-
 		})
 	}
 }
