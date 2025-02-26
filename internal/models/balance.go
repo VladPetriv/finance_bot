@@ -9,7 +9,7 @@ type Balance struct {
 	Name   string `bson:"name,omitempty"`
 	Amount string `bson:"amount,omitempty"`
 
-	Currency *Currency `bson:"currency"`
+	Currency *Currency `bson:"currency,omitempty"`
 }
 
 // GetName returns the balance name.
