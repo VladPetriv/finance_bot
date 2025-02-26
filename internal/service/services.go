@@ -195,6 +195,9 @@ var (
 
 	// ErrInvalidExchangeRateFormat happens when user enters exchange rate with invalid format
 	ErrInvalidExchangeRateFormat = errs.New("Invalid exchange rate format! Please try again.")
+
+	// ErrCurrencyNotFound happens when don't receive currency from store.
+	ErrCurrencyNotFound = errs.New("Currency not found. Please try to select another currency.")
 )
 
 const (

@@ -198,6 +198,8 @@ Please note: this symbol can be used for any balance value you don't want to cha
 	return models.EnterBalanceNameFlowStep, h.apis.Messenger.SendMessage(opts.message.GetChatID(), outputMessage)
 }
 
+const usePreviousModelValueFlag = "-"
+
 func (h handlerService) handleEnterBalanceNameFlowStepForUpdate(ctx context.Context, opts flowProcessingOptions) (models.FlowStep, error) {
 	logger := h.logger.With().Str("name", "handlerService.handleEnterBalanceNameFlowStepForUpdate").Logger()
 	logger.Debug().Any("opts", opts).Msg("got args")
@@ -205,7 +207,7 @@ func (h handlerService) handleEnterBalanceNameFlowStepForUpdate(ctx context.Cont
 	text := opts.message.GetText()
 	currentBalanceName, currentBalanceNameExistsInMetadata := opts.stateMetaData[currentBalanceNameMetadataKey].(string)
 
-	switch text == "-" {
+	switch text == usePreviousModelValueFlag {
 	case true:
 		if currentBalanceNameExistsInMetadata {
 			text = currentBalanceName
@@ -257,11 +259,9 @@ func (h handlerService) handleEnterBalanceAmountFlowStep(ctx context.Context, op
 	logger.Debug().Any("opts", opts).Msg("got args")
 
 	text := opts.message.GetText()
-	if text == "-" {
+	if text == usePreviousModelValueFlag {
 		currentBalanceAmount, ok := opts.stateMetaData[currentBalanceAmountMetadataKey].(string)
-		if !ok {
-			logger.Warn().Msg("current balance amount not found in metadata")
-		} else {
+		if ok {
 			text = currentBalanceAmount
 		}
 	}
@@ -318,12 +318,24 @@ func (h handlerService) handleEnterBalanceCurrencyFlowStep(ctx context.Context, 
 	logger.Debug().Any("opts", opts).Msg("got args")
 
 	text := opts.message.GetText()
-	if text == "-" {
+
+	switch text {
+	case usePreviousModelValueFlag:
 		currentBalanceCurrency, ok := opts.stateMetaData[currentBalanceCurrencyMetadataKey].(string)
-		if !ok {
-			logger.Warn().Msg("current balance currency not found in metadata")
-		} else {
+		if ok {
 			text = currentBalanceCurrency
+		}
+	default:
+		exists, err := h.stores.Currency.Exists(ctx, ExistsCurrencyFilter{
+			ID: text,
+		})
+		if err != nil {
+			logger.Error().Err(err).Msg("check if currency exists in store")
+			return "", fmt.Errorf("check if currency exists in store: %w", err)
+		}
+		if !exists {
+			logger.Error().Msg("currency not found")
+			return models.EnterBalanceCurrencyFlowStep, ErrCurrencyNotFound
 		}
 	}
 
