@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/VladPetriv/finance_bot/internal/models"
+	"github.com/VladPetriv/finance_bot/internal/service"
 	"github.com/VladPetriv/finance_bot/pkg/database"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo/options"
@@ -60,4 +61,18 @@ func (c *currencyStore) List(ctx context.Context) ([]models.Currency, error) {
 	}
 
 	return currencies, nil
+}
+
+func (c *currencyStore) Exists(ctx context.Context, filter service.ExistsCurrencyFilter) (bool, error) {
+	stmt := bson.M{}
+	if filter.ID != "" {
+		stmt["_id"] = filter.ID
+	}
+
+	count, err := c.DB.Collection(collectionCurrency).CountDocuments(ctx, stmt)
+	if err != nil {
+		return false, err
+	}
+
+	return count > 0, nil
 }

@@ -24,7 +24,7 @@ type UserStore interface {
 	// Create creates a new user in store.
 	Create(ctx context.Context, user *models.User) error
 	// GetByUsername returns a user from store by username.
-	Get(ctx context.Context, filtera GetUserFilter) (*models.User, error)
+	Get(ctx context.Context, filters GetUserFilter) (*models.User, error)
 }
 
 // GetUserFilter represents a filters for GetUser method.
@@ -49,9 +49,10 @@ type BalanceStore interface {
 
 // GetBalanceFilter represents a filters for GetBalance method.
 type GetBalanceFilter struct {
-	Name      string
-	UserID    string
-	BalanceID string
+	Name            string
+	UserID          string
+	BalanceID       string
+	PreloadCurrency bool
 }
 
 // OperationStore provides functionality for work with operation store.
@@ -145,4 +146,11 @@ type CurrencyStore interface {
 	Count(ctx context.Context) (int, error)
 	// List returns a list of all currencies from store.
 	List(ctx context.Context) ([]models.Currency, error)
+	// Exists checks if currency exists in store based on input filter.
+	Exists(ctx context.Context, opts ExistsCurrencyFilter) (bool, error)
+}
+
+// ExistsCurrencyFilter represents a filter for CurrencyStore.Exists method.
+type ExistsCurrencyFilter struct {
+	ID string
 }

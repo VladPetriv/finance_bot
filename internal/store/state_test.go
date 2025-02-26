@@ -23,8 +23,14 @@ func TestState_Create(t *testing.T) {
 	ctx := context.Background() //nolint: forbidigo
 	cfg := config.Get()
 
-	db, err := database.NewMongoDB(ctx, cfg.MongoDB.URI, cfg.MongoDB.Database)
+	db, err := database.NewMongoDB(ctx, cfg.MongoDB.URI, "state_create_test")
 	require.NoError(t, err)
+
+	t.Cleanup(func() {
+		err := db.DB.Drop(ctx)
+		assert.NoError(t, err)
+	})
+
 	stateStore := store.NewState(db)
 
 	stateID := uuid.NewString()
@@ -95,8 +101,14 @@ func TestState_Get(t *testing.T) {
 	ctx := context.Background() //nolint: forbidigo
 	cfg := config.Get()
 
-	db, err := database.NewMongoDB(ctx, cfg.MongoDB.URI, cfg.MongoDB.Database)
+	db, err := database.NewMongoDB(ctx, cfg.MongoDB.URI, "state_get_test")
 	require.NoError(t, err)
+
+	t.Cleanup(func() {
+		err := db.DB.Drop(ctx)
+		assert.NoError(t, err)
+	})
+
 	stateStore := store.NewState(db)
 
 	now := time.Now()
@@ -176,8 +188,14 @@ func TestState_Update(t *testing.T) {
 	ctx := context.Background() //nolint: forbidigo
 	cfg := config.Get()
 
-	db, err := database.NewMongoDB(ctx, cfg.MongoDB.URI, cfg.MongoDB.Database)
+	db, err := database.NewMongoDB(ctx, cfg.MongoDB.URI, "state_update_test")
 	require.NoError(t, err)
+
+	t.Cleanup(func() {
+		err := db.DB.Drop(ctx)
+		assert.NoError(t, err)
+	})
+
 	stateStore := store.NewState(db)
 
 	stateID := uuid.NewString()

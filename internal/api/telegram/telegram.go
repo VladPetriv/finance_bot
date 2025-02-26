@@ -188,7 +188,10 @@ type sendOptions struct {
 	inlineKeyboard []service.InlineKeyboardRow
 }
 
-const markdownFormat = "MarkdownV2"
+const (
+	markdownFormat = "MarkdownV2"
+	emptyMessage   = "ㅤ"
+)
 
 func (t *telegramMessenger) send(opts *sendOptions) error {
 	message := telegoutil.
@@ -203,12 +206,35 @@ func (t *telegramMessenger) send(opts *sendOptions) error {
 	}
 
 	if len(opts.inlineKeyboard) != 0 {
-		message = message.WithReplyMarkup(t.createInlineKeyboard(opts.inlineKeyboard))
+		inlineKeyboards := t.createInlineKeyboard(opts.inlineKeyboard)
+
+		if len(inlineKeyboards) > 1 {
+			message := message.WithReplyMarkup(inlineKeyboards[0])
+			_, err := t.api.SendMessage(message)
+			if err != nil {
+				return fmt.Errorf("send telegram message: %w", err)
+			}
+
+			for _, inlineKeyboard := range inlineKeyboards[1:] {
+				message := telegoutil.
+					Message(telegoutil.ID(opts.chatID), emptyMessage).
+					WithReplyMarkup(inlineKeyboard)
+
+				_, err := t.api.SendMessage(message)
+				if err != nil {
+					return fmt.Errorf("send telegram message: %w", err)
+				}
+			}
+
+			return nil
+		}
+
+		message = message.WithReplyMarkup(inlineKeyboards[0])
 	}
 
 	_, err := t.api.SendMessage(message)
 	if err != nil {
-		return err
+		return fmt.Errorf("send telegram message: %w", err)
 	}
 
 	return nil
@@ -232,13 +258,19 @@ func (t *telegramMessenger) createKeyboard(rows []service.KeyboardRow) *telego.R
 	return keyboard
 }
 
-func (t *telegramMessenger) createInlineKeyboard(rows []service.InlineKeyboardRow) *telego.InlineKeyboardMarkup {
-	var convertedRows [][]telego.InlineKeyboardButton
+const maxButtonsPerMessage = 100
+
+func (t *telegramMessenger) createInlineKeyboard(rows []service.InlineKeyboardRow) []*telego.InlineKeyboardMarkup {
+	convertedRows := make([][]telego.InlineKeyboardButton, 0)
+
+	var totalButtonsCount int
 
 	for _, r := range rows {
 		var buttons []telego.InlineKeyboardButton
 
 		for _, b := range r.Buttons {
+			totalButtonsCount++
+
 			inlineKeyboardButton := telegoutil.
 				InlineKeyboardButton(b.Text).
 				WithCallbackData(b.Text)
@@ -253,7 +285,46 @@ func (t *telegramMessenger) createInlineKeyboard(rows []service.InlineKeyboardRo
 		convertedRows = append(convertedRows, buttons)
 	}
 
-	keyboard := telegoutil.InlineKeyboard(convertedRows...)
+	if totalButtonsCount <= maxButtonsPerMessage {
+		return []*telego.InlineKeyboardMarkup{telegoutil.InlineKeyboard(convertedRows...)}
+	}
 
-	return keyboard
+	return splitInlineKeyboardRows(convertedRows, maxButtonsPerMessage)
+}
+
+func splitInlineKeyboardRows(convertedRows [][]telego.InlineKeyboardButton, maxButtonsPerMessage int) []*telego.InlineKeyboardMarkup {
+	var (
+		buttonsCount        int
+		lastProcessedRowIdx int
+	)
+
+	result := make([]*telego.InlineKeyboardMarkup, 0, 2)
+
+	for rowIdx, row := range convertedRows {
+		for btnIdx := range row {
+			if buttonsCount == maxButtonsPerMessage {
+				splitIndex := rowIdx
+
+				// Ensure the split doesn't occur in the middle of a row
+				if btnIdx > 0 {
+					splitIndex--
+				}
+
+				result = append(result, telegoutil.InlineKeyboard(convertedRows[lastProcessedRowIdx:splitIndex]...))
+
+				// Reset counters
+				buttonsCount = 0
+				lastProcessedRowIdx = splitIndex
+			}
+
+			buttonsCount++
+		}
+	}
+
+	// Append the remaining buttons
+	if lastProcessedRowIdx < len(convertedRows) {
+		result = append(result, telegoutil.InlineKeyboard(convertedRows[lastProcessedRowIdx:]...))
+	}
+
+	return result
 }

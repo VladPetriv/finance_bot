@@ -22,8 +22,14 @@ func TestUser_Create(t *testing.T) {
 	ctx := context.Background() //nolint: forbidigo
 	cfg := config.Get()
 
-	db, err := database.NewMongoDB(ctx, cfg.MongoDB.URI, cfg.MongoDB.Database)
+	db, err := database.NewMongoDB(ctx, cfg.MongoDB.URI, "user_create_test")
 	require.NoError(t, err)
+
+	t.Cleanup(func() {
+		err := db.DB.Drop(ctx)
+		assert.NoError(t, err)
+	})
+
 	userStore := store.NewUser(db)
 
 	userID := uuid.NewString()
@@ -83,8 +89,14 @@ func TestUser_Get(t *testing.T) {
 	ctx := context.Background() //nolint: forbidigo
 	cfg := config.Get()
 
-	db, err := database.NewMongoDB(ctx, cfg.MongoDB.URI, cfg.MongoDB.Database)
+	db, err := database.NewMongoDB(ctx, cfg.MongoDB.URI, "user_get_test")
 	require.NoError(t, err)
+
+	t.Cleanup(func() {
+		err := db.DB.Drop(ctx)
+		assert.NoError(t, err)
+	})
+
 	userStore := store.NewUser(db)
 	balanceStore := store.NewBalance(db)
 
@@ -117,10 +129,9 @@ func TestUser_Get(t *testing.T) {
 				Username: "test2",
 				Balances: []models.Balance{
 					{
-						ID:       balanceID,
-						UserID:   userID2,
-						Amount:   "10",
-						Currency: "$",
+						ID:     balanceID,
+						UserID: userID2,
+						Amount: "10",
 					},
 				},
 			},
@@ -133,10 +144,9 @@ func TestUser_Get(t *testing.T) {
 				Username: "test2",
 				Balances: []models.Balance{
 					{
-						ID:       balanceID,
-						UserID:   userID2,
-						Amount:   "10",
-						Currency: "$",
+						ID:     balanceID,
+						UserID: userID2,
+						Amount: "10",
 					},
 				},
 			},

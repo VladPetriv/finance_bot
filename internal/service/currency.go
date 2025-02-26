@@ -31,7 +31,6 @@ const availableCurrenciesCount = 161
 
 func (c *currencyService) InitCurrencies(ctx context.Context) error {
 	logger := c.logger.With().Str("name", "currencyService.InitCurrencies").Logger()
-	logger.Debug().Msg("got args")
 
 	currenciesCount, err := c.storages.Currency.Count(ctx)
 	if err != nil {
@@ -67,6 +66,7 @@ func (c *currencyService) InitCurrencies(ctx context.Context) error {
 		}
 	}
 
+	logger.Info().Msg("initialized currencies")
 	return nil
 }
 

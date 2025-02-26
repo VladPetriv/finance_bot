@@ -125,15 +125,34 @@ func (h handlerService) handleChooseBalanceToFlowStep(ctx context.Context, opts 
 
 	opts.stateMetaData[balanceToMetadataKey] = opts.message.GetText()
 
-	balanceFrom := opts.user.GetBalance(opts.stateMetaData[balanceFromMetadataKey].(string))
-	balanceTo := opts.user.GetBalance(opts.message.GetText())
+	balanceFrom, err := h.stores.Balance.Get(ctx, GetBalanceFilter{
+		Name:            opts.stateMetaData[balanceFromMetadataKey].(string),
+		PreloadCurrency: true,
+	})
+	if err != nil {
+		logger.Error().Err(err).Msg("get balance from store")
+		return "", fmt.Errorf("get balance from store: %w", err)
+	}
+	if balanceFrom == nil {
+		logger.Error().Msg("balance from not found")
+		return "", fmt.Errorf("balance from not found")
+	}
 
-	if balanceFrom.Currency != balanceTo.Currency {
-		parsedBalanceFromAmount, err := money.NewFromString(balanceFrom.Amount)
-		if err != nil {
-			logger.Error().Err(err).Msg("parse balance amount")
-			return "", fmt.Errorf("parse balance amount: %w", err)
-		}
+	balanceTo, err := h.stores.Balance.Get(ctx, GetBalanceFilter{
+		Name:            opts.message.GetText(),
+		PreloadCurrency: true,
+	})
+	if err != nil {
+		logger.Error().Err(err).Msg("get balance from store")
+		return "", fmt.Errorf("get balance from store: %w", err)
+	}
+	if balanceTo == nil {
+		logger.Error().Msg("balance to not found")
+		return "", fmt.Errorf("balance to not found")
+	}
+
+	if balanceFrom.GetCurrency().Code != balanceTo.GetCurrency().Code {
+		parsedBalanceFromAmount, _ := money.NewFromString(balanceFrom.Amount)
 		parsedBalanceFromAmount.Mul(money.NewFromInt(4))
 
 		outputMessage := fmt.Sprintf(`⚠️ Different Currency Transfer ⚠️
@@ -155,21 +174,21 @@ Example:
 
 Please enter the current exchange rate:`,
 			balanceFrom.Name,
-			balanceFrom.Currency,
+			balanceFrom.GetCurrency().Symbol,
 			balanceFrom.Amount,
-			balanceFrom.Currency,
+			balanceFrom.GetCurrency().Symbol,
 			balanceTo.Name,
-			balanceTo.Currency,
-			balanceFrom.Currency,
-			balanceTo.Currency,
-			balanceTo.Currency,
-			balanceFrom.Currency,
-			balanceFrom.Currency,
-			balanceTo.Currency,
+			balanceTo.GetCurrency().Symbol,
+			balanceFrom.GetCurrency().Symbol,
+			balanceTo.GetCurrency().Symbol,
+			balanceTo.GetCurrency().Symbol,
+			balanceFrom.GetCurrency().Symbol,
+			balanceFrom.GetCurrency().Symbol,
+			balanceTo.GetCurrency().Symbol,
 			balanceFrom.Amount,
-			balanceFrom.Currency,
+			balanceFrom.GetCurrency().Symbol,
 			parsedBalanceFromAmount.StringFixed(),
-			balanceTo.Currency,
+			balanceTo.GetCurrency().Symbol,
 		)
 		return models.EnterCurrencyExchangeRateFlowStep, h.showCancelButton(opts.message.GetChatID(), outputMessage)
 	}
@@ -177,7 +196,7 @@ Please enter the current exchange rate:`,
 	return models.EnterOperationAmountFlowStep, h.showCancelButton(opts.message.GetChatID(), "Enter operation amount:")
 }
 
-func (h handlerService) handleEnterCurrencyExchangeRateFlowStep(_ context.Context, opts flowProcessingOptions) (models.FlowStep, error) {
+func (h handlerService) handleEnterCurrencyExchangeRateFlowStep(ctx context.Context, opts flowProcessingOptions) (models.FlowStep, error) {
 	logger := h.logger.With().Str("name", "handlerService.handleEnterCurrencyExchangeRateFlowStep").Logger()
 	logger.Debug().Any("opts", opts).Msg("got args")
 
@@ -190,9 +209,22 @@ func (h handlerService) handleEnterCurrencyExchangeRateFlowStep(_ context.Contex
 	opts.stateMetaData[exchangeRateMetadataKey] = exchangeRate.String()
 	logger.Debug().Any("exchangeRate", exchangeRate).Msg("parsed exchange rate")
 
+	balanceFrom, err := h.stores.Balance.Get(ctx, GetBalanceFilter{
+		Name:            opts.stateMetaData[balanceFromMetadataKey].(string),
+		PreloadCurrency: true,
+	})
+	if err != nil {
+		logger.Error().Err(err).Msg("get balance from store")
+		return "", fmt.Errorf("get balance form store: %w", err)
+	}
+	if balanceFrom == nil {
+		logger.Error().Err(err).Msg("balance from not found")
+		return "", fmt.Errorf("balance from not found")
+	}
+
 	return models.EnterOperationAmountFlowStep, h.apis.Messenger.SendMessage(opts.message.GetChatID(), fmt.Sprintf(
 		"Enter operation amount(currency: %s): ",
-		opts.user.GetBalance(opts.stateMetaData[balanceFromMetadataKey].(string)).Currency,
+		balanceFrom.GetCurrency().Name,
 	))
 }
 
@@ -470,10 +502,17 @@ func (h handlerService) handleChooseTimePeriodForOperationsHistoryFlowStep(ctx c
 	logger := h.logger.With().Str("name", "handlerService.handleChooseTimePeriodForOperationsHistoryFlowStep").Logger()
 	logger.Debug().Any("opts", opts).Msg("got args")
 
-	balance := opts.user.GetBalance(opts.stateMetaData[balanceNameMetadataKey].(string))
+	balance, err := h.stores.Balance.Get(ctx, GetBalanceFilter{
+		Name:            opts.stateMetaData[balanceNameMetadataKey].(string),
+		PreloadCurrency: true,
+	})
+	if err != nil {
+		logger.Error().Err(err).Msg("get balance from store")
+		return "", fmt.Errorf("get balance from store: %w", err)
+	}
 	if balance == nil {
-		logger.Info().Msg("balance not found")
-		return "", ErrBalanceNotFound
+		logger.Error().Msg("balance not found")
+		return "", fmt.Errorf("balance not found")
 	}
 	logger.Debug().Any("balance", balance).Msg("got balance")
 
@@ -491,12 +530,12 @@ func (h handlerService) handleChooseTimePeriodForOperationsHistoryFlowStep(ctx c
 		return models.EndFlowStep, ErrOperationsNotFound
 	}
 
-	outputMessage := fmt.Sprintf("Balance Amount: %v%s\nPeriod: %v\n", balance.Amount, balance.Currency, *creationPeriod)
+	outputMessage := fmt.Sprintf("Balance Amount: %v%s\nPeriod: %v\n", balance.Amount, balance.GetCurrency().Symbol, *creationPeriod)
 
 	for _, o := range operations {
 		outputMessage += fmt.Sprintf(
 			"\nOperation: %s\nDescription: %s\nCategory: %s\nAmount: %v%s\nCreation date: %v\n- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -",
-			o.Type, o.Description, o.CategoryID, o.Amount, balance.Currency, o.CreatedAt.Format(time.ANSIC),
+			o.Type, o.Description, o.CategoryID, o.Amount, balance.GetCurrency().Symbol, o.CreatedAt.Format(time.ANSIC),
 		)
 	}
 
