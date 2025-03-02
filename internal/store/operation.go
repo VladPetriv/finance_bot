@@ -68,8 +68,16 @@ func applyListOperationsFilter(filter service.ListOperationsFilter) (*bson.M, *o
 		stmt["balanceId"] = filter.BalanceID
 	}
 
-	if filter.CreationPeriod != nil {
-		startDate, endDate := calculateTimeRange(*filter.CreationPeriod)
+	if filter.CreationPeriod != "" {
+		startDate, endDate := filter.CreationPeriod.CalculateTimeRange()
+		stmt["createdAt"] = bson.M{
+			"$gte": startDate,
+			"$lte": endDate,
+		}
+	}
+
+	if filter.Month != "" {
+		startDate, endDate := filter.Month.GetTimeRange(time.Now())
 		stmt["createdAt"] = bson.M{
 			"$gte": startDate,
 			"$lte": endDate,
@@ -92,27 +100,6 @@ func applyListOperationsFilter(filter service.ListOperationsFilter) (*bson.M, *o
 	}
 
 	return &stmt, findOptions
-}
-
-// calculateTimeRange is used to calculate start and end times based on a given period
-func calculateTimeRange(period models.CreationPeriod) (startTime, endTime time.Time) {
-	now := time.Now()
-	endTime = now
-
-	switch period {
-	case models.CreationPeriodDay:
-		startTime = now.Add(-24 * time.Hour)
-	case models.CreationPeriodWeek:
-		startTime = now.Add(-7 * 24 * time.Hour)
-	case models.CreationPeriodMonth:
-		startTime = now.Add(-30 * 24 * time.Hour)
-	case models.CreationPeriodYear:
-		startTime = now.Add(-365 * 24 * time.Hour)
-	case models.CreationPeriodCurrentMonth:
-		startTime = time.Date(now.Year(), now.Month(), 1, 0, 0, 0, 0, time.Local)
-	}
-
-	return startTime, endTime
 }
 
 func (o operationStore) Get(ctx context.Context, filter service.GetOperationFilter) (*models.Operation, error) {
