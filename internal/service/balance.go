@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/VladPetriv/finance_bot/internal/models"
 	"github.com/VladPetriv/finance_bot/pkg/errs"
@@ -84,9 +85,26 @@ func (h handlerService) handleEnterBalanceNameFlowStep(ctx context.Context, opts
 	return models.EnterBalanceAmountFlowStep, h.apis.Messenger.SendMessage(opts.message.GetChatID(), "Enter balance amount:")
 }
 
+const maxMonthsPerRow = 3
+
 func (h handlerService) handleGetBalanceFlowStep(ctx context.Context, opts flowProcessingOptions) (models.FlowStep, error) {
 	logger := h.logger.With().Str("name", "handlerService.handleGetBalanceFlowStep").Logger()
 	logger.Debug().Any("opts", opts).Msg("got args")
+
+	availableMonths := models.Months[:time.Now().Month()]
+
+	return models.ChooseMonthBalanceStatisticsFlowStep, h.apis.Messenger.SendWithKeyboard(SendWithKeyboardOptions{
+		ChatID:   opts.message.GetChatID(),
+		Message:  "Please select a month to view your balance statistics:",
+		Keyboard: getKeyboardRows(availableMonths, maxMonthsPerRow, true),
+	})
+}
+
+func (h handlerService) handleChooseMonthBalanceStatisticsFlowStep(ctx context.Context, opts flowProcessingOptions) (models.FlowStep, error) {
+	logger := h.logger.With().Str("name", "handlerService.handleChooseMonthBalanceStatisticsFlowStep").Logger()
+	logger.Debug().Any("opts", opts).Msg("got args")
+
+	opts.stateMetaData[monthForBalanceStatisticsKey] = opts.message.GetText()
 
 	return models.ChooseBalanceFlowStep, h.apis.Messenger.SendWithKeyboard(SendWithKeyboardOptions{
 		ChatID:   opts.message.GetChatID(),
@@ -124,9 +142,11 @@ func (h handlerService) handleChooseBalanceFlowStepForGetBalance(ctx context.Con
 		return "", ErrCategoriesNotFound
 	}
 
+	monthForBalanceStatistics := models.Month(opts.stateMetaData[monthForBalanceStatisticsKey].(string))
+
 	operations, err := h.stores.Operation.List(ctx, ListOperationsFilter{
-		BalanceID:      balance.ID,
-		CreationPeriod: &models.CreationPeriodCurrentMonth,
+		BalanceID: balance.ID,
+		Month:     monthForBalanceStatistics,
 	})
 	if err != nil {
 		logger.Error().Err(err).Msg("list operations from store")
@@ -135,7 +155,7 @@ func (h handlerService) handleChooseBalanceFlowStepForGetBalance(ctx context.Con
 
 	outputMessage, err := models.
 		NewStatisticsMessageBuilder(balance, operations, categories).
-		Build()
+		Build(monthForBalanceStatistics)
 	if err != nil {
 		logger.Error().Err(err).Msg("build statistic message")
 		return "", fmt.Errorf("build statistic message: %w", err)

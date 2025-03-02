@@ -530,7 +530,7 @@ func (h handlerService) handleChooseTimePeriodForOperationsHistoryFlowStep(ctx c
 		return models.EndFlowStep, ErrOperationsNotFound
 	}
 
-	outputMessage := fmt.Sprintf("Balance Amount: %v%s\nPeriod: %v\n", balance.Amount, balance.GetCurrency().Symbol, *creationPeriod)
+	outputMessage := fmt.Sprintf("Balance Amount: %v%s\nPeriod: %v\n", balance.Amount, balance.GetCurrency().Symbol, creationPeriod)
 
 	for _, o := range operations {
 		outputMessage += fmt.Sprintf(

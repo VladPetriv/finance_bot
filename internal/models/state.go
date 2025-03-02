@@ -205,6 +205,8 @@ const (
 	UpdateBalanceFlowStep FlowStep = "update_balance"
 	// GetBalanceFlowStep represents the step for getting a balance
 	GetBalanceFlowStep FlowStep = "get_balance"
+	// ChooseMonthBalanceStatisticsFlowStep represents the step for choosing month for balance statistics
+	ChooseMonthBalanceStatisticsFlowStep FlowStep = "choose_month_for_balance_statistics"
 	// DeleteBalanceFlowStep represents the step for deleting a balance
 	DeleteBalanceFlowStep FlowStep = "delete_balance"
 	// ChooseBalanceFlowStep represents the step for choosing balance that will be used for an action

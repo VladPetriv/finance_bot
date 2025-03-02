@@ -31,7 +31,7 @@ func NewStatisticsMessageBuilder(balance *Balance, operations []Operation, categ
 
 // Build generates a formatted message string containing financial statistics.
 // It includes balance information, period details, and breakdowns of operations by type and category.
-func (b *StatisticsMessageBuilder) Build() (string, error) {
+func (b *StatisticsMessageBuilder) Build(month Month) (string, error) {
 	stats, err := calculateOperationsStatistics(b.operations)
 	if err != nil {
 		return "", fmt.Errorf("error calculating statistics: %w", err)
@@ -39,7 +39,7 @@ func (b *StatisticsMessageBuilder) Build() (string, error) {
 
 	return b.
 		addHeader().
-		addPeriod().
+		addPeriod(month).
 		addOperationsAndCategoriesStatistics(stats).buffer.String(), nil
 }
 
@@ -55,8 +55,8 @@ func (b *StatisticsMessageBuilder) addHeader() *StatisticsMessageBuilder {
 	return b
 }
 
-func (b *StatisticsMessageBuilder) addPeriod() *StatisticsMessageBuilder {
-	b.buffer.WriteString(formatPeriod())
+func (b *StatisticsMessageBuilder) addPeriod(month Month) *StatisticsMessageBuilder {
+	b.buffer.WriteString(formatPeriod(month))
 	b.buffer.WriteString(`
 
 `)
@@ -158,12 +158,12 @@ func formatInlineCode(s string) string {
 
 const dateFormat = "02 Jan 2006"
 
-func formatPeriod() string {
-	now := time.Now()
-	startOfMonth := time.Date(now.Year(), now.Month(), 1, 0, 0, 0, 0, time.UTC)
-
+func formatPeriod(month Month) string {
 	template := "📅 Period: _%s - %s_"
-	return fmt.Sprintf(template, startOfMonth.Format(dateFormat), now.Format(dateFormat))
+
+	startTime, endTime := month.GetTimeRange(time.Now())
+
+	return fmt.Sprintf(template, startTime.Format(dateFormat), endTime.Format(dateFormat))
 }
 
 type operationsStatistics struct {

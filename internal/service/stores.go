@@ -86,7 +86,8 @@ type GetOperationFilter struct {
 // ListOperationsFilter represents filters for list operations from store.
 type ListOperationsFilter struct {
 	BalanceID           string
-	CreationPeriod      *models.CreationPeriod
+	CreationPeriod      models.CreationPeriod
+	Month               models.Month
 	Limit               int
 	CreatedAtLessThan   time.Time
 	SortByCreatedAtDesc bool

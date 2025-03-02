@@ -434,7 +434,7 @@ func TestStatisticsMessageBuilder_Build(t *testing.T) {
 			t.Parallel()
 
 			builder := NewStatisticsMessageBuilder(tc.args.balance, tc.args.operations, tc.args.categories)
-			message, err := builder.Build()
+			message, err := builder.Build(convertToMonth(int(time.Now().Month())))
 
 			if tc.expected.err {
 				assert.Error(t, err)
@@ -444,5 +444,36 @@ func TestStatisticsMessageBuilder_Build(t *testing.T) {
 			assert.NoError(t, err)
 			assert.Equal(t, tc.expected.message, message)
 		})
+	}
+}
+
+func convertToMonth(monthIndex int) Month {
+	switch monthIndex {
+	case 1:
+		return MonthJanuary
+	case 2:
+		return MonthFebruary
+	case 3:
+		return MonthMarch
+	case 4:
+		return MonthApril
+	case 5:
+		return MonthMay
+	case 6:
+		return MonthJune
+	case 7:
+		return MonthJuly
+	case 8:
+		return MonthAugust
+	case 9:
+		return MonthSeptember
+	case 10:
+		return MonthOctober
+	case 11:
+		return MonthNovember
+	case 12:
+		return MonthDecember
+	default:
+		return MonthJanuary
 	}
 }
