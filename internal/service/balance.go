@@ -284,7 +284,6 @@ func (h handlerService) handleChooseUpdateBalanceOptionFlowStep(ctx context.Cont
 	default:
 		return "", fmt.Errorf("received unknown update balance option: %s", opts.message.GetText())
 	}
-
 }
 
 func (h handlerService) handleEnterBalanceNameFlowStepForUpdate(ctx context.Context, opts flowProcessingOptions) (models.FlowStep, error) {
