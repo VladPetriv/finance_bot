@@ -16,6 +16,12 @@ const (
 	BotCreateBalanceCommand string = "Create Balance 💰"
 	// BotUpdateBalanceCommand represents the command to update balance
 	BotUpdateBalanceCommand string = "Update Balance 📈"
+	// BotUpdateBalanceNameCommand represents the command to update balance name
+	BotUpdateBalanceNameCommand string = "Update Balance Name 📝"
+	// BotUpdateBalanceAmountCommand represents the command to update balance amount
+	BotUpdateBalanceAmountCommand string = "Update Balance Amount 💰"
+	// BotUpdateBalanceCurrencyCommand represents the command to update balance currency
+	BotUpdateBalanceCurrencyCommand string = "Update Balance Currency 💵"
 	// BotGetBalanceCommand represents the command to get information about specific balance
 	BotGetBalanceCommand string = "Get Balance Info 📊"
 	// BotDeleteBalanceCommand represents the command to delete a balance
@@ -64,6 +70,7 @@ var AvailableCommands = []string{
 	BotStartCommand,
 	BotBalanceCommand, BotCategoryCommand, BotOperationCommand,
 	BotGetBalanceCommand, BotCreateBalanceCommand, BotUpdateBalanceCommand, BotDeleteBalanceCommand,
+	BotUpdateBalanceNameCommand, BotUpdateBalanceAmountCommand, BotUpdateBalanceCurrencyCommand,
 	BotCreateCategoryCommand, BotListCategoriesCommand, BotUpdateCategoryCommand, BotDeleteCategoryCommand,
 	BotCreateOperationCommand, BotCreateIncomingOperationCommand, BotCreateSpendingOperationCommand, BotGetOperationsHistory, BotCreateTransferOperationCommand,
 	BotDeleteOperationCommand, BotShowMoreOperationsCommand, BotUpdateOperationCommand, BotUpdateOperationAmountCommand, BotUpdateOperationDescriptionCommand,
