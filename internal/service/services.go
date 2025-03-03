@@ -210,6 +210,7 @@ const (
 	currentBalanceNameMetadataKey     = "current_balance_name"
 	currentBalanceCurrencyMetadataKey = "current_balance_currency"
 	currentBalanceAmountMetadataKey   = "current_balance_amount"
+	monthForBalanceStatisticsKey      = "month_for_balance_statistics"
 
 	// Category related keys
 	previousCategoryTitleMetadataKey = "previous_category_title"

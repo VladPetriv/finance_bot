@@ -138,7 +138,7 @@ func TestOperation_List(t *testing.T) {
 			input: input{
 				filter: service.ListOperationsFilter{
 					BalanceID:      "id1",
-					CreationPeriod: &models.CreationPeriodDay,
+					CreationPeriod: models.CreationPeriodDay,
 				},
 			},
 			expected: []models.Operation{
@@ -156,7 +156,7 @@ func TestOperation_List(t *testing.T) {
 			input: input{
 				filter: service.ListOperationsFilter{
 					BalanceID:      "id2",
-					CreationPeriod: &models.CreationPeriodWeek,
+					CreationPeriod: models.CreationPeriodWeek,
 				},
 			},
 			expected: []models.Operation{
@@ -175,7 +175,7 @@ func TestOperation_List(t *testing.T) {
 			input: input{
 				filter: service.ListOperationsFilter{
 					BalanceID:      "id3",
-					CreationPeriod: &models.CreationPeriodMonth,
+					CreationPeriod: models.CreationPeriodMonth,
 				},
 			},
 			expected: []models.Operation{
@@ -194,7 +194,7 @@ func TestOperation_List(t *testing.T) {
 			input: input{
 				filter: service.ListOperationsFilter{
 					BalanceID:      "id4",
-					CreationPeriod: &models.CreationPeriodYear,
+					CreationPeriod: models.CreationPeriodYear,
 				},
 			},
 			expected: []models.Operation{
@@ -226,7 +226,7 @@ func TestOperation_List(t *testing.T) {
 			input: input{
 				filter: service.ListOperationsFilter{
 					BalanceID:      "not_found",
-					CreationPeriod: &models.CreationPeriodYear,
+					CreationPeriod: models.CreationPeriodYear,
 				},
 			},
 			expected: nil,
@@ -551,7 +551,7 @@ func TestOperation_Count(t *testing.T) {
 			input: input{
 				filter: service.ListOperationsFilter{
 					BalanceID:      "count_test_id1",
-					CreationPeriod: &models.CreationPeriodDay,
+					CreationPeriod: models.CreationPeriodDay,
 				},
 			},
 			expected: 2,
@@ -566,7 +566,7 @@ func TestOperation_Count(t *testing.T) {
 			input: input{
 				filter: service.ListOperationsFilter{
 					BalanceID:      "count_test_id2",
-					CreationPeriod: &models.CreationPeriodWeek,
+					CreationPeriod: models.CreationPeriodWeek,
 				},
 			},
 			expected: 2,
@@ -592,7 +592,7 @@ func TestOperation_Count(t *testing.T) {
 			input: input{
 				filter: service.ListOperationsFilter{
 					BalanceID:      "count_test_not_found",
-					CreationPeriod: &models.CreationPeriodYear,
+					CreationPeriod: models.CreationPeriodYear,
 				},
 			},
 			expected: 0,
