@@ -246,15 +246,8 @@ func (h handlerService) handleChooseBalanceFlowStepForUpdate(ctx context.Context
 
 	opts.stateMetaData[balanceIDMetadataKey] = balance.ID
 	opts.stateMetaData[currentBalanceNameMetadataKey] = balance.Name
-	opts.stateMetaData[currentBalanceCurrencyMetadataKey] = balance.CurrencyID
-	opts.stateMetaData[currentBalanceAmountMetadataKey] = balance.Amount
 
-	err := h.apis.Messenger.SendWithKeyboard(SendWithKeyboardOptions{
-		ChatID: opts.message.GetChatID(),
-		Message: `Send '-' if you want to keep the current balance value. Otherwise, send your new value.
-Please note: this symbol can be used for any balance value you don't want to change.`,
-		Keyboard: rowKeyboardWithCancelButtonOnly,
-	})
+	err := h.showCancelButton(opts.message.GetChatID(), "")
 	if err != nil {
 		logger.Error().Err(err).Msg("send message with keyboard")
 		return "", fmt.Errorf("send message with keyboard: %w", err)
@@ -264,28 +257,16 @@ Please note: this symbol can be used for any balance value you don't want to cha
 	return models.EnterBalanceNameFlowStep, h.apis.Messenger.SendMessage(opts.message.GetChatID(), outputMessage)
 }
 
-const usePreviousModelValueFlag = "-"
-
 func (h handlerService) handleEnterBalanceNameFlowStepForUpdate(ctx context.Context, opts flowProcessingOptions) (models.FlowStep, error) {
 	logger := h.logger.With().Str("name", "handlerService.handleEnterBalanceNameFlowStepForUpdate").Logger()
 	logger.Debug().Any("opts", opts).Msg("got args")
 
 	text := opts.message.GetText()
-	currentBalanceName, currentBalanceNameExistsInMetadata := opts.stateMetaData[currentBalanceNameMetadataKey].(string)
+	currentBalanceName := opts.stateMetaData[currentBalanceNameMetadataKey].(string)
 
-	switch text == usePreviousModelValueFlag {
-	case true:
-		if currentBalanceNameExistsInMetadata {
-			text = currentBalanceName
-			break
-		}
-		logger.Warn().Msg("current balance name does not exists in state metadata")
+	shouldNotCheckForBalanceAlreadyExistsInStore := currentBalanceName != "" && text == currentBalanceName
 
-	case false:
-		if currentBalanceName != "" && text == currentBalanceName {
-			break
-		}
-
+	if !shouldNotCheckForBalanceAlreadyExistsInStore {
 		balance, err := h.stores.Balance.Get(ctx, GetBalanceFilter{
 			Name:   text,
 			UserID: opts.user.ID,
@@ -322,18 +303,10 @@ func (h handlerService) handleEnterBalanceAmountFlowStepForUpdate(ctx context.Co
 	logger := h.logger.With().Str("name", "handlerService.handleEnterBalanceAmountFlowStepForUpdate").Logger()
 	logger.Debug().Any("opts", opts).Msg("got args")
 
-	text := opts.message.GetText()
-	if text == usePreviousModelValueFlag {
-		currentBalanceAmount, ok := opts.stateMetaData[currentBalanceAmountMetadataKey].(string)
-		if ok {
-			text = currentBalanceAmount
-		}
-	}
-
 	_, err := h.updateBalance(ctx, updateBalanceOptions{
 		balanceID: opts.stateMetaData[balanceIDMetadataKey].(string),
 		step:      models.EnterBalanceAmountFlowStep,
-		data:      text,
+		data:      opts.message.GetText(),
 	})
 	if err != nil {
 		if errs.IsExpected(err) {
@@ -362,32 +335,22 @@ func (h handlerService) handleEnterBalanceCurrencyFlowStepForUpdate(ctx context.
 	logger := h.logger.With().Str("name", "handlerService.handleEnterBalanceCurrencyFlowStepForUpdate").Logger()
 	logger.Debug().Any("opts", opts).Msg("got args")
 
-	text := opts.message.GetText()
-
-	switch text {
-	case usePreviousModelValueFlag:
-		currentBalanceCurrency, ok := opts.stateMetaData[currentBalanceCurrencyMetadataKey].(string)
-		if ok {
-			text = currentBalanceCurrency
-		}
-	default:
-		exists, err := h.stores.Currency.Exists(ctx, ExistsCurrencyFilter{
-			ID: text,
-		})
-		if err != nil {
-			logger.Error().Err(err).Msg("check if currency exists in store")
-			return "", fmt.Errorf("check if currency exists in store: %w", err)
-		}
-		if !exists {
-			logger.Error().Msg("currency not found")
-			return models.EnterBalanceCurrencyFlowStep, ErrCurrencyNotFound
-		}
+	exists, err := h.stores.Currency.Exists(ctx, ExistsCurrencyFilter{
+		ID: opts.message.GetText(),
+	})
+	if err != nil {
+		logger.Error().Err(err).Msg("check if currency exists in store")
+		return "", fmt.Errorf("check if currency exists in store: %w", err)
+	}
+	if !exists {
+		logger.Error().Msg("currency not found")
+		return models.EnterBalanceCurrencyFlowStep, ErrCurrencyNotFound
 	}
 
 	balance, err := h.updateBalance(ctx, updateBalanceOptions{
 		balanceID: opts.stateMetaData[balanceIDMetadataKey].(string),
 		step:      models.EnterBalanceCurrencyFlowStep,
-		data:      text,
+		data:      opts.message.GetText(),
 	})
 	if err != nil {
 		if errs.IsExpected(err) {
