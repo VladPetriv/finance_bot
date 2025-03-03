@@ -145,6 +145,7 @@ var (
 			},
 		},
 	}
+
 	updateOperationOptionsKeyboardForTransferOperations = []InlineKeyboardRow{
 		{
 			Buttons: []InlineKeyboardButton{
@@ -157,6 +158,30 @@ var (
 			Buttons: []InlineKeyboardButton{
 				{
 					Text: models.BotUpdateOperationDateCommand,
+				},
+			},
+		},
+	}
+
+	updateBalanceOptionsKeyboard = []InlineKeyboardRow{
+		{
+			Buttons: []InlineKeyboardButton{
+				{
+					Text: models.BotUpdateBalanceNameCommand,
+				},
+			},
+		},
+		{
+			Buttons: []InlineKeyboardButton{
+				{
+					Text: models.BotUpdateBalanceAmountCommand,
+				},
+			},
+		},
+		{
+			Buttons: []InlineKeyboardButton{
+				{
+					Text: models.BotUpdateBalanceCurrencyCommand,
 				},
 			},
 		},

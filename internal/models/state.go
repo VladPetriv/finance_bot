@@ -93,6 +93,20 @@ func (s *State) IsCommandAllowedDuringFlow(command string) bool {
 		default:
 			return false
 		}
+
+	case UpdateBalanceFlow:
+		switch s.GetCurrentStep() {
+		case ChooseUpdateBalanceOptionFlowStep:
+			return slices.Contains(
+				[]string{
+					BotUpdateBalanceNameCommand, BotUpdateBalanceAmountCommand, BotUpdateBalanceCurrencyCommand,
+				},
+				command,
+			)
+		default:
+			return false
+		}
+
 	default:
 		return false
 	}
@@ -203,6 +217,8 @@ const (
 	CreateBalanceFlowStep FlowStep = "create_balance"
 	// UpdateBalanceFlowStep represents the step for updating a balance
 	UpdateBalanceFlowStep FlowStep = "update_balance"
+	// ChooseUpdateBalanceOptionFlowStep represents the step for choosing update balance option
+	ChooseUpdateBalanceOptionFlowStep FlowStep = "choose_update_balance_option"
 	// GetBalanceFlowStep represents the step for getting a balance
 	GetBalanceFlowStep FlowStep = "get_balance"
 	// ChooseMonthBalanceStatisticsFlowStep represents the step for choosing month for balance statistics
