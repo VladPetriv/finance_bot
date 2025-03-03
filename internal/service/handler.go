@@ -45,15 +45,16 @@ func (h *handlerService) RegisterHandlers() {
 	h.flowWithFlowStepsHandlers = map[models.Flow]map[models.FlowStep]flowStepHandlerFunc{
 		// Flows with balances
 		models.StartFlow: {
-			models.CreateInitialBalanceFlowStep: h.handleCreateBalanceFlowStep,
-			models.EnterBalanceAmountFlowStep:   h.handleEnterBalanceAmountFlowStep,
-			models.EnterBalanceCurrencyFlowStep: h.handleEnterBalanceCurrencyFlowStep,
+			models.CreateInitialBalanceFlowStep: h.handleCreateInitialBalanceFlowStep,
+			// NOTE: We're using -ForUpdate methods, since the balance after first step is already created in the store.
+			models.EnterBalanceAmountFlowStep:   h.handleEnterBalanceAmountFlowStepForUpdate,
+			models.EnterBalanceCurrencyFlowStep: h.handleEnterBalanceCurrencyFlowStepForUpdate,
 		},
 		models.CreateBalanceFlow: {
 			models.CreateBalanceFlowStep:        h.handleCreateBalanceFlowStep,
-			models.EnterBalanceNameFlowStep:     h.handleEnterBalanceNameFlowStep,
-			models.EnterBalanceAmountFlowStep:   h.handleEnterBalanceAmountFlowStep,
-			models.EnterBalanceCurrencyFlowStep: h.handleEnterBalanceCurrencyFlowStep,
+			models.EnterBalanceNameFlowStep:     h.handleEnterBalanceNameFlowStepForCreate,
+			models.EnterBalanceAmountFlowStep:   h.handleEnterBalanceAmountFlowStepForCreate,
+			models.EnterBalanceCurrencyFlowStep: h.handleEnterBalanceCurrencyFlowStepForCreate,
 		},
 		models.GetBalanceFlow: {
 			models.GetBalanceFlowStep:    h.handleGetBalanceFlowStep,
@@ -63,8 +64,8 @@ func (h *handlerService) RegisterHandlers() {
 			models.UpdateBalanceFlowStep:        h.handleUpdateBalanceFlowStep,
 			models.ChooseBalanceFlowStep:        h.handleChooseBalanceFlowStepForUpdate,
 			models.EnterBalanceNameFlowStep:     h.handleEnterBalanceNameFlowStepForUpdate,
-			models.EnterBalanceAmountFlowStep:   h.handleEnterBalanceAmountFlowStep,
-			models.EnterBalanceCurrencyFlowStep: h.handleEnterBalanceCurrencyFlowStep,
+			models.EnterBalanceAmountFlowStep:   h.handleEnterBalanceAmountFlowStepForUpdate,
+			models.EnterBalanceCurrencyFlowStep: h.handleEnterBalanceCurrencyFlowStepForUpdate,
 		},
 		models.DeleteBalanceFlow: {
 			models.DeleteBalanceFlowStep:          h.handleDeleteBalanceFlowStep,
