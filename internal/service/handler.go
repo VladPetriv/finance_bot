@@ -472,3 +472,36 @@ func (h handlerService) sendMessageWithDefaultKeyboard(chatID int, message strin
 		Keyboard: defaultKeyboardRows,
 	})
 }
+
+const currenciesPerKeyboardRow = 3
+
+func (h handlerService) getCurrenciesKeyboardForBalance(ctx context.Context) ([]InlineKeyboardRow, error) {
+	logger := h.logger.With().Str("name", "handlerService.getCurrenciesKeyboardForBalance").Logger()
+
+	currencies, err := h.stores.Currency.List(ctx)
+	if err != nil {
+		logger.Error().Err(err).Msg("list currencies from store")
+		return nil, fmt.Errorf("list currencies from store: %w", err)
+	}
+	if len(currencies) == 0 {
+		logger.Info().Msg("currencies not found")
+		return nil, fmt.Errorf("no currencies found")
+	}
+
+	currenciesKeyboard := make([]InlineKeyboardRow, 0)
+
+	var currentRow InlineKeyboardRow
+	for index, currency := range currencies {
+		currentRow.Buttons = append(currentRow.Buttons, InlineKeyboardButton{
+			Text: currency.Name,
+			Data: currency.ID,
+		})
+
+		if len(currentRow.Buttons) == currenciesPerKeyboardRow || index == len(currencies)-1 {
+			currenciesKeyboard = append(currenciesKeyboard, currentRow)
+			currentRow = InlineKeyboardRow{}
+		}
+	}
+
+	return currenciesKeyboard, nil
+}
