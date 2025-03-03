@@ -45,15 +45,16 @@ func (h *handlerService) RegisterHandlers() {
 	h.flowWithFlowStepsHandlers = map[models.Flow]map[models.FlowStep]flowStepHandlerFunc{
 		// Flows with balances
 		models.StartFlow: {
-			models.CreateInitialBalanceFlowStep: h.handleCreateBalanceFlowStep,
-			models.EnterBalanceAmountFlowStep:   h.handleEnterBalanceAmountFlowStep,
-			models.EnterBalanceCurrencyFlowStep: h.handleEnterBalanceCurrencyFlowStep,
+			models.CreateInitialBalanceFlowStep: h.handleCreateInitialBalanceFlowStep,
+			// NOTE: We're using -ForUpdate methods, since the balance after first step is already created in the store.
+			models.EnterBalanceAmountFlowStep:   h.handleEnterBalanceAmountFlowStepForUpdate,
+			models.EnterBalanceCurrencyFlowStep: h.handleEnterBalanceCurrencyFlowStepForUpdate,
 		},
 		models.CreateBalanceFlow: {
 			models.CreateBalanceFlowStep:        h.handleCreateBalanceFlowStep,
-			models.EnterBalanceNameFlowStep:     h.handleEnterBalanceNameFlowStep,
-			models.EnterBalanceAmountFlowStep:   h.handleEnterBalanceAmountFlowStep,
-			models.EnterBalanceCurrencyFlowStep: h.handleEnterBalanceCurrencyFlowStep,
+			models.EnterBalanceNameFlowStep:     h.handleEnterBalanceNameFlowStepForCreate,
+			models.EnterBalanceAmountFlowStep:   h.handleEnterBalanceAmountFlowStepForCreate,
+			models.EnterBalanceCurrencyFlowStep: h.handleEnterBalanceCurrencyFlowStepForCreate,
 		},
 		models.GetBalanceFlow: {
 			models.GetBalanceFlowStep:                   h.handleGetBalanceFlowStep,
@@ -64,8 +65,8 @@ func (h *handlerService) RegisterHandlers() {
 			models.UpdateBalanceFlowStep:        h.handleUpdateBalanceFlowStep,
 			models.ChooseBalanceFlowStep:        h.handleChooseBalanceFlowStepForUpdate,
 			models.EnterBalanceNameFlowStep:     h.handleEnterBalanceNameFlowStepForUpdate,
-			models.EnterBalanceAmountFlowStep:   h.handleEnterBalanceAmountFlowStep,
-			models.EnterBalanceCurrencyFlowStep: h.handleEnterBalanceCurrencyFlowStep,
+			models.EnterBalanceAmountFlowStep:   h.handleEnterBalanceAmountFlowStepForUpdate,
+			models.EnterBalanceCurrencyFlowStep: h.handleEnterBalanceCurrencyFlowStepForUpdate,
 		},
 		models.DeleteBalanceFlow: {
 			models.DeleteBalanceFlowStep:          h.handleDeleteBalanceFlowStep,
@@ -472,4 +473,37 @@ func (h handlerService) sendMessageWithDefaultKeyboard(chatID int, message strin
 		Message:  message,
 		Keyboard: defaultKeyboardRows,
 	})
+}
+
+const currenciesPerKeyboardRow = 3
+
+func (h handlerService) getCurrenciesKeyboardForBalance(ctx context.Context) ([]InlineKeyboardRow, error) {
+	logger := h.logger.With().Str("name", "handlerService.getCurrenciesKeyboardForBalance").Logger()
+
+	currencies, err := h.stores.Currency.List(ctx)
+	if err != nil {
+		logger.Error().Err(err).Msg("list currencies from store")
+		return nil, fmt.Errorf("list currencies from store: %w", err)
+	}
+	if len(currencies) == 0 {
+		logger.Info().Msg("currencies not found")
+		return nil, fmt.Errorf("no currencies found")
+	}
+
+	currenciesKeyboard := make([]InlineKeyboardRow, 0)
+
+	var currentRow InlineKeyboardRow
+	for index, currency := range currencies {
+		currentRow.Buttons = append(currentRow.Buttons, InlineKeyboardButton{
+			Text: currency.Name,
+			Data: currency.ID,
+		})
+
+		if len(currentRow.Buttons) == currenciesPerKeyboardRow || index == len(currencies)-1 {
+			currenciesKeyboard = append(currenciesKeyboard, currentRow)
+			currentRow = InlineKeyboardRow{}
+		}
+	}
+
+	return currenciesKeyboard, nil
 }

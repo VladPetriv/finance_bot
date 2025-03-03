@@ -204,6 +204,7 @@ const (
 	// Balance related keys
 	balanceIDMetadataKey              = "balance_id"
 	balanceNameMetadataKey            = "balance_name"
+	balanceAmountMetadataKey          = "balance_amount"
 	balanceFromMetadataKey            = "balance_from"
 	balanceToMetadataKey              = "balance_to"
 	currentBalanceNameMetadataKey     = "current_balance_name"
