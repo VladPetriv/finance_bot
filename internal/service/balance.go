@@ -183,10 +183,6 @@ func (h handlerService) handleChooseBalanceFlowStepForGetBalance(ctx context.Con
 		logger.Error().Err(err).Msg("list categories from store")
 		return "", fmt.Errorf("list categories from store: %w", err)
 	}
-	if len(categories) == 0 {
-		logger.Error().Msg("no categories found")
-		return "", ErrCategoriesNotFound
-	}
 
 	monthForBalanceStatistics := models.Month(opts.stateMetaData[monthForBalanceStatisticsKey].(string))
 
