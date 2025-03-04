@@ -10,7 +10,7 @@ import (
 // Config represents an app config.
 type Config struct {
 	Telegram       Telegram
-	MongoDB        MongoDB
+	PostgreSQL     PostgreSQL
 	CurrencyBeacon CurrencyBeacon
 	Logger         Logger
 }
@@ -23,10 +23,13 @@ type Telegram struct {
 	UpdatesType  string `env:"FB_TELEGRAM_UPDATES_TYPE" env-default:"polling"`
 }
 
-// MongoDB represents a mongoDB database configuration.
-type MongoDB struct {
-	URI      string `env:"FB_MONGODB_URI" env-default:"mongodb://localhost:27017"`
-	Database string `env:"FB_MONGODB_DATABASE" env-default:"api"`
+// PostgreSQL represents a PostgreSQL database configuration.
+type PostgreSQL struct {
+	User     string `env:"FB_POSTGRESQL_USER"`
+	Password string `env:"FB_POSTGRESQL_PASSWORD"`
+	Database string `env:"FB_POSTGRESQL_DATABASE"`
+	Host     string `env:"FB_POSTGRESQL_HOST" env-default:"localhost"`
+	SSLMode  string `env:"FB_POSTGRESQL_SSL_MODE" env-default:"disable"`
 }
 
 // CurrencyBeacon represents a config for CurrencyBeacon API.
