@@ -9,6 +9,7 @@ require (
 	github.com/google/uuid v1.3.0
 	github.com/ilyakaznacheev/cleanenv v1.4.2
 	github.com/jmoiron/sqlx v1.4.0
+	github.com/lopezator/migrator v0.3.1
 	github.com/mymmrac/telego v0.22.0
 	github.com/rs/zerolog v1.29.0
 	github.com/shopspring/decimal v1.3.1
