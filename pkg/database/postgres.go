@@ -9,7 +9,7 @@ import (
 
 // PostgreSQL is a struct that contains a connection to PostgreSQL.
 type PostgreSQL struct {
-	db *sqlx.DB
+	DB *sqlx.DB
 }
 
 // PostgreSQLOptions is a struct that contains options for connecting to PostgreSQL.
@@ -37,14 +37,14 @@ func NewPostgreSQL(options PostgreSQLOptions) (*PostgreSQL, error) {
 	}
 
 	return &PostgreSQL{
-		db: db,
+		DB: db,
 	}, nil
 }
 
 func (p *PostgreSQL) Ping(ctx context.Context) error {
-	return p.db.PingContext(ctx)
+	return p.DB.PingContext(ctx)
 }
 
 func (p *PostgreSQL) Close() error {
-	return p.db.Close()
+	return p.DB.Close()
 }
