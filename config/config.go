@@ -29,6 +29,7 @@ type PostgreSQL struct {
 	Password string `env:"FB_POSTGRESQL_PASSWORD" env-default:"admin"`
 	Database string `env:"FB_POSTGRESQL_DATABASE" env-default:"finance_bot"`
 	Host     string `env:"FB_POSTGRESQL_HOST" env-default:"localhost"`
+	Port     string `env:"FB_POSTGRESQL_PORT" env-default:"5432"`
 	SSLMode  string `env:"FB_POSTGRESQL_SSL_MODE" env-default:"disable"`
 }
 
