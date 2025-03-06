@@ -7,7 +7,7 @@ func initCategoryTable(db *sql.DB) error {
 		CREATE TABLE categories (
 		    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
 			user_id UUID NOT NULL,
-			title VARCHAR(255) NOT NULL,
+			title VARCHAR(255) NOT NULL
 		);
 
 

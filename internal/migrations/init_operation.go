@@ -15,7 +15,7 @@ func initOperationTable(db *sql.DB) error {
 			description VARCHAR(255) NOT NULL,
 			amount VARCHAR(255) NOT NULL,
 			created_at TIMESTAMP NOT NULL DEFAULT NOW(),
-			updated_at TIMESTAMP NOT NULL DEFAULT NOW(),
+			updated_at TIMESTAMP NOT NULL DEFAULT NOW()
 		);
 
 

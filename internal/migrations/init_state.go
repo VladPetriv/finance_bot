@@ -11,7 +11,7 @@ func initStateTable(db *sql.DB) error {
 			steps JSONB NOT NULL,
 			metadata JSONB NOT NULL,
 			created_at TIMESTAMP NOT NULL DEFAULT NOW(),
-			updated_at TIMESTAMP NOT NULL DEFAULT NOW(),
+			updated_at TIMESTAMP NOT NULL DEFAULT NOW()
 		);
 
 

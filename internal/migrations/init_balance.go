@@ -9,7 +9,7 @@ func initBalanceTable(db *sql.DB) error {
 			user_id UUID NOT NULL,
 			currency_id UUID NOT NULL,
 			name VARCHAR(255) NOT NULL,
-			amount VARCHAR(255) NOT NULL,
+			amount VARCHAR(255) NOT NULL
 		);
 
 
