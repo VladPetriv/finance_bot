@@ -1,7 +1,6 @@
 package database
 
 import (
-	"context"
 	"fmt"
 
 	"github.com/jmoiron/sqlx"
@@ -18,13 +17,14 @@ type PostgreSQLOptions struct {
 	Password string
 	Database string
 	Host     string
+	Port     string
 	SSLMode  string
 }
 
 func (p PostgreSQLOptions) convertToConnectionURL() string {
 	return fmt.Sprintf(
-		"user=%s password=%s dbname=%s host=%s sslmode=%s",
-		p.User, p.Password, p.Database, p.Host, p.SSLMode,
+		"user=%s password=%s dbname=%s host=%s port=%s sslmode=%s",
+		p.User, p.Password, p.Database, p.Host, p.Port, p.SSLMode,
 	)
 }
 
@@ -41,8 +41,8 @@ func NewPostgreSQL(options PostgreSQLOptions) (*PostgreSQL, error) {
 	}, nil
 }
 
-func (p *PostgreSQL) Ping(ctx context.Context) error {
-	return p.DB.PingContext(ctx)
+func (p *PostgreSQL) Ping() error {
+	return p.DB.Ping()
 }
 
 func (p *PostgreSQL) Close() error {

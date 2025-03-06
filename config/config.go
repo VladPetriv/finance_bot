@@ -25,9 +25,9 @@ type Telegram struct {
 
 // PostgreSQL represents a PostgreSQL database configuration.
 type PostgreSQL struct {
-	User     string `env:"FB_POSTGRESQL_USER"`
-	Password string `env:"FB_POSTGRESQL_PASSWORD"`
-	Database string `env:"FB_POSTGRESQL_DATABASE"`
+	User     string `env:"FB_POSTGRESQL_USER" env-default:"root"`
+	Password string `env:"FB_POSTGRESQL_PASSWORD" env-default:"admin"`
+	Database string `env:"FB_POSTGRESQL_DATABASE" env-default:"finance_bot"`
 	Host     string `env:"FB_POSTGRESQL_HOST" env-default:"localhost"`
 	SSLMode  string `env:"FB_POSTGRESQL_SSL_MODE" env-default:"disable"`
 }
