@@ -2,60 +2,49 @@ package store
 
 import (
 	"context"
+	"fmt"
 
+	sq "github.com/Masterminds/squirrel"
 	"github.com/VladPetriv/finance_bot/internal/models"
 	"github.com/VladPetriv/finance_bot/internal/service"
 	"github.com/VladPetriv/finance_bot/pkg/database"
-	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
 type currencyStore struct {
-	*database.MongoDB
+	*database.PostgreSQL
 }
 
-var collectionCurrency = "Currencies"
-
 // NewCurrency creates a new currency store.
-func NewCurrency(db *database.MongoDB) *currencyStore {
+func NewCurrency(db *database.PostgreSQL) *currencyStore {
 	return &currencyStore{
 		db,
 	}
 }
 
 func (c *currencyStore) CreateIfNotExists(ctx context.Context, currency *models.Currency) error {
-	opts := options.Update().SetUpsert(true)
-	filter := bson.M{"code": currency.Code}
-	update := bson.M{
-		"$setOnInsert": currency,
-	}
+	_, err := c.DB.ExecContext(
+		ctx,
+		"INSERT INTO currencies (id, name, code, symbol) VALUES ($1, $2, $3, $4) ON CONFLICT (code) DO NOTHING;",
+		currency.ID, currency.Name, currency.Code, currency.Symbol,
+	)
 
-	_, err := c.DB.Collection(collectionCurrency).UpdateOne(ctx, filter, update, opts)
 	return err
 }
 
 func (c *currencyStore) Count(ctx context.Context) (int, error) {
-	count, err := c.DB.Collection(collectionCurrency).CountDocuments(ctx, bson.M{})
+	var count int
+	err := c.DB.GetContext(ctx, &count, "SELECT COUNT(*) FROM currencies;")
 	if err != nil {
 		return 0, err
 	}
 
-	return int(count), nil
+	return count, nil
 }
 
 func (c *currencyStore) List(ctx context.Context) ([]models.Currency, error) {
-	cursor, err := c.DB.Collection(collectionCurrency).Find(ctx, bson.M{})
-	if err != nil {
-		return nil, err
-	}
-
 	var currencies []models.Currency
-	err = cursor.All(ctx, &currencies)
-	if err != nil {
-		return nil, err
-	}
 
-	err = cursor.Close(ctx)
+	err := c.DB.SelectContext(ctx, &currencies, "SELECT * FROM currencies;")
 	if err != nil {
 		return nil, err
 	}
@@ -64,15 +53,26 @@ func (c *currencyStore) List(ctx context.Context) ([]models.Currency, error) {
 }
 
 func (c *currencyStore) Exists(ctx context.Context, filter service.ExistsCurrencyFilter) (bool, error) {
-	stmt := bson.M{}
+	stmt := sq.
+		StatementBuilder.
+		PlaceholderFormat(sq.Dollar).
+		Select("1").
+		From("currencies")
+
 	if filter.ID != "" {
-		stmt["_id"] = filter.ID
+		stmt = stmt.Where(sq.Eq{"id": filter.ID})
 	}
 
-	count, err := c.DB.Collection(collectionCurrency).CountDocuments(ctx, stmt)
+	query, args, err := stmt.ToSql()
 	if err != nil {
 		return false, err
 	}
 
-	return count > 0, nil
+	var exists bool
+	err = c.DB.GetContext(ctx, &exists, fmt.Sprintf("SELECT EXISTS (%s);", query), args...)
+	if err != nil {
+		return false, err
+	}
+
+	return exists, nil
 }
