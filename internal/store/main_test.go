@@ -8,6 +8,7 @@ import (
 	"github.com/VladPetriv/finance_bot/internal/migrations"
 	"github.com/VladPetriv/finance_bot/pkg/database"
 	"github.com/VladPetriv/finance_bot/pkg/logger"
+	"github.com/lib/pq"
 	_ "github.com/lib/pq"
 	"github.com/ory/dockertest/v3"
 	"github.com/stretchr/testify/require"
@@ -87,6 +88,13 @@ func TestMain(m *testing.M) {
 	}()
 
 	m.Run()
+}
+
+func isDuplicateKeyError(err error) bool {
+	if pqErr, ok := err.(*pq.Error); ok {
+		return pqErr.Code == "23505" // PostgreSQL unique violation code
+	}
+	return false
 }
 
 func createTestDB(t *testing.T, testCaseName string) *database.PostgreSQL {
