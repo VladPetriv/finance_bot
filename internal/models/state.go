@@ -11,16 +11,16 @@ import (
 
 // State represents the current state of a user's interaction with the bot
 type State struct {
-	ID     string `bson:"_id"`
-	UserID string `bson:"userId"`
+	ID     string `db:"id"`
+	UserID string `db:"user_id"`
 
-	Flow  Flow       `bson:"flow"`
-	Steps []FlowStep `bson:"steps"`
+	Flow  Flow       `db:"flow"`
+	Steps []FlowStep `db:"steps"`
 
-	Metedata map[string]any `bson:"metadata"`
+	Metedata map[string]any `db:"metadata"`
 
-	CreatedAt time.Time `bson:"createdAt"`
-	UpdatedAt time.Time `bson:"updatedAt"`
+	CreatedAt time.Time `db:"created_at"`
+	UpdatedAt time.Time `db:"updated_at"`
 }
 
 // GetFlowName returns the flow name in pretty format.

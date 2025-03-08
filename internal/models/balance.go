@@ -2,14 +2,14 @@ package models
 
 // Balance represents a balance model.
 type Balance struct {
-	ID         string `bson:"_id,omitempty"`
-	UserID     string `bson:"userId,omitempty"`
-	CurrencyID string `bson:"currencyId,omitempty"`
+	ID         string `db:"id"`
+	UserID     string `db:"user_id"`
+	CurrencyID string `db:"currency_id"`
 
-	Name   string `bson:"name,omitempty"`
-	Amount string `bson:"amount,omitempty"`
+	Name   string `db:"name"`
+	Amount string `db:"amount"`
 
-	Currency *Currency `bson:"currency,omitempty"`
+	Currency Currency
 }
 
 // GetName returns the balance name.
@@ -19,9 +19,5 @@ func (b Balance) GetName() string {
 
 // GetCurrency returns information about the currency of the balance.
 func (b Balance) GetCurrency() Currency {
-	if b.Currency == nil {
-		return Currency{}
-	}
-
-	return *b.Currency
+	return b.Currency
 }
