@@ -4,55 +4,45 @@ import (
 	"context"
 	"testing"
 
-	"github.com/VladPetriv/finance_bot/config"
 	"github.com/VladPetriv/finance_bot/internal/models"
 	"github.com/VladPetriv/finance_bot/internal/service"
 	"github.com/VladPetriv/finance_bot/internal/store"
-	"github.com/VladPetriv/finance_bot/pkg/database"
 	"github.com/google/uuid"
+	"github.com/jmoiron/sqlx"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/mongo"
 )
 
 func TestUser_Create(t *testing.T) {
 	t.Parallel()
 
 	ctx := context.Background() //nolint: forbidigo
-	cfg := config.Get()
 
-	db, err := database.NewMongoDB(ctx, cfg.MongoDB.URI, "user_create_test")
-	require.NoError(t, err)
-
-	t.Cleanup(func() {
-		err := db.DB.Drop(ctx)
-		assert.NoError(t, err)
-	})
-
-	userStore := store.NewUser(db)
+	testCaseDB := createTestDB(t, "user_create")
+	userStore := store.NewUser(testCaseDB)
 
 	userID := uuid.NewString()
 
-	testCases := []struct {
+	testCases := [...]struct {
 		desc                 string
 		preconditions        *models.User
-		input                *models.User
+		args                 *models.User
 		expectDuplicateError bool
 	}{
 		{
-			desc: "positive: user created",
-			input: &models.User{
+			desc: "user created",
+			args: &models.User{
 				ID:       uuid.NewString(),
 				Username: "test",
 			},
 		},
 		{
-			desc: "negative: user not created because already exist",
+			desc: "user not created because already exist",
 			preconditions: &models.User{
-				ID: userID,
+				ID:       userID,
+				Username: "test_create_2",
 			},
-			input: &models.User{
+			args: &models.User{
 				ID: userID,
 			},
 			expectDuplicateError: true,
@@ -64,21 +54,34 @@ func TestUser_Create(t *testing.T) {
 			t.Parallel()
 
 			if tc.preconditions != nil {
-				err = userStore.Create(ctx, tc.preconditions)
+				err := userStore.Create(ctx, tc.preconditions)
 				assert.NoError(t, err)
 			}
 
 			t.Cleanup(func() {
-				_, err := userStore.DB.Collection("Users").DeleteOne(ctx, bson.M{"_id": tc.input.ID})
+				if tc.preconditions != nil {
+					err := deleteUserByID(testCaseDB.DB, tc.preconditions.ID)
+					assert.NoError(t, err)
+				}
+
+				err := deleteUserByID(testCaseDB.DB, tc.args.ID)
 				assert.NoError(t, err)
 			})
 
-			err := userStore.Create(ctx, tc.input)
+			err := userStore.Create(ctx, tc.args)
 			if tc.expectDuplicateError {
-				assert.True(t, mongo.IsDuplicateKeyError(err))
-			} else {
-				assert.NoError(t, err)
+				assert.Error(t, err)
+				assert.True(t, isDuplicateKeyError(err))
+				return
 			}
+
+			assert.NoError(t, err)
+
+			var createdUser models.User
+			err = testCaseDB.DB.Get(&createdUser, "SELECT * FROM users WHERE id=$1;", tc.args.ID)
+			assert.NoError(t, err)
+			assert.Equal(t, tc.args.ID, createdUser.ID)
+			assert.Equal(t, tc.args.Username, createdUser.Username)
 		})
 	}
 }
@@ -87,34 +90,33 @@ func TestUser_Get(t *testing.T) {
 	t.Parallel()
 
 	ctx := context.Background() //nolint: forbidigo
-	cfg := config.Get()
 
-	db, err := database.NewMongoDB(ctx, cfg.MongoDB.URI, "user_get_test")
+	testCaseDB := createTestDB(t, "user_get")
+	userStore := store.NewUser(testCaseDB)
+	currencyStore := store.NewCurrency(testCaseDB)
+	balanceStore := store.NewBalance(testCaseDB)
+
+	userID, userID2, balanceID, currencyID := uuid.NewString(), uuid.NewString(), uuid.NewString(), uuid.NewString()
+
+	err := currencyStore.CreateIfNotExists(ctx, &models.Currency{
+		ID:   currencyID,
+		Code: "USD",
+	})
 	require.NoError(t, err)
 
-	t.Cleanup(func() {
-		err := db.DB.Drop(ctx)
-		assert.NoError(t, err)
-	})
-
-	userStore := store.NewUser(db)
-	balanceStore := store.NewBalance(db)
-
-	userID, userID2, balanceID := uuid.NewString(), uuid.NewString(), uuid.NewString()
-
-	testCases := []struct {
+	testCases := [...]struct {
 		desc          string
 		preconditions *models.User
-		input         service.GetUserFilter
+		args          service.GetUserFilter
 		expected      *models.User
 	}{
 		{
-			desc: "positive: user by username found",
+			desc: "found user by username",
 			preconditions: &models.User{
 				ID:       userID,
 				Username: "test",
 			},
-			input: service.GetUserFilter{
+			args: service.GetUserFilter{
 				Username: "test",
 			},
 			expected: &models.User{
@@ -123,19 +125,20 @@ func TestUser_Get(t *testing.T) {
 			},
 		},
 		{
-			desc: "positive: user with balance preload by username found",
+			desc: "user with balance preload by username found",
 			preconditions: &models.User{
 				ID:       userID2,
 				Username: "test2",
 				Balances: []models.Balance{
 					{
-						ID:     balanceID,
-						UserID: userID2,
-						Amount: "10",
+						ID:         balanceID,
+						UserID:     userID2,
+						CurrencyID: currencyID,
+						Amount:     "10",
 					},
 				},
 			},
-			input: service.GetUserFilter{
+			args: service.GetUserFilter{
 				Username:        "test2",
 				PreloadBalances: true,
 			},
@@ -144,16 +147,17 @@ func TestUser_Get(t *testing.T) {
 				Username: "test2",
 				Balances: []models.Balance{
 					{
-						ID:     balanceID,
-						UserID: userID2,
-						Amount: "10",
+						ID:         balanceID,
+						UserID:     userID2,
+						CurrencyID: currencyID,
+						Amount:     "10",
 					},
 				},
 			},
 		},
 		{
-			desc: "negative: user not found",
-			input: service.GetUserFilter{
+			desc: "user not found",
+			args: service.GetUserFilter{
 				Username: "not_found_user_test",
 			},
 			expected: nil,
@@ -168,46 +172,48 @@ func TestUser_Get(t *testing.T) {
 				err := userStore.Create(ctx, tc.preconditions)
 				assert.NoError(t, err)
 
-				if len(tc.preconditions.Balances) != 0 {
-					for _, balance := range tc.preconditions.Balances {
-						balance.UserID = tc.preconditions.ID
-						err = balanceStore.Create(ctx, &balance)
-						require.NoError(t, err)
-					}
+				for _, balance := range tc.preconditions.Balances {
+					balance.UserID = tc.preconditions.ID
+					err = balanceStore.Create(ctx, &balance)
+					assert.NoError(t, err)
 				}
 			}
 
 			t.Cleanup(func() {
 				if tc.preconditions != nil {
-					_, err := userStore.DB.Collection("Users").DeleteOne(ctx, bson.M{"_id": tc.preconditions.ID})
-					assert.NoError(t, err)
-
-					if len(tc.preconditions.Balances) != 0 {
-						for _, balance := range tc.preconditions.Balances {
-							_, err := balanceStore.DB.Collection("Balance").DeleteOne(ctx, bson.M{"_id": balance.ID})
-							assert.NoError(t, err)
-						}
+					for _, balance := range tc.preconditions.Balances {
+						err := deleteBalanceByID(testCaseDB.DB, balance.ID)
+						assert.NoError(t, err)
 					}
+
+					err := deleteUserByID(testCaseDB.DB, tc.preconditions.ID)
+					assert.NoError(t, err)
 				}
 			})
 
-			actual, err := userStore.Get(ctx, tc.input)
+			actual, err := userStore.Get(ctx, tc.args)
 			assert.NoError(t, err)
 
-			if tc.preconditions != nil {
-				assert.Equal(t, tc.expected.ID, actual.ID)
-				assert.Equal(t, tc.expected.Username, actual.Username)
-
-				// NOTE: We don't care about balances order, since in all test cases we have only one balance.
-				for i := 0; i < len(tc.expected.Balances); i++ {
-					assert.Equal(t, tc.expected.Balances[i].ID, actual.Balances[i].ID)
-					assert.Equal(t, tc.expected.Balances[i].UserID, actual.Balances[i].UserID)
-					assert.Equal(t, tc.expected.Balances[i].Amount, actual.Balances[i].Amount)
-					assert.Equal(t, tc.expected.Balances[i].Currency, actual.Balances[i].Currency)
-				}
-			} else {
+			if tc.preconditions == nil {
 				assert.Nil(t, actual)
+				return
+			}
+
+			assert.Equal(t, tc.expected.ID, actual.ID)
+			assert.Equal(t, tc.expected.Username, actual.Username)
+
+			// NOTE: We don't care about balances order, since in all test cases we have only one balance.
+			for i := range tc.expected.Balances {
+				assert.Equal(t, tc.expected.Balances[i].ID, actual.Balances[i].ID)
+				assert.Equal(t, tc.expected.Balances[i].UserID, actual.Balances[i].UserID)
+				assert.Equal(t, tc.expected.Balances[i].Amount, actual.Balances[i].Amount)
+				assert.Equal(t, tc.expected.Balances[i].Currency, actual.Balances[i].Currency)
 			}
 		})
 	}
+}
+
+func deleteUserByID(db *sqlx.DB, userID string) error {
+	_, err := db.Exec("DELETE FROM users WHERE id = $1;", userID)
+	return err
 }
