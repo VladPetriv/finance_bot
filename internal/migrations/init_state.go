@@ -8,8 +8,8 @@ func initStateTable(db *sql.DB) error {
 		    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
 			user_username VARCHAR(255) NOT NULL,
 			flow VARCHAR(255) NOT NULL,
-			steps JSONB NOT NULL,
-			metadata JSONB NOT NULL,
+			steps JSONB NULL,
+			metadata JSONB NULL,
 			created_at TIMESTAMP NOT NULL DEFAULT NOW(),
 			updated_at TIMESTAMP NOT NULL DEFAULT NOW()
 		);
