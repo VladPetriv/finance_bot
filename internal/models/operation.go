@@ -7,15 +7,16 @@ import (
 
 // Operation represent a financial operation.
 type Operation struct {
-	ID         string `bson:"_id,omitempty"`
-	CategoryID string `bson:"categoryId,omitempty"`
-	BalanceID  string `bson:"balanceId,omitempty"`
+	ID         string `db:"id"`
+	CategoryID string `db:"category_id"`
+	BalanceID  string `db:"balance_id"`
 
-	Type        OperationType `bson:"type,ommitempty"`
-	Amount      string        `bson:"amount,omitempty"`
-	Description string        `bson:"description,omitempty"`
+	Type        OperationType `db:"type"`
+	Amount      string        `db:"amount"`
+	Description string        `db:"description"`
 
-	CreatedAt time.Time `bson:"createdAt,omitempty"`
+	CreatedAt time.Time `db:"created_at"`
+	UpdatedAt time.Time `db:"updated_at"`
 }
 
 var typeShort = map[OperationType]string{
