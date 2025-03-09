@@ -227,6 +227,7 @@ func (s *FlowSteps) Scan(value interface{}) error {
 	return json.Unmarshal(bytes, s)
 }
 
+// Metadata represents metadata associated with a flow
 type Metadata map[string]any
 
 // Value implements the driver.Valuer interface

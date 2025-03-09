@@ -22,6 +22,7 @@ func NewCategory(db *database.PostgreSQL) *categoryStore {
 		db,
 	}
 }
+
 func (c *categoryStore) Create(ctx context.Context, category *models.Category) error {
 	_, err := c.DB.ExecContext(ctx,
 		"INSERT INTO categories (id, user_id, title) VALUES ($1, $2, $3);",

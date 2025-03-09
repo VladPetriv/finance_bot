@@ -6,11 +6,10 @@ import (
 	"errors"
 	"fmt"
 
+	sq "github.com/Masterminds/squirrel"
 	"github.com/VladPetriv/finance_bot/internal/models"
 	"github.com/VladPetriv/finance_bot/internal/service"
 	"github.com/VladPetriv/finance_bot/pkg/database"
-
-	sq "github.com/Masterminds/squirrel"
 )
 
 type balanceStore struct {
@@ -23,6 +22,7 @@ func NewBalance(db *database.PostgreSQL) *balanceStore {
 		db,
 	}
 }
+
 func (b *balanceStore) Create(ctx context.Context, balance *models.Balance) error {
 	_, err := b.DB.ExecContext(
 		ctx,
@@ -83,7 +83,6 @@ func (b *balanceStore) Update(ctx context.Context, balance *models.Balance) erro
 		"UPDATE balances SET user_id = $2, currency_id = $3, name = $4, amount = $5 WHERE id = $1;",
 		balance.ID, balance.UserID, balance.CurrencyID, balance.Name, balance.Amount,
 	)
-
 	if err != nil {
 		return err
 	}

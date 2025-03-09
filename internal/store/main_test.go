@@ -9,7 +9,6 @@ import (
 	"github.com/VladPetriv/finance_bot/pkg/database"
 	"github.com/VladPetriv/finance_bot/pkg/logger"
 	"github.com/lib/pq"
-	_ "github.com/lib/pq"
 	"github.com/ory/dockertest/v3"
 	"github.com/stretchr/testify/require"
 )
@@ -117,7 +116,8 @@ func createTestDB(t *testing.T, testCaseName string) *database.PostgreSQL {
 	require.NoError(t, err)
 
 	t.Cleanup(func() {
-		testDB.Close()
+		err := testDB.Close()
+		require.NoError(t, err)
 
 		// Drop the test database
 		_, err = postgresDB.DB.Exec(fmt.Sprintf("DROP DATABASE %s;", testCaseName))

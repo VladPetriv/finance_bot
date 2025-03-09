@@ -2,6 +2,7 @@ package migrations
 
 import "github.com/lopezator/migrator"
 
+// Migrations contains all the migrations to be applied to the database.
 var Migrations = []any{
 	&migrator.MigrationNoTx{
 		Name: "Init UUID extension",

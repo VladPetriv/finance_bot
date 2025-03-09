@@ -33,7 +33,6 @@ func NewPostgreSQL(options PostgreSQLOptions) (*PostgreSQL, error) {
 	db, err := sqlx.Open("postgres", options.convertToConnectionURL())
 	if err != nil {
 		return nil, fmt.Errorf("open postgresql connection: %w", err)
-
 	}
 
 	return &PostgreSQL{
@@ -41,10 +40,12 @@ func NewPostgreSQL(options PostgreSQLOptions) (*PostgreSQL, error) {
 	}, nil
 }
 
+// Ping checks if the PostgreSQL connection is alive.
 func (p *PostgreSQL) Ping() error {
 	return p.DB.Ping()
 }
 
+// Close closes the PostgreSQL connection.
 func (p *PostgreSQL) Close() error {
 	return p.DB.Close()
 }

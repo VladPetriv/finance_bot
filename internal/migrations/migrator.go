@@ -8,6 +8,7 @@ import (
 	"github.com/lopezator/migrator"
 )
 
+// MigrateDB applies migrations to the database
 func MigrateDB(log *logger.Logger, db *sqlx.DB, dbName string, migrations []any) error {
 	logger := log.With().Str("name", "MigrateDB").Logger()
 	logger.Debug().Str("dbName", dbName).Msg("migrating database ...")
@@ -38,7 +39,7 @@ func MigrateDB(log *logger.Logger, db *sqlx.DB, dbName string, migrations []any)
 			return fmt.Errorf("run migrations: %w", err)
 		}
 
-		logger.Info().Int("updatedDatabaseVersion", len(migrations)).Msg("migrations were successfully completed,j")
+		logger.Info().Int("updatedDatabaseVersion", len(migrations)).Msg("migrations were successfully completed")
 		return nil
 	}
 
