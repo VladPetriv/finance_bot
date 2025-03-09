@@ -8,7 +8,6 @@ func initOperationTable(db *sql.DB) error {
 
 		CREATE TABLE operations (
 		    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-			user_id UUID NOT NULL,
 			category_id UUID NOT NULL,
 			balance_id UUID NOT NULL,
 			type operation_type,
@@ -18,9 +17,6 @@ func initOperationTable(db *sql.DB) error {
 			updated_at TIMESTAMP NOT NULL DEFAULT NOW()
 		);
 
-
-		ALTER TABLE ONLY operations
-    		ADD CONSTRAINT operations_user_id_fkey FOREIGN KEY (user_id) REFERENCES users(id);
 
       	ALTER TABLE ONLY operations
         	ADD CONSTRAINT operations_balance_id_fkey FOREIGN KEY (balance_id) REFERENCES balances(id);
