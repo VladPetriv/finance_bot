@@ -10,7 +10,6 @@ import (
 	"github.com/VladPetriv/finance_bot/internal/models"
 	"github.com/VladPetriv/finance_bot/pkg/money"
 	"github.com/google/uuid"
-	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 func (h handlerService) handleCreateOperationFlowStep(ctx context.Context, opts flowProcessingOptions) (models.FlowStep, error) {
@@ -1306,9 +1305,15 @@ func (h handlerService) sendListOfOperationsWithAbilityToPaginate(ctx context.Co
 	}
 
 	if opts.includeLastShowedOperationDate {
-		lastOperationTime, ok := opts.stateMetadata[lastOperationDateMetadataKey].(primitive.DateTime)
+		lastOperationTime, ok := opts.stateMetadata[lastOperationDateMetadataKey].(string)
 		if ok {
-			filter.CreatedAtLessThan = lastOperationTime.Time()
+
+			parsedTime, err := time.Parse("2006-01-02 15:04:05", lastOperationTime)
+			if err != nil {
+				logger.Error().Err(err).Msg("parse last operation date")
+				return fmt.Errorf("parse last operation date: %w", err)
+			}
+			filter.CreatedAtLessThan = parsedTime
 		}
 	}
 
