@@ -3,93 +3,115 @@ package store_test
 import (
 	"context"
 	"testing"
-	"time"
 
-	"github.com/VladPetriv/finance_bot/config"
 	"github.com/VladPetriv/finance_bot/internal/models"
 	"github.com/VladPetriv/finance_bot/internal/service"
 	"github.com/VladPetriv/finance_bot/internal/store"
-	"github.com/VladPetriv/finance_bot/pkg/database"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/mongo"
 )
 
 func TestState_Create(t *testing.T) {
 	t.Parallel()
 
 	ctx := context.Background() //nolint: forbidigo
-	cfg := config.Get()
 
-	db, err := database.NewMongoDB(ctx, cfg.MongoDB.URI, "state_create_test")
-	require.NoError(t, err)
+	testCaseDB := createTestDB(t, "state_create")
+	userStore := store.NewUser(testCaseDB)
+	stateStore := store.NewState(testCaseDB)
+
+	userID1, userID2 := uuid.NewString(), uuid.NewString()
+	stateID := uuid.NewString()
+
+	for _, userID := range [...]string{userID1, userID2} {
+		err := userStore.Create(ctx, &models.User{
+			ID:       userID,
+			Username: "test_state_create" + userID,
+		})
+		require.NoError(t, err)
+	}
 
 	t.Cleanup(func() {
-		err := db.DB.Drop(ctx)
-		assert.NoError(t, err)
+		for _, userID := range [...]string{userID1, userID2} {
+			err := deleteUserByID(testCaseDB.DB, userID)
+			require.NoError(t, err)
+		}
 	})
 
-	stateStore := store.NewState(db)
-
-	stateID := uuid.NewString()
-	now := time.Now()
-
-	testCases := []struct {
+	testCases := [...]struct {
 		desc                 string
 		preconditions        *models.State
-		input                *models.State
+		args                 *models.State
 		expectDuplicateError bool
 	}{
 		{
-			desc: "positive: state created",
-			input: &models.State{
-				ID:        uuid.NewString(),
-				UserID:    uuid.NewString(),
-				Flow:      models.StartFlow,
-				Steps:     []models.FlowStep{models.StartFlowStep, models.CreateInitialBalanceFlowStep},
-				CreatedAt: now,
-				UpdatedAt: now,
+			desc: "state created",
+			args: &models.State{
+				ID:     uuid.NewString(),
+				UserID: "test_state_create" + userID1,
+				Flow:   models.StartFlow,
+				Steps:  []models.FlowStep{models.StartFlowStep, models.CreateInitialBalanceFlowStep},
+				Metedata: map[string]any{
+					"string": "test",
+					"bool":   true,
+				},
 			},
 		},
 		{
-			desc: "negative: state not created because already exists",
+			desc: "state not created because already exists",
 			preconditions: &models.State{
-				ID:        stateID,
-				UserID:    uuid.NewString(),
-				Flow:      models.StartFlow,
-				Steps:     []models.FlowStep{models.StartFlowStep},
-				CreatedAt: now,
-				UpdatedAt: now,
+				ID:     stateID,
+				UserID: "test_state_create" + userID2,
 			},
-			input: &models.State{
-				ID: stateID,
+			args: &models.State{
+				ID:     stateID,
+				UserID: "test_state_create" + userID2,
 			},
 			expectDuplicateError: true,
 		},
 	}
-
 	for _, tc := range testCases {
 		tc := tc
 		t.Run(tc.desc, func(t *testing.T) {
 			t.Parallel()
 
 			if tc.preconditions != nil {
-				err = stateStore.Create(ctx, tc.preconditions)
+				err := stateStore.Create(ctx, tc.preconditions)
 				assert.NoError(t, err)
 			}
 
 			t.Cleanup(func() {
-				_, err := stateStore.DB.Collection("States").DeleteOne(ctx, bson.M{"_id": tc.input.ID})
-				assert.NoError(t, err)
+				if tc.preconditions != nil {
+					err := stateStore.Delete(ctx, tc.preconditions.ID)
+					assert.NoError(t, err)
+				}
+				if tc.args != nil {
+					err := stateStore.Delete(ctx, tc.args.ID)
+					assert.NoError(t, err)
+				}
 			})
 
-			err := stateStore.Create(ctx, tc.input)
+			err := stateStore.Create(ctx, tc.args)
 			if tc.expectDuplicateError {
-				assert.True(t, mongo.IsDuplicateKeyError(err))
-			} else {
-				assert.NoError(t, err)
+				assert.True(t, isDuplicateKeyError(err))
+				return
+			}
+
+			assert.NoError(t, err)
+
+			actual, err := stateStore.Get(ctx, service.GetStateFilter{UserID: tc.args.UserID})
+			assert.NoError(t, err)
+			assert.NotNil(t, actual)
+			assert.Equal(t, tc.args.ID, actual.ID)
+			assert.Equal(t, tc.args.UserID, actual.UserID)
+			assert.Equal(t, tc.args.Flow, actual.Flow)
+			if len(tc.args.Steps) != 0 {
+				assert.Equal(t, tc.args.Steps, actual.Steps)
+			}
+			if tc.args.Metedata != nil {
+				assert.Equal(t, tc.args.Metedata["string"].(string), actual.Metedata["string"].(string))
+				assert.Equal(t, tc.args.Metedata["bool"].(bool), actual.Metedata["bool"].(bool))
 			}
 		})
 	}
@@ -99,57 +121,55 @@ func TestState_Get(t *testing.T) {
 	t.Parallel()
 
 	ctx := context.Background() //nolint: forbidigo
-	cfg := config.Get()
+	testCaseDB := createTestDB(t, "state_get")
+	userStore := store.NewUser(testCaseDB)
+	stateStore := store.NewState(testCaseDB)
 
-	db, err := database.NewMongoDB(ctx, cfg.MongoDB.URI, "state_get_test")
+	userID := uuid.NewString()
+	stateID := uuid.NewString()
+	err := userStore.Create(ctx, &models.User{
+		ID:       userID,
+		Username: "test_state_get" + userID,
+	})
 	require.NoError(t, err)
 
 	t.Cleanup(func() {
-		err := db.DB.Drop(ctx)
-		assert.NoError(t, err)
+		err := deleteUserByID(testCaseDB.DB, userID)
+		require.NoError(t, err)
 	})
 
-	stateStore := store.NewState(db)
-
-	now := time.Now()
-
-	testCases := []struct {
+	testCases := [...]struct {
 		desc          string
 		preconditions *models.State
-		input         service.GetStateFilter
+		args          service.GetStateFilter
 		expected      *models.State
 	}{
 		{
-			desc: "positive: state found by user ID",
+			desc: "state found by user ID",
 			preconditions: &models.State{
-				ID:        uuid.NewString(),
-				UserID:    "user123",
-				Flow:      models.StartFlow,
-				Steps:     []models.FlowStep{models.StartFlowStep, models.CreateInitialBalanceFlowStep},
-				CreatedAt: now,
-				UpdatedAt: now,
+				ID:     stateID,
+				UserID: "test_state_get" + userID,
+				Flow:   models.StartFlow,
+				Steps:  []models.FlowStep{models.StartFlowStep, models.CreateInitialBalanceFlowStep},
 			},
-			input: service.GetStateFilter{
-				UserID: "user123",
+			args: service.GetStateFilter{
+				UserID: "test_state_get" + userID,
 			},
 			expected: &models.State{
-				ID:        uuid.NewString(),
-				UserID:    "user123",
-				Flow:      models.StartFlow,
-				Steps:     []models.FlowStep{models.StartFlowStep, models.CreateInitialBalanceFlowStep},
-				CreatedAt: now,
-				UpdatedAt: now,
+				ID:     stateID,
+				UserID: "test_state_get" + userID,
+				Flow:   models.StartFlow,
+				Steps:  []models.FlowStep{models.StartFlowStep, models.CreateInitialBalanceFlowStep},
 			},
 		},
 		{
-			desc: "negative: state not found",
-			input: service.GetStateFilter{
+			desc: "state  by user id not found",
+			args: service.GetStateFilter{
 				UserID: "nonexistent",
 			},
 			expected: nil,
 		},
 	}
-
 	for _, tc := range testCases {
 		tc := tc
 		t.Run(tc.desc, func(t *testing.T) {
@@ -162,22 +182,24 @@ func TestState_Get(t *testing.T) {
 
 			t.Cleanup(func() {
 				if tc.preconditions != nil {
-					_, err := stateStore.DB.Collection("States").DeleteOne(ctx, bson.M{"_id": tc.preconditions.ID})
+					err := stateStore.Delete(ctx, tc.preconditions.ID)
 					assert.NoError(t, err)
 				}
 			})
 
-			actual, err := stateStore.Get(ctx, tc.input)
+			actual, err := stateStore.Get(ctx, tc.args)
 			assert.NoError(t, err)
 
 			if tc.expected == nil {
 				assert.Nil(t, actual)
-			} else {
-				assert.NotNil(t, actual)
-				assert.Equal(t, tc.expected.UserID, actual.UserID)
-				assert.Equal(t, tc.expected.Flow, actual.Flow)
-				assert.Equal(t, tc.expected.Steps, actual.Steps)
+				return
 			}
+
+			assert.NotNil(t, actual)
+			assert.Equal(t, tc.expected.ID, actual.ID)
+			assert.Equal(t, tc.expected.UserID, actual.UserID)
+			assert.Equal(t, tc.expected.Flow, actual.Flow)
+			assert.Equal(t, tc.expected.Steps, actual.Steps)
 		})
 	}
 }
@@ -186,56 +208,58 @@ func TestState_Update(t *testing.T) {
 	t.Parallel()
 
 	ctx := context.Background() //nolint: forbidigo
-	cfg := config.Get()
 
-	db, err := database.NewMongoDB(ctx, cfg.MongoDB.URI, "state_update_test")
+	testCaseDB := createTestDB(t, "state_update")
+	userStore := store.NewUser(testCaseDB)
+	stateStore := store.NewState(testCaseDB)
+
+	userID := uuid.NewString()
+	stateID := uuid.NewString()
+	err := userStore.Create(ctx, &models.User{
+		ID:       userID,
+		Username: "test_state_update" + userID,
+	})
 	require.NoError(t, err)
 
 	t.Cleanup(func() {
-		err := db.DB.Drop(ctx)
-		assert.NoError(t, err)
+		err := deleteUserByID(testCaseDB.DB, userID)
+		require.NoError(t, err)
 	})
 
-	stateStore := store.NewState(db)
-
-	stateID := uuid.NewString()
-
-	testCases := []struct {
+	testCases := [...]struct {
 		desc          string
 		preconditions *models.State
-		input         *models.State
+		args          *models.State
 		expected      *models.State
 	}{
 		{
-			desc: "positive: state updated successfully",
+			desc: "state updated successfully",
 			preconditions: &models.State{
 				ID:     stateID,
-				UserID: "user123",
+				UserID: "test_state_update" + userID,
 				Flow:   models.StartFlow,
 				Steps:  []models.FlowStep{models.StartFlowStep},
 			},
-			input: &models.State{
+			args: &models.State{
 				ID:     stateID,
-				UserID: "user123",
+				UserID: "test_state_update" + userID,
 				Flow:   models.StartFlow,
 				Steps:  []models.FlowStep{models.StartFlowStep, models.CreateInitialBalanceFlowStep},
+				Metedata: map[string]any{
+					"updated_flow_blabla": "test",
+				},
 			},
 			expected: &models.State{
 				ID:     stateID,
-				UserID: "user123",
+				UserID: "test_state_update" + userID,
 				Flow:   models.StartFlow,
 				Steps:  []models.FlowStep{models.StartFlowStep, models.CreateInitialBalanceFlowStep},
+				Metedata: map[string]any{
+					"updated_flow_blabla": "test",
+				},
 			},
-		},
-		{
-			desc: "negative: state not found for update",
-			input: &models.State{
-				ID: uuid.NewString(),
-			},
-			expected: nil,
 		},
 	}
-
 	for _, tc := range testCases {
 		tc := tc
 		t.Run(tc.desc, func(t *testing.T) {
@@ -248,22 +272,102 @@ func TestState_Update(t *testing.T) {
 
 			t.Cleanup(func() {
 				if tc.preconditions != nil {
-					_, err := stateStore.DB.Collection("States").DeleteOne(ctx, bson.M{"_id": tc.preconditions.ID})
+					err := stateStore.Delete(ctx, tc.preconditions.ID)
 					assert.NoError(t, err)
 				}
 			})
 
-			actual, err := stateStore.Update(ctx, tc.input)
+			actual, err := stateStore.Update(ctx, tc.args)
+			assert.NoError(t, err)
+			assert.NotNil(t, actual)
+			assert.Equal(t, tc.expected.ID, actual.ID)
+			assert.Equal(t, tc.expected.UserID, actual.UserID)
+			assert.Equal(t, tc.expected.Flow, actual.Flow)
+			assert.Equal(t, tc.expected.Steps, actual.Steps)
+			assert.Equal(t, tc.expected.Metedata, actual.Metedata)
+		})
+	}
+}
+
+func TestState_Delete(t *testing.T) {
+	t.Parallel()
+
+	ctx := context.TODO() //nolint: forbidigo
+	testCaseDB := createTestDB(t, "state_delete")
+	userStore := store.NewUser(testCaseDB)
+	stateStore := store.NewState(testCaseDB)
+
+	userID1, userID2 := uuid.NewString(), uuid.NewString()
+	stateID := uuid.NewString()
+
+	for _, userID := range [...]string{userID1, userID2} {
+		err := userStore.Create(ctx, &models.User{
+			ID:       userID,
+			Username: "test_state_delete" + userID,
+		})
+		require.NoError(t, err)
+	}
+	t.Cleanup(func() {
+		for _, userID := range [...]string{userID1, userID2} {
+			err := deleteUserByID(testCaseDB.DB, userID)
+			require.NoError(t, err)
+		}
+	})
+
+	testCases := [...]struct {
+		desc          string
+		preconditions *models.State
+		args          string
+	}{
+		{
+			desc: "state deleted",
+			preconditions: &models.State{
+				ID:     stateID,
+				UserID: "test_state_delete" + userID1,
+				Flow:   models.StartFlow,
+			},
+			args: stateID,
+		},
+		{
+			desc: "state not deleted because of not existed id",
+			preconditions: &models.State{
+				ID:     uuid.NewString(),
+				UserID: "test_state_delete" + userID2,
+				Flow:   models.CancelFlow,
+			},
+			args: uuid.NewString(),
+		},
+	}
+	for _, tc := range testCases {
+		tc := tc
+		t.Run(tc.desc, func(t *testing.T) {
+			t.Parallel()
+
+			if tc.preconditions != nil {
+				err := stateStore.Create(ctx, tc.preconditions)
+				assert.NoError(t, err)
+			}
+
+			t.Cleanup(func() {
+				if tc.preconditions != nil {
+					err := stateStore.Delete(ctx, tc.preconditions.ID)
+					assert.NoError(t, err)
+				}
+			})
+
+			err := stateStore.Delete(ctx, tc.args)
 			assert.NoError(t, err)
 
-			if tc.expected == nil {
-				assert.Nil(t, actual)
-			} else {
-				assert.Equal(t, tc.expected.ID, actual.ID)
-				assert.Equal(t, tc.expected.UserID, actual.UserID)
-				assert.Equal(t, tc.expected.Flow, actual.Flow)
-				assert.Equal(t, tc.expected.Steps, actual.Steps)
+			actual, err := stateStore.Get(ctx, service.GetStateFilter{UserID: tc.preconditions.UserID})
+			assert.NoError(t, err)
+
+			// operation should not be deleted
+			if tc.preconditions.ID != tc.args {
+				assert.NotNil(t, actual)
+				return
 			}
+
+			assert.Nil(t, actual)
 		})
 	}
 }
