@@ -24,7 +24,7 @@ var (
 func TestMain(m *testing.M) {
 	cfg = config.Get()
 	log = logger.New(logger.LoggergerOptions{
-		LogLevel:        "debug",
+		LogLevel:        "error",
 		PrettyLogOutput: true,
 	})
 
