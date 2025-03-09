@@ -3,7 +3,7 @@ package models
 // Category represents a category model.
 type Category struct {
 	ID     string `db:"id"`
-	UserID string `db:"userId"`
+	UserID string `db:"user_id"`
 	Title  string `db:"title"`
 }
 
