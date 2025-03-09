@@ -2,96 +2,88 @@ package store
 
 import (
 	"context"
+	"database/sql"
+	"errors"
 	"fmt"
 
 	"github.com/VladPetriv/finance_bot/internal/models"
 	"github.com/VladPetriv/finance_bot/internal/service"
 	"github.com/VladPetriv/finance_bot/pkg/database"
-	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/mongo"
+
+	sq "github.com/Masterminds/squirrel"
 )
 
 type balanceStore struct {
-	*database.MongoDB
+	*database.PostgreSQL
 }
 
-var _ service.BalanceStore = (*balanceStore)(nil)
-
-var collectionBalance = "Balances"
-
 // NewBalance returns new instance of balance store.
-func NewBalance(db *database.MongoDB) *balanceStore {
+func NewBalance(db *database.PostgreSQL) *balanceStore {
 	return &balanceStore{
 		db,
 	}
 }
+func (b *balanceStore) Create(ctx context.Context, balance *models.Balance) error {
+	_, err := b.DB.ExecContext(
+		ctx,
+		"INSERT INTO balances (id, user_id, currency_id, name, amount) VALUES ($1, $2, $3, $4, $5);",
+		balance.ID, balance.UserID, balance.CurrencyID, balance.Name, balance.Amount,
+	)
 
-func (b balanceStore) Get(ctx context.Context, filter service.GetBalanceFilter) (*models.Balance, error) {
-	stmt := bson.M{}
+	return err
+}
+
+func (b *balanceStore) Get(ctx context.Context, filter service.GetBalanceFilter) (*models.Balance, error) {
+	stmt := sq.
+		StatementBuilder.
+		PlaceholderFormat(sq.Dollar).
+		Select("id", "user_id", "currency_id", "name", "amount").
+		From("balances")
 
 	if filter.BalanceID != "" {
-		stmt["_id"] = filter.BalanceID
+		stmt = stmt.Where(sq.Eq{"id": filter.BalanceID})
 	}
 	if filter.Name != "" {
-		stmt["name"] = filter.Name
+		stmt = stmt.Where(sq.Eq{"name": filter.Name})
 	}
 	if filter.UserID != "" {
-		stmt["userId"] = filter.UserID
+		stmt = stmt.Where(sq.Eq{"user_id": filter.UserID})
 	}
 
-	pipeLine := mongo.Pipeline{
-		bson.D{{Key: "$match", Value: stmt}},
+	query, args, err := stmt.ToSql()
+	if err != nil {
+		return nil, fmt.Errorf("build get balance query: %w", err)
+	}
+
+	var balance models.Balance
+	err = b.DB.GetContext(ctx, &balance, query, args...)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, nil
+		}
+		return nil, err
 	}
 
 	if filter.PreloadCurrency {
-		pipeLine = append(pipeLine, bson.D{
-			{
-				Key: "$lookup",
-				Value: bson.M{
-					"from":         collectionCurrency,
-					"localField":   "currencyId",
-					"foreignField": "_id",
-					"as":           "currency",
-				},
-			},
-		})
-		pipeLine = append(pipeLine, bson.D{
-			{
-				Key: "$unwind",
-				Value: bson.M{
-					"path":                       "$currency",
-					"preserveNullAndEmptyArrays": true,
-				},
-			},
-		})
-	}
-
-	cursor, err := b.DB.Collection(collectionBalance).Aggregate(ctx, pipeLine)
-	if err != nil {
-		return nil, err
-	}
-	defer func() {
-		err := cursor.Close(ctx)
+		var currency models.Currency
+		err = b.DB.GetContext(ctx, &currency, "SELECT id, name, code, symbol FROM currencies WHERE id = $1;", balance.CurrencyID)
 		if err != nil {
-			fmt.Printf("error closing cursor: %v", err)
+			return nil, err
 		}
-	}()
 
-	var matches []models.Balance
-	err = cursor.All(ctx, &matches)
-	if err != nil {
-		return nil, err
+		balance.Currency = currency
 	}
 
-	if len(matches) == 0 {
-		return nil, nil
-	}
-
-	return &matches[0], nil
+	return &balance, nil
 }
 
-func (b balanceStore) Create(ctx context.Context, balance *models.Balance) error {
-	_, err := b.DB.Collection(collectionBalance).InsertOne(ctx, balance)
+func (b *balanceStore) Update(ctx context.Context, balance *models.Balance) error {
+	_, err := b.DB.ExecContext(
+		ctx,
+		"UPDATE balances SET user_id = $2, currency_id = $3, name = $4, amount = $5 WHERE id = $1;",
+		balance.ID, balance.UserID, balance.CurrencyID, balance.Name, balance.Amount,
+	)
+
 	if err != nil {
 		return err
 	}
@@ -99,20 +91,7 @@ func (b balanceStore) Create(ctx context.Context, balance *models.Balance) error
 	return nil
 }
 
-func (b balanceStore) Update(ctx context.Context, balance *models.Balance) error {
-	_, err := b.DB.Collection(collectionBalance).UpdateByID(ctx, balance.ID, bson.M{"$set": balance})
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func (b balanceStore) Delete(ctx context.Context, balanceID string) error {
-	_, err := b.DB.Collection(collectionBalance).DeleteOne(ctx, bson.M{"_id": balanceID})
-	if err != nil {
-		return err
-	}
-
-	return nil
+func (b *balanceStore) Delete(ctx context.Context, balanceID string) error {
+	_, err := b.DB.ExecContext(ctx, "DELETE FROM balances WHERE id = $1;", balanceID)
+	return err
 }
