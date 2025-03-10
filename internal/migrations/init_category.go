@@ -5,8 +5,8 @@ import "database/sql"
 func initCategoryTable(db *sql.DB) error {
 	_, err := db.Exec(`
 		CREATE TABLE categories (
-		    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-			user_id UUID NOT NULL,
+		    id VARCHAR(255) PRIMARY KEY,
+			user_id VARCHAR(255) NULL,
 			title VARCHAR(255) NOT NULL
 		);
 

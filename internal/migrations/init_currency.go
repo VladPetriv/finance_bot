@@ -5,7 +5,7 @@ import "database/sql"
 func initCurrencyTable(db *sql.DB) error {
 	_, err := db.Exec(`
 		CREATE TABLE currencies (
-		    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+		    id VARCHAR(255) PRIMARY KEY,
 			name VARCHAR(255) NOT NULL,
 			code VARCHAR(255) NOT NULL,
 			symbol VARCHAR(255) NOT NULL
