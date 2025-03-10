@@ -347,6 +347,20 @@ func (h handlerService) handleEnterBalanceAmountFlowStepForUpdate(ctx context.Co
 		return "", fmt.Errorf("update balance in store: %w", err)
 	}
 
+	if opts.state.Flow == models.StartFlow {
+		currenciesKeyboard, err := h.getCurrenciesKeyboardForBalance(ctx)
+		if err != nil {
+			logger.Error().Err(err).Msg("get currencies keyboard for balance")
+			return "", fmt.Errorf("get currencies keyboard for balance: %w", err)
+		}
+
+		return models.EnterBalanceCurrencyFlowStep, h.apis.Messenger.SendWithKeyboard(SendWithKeyboardOptions{
+			ChatID:         opts.message.GetChatID(),
+			Message:        "Enter balance currency:",
+			InlineKeyboard: currenciesKeyboard,
+		})
+	}
+
 	return models.ChooseUpdateBalanceOptionFlowStep, h.apis.Messenger.SendWithKeyboard(SendWithKeyboardOptions{
 		ChatID:         opts.message.GetChatID(),
 		Message:        "Balance amount successfully updated!\nPlease choose other update balance option or finish action by canceling it!",
@@ -383,6 +397,10 @@ func (h handlerService) handleEnterBalanceCurrencyFlowStepForUpdate(ctx context.
 
 		logger.Error().Err(err).Msg("update balance in store")
 		return "", fmt.Errorf("update balance in store: %w", err)
+	}
+
+	if opts.state.Flow == models.StartFlow {
+		return models.EndFlowStep, h.sendMessageWithDefaultKeyboard(opts.message.GetChatID(), "Initial balance successfully created!")
 	}
 
 	return models.ChooseUpdateBalanceOptionFlowStep, h.apis.Messenger.SendWithKeyboard(SendWithKeyboardOptions{
