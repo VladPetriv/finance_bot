@@ -19,9 +19,6 @@ func initOperationTable(db *sql.DB) error {
 
       	ALTER TABLE ONLY operations
         	ADD CONSTRAINT operations_balance_id_fkey FOREIGN KEY (balance_id) REFERENCES balances(id);
-
-        ALTER TABLE ONLY operations
-        	ADD CONSTRAINT operations_category_id_fkey FOREIGN KEY (category_id) REFERENCES categories(id);
 	`)
 
 	return err
