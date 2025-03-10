@@ -1307,7 +1307,6 @@ func (h handlerService) sendListOfOperationsWithAbilityToPaginate(ctx context.Co
 	if opts.includeLastShowedOperationDate {
 		lastOperationTime, ok := opts.stateMetadata[lastOperationDateMetadataKey].(string)
 		if ok {
-
 			parsedTime, err := time.Parse("2006-01-02 15:04:05", lastOperationTime)
 			if err != nil {
 				logger.Error().Err(err).Msg("parse last operation date")
