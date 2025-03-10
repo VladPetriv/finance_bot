@@ -64,7 +64,7 @@ func (b *balanceStore) Get(ctx context.Context, filter service.GetBalanceFilter)
 		return nil, err
 	}
 
-	if filter.PreloadCurrency {
+	if filter.PreloadCurrency && balance.CurrencyID != "" {
 		var currency models.Currency
 		err = b.DB.GetContext(ctx, &currency, "SELECT id, name, code, symbol FROM currencies WHERE id = $1;", balance.CurrencyID)
 		if err != nil {
