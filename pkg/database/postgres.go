@@ -19,9 +19,15 @@ type PostgreSQLOptions struct {
 	Host     string
 	Port     string
 	SSLMode  string
+
+	URL string
 }
 
 func (p PostgreSQLOptions) convertToConnectionURL() string {
+	if p.URL != "" {
+		return p.URL
+	}
+
 	return fmt.Sprintf(
 		"user=%s password=%s dbname=%s host=%s port=%s sslmode=%s",
 		p.User, p.Password, p.Database, p.Host, p.Port, p.SSLMode,
