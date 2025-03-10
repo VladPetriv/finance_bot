@@ -41,6 +41,7 @@ func Run(ctx context.Context, cfg *config.Config, logger *logger.Logger) {
 		Host:     cfg.PostgreSQL.Host,
 		Port:     cfg.PostgreSQL.Port,
 		SSLMode:  cfg.PostgreSQL.SSLMode,
+		URL:      cfg.PostgreSQL.URL,
 	})
 	if err != nil {
 		logger.Fatal().Err(err).Msg("create new postgres instance")
