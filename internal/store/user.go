@@ -2,84 +2,83 @@ package store
 
 import (
 	"context"
-	"fmt"
+	"database/sql"
+	"errors"
 
+	sq "github.com/Masterminds/squirrel"
 	"github.com/VladPetriv/finance_bot/internal/models"
 	"github.com/VladPetriv/finance_bot/internal/service"
 	"github.com/VladPetriv/finance_bot/pkg/database"
-	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/mongo"
 )
 
 type userStore struct {
-	*database.MongoDB
+	*database.PostgreSQL
 }
 
-var _ service.UserStore = (*userStore)(nil)
-
-var collectionUser = "Users"
-
 // NewUser returns new instance of user store.
-func NewUser(db *database.MongoDB) *userStore {
+func NewUser(db *database.PostgreSQL) *userStore {
 	return &userStore{
 		db,
 	}
 }
 
-func (u userStore) Create(ctx context.Context, user *models.User) error {
-	_, err := u.DB.Collection(collectionUser).InsertOne(ctx, user)
-	if err != nil {
-		return err
-	}
+func (u *userStore) Create(ctx context.Context, user *models.User) error {
+	_, err := u.DB.ExecContext(
+		ctx,
+		"INSERT INTO users (id, username) VALUES ($1, $2);",
+		user.ID, user.Username,
+	)
 
-	return nil
+	return err
 }
 
 func (u userStore) Get(ctx context.Context, filter service.GetUserFilter) (*models.User, error) {
-	stmt := bson.M{}
+	stmt := sq.
+		StatementBuilder.
+		PlaceholderFormat(sq.Dollar).
+		Select("id", "username").
+		From("users")
 
 	if filter.Username != "" {
-		stmt["username"] = filter.Username
+		stmt = stmt.Where(sq.Eq{"username": filter.Username})
 	}
 
-	pipeLine := mongo.Pipeline{
-		bson.D{{Key: "$match", Value: stmt}},
+	query, args, err := stmt.ToSql()
+	if err != nil {
+		return nil, err
+	}
+
+	var user models.User
+	err = u.DB.GetContext(ctx, &user, query, args...)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, nil
+		}
+
+		return nil, err
 	}
 
 	if filter.PreloadBalances {
-		pipeLine = append(pipeLine, bson.D{
-			{
-				Key: "$lookup",
-				Value: bson.M{
-					"from":         collectionBalance,
-					"localField":   "_id",
-					"foreignField": "userId",
-					"as":           "balances",
-				},
-			},
-		})
-	}
+		stmt := sq.
+			StatementBuilder.
+			PlaceholderFormat(sq.Dollar).
+			Select("id", "user_id", "currency_id", "name", "amount").
+			From("balances").
+			Where(sq.Eq{"user_id": user.ID})
 
-	cursor, err := u.DB.Collection(collectionUser).Aggregate(ctx, pipeLine)
-	if err != nil {
-		return nil, err
-	}
-	defer func() {
-		err := cursor.Close(ctx)
+		query, args, err := stmt.ToSql()
 		if err != nil {
-			fmt.Printf("error closing cursor: %v", err)
+			return nil, err
 		}
-	}()
 
-	var matches []models.User
-	err = cursor.All(ctx, &matches)
-	if err != nil {
-		return nil, err
+		var balances []models.Balance
+		err = u.DB.SelectContext(ctx, &balances, query, args...)
+		if err != nil {
+			return nil, err
+		}
+
+		user.Balances = balances
 	}
 
-	if len(matches) == 0 {
-		return nil, nil
-	}
-
-	return &matches[0], nil
+	return &user, nil
 }

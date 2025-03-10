@@ -4,32 +4,21 @@ import (
 	"context"
 	"testing"
 
-	"github.com/VladPetriv/finance_bot/config"
 	"github.com/VladPetriv/finance_bot/internal/models"
 	"github.com/VladPetriv/finance_bot/internal/service"
 	"github.com/VladPetriv/finance_bot/internal/store"
-	"github.com/VladPetriv/finance_bot/pkg/database"
 	"github.com/google/uuid"
+	"github.com/jmoiron/sqlx"
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
-	"go.mongodb.org/mongo-driver/bson"
 )
 
 func TestCurrency_Create(t *testing.T) {
 	t.Parallel()
 
 	ctx := context.Background() //nolint: forbidigo
-	cfg := config.Get()
 
-	db, err := database.NewMongoDB(ctx, cfg.MongoDB.URI, "currency_create_test")
-	require.NoError(t, err)
-
-	t.Cleanup(func() {
-		err := db.DB.Drop(ctx)
-		assert.NoError(t, err)
-	})
-
-	currencyStore := store.NewCurrency(db)
+	testCaseDB := createTestDB(t, "currency_create")
+	currencyStore := store.NewCurrency(testCaseDB)
 
 	testCases := [...]struct {
 		desc                string
@@ -38,26 +27,26 @@ func TestCurrency_Create(t *testing.T) {
 		createIsNotExpected bool
 	}{
 		{
-			desc: "positive: currency created",
+			desc: "created currency",
 			args: &models.Currency{
 				ID:     uuid.NewString(),
 				Name:   "US Dollar",
-				Code:   "US",
+				Code:   "US_test_create_1",
 				Symbol: "$",
 			},
 		},
 		{
-			desc: "positive: currency with args symbol already exists, new currency won't be created",
+			desc: "currency with args symbol already exists, new currency won't be created",
 			preconditions: &models.Currency{
 				ID:     uuid.NewString(),
 				Name:   "US Dollar",
-				Code:   "US",
+				Code:   "US_test_create_2",
 				Symbol: "$",
 			},
 			args: &models.Currency{
 				ID:     uuid.NewString(),
 				Name:   "CAD Dollar",
-				Code:   "US",
+				Code:   "US_test_create_2",
 				Symbol: "$",
 			},
 			createIsNotExpected: true,
@@ -69,16 +58,16 @@ func TestCurrency_Create(t *testing.T) {
 			t.Parallel()
 
 			if tc.preconditions != nil {
-				err = currencyStore.CreateIfNotExists(ctx, tc.preconditions)
+				err := currencyStore.CreateIfNotExists(ctx, tc.preconditions)
 				assert.NoError(t, err)
 			}
 
 			t.Cleanup(func() {
-				_, err := currencyStore.DB.Collection("Currencies").DeleteOne(ctx, bson.M{"_id": tc.args.ID})
+				err := deleteCurrencyByID(testCaseDB.DB, tc.args.ID)
 				assert.NoError(t, err)
 
 				if tc.preconditions != nil {
-					_, err := currencyStore.DB.Collection("Currencies").DeleteOne(ctx, bson.M{"_id": tc.preconditions.ID})
+					err := deleteCurrencyByID(testCaseDB.DB, tc.preconditions.ID)
 					assert.NoError(t, err)
 				}
 			})
@@ -100,7 +89,7 @@ func TestCurrency_Create(t *testing.T) {
 			}
 
 			var createdCurrency models.Currency
-			err = db.DB.Collection("Currencies").FindOne(ctx, bson.M{"_id": currencyToCompareID}).Decode(&createdCurrency)
+			err = testCaseDB.DB.Get(&createdCurrency, "SELECT * FROM currencies WHERE id=$1;", currencyToCompareID)
 			assert.NoError(t, err)
 			assert.Equal(t, currencyToCompare, createdCurrency)
 		})
@@ -111,17 +100,9 @@ func TestCurrency_Count(t *testing.T) {
 	t.Parallel()
 
 	ctx := context.Background() //nolint: forbidigo
-	cfg := config.Get()
 
-	db, err := database.NewMongoDB(ctx, cfg.MongoDB.URI, "currency_count_test")
-	require.NoError(t, err)
-
-	t.Cleanup(func() {
-		err := db.DB.Drop(ctx)
-		assert.NoError(t, err)
-	})
-
-	currencyStore := store.NewCurrency(db)
+	testCaseDB := createTestDB(t, "currency_count")
+	currencyStore := store.NewCurrency(testCaseDB)
 
 	testCases := [...]struct {
 		desc          string
@@ -129,46 +110,40 @@ func TestCurrency_Count(t *testing.T) {
 		expected      int
 	}{
 		{
-			desc:     "positive: count currencies when collection is empty",
-			expected: 0,
-		},
-		{
-			desc: "positive: count currencies when collection has items",
+			desc: "count currencies when table has 2 items",
 			preconditions: []models.Currency{
 				{
 					ID:     uuid.NewString(),
 					Name:   "US Dollar",
-					Code:   "USD",
+					Code:   "USD_test_count_2",
 					Symbol: "$",
 				},
 				{
 					ID:     uuid.NewString(),
 					Name:   "Euro",
-					Code:   "EUR",
+					Code:   "EUR_test_count_2",
 					Symbol: "€",
 				},
 			},
 			expected: 2,
 		},
+		{
+			desc:     "count currencies when table is empty",
+			expected: 0,
+		},
 	}
 	for _, tc := range testCases {
 		tc := tc
 		t.Run(tc.desc, func(t *testing.T) {
-			t.Parallel()
-
-			if len(tc.preconditions) > 0 {
-				for _, currency := range tc.preconditions {
-					err := currencyStore.CreateIfNotExists(ctx, &currency)
-					assert.NoError(t, err)
-				}
+			for _, currency := range tc.preconditions {
+				err := currencyStore.CreateIfNotExists(ctx, &currency)
+				assert.NoError(t, err)
 			}
 
 			t.Cleanup(func() {
-				if len(tc.preconditions) > 0 {
-					for _, currency := range tc.preconditions {
-						_, err := currencyStore.DB.Collection("Currencies").DeleteOne(ctx, bson.M{"_id": currency.ID})
-						assert.NoError(t, err)
-					}
+				for _, currency := range tc.preconditions {
+					err := deleteCurrencyByID(testCaseDB.DB, currency.ID)
+					assert.NoError(t, err)
 				}
 			})
 
@@ -183,17 +158,9 @@ func TestCurrency_List(t *testing.T) {
 	t.Parallel()
 
 	ctx := context.Background() //nolint: forbidigo
-	cfg := config.Get()
 
-	db, err := database.NewMongoDB(ctx, cfg.MongoDB.URI, "currency_list_test")
-	require.NoError(t, err)
-
-	t.Cleanup(func() {
-		err := db.DB.Drop(ctx)
-		assert.NoError(t, err)
-	})
-
-	currencyStore := store.NewCurrency(db)
+	testCaseDB := createTestDB(t, "currency_list")
+	currencyStore := store.NewCurrency(testCaseDB)
 
 	testCases := [...]struct {
 		desc          string
@@ -201,23 +168,19 @@ func TestCurrency_List(t *testing.T) {
 		expected      []models.Currency
 	}{
 		{
-			desc:     "positive: empty list when no currencies",
-			expected: []models.Currency{},
-		},
-		{
-			desc: "positive: list all currencies",
+			desc: "list all currencies",
 			preconditions: []models.Currency{
 				{
 					ID:     uuid.NewString(),
 					Name:   "US Dollar",
 					Symbol: "$",
-					Code:   "USD",
+					Code:   "USD_test_list_1",
 				},
 				{
 					ID:     uuid.NewString(),
 					Name:   "Euro",
 					Symbol: "€",
-					Code:   "EUR",
+					Code:   "EUR_test_list_1",
 				},
 			},
 			expected: []models.Currency{
@@ -225,32 +188,32 @@ func TestCurrency_List(t *testing.T) {
 					ID:     uuid.NewString(),
 					Name:   "US Dollar",
 					Symbol: "$",
-					Code:   "USD",
+					Code:   "USD_test_list_1",
 				},
 				{
 					ID:     uuid.NewString(),
 					Name:   "Euro",
 					Symbol: "€",
-					Code:   "EUR",
+					Code:   "EUR_test_list_1",
 				},
 			},
+		},
+		{
+			desc:     "positive: empty list when no currencies",
+			expected: []models.Currency{},
 		},
 	}
 	for _, tc := range testCases {
 		tc := tc
 		t.Run(tc.desc, func(t *testing.T) {
-			t.Parallel()
-
-			if len(tc.preconditions) > 0 {
-				for _, currency := range tc.preconditions {
-					err := currencyStore.CreateIfNotExists(ctx, &currency)
-					assert.NoError(t, err)
-				}
+			for _, currency := range tc.preconditions {
+				err := currencyStore.CreateIfNotExists(ctx, &currency)
+				assert.NoError(t, err)
 			}
 
 			t.Cleanup(func() {
 				for _, currency := range tc.preconditions {
-					_, err := currencyStore.DB.Collection("Currencies").DeleteOne(ctx, bson.M{"_id": currency.ID})
+					err := deleteCurrencyByID(testCaseDB.DB, currency.ID)
 					assert.NoError(t, err)
 				}
 			})
@@ -266,6 +229,7 @@ func TestCurrency_List(t *testing.T) {
 			for i, currency := range currencies {
 				assert.Equal(t, tc.preconditions[i].Name, currency.Name)
 				assert.Equal(t, tc.preconditions[i].Symbol, currency.Symbol)
+				assert.Equal(t, tc.preconditions[i].Code, currency.Code)
 			}
 		})
 	}
@@ -275,17 +239,9 @@ func TestCurrency_Exists(t *testing.T) {
 	t.Parallel()
 
 	ctx := context.Background() //nolint: forbidigo
-	cfg := config.Get()
 
-	db, err := database.NewMongoDB(ctx, cfg.MongoDB.URI, "currency_exists_test")
-	require.NoError(t, err)
-
-	t.Cleanup(func() {
-		err := db.DB.Drop(ctx)
-		assert.NoError(t, err)
-	})
-
-	currencyStore := store.NewCurrency(db)
+	testCaseDB := createTestDB(t, "currency_exists")
+	currencyStore := store.NewCurrency(testCaseDB)
 
 	currencyID := uuid.NewString()
 
@@ -296,17 +252,20 @@ func TestCurrency_Exists(t *testing.T) {
 		expected      bool
 	}{
 		{
-			desc: "negative: currency by id exists",
+			desc: "currency by id exists",
 			preconditions: &models.Currency{
 				ID:     currencyID,
 				Name:   "US Dollar",
 				Symbol: "$",
-				Code:   "USD",
+				Code:   "USD_test_exists_1",
+			},
+			args: service.ExistsCurrencyFilter{
+				ID: currencyID,
 			},
 			expected: true,
 		},
 		{
-			desc: "negative: currency by id doesn't exists",
+			desc: "currency by id doesn't exists",
 			args: service.ExistsCurrencyFilter{
 				ID: uuid.NewString(),
 			},
@@ -325,7 +284,7 @@ func TestCurrency_Exists(t *testing.T) {
 
 			t.Cleanup(func() {
 				if tc.preconditions != nil {
-					_, err := currencyStore.DB.Collection("Currencies").DeleteOne(ctx, bson.M{"_id": tc.preconditions.ID})
+					err := deleteCurrencyByID(testCaseDB.DB, tc.preconditions.ID)
 					assert.NoError(t, err)
 				}
 			})
@@ -335,4 +294,9 @@ func TestCurrency_Exists(t *testing.T) {
 			assert.Equal(t, tc.expected, actual)
 		})
 	}
+}
+
+func deleteCurrencyByID(db *sqlx.DB, currencyID string) error {
+	_, err := db.Exec("DELETE FROM currencies WHERE id = $1;", currencyID)
+	return err
 }

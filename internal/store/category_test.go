@@ -4,56 +4,61 @@ import (
 	"context"
 	"testing"
 
-	"github.com/VladPetriv/finance_bot/config"
 	"github.com/VladPetriv/finance_bot/internal/models"
 	"github.com/VladPetriv/finance_bot/internal/service"
 	"github.com/VladPetriv/finance_bot/internal/store"
-	"github.com/VladPetriv/finance_bot/pkg/database"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/mongo"
 )
 
 func TestCategory_Create(t *testing.T) {
 	t.Parallel()
 
 	ctx := context.TODO() //nolint: forbidigo
-	cfg := config.Get()
 
-	db, err := database.NewMongoDB(ctx, cfg.MongoDB.URI, "category_create_test")
+	testCaseDB := createTestDB(t, "category_create")
+	userStore := store.NewUser(testCaseDB)
+	categoryStore := store.NewCategory(testCaseDB)
+
+	userID := uuid.NewString()
+	categoryID := uuid.NewString()
+	err := userStore.Create(ctx, &models.User{
+		ID:       userID,
+		Username: "test" + uuid.NewString(),
+	})
 	require.NoError(t, err)
 
 	t.Cleanup(func() {
-		err := db.DB.Drop(ctx)
-		assert.NoError(t, err)
+		err := deleteUserByID(testCaseDB.DB, userID)
+		require.NoError(t, err)
 	})
 
-	categoryStore := store.NewCategory(db)
-
-	categoryID := uuid.NewString()
-
-	testCases := []struct {
+	testCases := [...]struct {
 		desc                 string
 		preconditions        *models.Category
-		input                *models.Category
+		args                 *models.Category
 		expectDuplicateError bool
 	}{
 		{
-			desc: "positive: created category",
-			input: &models.Category{
-				ID:    uuid.NewString(),
-				Title: "test",
+			desc: "created category",
+			args: &models.Category{
+				ID:     uuid.NewString(),
+				UserID: userID,
+				Title:  "test_create_1",
 			},
 		},
 		{
-			desc: "negative: category not created because already exists",
+			desc: "category not created because already exists",
 			preconditions: &models.Category{
-				ID: categoryID,
+				ID:     categoryID,
+				UserID: userID,
+				Title:  "test_create_2",
 			},
-			input: &models.Category{
-				ID: categoryID,
+			args: &models.Category{
+				ID:     categoryID,
+				UserID: userID,
+				Title:  "test_create_2",
 			},
 			expectDuplicateError: true,
 		},
@@ -69,16 +74,30 @@ func TestCategory_Create(t *testing.T) {
 			}
 
 			t.Cleanup(func() {
-				err = categoryStore.Delete(ctx, tc.input.ID)
-				assert.NoError(t, err)
+				if tc.preconditions != nil {
+					err = categoryStore.Delete(ctx, tc.preconditions.ID)
+					assert.NoError(t, err)
+				}
+				if tc.args != nil {
+					err = categoryStore.Delete(ctx, tc.args.ID)
+					assert.NoError(t, err)
+				}
 			})
 
-			err := categoryStore.Create(ctx, tc.input)
+			err := categoryStore.Create(ctx, tc.args)
 			if tc.expectDuplicateError {
-				assert.True(t, mongo.IsDuplicateKeyError(err))
-			} else {
-				assert.NoError(t, err)
+				assert.True(t, isDuplicateKeyError(err))
+				return
 			}
+
+			assert.NoError(t, err)
+
+			actual, err := categoryStore.Get(ctx, service.GetCategoryFilter{ID: tc.args.ID})
+			assert.NoError(t, err)
+			assert.NotNil(t, actual)
+			assert.Equal(t, tc.args.ID, actual.ID)
+			assert.Equal(t, tc.args.UserID, actual.UserID)
+			assert.Equal(t, tc.args.Title, actual.Title)
 		})
 	}
 }
@@ -87,85 +106,261 @@ func TestCategory_Get(t *testing.T) {
 	t.Parallel()
 
 	ctx := context.TODO() //nolint: forbidigo
-	cfg := config.Get()
 
-	db, err := database.NewMongoDB(ctx, cfg.MongoDB.URI, "category_get_test")
-	require.NoError(t, err)
-
-	t.Cleanup(func() {
-		err := db.DB.Drop(ctx)
-		assert.NoError(t, err)
-	})
-
-	categoryStore := store.NewCategory(db)
+	testCaseDB := createTestDB(t, "category_get")
+	userStore := store.NewUser(testCaseDB)
+	categoryStore := store.NewCategory(testCaseDB)
 
 	categoryID1, categoryID2, categoryID3 := uuid.NewString(), uuid.NewString(), uuid.NewString()
-	userID1 := uuid.NewString()
-	title := "test_get"
+	userID1, userID2 := uuid.NewString(), uuid.NewString()
+	for _, userID := range [...]string{userID1, userID2} {
+		err := userStore.Create(ctx, &models.User{
+			ID:       userID,
+			Username: "test" + uuid.NewString(),
+		})
+		require.NoError(t, err)
+	}
 
-	testCases := []struct {
+	t.Cleanup(func() {
+		for _, userID := range [...]string{userID1, userID2} {
+			err := deleteUserByID(testCaseDB.DB, userID)
+			require.NoError(t, err)
+		}
+	})
+
+	testCases := [...]struct {
 		desc          string
 		preconditions *models.Category
-		input         service.GetCategoryFilter
+		args          service.GetCategoryFilter
 		expected      *models.Category
 	}{
 		{
-			desc: "positive: returned category by title",
+			desc: "found category by title",
 			preconditions: &models.Category{
-				ID:    categoryID1,
-				Title: title,
+				ID:     categoryID1,
+				UserID: userID1,
+				Title:  "title_get_1",
 			},
-			input: service.GetCategoryFilter{
-				Title: title,
+			args: service.GetCategoryFilter{
+				Title: "title_get_1",
 			},
 			expected: &models.Category{
-				ID:    categoryID1,
-				Title: title,
+				ID:     categoryID1,
+				UserID: userID1,
+				Title:  "title_get_1",
 			},
 		},
 		{
-			desc: "positive: returned category by id",
+			desc: "found category by id",
 			preconditions: &models.Category{
-				ID:    categoryID2,
-				Title: "test_get",
+				ID:     categoryID2,
+				UserID: userID1,
+				Title:  "test_get_2",
 			},
-			input: service.GetCategoryFilter{
+			args: service.GetCategoryFilter{
 				ID: categoryID2,
 			},
 			expected: &models.Category{
-				ID:    categoryID2,
-				Title: "test_get",
+				ID:     categoryID2,
+				UserID: userID1,
+				Title:  "test_get_2",
 			},
 		},
 		{
-			desc: "positive: returned category by user id",
+			desc: "found category by user id",
 			preconditions: &models.Category{
 				ID:     categoryID3,
-				UserID: userID1,
+				UserID: userID2,
 				Title:  "test_get_user_id",
 			},
-			input: service.GetCategoryFilter{
-				UserID: userID1,
+			args: service.GetCategoryFilter{
+				UserID: userID2,
 			},
 			expected: &models.Category{
 				ID:     categoryID3,
-				UserID: userID1,
+				UserID: userID2,
 				Title:  "test_get_user_id",
 			},
 		},
 		{
-			desc: "negative: category not found (by title)",
-			input: service.GetCategoryFilter{
-				Title: categoryID1,
+			desc: "negative: category not found",
+			args: service.GetCategoryFilter{
+				Title: uuid.NewString(),
 			},
 			expected: nil,
 		},
+	}
+	for _, tc := range testCases {
+		tc := tc
+		t.Run(tc.desc, func(t *testing.T) {
+			t.Parallel()
+
+			if tc.preconditions != nil {
+				err := categoryStore.Create(ctx, tc.preconditions)
+				assert.NoError(t, err)
+			}
+
+			t.Cleanup(func() {
+				if tc.preconditions != nil {
+					err := categoryStore.Delete(ctx, tc.preconditions.ID)
+					assert.NoError(t, err)
+				}
+			})
+
+			got, err := categoryStore.Get(ctx, tc.args)
+			assert.NoError(t, err)
+			assert.Equal(t, tc.expected, got)
+		})
+	}
+}
+
+func TestCategory_List(t *testing.T) {
+	t.Parallel()
+
+	ctx := context.TODO() //nolint: forbidigo
+
+	testCaseDB := createTestDB(t, "category_list")
+	userStore := store.NewUser(testCaseDB)
+	categoryStore := store.NewCategory(testCaseDB)
+
+	categoryID1, categoryID2 := uuid.NewString(), uuid.NewString()
+	userID1, userID2 := uuid.NewString(), uuid.NewString()
+	err := userStore.Create(ctx, &models.User{
+		ID:       userID1,
+		Username: "test" + uuid.NewString(),
+	})
+	require.NoError(t, err)
+
+	t.Cleanup(func() {
+		err := deleteUserByID(testCaseDB.DB, userID1)
+		require.NoError(t, err)
+	})
+
+	testCases := [...]struct {
+		desc          string
+		preconditions []models.Category
+		args          *service.ListCategoriesFilter
+		expected      []models.Category
+	}{
 		{
-			desc: "negative: category not found (by id)",
-			input: service.GetCategoryFilter{
-				ID: title,
+			desc: "found categories by user id",
+			preconditions: []models.Category{
+				{
+					ID:     categoryID1,
+					UserID: userID1,
+					Title:  "title_get_1",
+				},
+				{
+					ID:     categoryID2,
+					UserID: userID1,
+					Title:  "title_get_2",
+				},
+			},
+			args: &service.ListCategoriesFilter{
+				UserID: userID1,
+			},
+			expected: []models.Category{
+				{
+					ID:     categoryID1,
+					UserID: userID1,
+					Title:  "title_get_1",
+				},
+				{
+					ID:     categoryID2,
+					UserID: userID1,
+					Title:  "title_get_2",
+				},
+			},
+		},
+		{
+			desc: "categories not found",
+			args: &service.ListCategoriesFilter{
+				UserID: userID2,
 			},
 			expected: nil,
+		},
+	}
+	for _, tc := range testCases {
+		tc := tc
+		t.Run(tc.desc, func(t *testing.T) {
+			t.Parallel()
+
+			for _, category := range tc.preconditions {
+				err := categoryStore.Create(ctx, &category)
+				assert.NoError(t, err)
+			}
+
+			t.Cleanup(func() {
+				for _, category := range tc.preconditions {
+					err := categoryStore.Delete(ctx, category.ID)
+					assert.NoError(t, err)
+				}
+			})
+
+			got, err := categoryStore.List(ctx, tc.args)
+			assert.NoError(t, err)
+			assert.Equal(t, tc.expected, got)
+		})
+	}
+}
+
+func TestCategory_Update(t *testing.T) {
+	t.Parallel()
+
+	ctx := context.TODO() //nolint: forbidigo
+	testCaseDB := createTestDB(t, "category_update")
+	userStore := store.NewUser(testCaseDB)
+	categoryStore := store.NewCategory(testCaseDB)
+
+	userID := uuid.NewString()
+	categoryID1, categoryID2 := uuid.NewString(), uuid.NewString()
+	err := userStore.Create(ctx, &models.User{
+		ID:       userID,
+		Username: "test" + uuid.NewString(),
+	})
+	require.NoError(t, err)
+
+	testCases := [...]struct {
+		desc          string
+		preconditions *models.Category
+		args          *models.Category
+		expected      *models.Category
+	}{
+		{
+			desc: "category updated",
+			preconditions: &models.Category{
+				ID:     categoryID1,
+				UserID: userID,
+				Title:  "old_title",
+			},
+			args: &models.Category{
+				ID:     categoryID1,
+				UserID: userID,
+				Title:  "new_title",
+			},
+			expected: &models.Category{
+				ID:     categoryID1,
+				UserID: userID,
+				Title:  "new_title",
+			},
+		},
+		{
+			desc: "category not updated because of not existed id",
+			preconditions: &models.Category{
+				ID:     categoryID2,
+				UserID: userID,
+				Title:  "test_title",
+			},
+			args: &models.Category{
+				ID:     uuid.NewString(),
+				UserID: userID,
+				Title:  "updated_title",
+			},
+			expected: &models.Category{
+				ID:     categoryID2,
+				UserID: userID,
+				Title:  "test_title",
+			},
 		},
 	}
 	for _, tc := range testCases {
@@ -185,9 +380,12 @@ func TestCategory_Get(t *testing.T) {
 				}
 			})
 
-			got, err := categoryStore.Get(ctx, tc.input)
+			err = categoryStore.Update(ctx, tc.args)
 			assert.NoError(t, err)
-			assert.Equal(t, tc.expected, got)
+
+			actual, err := categoryStore.Get(ctx, service.GetCategoryFilter{ID: tc.preconditions.ID})
+			assert.NoError(t, err)
+			assert.Equal(t, tc.expected, actual)
 		})
 	}
 }
@@ -196,41 +394,46 @@ func TestCategory_Delete(t *testing.T) {
 	t.Parallel()
 
 	ctx := context.TODO() //nolint: forbidigo
-	cfg := config.Get()
+	testCaseDB := createTestDB(t, "category_delete")
+	userStore := store.NewUser(testCaseDB)
+	categoryStore := store.NewCategory(testCaseDB)
 
-	db, err := database.NewMongoDB(ctx, cfg.MongoDB.URI, "category_delete_test")
+	userID := uuid.NewString()
+	categoryID := uuid.NewString()
+	err := userStore.Create(ctx, &models.User{
+		ID:       userID,
+		Username: "test" + uuid.NewString(),
+	})
 	require.NoError(t, err)
 
 	t.Cleanup(func() {
-		err := db.DB.Drop(ctx)
-		assert.NoError(t, err)
+		err := deleteUserByID(testCaseDB.DB, userID)
+		require.NoError(t, err)
 	})
 
-	categoryStore := store.NewCategory(db)
-
-	categoryID := uuid.NewString()
-
-	tests := []struct {
+	testCases := [...]struct {
 		desc          string
 		preconditions *models.Category
-		input         string
+		args          string
 	}{
 		{
-			desc: "positive: category deleted",
+			desc: "category deleted",
 			preconditions: &models.Category{
-				ID: categoryID,
+				ID:     categoryID,
+				UserID: userID,
 			},
-			input: categoryID,
+			args: categoryID,
 		},
 		{
-			desc: "negative: category not deleted because of not existed id",
+			desc: "category not deleted because of not existed id",
 			preconditions: &models.Category{
-				ID: uuid.NewString(),
+				ID:     uuid.NewString(),
+				UserID: userID,
 			},
-			input: uuid.NewString(),
+			args: uuid.NewString(),
 		},
 	}
-	for _, tc := range tests {
+	for _, tc := range testCases {
 		tc := tc
 		t.Run(tc.desc, func(t *testing.T) {
 			t.Parallel()
@@ -241,105 +444,25 @@ func TestCategory_Delete(t *testing.T) {
 			}
 
 			t.Cleanup(func() {
-				err := categoryStore.Delete(ctx, tc.preconditions.ID)
-				assert.NoError(t, err)
+				if tc.preconditions != nil {
+					err := categoryStore.Delete(ctx, tc.preconditions.ID)
+					assert.NoError(t, err)
+				}
 			})
 
-			err := categoryStore.Delete(ctx, tc.input)
+			err := categoryStore.Delete(ctx, tc.args)
+			assert.NoError(t, err)
+
+			actual, err := categoryStore.Get(ctx, service.GetCategoryFilter{ID: tc.preconditions.ID})
 			assert.NoError(t, err)
 
 			// operation should not be deleted
-			if tc.preconditions.ID != tc.input {
-				var category models.Category
-
-				err := db.DB.Collection("Categories").
-					FindOne(ctx, bson.M{"_id": tc.preconditions.ID}).
-					Decode(&category)
-
-				assert.NoError(t, err)
-				assert.NotNil(t, category)
-			}
-		})
-	}
-}
-
-func TestCategory_Update(t *testing.T) {
-	t.Parallel()
-
-	ctx := context.TODO() //nolint: forbidigo
-	cfg := config.Get()
-
-	db, err := database.NewMongoDB(ctx, cfg.MongoDB.URI, "category_update_test")
-	require.NoError(t, err)
-
-	t.Cleanup(func() {
-		err := db.DB.Drop(ctx)
-		assert.NoError(t, err)
-	})
-
-	categoryStore := store.NewCategory(db)
-
-	categoryID1 := uuid.NewString()
-	categoryID2 := uuid.NewString()
-
-	testCases := []struct {
-		desc          string
-		preconditions *models.Category
-		input         *models.Category
-		expected      *models.Category
-	}{
-		{
-			desc: "positive: category updated",
-			preconditions: &models.Category{
-				ID:    categoryID1,
-				Title: "old_title",
-			},
-			input: &models.Category{
-				ID:    categoryID1,
-				Title: "new_title",
-			},
-			expected: &models.Category{
-				ID:    categoryID1,
-				Title: "new_title",
-			},
-		},
-		{
-			desc: "negative: category not updated because of not existed id",
-			preconditions: &models.Category{
-				ID:    categoryID2,
-				Title: "test_title",
-			},
-			input: &models.Category{
-				ID:    uuid.NewString(),
-				Title: "updated_title",
-			},
-			expected: &models.Category{
-				ID:    categoryID2,
-				Title: "test_title",
-			},
-		},
-	}
-	for _, tc := range testCases {
-		tc := tc
-		t.Run(tc.desc, func(t *testing.T) {
-			t.Parallel()
-
-			if tc.preconditions != nil {
-				err = categoryStore.Create(ctx, tc.preconditions)
-				assert.NoError(t, err)
+			if tc.preconditions.ID != tc.args {
+				assert.NotNil(t, actual)
+				return
 			}
 
-			t.Cleanup(func() {
-				err = categoryStore.Delete(ctx, tc.preconditions.ID)
-				assert.NoError(t, err)
-			})
-
-			err = categoryStore.Update(ctx, tc.input)
-			assert.NoError(t, err)
-
-			got, err := categoryStore.Get(ctx, service.GetCategoryFilter{ID: tc.preconditions.ID})
-			assert.NoError(t, err)
-			assert.Equal(t, tc.expected, got)
+			assert.Nil(t, actual)
 		})
 	}
 }

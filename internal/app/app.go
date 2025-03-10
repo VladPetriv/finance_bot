@@ -10,6 +10,7 @@ import (
 	"github.com/VladPetriv/finance_bot/config"
 	currencybeacon "github.com/VladPetriv/finance_bot/internal/api/currency_beacon"
 	"github.com/VladPetriv/finance_bot/internal/api/telegram"
+	"github.com/VladPetriv/finance_bot/internal/migrations"
 	"github.com/VladPetriv/finance_bot/internal/service"
 	"github.com/VladPetriv/finance_bot/internal/store"
 	"github.com/VladPetriv/finance_bot/pkg/database"
@@ -33,23 +34,35 @@ func Run(ctx context.Context, cfg *config.Config, logger *logger.Logger) {
 		CurrencyExchanger: currencybeacon.New(cfg.CurrencyBeacon.APIEndpoint, cfg.CurrencyBeacon.APIKey),
 	}
 
-	mongoDB, err := database.NewMongoDB(ctx, cfg.MongoDB.URI, cfg.MongoDB.Database)
+	postgres, err := database.NewPostgreSQL(database.PostgreSQLOptions{
+		User:     cfg.PostgreSQL.User,
+		Password: cfg.PostgreSQL.Password,
+		Database: cfg.PostgreSQL.Database,
+		Host:     cfg.PostgreSQL.Host,
+		Port:     cfg.PostgreSQL.Port,
+		SSLMode:  cfg.PostgreSQL.SSLMode,
+	})
 	if err != nil {
-		logger.Fatal().Err(err).Msg("create new mongodb instance")
+		logger.Fatal().Err(err).Msg("create new postgres instance")
 	}
 
-	err = mongoDB.Ping(ctx)
+	err = postgres.Ping()
 	if err != nil {
-		logger.Fatal().Err(err).Msg("connection with mondodb is not established")
+		logger.Fatal().Err(err).Msg("connection with postgres is not established")
+	}
+
+	err = migrations.MigrateDB(logger, postgres.DB, cfg.PostgreSQL.Database, migrations.Migrations)
+	if err != nil {
+		logger.Fatal().Err(err).Msg("migrate database")
 	}
 
 	stores := service.Stores{
-		Category:  store.NewCategory(mongoDB),
-		User:      store.NewUser(mongoDB),
-		Balance:   store.NewBalance(mongoDB),
-		Operation: store.NewOperation(mongoDB),
-		State:     store.NewState(mongoDB),
-		Currency:  store.NewCurrency(mongoDB),
+		Category:  store.NewCategory(postgres),
+		User:      store.NewUser(postgres),
+		Balance:   store.NewBalance(postgres),
+		Operation: store.NewOperation(postgres),
+		State:     store.NewState(postgres),
+		Currency:  store.NewCurrency(postgres),
 	}
 
 	currencyService := service.NewCurrency(logger, apis, stores)
@@ -129,9 +142,9 @@ func Run(ctx context.Context, cfg *config.Config, logger *logger.Logger) {
 		logger.Error().Err(err).Msg("error shutting down health check server")
 	}
 
-	err = mongoDB.Close()
+	err = postgres.Close()
 	if err != nil {
-		logger.Error().Err(err).Msg("close mongodb connection")
+		logger.Error().Err(err).Msg("close postgres connection")
 	}
 
 	logger.Info().Msg("application stopped")

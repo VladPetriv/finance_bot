@@ -2,9 +2,9 @@ package models
 
 // Category represents a category model.
 type Category struct {
-	ID     string `bson:"_id,omitempty"`
-	UserID string `bson:"userId,omitempty"`
-	Title  string `bson:"title,omitempty"`
+	ID     string `db:"id"`
+	UserID string `db:"user_id"`
+	Title  string `db:"title"`
 }
 
 // GetName returns the category title.

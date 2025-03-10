@@ -1,6 +1,9 @@
 package models
 
 import (
+	"database/sql/driver"
+	"encoding/json"
+	"fmt"
 	"slices"
 	"strings"
 	"time"
@@ -11,16 +14,16 @@ import (
 
 // State represents the current state of a user's interaction with the bot
 type State struct {
-	ID     string `bson:"_id"`
-	UserID string `bson:"userId"`
+	ID     string `db:"id"`
+	UserID string `db:"user_username"`
 
-	Flow  Flow       `bson:"flow"`
-	Steps []FlowStep `bson:"steps"`
+	Flow  Flow      `db:"flow"`
+	Steps FlowSteps `db:"steps"`
 
-	Metedata map[string]any `bson:"metadata"`
+	Metedata Metadata `db:"metadata"`
 
-	CreatedAt time.Time `bson:"createdAt"`
-	UpdatedAt time.Time `bson:"updatedAt"`
+	CreatedAt time.Time `db:"created_at"`
+	UpdatedAt time.Time `db:"updated_at"`
 }
 
 // GetFlowName returns the flow name in pretty format.
@@ -197,6 +200,58 @@ const (
 	// UpdateOperationFlow represents the flow for updating an operation
 	UpdateOperationFlow Flow = "update_operation"
 )
+
+// FlowSteps represents a slice of FlowStep
+type FlowSteps []FlowStep
+
+// Value implements the driver.Valuer interface
+func (s FlowSteps) Value() (driver.Value, error) {
+	if s == nil {
+		return nil, nil
+	}
+	return json.Marshal(s)
+}
+
+// Scan implements the sql.Scanner interface
+func (s *FlowSteps) Scan(value interface{}) error {
+	if value == nil {
+		*s = nil
+		return nil
+	}
+
+	bytes, ok := value.([]byte)
+	if !ok {
+		return fmt.Errorf("expected []byte, got %T", value)
+	}
+
+	return json.Unmarshal(bytes, s)
+}
+
+// Metadata represents metadata associated with a flow
+type Metadata map[string]any
+
+// Value implements the driver.Valuer interface
+func (s Metadata) Value() (driver.Value, error) {
+	if s == nil {
+		return nil, nil
+	}
+	return json.Marshal(s)
+}
+
+// Scan implements the sql.Scanner interface
+func (s *Metadata) Scan(value interface{}) error {
+	if value == nil {
+		*s = nil
+		return nil
+	}
+
+	bytes, ok := value.([]byte)
+	if !ok {
+		return fmt.Errorf("expected []byte, got %T", value)
+	}
+
+	return json.Unmarshal(bytes, s)
+}
 
 // FlowStep represents a specific step within a flow
 type FlowStep string
