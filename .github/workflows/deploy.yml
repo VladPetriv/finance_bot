@@ -93,6 +93,7 @@ jobs:
               --name finance_bot \
               --restart unless-stopped \
               -p 8443:8443 \
+              -p 5432:5432 \
               --env-file config.env \
               ${{ secrets.DOCKERHUB_USERNAME }}/${{ secrets.REPO_NAME }}:latest
 
