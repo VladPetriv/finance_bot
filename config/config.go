@@ -31,6 +31,7 @@ type PostgreSQL struct {
 	Host     string `env:"FB_POSTGRESQL_HOST" env-default:"localhost"`
 	Port     string `env:"FB_POSTGRESQL_PORT" env-default:"5432"`
 	SSLMode  string `env:"FB_POSTGRESQL_SSL_MODE" env-default:"disable"`
+	URL      string `env:"FB_POSTGRESQL_URL"`
 }
 
 // CurrencyBeacon represents a config for CurrencyBeacon API.
