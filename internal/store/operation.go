@@ -118,6 +118,9 @@ func (o *operationStore) Count(ctx context.Context, filter service.ListOperation
 	var count int64
 	err = o.DB.GetContext(ctx, &count, query, args...)
 	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return 0, nil
+		}
 		return 0, err
 	}
 
@@ -168,7 +171,8 @@ func applyListOperationsFilter(options applyListOperationsOptions, filter servic
 	}
 
 	if filter.SortByCreatedAtDesc {
-		stmt = stmt.OrderBy("created_at DESC")
+		stmt = stmt.GroupBy("id", "category_id", "balance_id", "type", "amount", "description", "created_at", "updated_at").
+			OrderBy("created_at DESC")
 	}
 
 	return &stmt
