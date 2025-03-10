@@ -6,6 +6,7 @@ import (
 	"github.com/VladPetriv/finance_bot/config"
 	"github.com/VladPetriv/finance_bot/internal/app"
 	"github.com/VladPetriv/finance_bot/pkg/logger"
+	_ "github.com/lib/pq"
 )
 
 func main() {
