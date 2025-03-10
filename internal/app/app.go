@@ -7,6 +7,8 @@ import (
 	"os/signal"
 	"syscall"
 
+	_ "github.com/lib/pq"
+
 	"github.com/VladPetriv/finance_bot/config"
 	currencybeacon "github.com/VladPetriv/finance_bot/internal/api/currency_beacon"
 	"github.com/VladPetriv/finance_bot/internal/api/telegram"
