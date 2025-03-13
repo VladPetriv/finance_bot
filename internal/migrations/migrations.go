@@ -28,4 +28,8 @@ var Migrations = []any{
 		Name: "Init state table",
 		Func: initStateTable,
 	},
+	&migrator.MigrationNoTx{
+		Name: "Init balance_subscription table",
+		Func: initBalanceSubscriptionTable,
+	},
 }

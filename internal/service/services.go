@@ -69,7 +69,7 @@ var (
 			Buttons: []string{models.BotBalanceCommand, models.BotCategoryCommand},
 		},
 		{
-			Buttons: []string{models.BotOperationCommand},
+			Buttons: []string{models.BotOperationCommand, models.BotBalanceSubscriptionsCommand},
 		},
 	}
 
@@ -109,6 +109,18 @@ var (
 		},
 		{
 			Buttons: []string{models.BotUpdateOperationCommand, models.BotDeleteOperationCommand},
+		},
+		{
+			Buttons: []string{models.BotCancelCommand},
+		},
+	}
+
+	balanceSubscriptionKeyboardRows = []KeyboardRow{
+		{
+			Buttons: []string{models.BotCreateBalanceSubscriptionCommand, models.BotListBalanceSubscriptionsCommand},
+		},
+		{
+			Buttons: []string{models.BotUpdateBalanceSubscriptionCommand, models.BotDeleteBalanceSubscriptionCommand},
 		},
 		{
 			Buttons: []string{models.BotCancelCommand},
@@ -182,6 +194,37 @@ var (
 			Buttons: []InlineKeyboardButton{
 				{
 					Text: models.BotUpdateBalanceCurrencyCommand,
+				},
+			},
+		},
+	}
+
+	updateBalanceSubscriptionKeyboard = []InlineKeyboardRow{
+		{
+			Buttons: []InlineKeyboardButton{
+				{
+					Text: models.BotUpdateBalanceSubscriptionNameCommand,
+				},
+			},
+		},
+		{
+			Buttons: []InlineKeyboardButton{
+				{
+					Text: models.BotUpdateBalanceSubscriptionAmountCommand,
+				},
+			},
+		},
+		{
+			Buttons: []InlineKeyboardButton{
+				{
+					Text: models.BotUpdateBalanceSubscriptionCategoryCommand,
+				},
+			},
+		},
+		{
+			Buttons: []InlineKeyboardButton{
+				{
+					Text: models.BotUpdateBalanceSubscriptionPeriodCommand,
 				},
 			},
 		},

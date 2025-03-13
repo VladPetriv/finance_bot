@@ -11,12 +11,14 @@ const (
 	// UnknownEvent represents an unrecognized or unsupported event
 	UnknownEvent Event = "unknown"
 
-	// BalanceEvent represents the event for receiving balance actionsn
+	// BalanceEvent represents the event for receiving balance actions
 	BalanceEvent Event = "balance/actions"
 	// CategoryEvent represents the event for receiving category actions
 	CategoryEvent Event = "category/actions"
 	// OperationEvent represents the event for receiving operation actions
 	OperationEvent Event = "operation/actions"
+	// BalanceSubscriptionsEvent represents the event for receiving balance subscriptions actions
+	BalanceSubscriptionsEvent Event = "balance/subscriptions/actions"
 
 	// CreateBalanceEvent represents the event for creating a new balance
 	CreateBalanceEvent Event = "balance/create"
@@ -44,6 +46,15 @@ const (
 	DeleteOperationEvent Event = "operation/delete"
 	// UpdateOperationEvent represents the event for updating an operation
 	UpdateOperationEvent Event = "operation/update"
+
+	// CreateBalanceSubscriptionEvent represents the event for creating a new balance subscription
+	CreateBalanceSubscriptionEvent Event = "balance_subscription/create"
+	// ListBalanceSubscriptionsEvent represents the event for listing all balance subscriptions
+	ListBalanceSubscriptionsEvent Event = "balance_subscription/list"
+	// UpdateBalanceSubscriptionEvent represents the event for updating a balance subscription
+	UpdateBalanceSubscriptionEvent Event = "balance_subscription/update"
+	// DeleteBalanceSubscriptionEvent represents the event for deleting a balance subscription
+	DeleteBalanceSubscriptionEvent Event = "balance_subscription/delete"
 )
 
 // EventToFlow maps events to their corresponding flows
@@ -74,4 +85,10 @@ var EventToFlow = map[Event]Flow{
 	GetOperationsHistoryEvent: GetOperationsHistoryFlow,
 	DeleteOperationEvent:      DeleteOperationFlow,
 	UpdateOperationEvent:      UpdateOperationFlow,
+
+	// Balance subscriptions
+	CreateBalanceSubscriptionEvent: CreateBalanceSubscriptionFlow,
+	ListBalanceSubscriptionsEvent:  ListBalanceSubscriptionsFlow,
+	UpdateBalanceSubscriptionEvent: UpdateBalanceSubscriptionFlow,
+	DeleteBalanceSubscriptionEvent: DeleteBalanceSubscriptionFlow,
 }

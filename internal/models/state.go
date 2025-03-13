@@ -110,6 +110,15 @@ func (s *State) IsCommandAllowedDuringFlow(command string) bool {
 			return false
 		}
 
+	case UpdateBalanceSubscriptionFlow:
+		return slices.Contains(
+			[]string{
+				BotUpdateBalanceSubscriptionNameCommand, BotUpdateBalanceSubscriptionAmountCommand,
+				BotUpdateBalanceSubscriptionCategoryCommand, BotUpdateBalanceSubscriptionPeriodCommand,
+			},
+			command,
+		)
+
 	default:
 		return false
 	}
@@ -152,6 +161,14 @@ func (s *State) GetEvent() Event {
 		return GetOperationsHistoryEvent
 	case UpdateOperationFlowStep:
 		return UpdateOperationEvent
+	case CreateBalanceSubscriptionFlowStep:
+		return CreateBalanceSubscriptionEvent
+	case ListBalanceSubscriptionsFlowStep:
+		return ListBalanceSubscriptionsEvent
+	case UpdateBalanceSubscriptionFlowStep:
+		return UpdateBalanceSubscriptionEvent
+	case DeleteBalanceSubscriptionFlowStep:
+		return DeleteBalanceSubscriptionEvent
 	default:
 		return UnknownEvent
 	}
@@ -199,6 +216,15 @@ const (
 	DeleteOperationFlow Flow = "delete_operation"
 	// UpdateOperationFlow represents the flow for updating an operation
 	UpdateOperationFlow Flow = "update_operation"
+
+	// CreateBalanceSubscriptionFlow represents the flow for creating a new balance subscription
+	CreateBalanceSubscriptionFlow Flow = "create_balance_subscription"
+	// ListBalanceSubscriptionsFlow represents the flow for listing all balance subscriptions
+	ListBalanceSubscriptionsFlow Flow = "list_balance_subscriptions"
+	// UpdateBalanceSubscriptionFlow represents the flow for updating a balance subscription
+	UpdateBalanceSubscriptionFlow Flow = "update_balance_subscription"
+	// DeleteBalanceSubscriptionFlow represents the flow for deleting a balance subscription
+	DeleteBalanceSubscriptionFlow Flow = "delete_balance_subscription"
 )
 
 // FlowSteps represents a slice of FlowStep
@@ -342,4 +368,33 @@ const (
 	ChooseUpdateOperationOptionFlowStep FlowStep = "choose_update_operation_option"
 	// EnterOperationDateFlowStep represents the step for entering operation date
 	EnterOperationDateFlowStep FlowStep = "enter_operation_date"
+
+	// Steps that are related for balance subscription
+
+	// CreateBalanceSubscriptionFlowStep represents the step for creating a balance subscription
+	CreateBalanceSubscriptionFlowStep FlowStep = "create_balance_subscription"
+	// EnterBalanceSubscriptionNameFlowStep represents the step for entering balance subscription name
+	EnterBalanceSubscriptionNameFlowStep FlowStep = "enter_balance_subscription_name"
+	// EnterBalanceSubscriptionAmountFlowStep represents the step for entering balance subscription amount
+	EnterBalanceSubscriptionAmountFlowStep FlowStep = "enter_balance_subscription_amount"
+	// ChooseBalanceSubscriptionPeriodFlowStep represents the step for choosing balance subscription period
+	ChooseBalanceSubscriptionPeriodFlowStep FlowStep = "choose_balance_subscription_period"
+	// ChooseBalanceSubscriptionFrequencyFlowStep represents the step for choosing balance subscription frequency
+	ChooseBalanceSubscriptionFrequencyFlowStep FlowStep = "choose_balance_subscription_frequency"
+	// EnterStartAtDateForBalanceSubscriptionFlowStep represents the step for entering start at date for balance subscription
+	EnterStartAtDateForBalanceSubscriptionFlowStep FlowStep = "enter_start_at_date_for_balance_subscription"
+	// ListBalanceSubscriptionsFlowStep represents the step for listing balance subscriptions
+	ListBalanceSubscriptionsFlowStep FlowStep = "list_balance_subscriptions"
+	// UpdateBalanceSubscriptionFlowStep represents the step for updating a balance subscription
+	UpdateBalanceSubscriptionFlowStep FlowStep = "update_balance_subscription"
+	// ChooseBalanceSubscriptionToUpdateFlowStep represents the step for choosing balance subscription to update
+	ChooseBalanceSubscriptionToUpdateFlowStep FlowStep = "choose_balance_subscription_to_update"
+	// ChooseUpdateBalanceSubscriptionOptionFlowStep represents the step for choosing balance subscription option
+	ChooseUpdateBalanceSubscriptionOptionFlowStep FlowStep = "choose_update_balance_subscription_option"
+	// DeleteBalanceSubscriptionFlowStep represents the step for deleting a balance subscription
+	DeleteBalanceSubscriptionFlowStep FlowStep = "delete_balance_subscription"
+	// ChooseBalanceSubscriptionToDeleteFlowStep represents the step for choosing balance subscription to delete
+	ChooseBalanceSubscriptionToDeleteFlowStep FlowStep = "choose_balance_subscription_to_delete"
+	// ConfirmDeleteBalanceSubscriptionFlowStep represents the step for confirming deletion of a balance subscription
+	ConfirmDeleteBalanceSubscriptionFlowStep FlowStep = "confirm_delete_balance_subscription"
 )
