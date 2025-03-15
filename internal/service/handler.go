@@ -126,6 +126,16 @@ func (h *handlerService) RegisterHandlers() {
 			models.ChooseOperationToDeleteFlowStep:  h.handleChooseOperationToDeleteFlowStep,
 			models.ConfirmOperationDeletionFlowStep: h.handleConfirmOperationDeletionFlowStep,
 		},
+
+		// Flows with balance subscriptions
+		models.CreateBalanceSubscriptionFlow: {
+			models.CreateBalanceSubscriptionFlowStep:              h.handleCreateBalanceSubscriptionFlowStep,
+			models.ChooseBalanceFlowStep:                          h.handleChooseBalanceFlowStepForCreateBalanceSubscription,
+			models.ChooseCategoryFlowStep:                         h.handleChooseCategoryFlowStepForCreateBalanceSubscription,
+			models.EnterBalanceSubscriptionNameFlowStep:           h.handleEnterBalanceSubscriptionNameFlowStep,
+			models.EnterBalanceSubscriptionAmountFlowStep:         h.handleEnterBalanceSubscriptionAmountFlowStep,
+			models.EnterStartAtDateForBalanceSubscriptionFlowStep: h.handleEnterStartAtDateForBalanceSubscriptionFlowStep,
+		},
 	}
 }
 

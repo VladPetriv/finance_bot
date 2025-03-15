@@ -9,12 +9,13 @@ import (
 
 // Stores represents all stores.
 type Stores struct {
-	Balance   BalanceStore
-	Operation OperationStore
-	Category  CategoryStore
-	User      UserStore
-	State     StateStore
-	Currency  CurrencyStore
+	Balance             BalanceStore
+	Operation           OperationStore
+	Category            CategoryStore
+	User                UserStore
+	State               StateStore
+	Currency            CurrencyStore
+	BalanceSubscription BalanceSubscriptionStore
 }
 
 // UserStore provides functionality for work with users store.
@@ -154,4 +155,20 @@ type CurrencyStore interface {
 // ExistsCurrencyFilter represents a filter for CurrencyStore.Exists method.
 type ExistsCurrencyFilter struct {
 	ID string
+}
+
+type BalanceSubscriptionStore interface {
+	// Create creates a new balance subscription in store.
+	Create(ctx context.Context, subscription *models.BalanceSubscription) error
+	// List returns a list of all balance subscriptions from store.
+	List(ctx context.Context, filter ListBalanceSubscriptionFilter) ([]models.BalanceSubscription, error)
+	// Update updates balance subscription model in store.
+	Update(ctx context.Context, subscription *models.BalanceSubscription) error
+	// Delete deletes balance subscription from store.
+	Delete(ctx context.Context, subscriptionID string) error
+}
+
+// ListBalanceSubscriptionFilter represents a filter for ListBalanceSubscriptionStore.List method.
+type ListBalanceSubscriptionFilter struct {
+	UserID string
 }

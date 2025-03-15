@@ -290,6 +290,11 @@ const (
 	operationTypeMetadataKey        = "operation_type"
 	lastOperationDateMetadataKey    = "last_operation_date"
 	operationIDMetadataKey          = "operation_id"
+
+	// Balance subscription related keys
+	balanceSubscriptionNameMetadataKey   = "balance_subscription_name"
+	balanceSubscriptionAmountMetadataKey = "balance_subscription_amount"
+	balanceSubscriptionFromMetadataKey   = "balance_subscription_period"
 )
 
 // StateService represents a service for managing and handling complex bot flow using state.
