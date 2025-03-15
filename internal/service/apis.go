@@ -1,6 +1,8 @@
 package service
 
 import (
+	"context"
+
 	"github.com/VladPetriv/finance_bot/pkg/errs"
 	"github.com/VladPetriv/finance_bot/pkg/money"
 )
@@ -8,6 +10,7 @@ import (
 // APIs represents structure containing all the APIs that the application uses.
 type APIs struct {
 	Messenger         Messenger
+	Prompter          Prompter
 	CurrencyExchanger CurrencyExchanger
 }
 
@@ -76,3 +79,9 @@ type Currency struct {
 
 // ErrCurrencyExchangeRateNotFound happens when the CurrencyExchanger cannot find the exchange rate for the specified currency.
 var ErrCurrencyExchangeRateNotFound = errs.New("currency exchange rate not found")
+
+// Prompter executes prompts and returns generated responses
+type Prompter interface {
+	// Execute processes the prompt and returns the response
+	Execute(ctx context.Context, prompt string) (string, error)
+}
