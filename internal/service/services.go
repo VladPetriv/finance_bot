@@ -40,8 +40,9 @@ type HandlerService interface {
 
 type flowProcessingOptions struct {
 	user          *models.User
-	stateMetaData map[string]any
 	message       Message
+	state         *models.State
+	stateMetaData map[string]any
 }
 
 // HandleErrorOptions represents input structure for HandleError method.
