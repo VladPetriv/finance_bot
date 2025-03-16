@@ -1,11 +1,14 @@
 package models
 
+import "time"
+
 // User represents an user model.
 type User struct {
 	ID       string `db:"id"`
 	Username string `db:"username"`
 
 	Balances []Balance
+	Settings *UserSettings
 }
 
 // GetBalancesIDs returns the balances IDs.
@@ -27,4 +30,12 @@ func (u *User) GetBalance(value string) *Balance {
 	}
 
 	return nil
+}
+
+type UserSettings struct {
+	ID              string    `db:"id"`
+	UserID          string    `db:"user_id"`
+	AIParserEnabled bool      `db:"ai_parser_enabled"`
+	CreatedAt       time.Time `db:"created_at"`
+	UpdatedAt       time.Time `db:"updated_at"`
 }
