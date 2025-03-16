@@ -305,8 +305,9 @@ func (h handlerService) processHandler(ctx context.Context, state *models.State,
 
 	nextStep, err := stepHandler(ctx, flowProcessingOptions{
 		user:          user,
-		stateMetaData: state.Metedata,
 		message:       message,
+		state:         state,
+		stateMetaData: state.Metedata,
 	})
 	if err != nil {
 		if errs.IsExpected(err) {
