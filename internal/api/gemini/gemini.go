@@ -45,7 +45,6 @@ candidateLoop:
 	for _, candidate := range response.Candidates {
 		if candidate.Content != nil {
 			for _, part := range candidate.Content.Parts {
-
 				data, ok := part.(genai.Text)
 				if !ok {
 					continue
