@@ -32,6 +32,7 @@ func (u *User) GetBalance(value string) *Balance {
 	return nil
 }
 
+// UserSettings represents a user settings model.
 type UserSettings struct {
 	ID              string    `db:"id"`
 	UserID          string    `db:"user_id"`

@@ -15,6 +15,7 @@ type gemini struct {
 	model string
 }
 
+// New creates a new instance of the gemini API.
 func New(ctx context.Context, apiKey, model string) (*gemini, error) {
 	client, err := genai.NewClient(ctx, option.WithAPIKey(apiKey))
 	if err != nil {
@@ -27,7 +28,7 @@ func New(ctx context.Context, apiKey, model string) (*gemini, error) {
 	}, nil
 }
 
-var emptyResponse = errors.New("empty response")
+var errEmptyResponse = errors.New("empty response")
 
 func (g *gemini) Execute(ctx context.Context, prompt string) (string, error) {
 	response, err := g.client.GenerativeModel(g.model).GenerateContent(ctx, genai.Text(prompt))
@@ -35,7 +36,7 @@ func (g *gemini) Execute(ctx context.Context, prompt string) (string, error) {
 		return "", fmt.Errorf("generate content through model: %w", err)
 	}
 	if len(response.Candidates) == 0 {
-		return "", emptyResponse
+		return "", errEmptyResponse
 	}
 
 	var output string
