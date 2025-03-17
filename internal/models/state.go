@@ -348,4 +348,6 @@ const (
 	EnterOperationDateFlowStep FlowStep = "enter_operation_date"
 	// CreateOperationsThroughOneTimeInputFlowStep represents the step for creating operations through one-time input
 	CreateOperationsThroughOneTimeInputFlowStep FlowStep = "create_operations_through_one_time_input"
+	// ConfirmOperationDetailsFlowStep represents the step for confirming operation details
+	ConfirmOperationDetailsFlowStep FlowStep = "confirm_operation_details"
 )

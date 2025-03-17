@@ -45,6 +45,7 @@ func (h *handlerService) handleCreateOperationsThroughOneTimeInputFlowStep(ctx c
 		logger.Error().Err(err).Msg("parse operation data from prompt output")
 		return "", fmt.Errorf("parse operation data from prompt output: %w", err)
 	}
+	logger.Debug().Any("operationData", operationData).Msg("parsed operation data from prompt output")
 
 	parsedAmount, err := money.NewFromString(operationData.Amount)
 	if err != nil {
@@ -66,6 +67,32 @@ func (h *handlerService) handleCreateOperationsThroughOneTimeInputFlowStep(ctx c
 	opts.stateMetaData[operationTypeMetadataKey] = operationData.Type
 	opts.stateMetaData[operationAmountMetadataKey] = parsedAmount.StringFixed()
 	opts.stateMetaData[operationDescriptionMetadataKey] = operationData.Description
+
+	operationDetailsMessage := fmt.Sprintf(`Please confirm the following operation details:
+Category: %s
+Operation Type: %s
+Amount: %s
+Description: %s
+
+Do you confirm this operation?`,
+		categoryTitle, operationData.Type, parsedAmount.StringFixed(), operationData.Description,
+	)
+
+	return models.ConfirmOperationDetailsFlowStep, h.sendMessageWithConfirmationInlineKeyboard(opts.message.GetChatID(), operationDetailsMessage)
+}
+
+func (h *handlerService) handleConfirmOperationDetailsFlowStepForOneTimeInputOperationCreate(ctx context.Context, opts flowProcessingOptions) (models.FlowStep, error) {
+	logger := h.logger.With().Str("name", "handlerService.handleConfirmOperationDetailsFlowStepForOneTimeInputOperationCreate").Logger()
+	logger.Debug().Any("opts", opts).Msg("got args")
+
+	operationDetailsConfirmed, err := strconv.ParseBool(opts.message.GetText())
+	if err != nil {
+		logger.Error().Err(err).Msg("parse confirmation flag")
+		return "", fmt.Errorf("parse confirmation flag: %w", err)
+	}
+	if !operationDetailsConfirmed {
+		return models.EndFlowStep, h.notifyCancellationAndShowMenu(opts.message.GetChatID())
+	}
 
 	return models.ChooseBalanceFlowStep, h.apis.Messenger.SendWithKeyboard(SendWithKeyboardOptions{
 		ChatID:   opts.message.GetChatID(),

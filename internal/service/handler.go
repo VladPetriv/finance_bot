@@ -129,6 +129,7 @@ func (h *handlerService) RegisterHandlers() {
 		models.CreateOperationsThroughOneTimeInputFlow: {
 			models.CreateOperationsThroughOneTimeInputFlowStep: h.handleCreateOperationsThroughOneTimeInputFlowStep,
 			models.ChooseBalanceFlowStep:                       h.handleChooseBalanceFlowStepForOneTimeInputOperationCreate,
+			models.ConfirmOperationDetailsFlowStep:             h.handleConfirmOperationDetailsFlowStepForOneTimeInputOperationCreate,
 		},
 	}
 }
