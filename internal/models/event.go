@@ -17,6 +17,8 @@ const (
 	CategoryEvent Event = "category/actions"
 	// OperationEvent represents the event for receiving operation actions
 	OperationEvent Event = "operation/actions"
+	// BalanceSubscriptionsEvent represents the event for receiving balance subscriptions actions
+	BalanceSubscriptionsEvent Event = "balance/subscriptions/actions"
 
 	// CreateBalanceEvent represents the event for creating a new balance
 	CreateBalanceEvent Event = "balance/create"
@@ -46,6 +48,15 @@ const (
 	UpdateOperationEvent Event = "operation/update"
 	// CreateOperationsThroughOneTimeInputEvent represents the event for creating operations through one-time input
 	CreateOperationsThroughOneTimeInputEvent Event = "operation/create_through_one_time_input"
+
+	// CreateBalanceSubscriptionEvent represents the event for creating a new balance subscription
+	CreateBalanceSubscriptionEvent Event = "balance_subscription/create"
+	// ListBalanceSubscriptionsEvent represents the event for listing all balance subscriptions
+	ListBalanceSubscriptionsEvent Event = "balance_subscription/list"
+	// UpdateBalanceSubscriptionEvent represents the event for updating a balance subscription
+	UpdateBalanceSubscriptionEvent Event = "balance_subscription/update"
+	// DeleteBalanceSubscriptionEvent represents the event for deleting a balance subscription
+	DeleteBalanceSubscriptionEvent Event = "balance_subscription/delete"
 )
 
 // EventToFlow maps events to their corresponding flows
@@ -77,4 +88,10 @@ var EventToFlow = map[Event]Flow{
 	DeleteOperationEvent:                     DeleteOperationFlow,
 	UpdateOperationEvent:                     UpdateOperationFlow,
 	CreateOperationsThroughOneTimeInputEvent: CreateOperationsThroughOneTimeInputFlow,
+
+	// Balance subscriptions
+	CreateBalanceSubscriptionEvent: CreateBalanceSubscriptionFlow,
+	ListBalanceSubscriptionsEvent:  ListBalanceSubscriptionsFlow,
+	UpdateBalanceSubscriptionEvent: UpdateBalanceSubscriptionFlow,
+	DeleteBalanceSubscriptionEvent: DeleteBalanceSubscriptionFlow,
 }
