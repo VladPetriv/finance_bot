@@ -11,7 +11,7 @@ const (
 	// UnknownEvent represents an unrecognized or unsupported event
 	UnknownEvent Event = "unknown"
 
-	// BalanceEvent represents the event for receiving balance actionsn
+	// BalanceEvent represents the event for receiving balance actions
 	BalanceEvent Event = "balance/actions"
 	// CategoryEvent represents the event for receiving category actions
 	CategoryEvent Event = "category/actions"
@@ -44,6 +44,8 @@ const (
 	DeleteOperationEvent Event = "operation/delete"
 	// UpdateOperationEvent represents the event for updating an operation
 	UpdateOperationEvent Event = "operation/update"
+	// CreateOperationsThroughOneTimeInputEvent represents the event for creating operations through one-time input
+	CreateOperationsThroughOneTimeInputEvent Event = "operation/create_through_one_time_input"
 )
 
 // EventToFlow maps events to their corresponding flows
@@ -70,8 +72,9 @@ var EventToFlow = map[Event]Flow{
 	DeleteCategoryEvent: DeleteCategoryFlow,
 
 	// Operation
-	CreateOperationEvent:      CreateOperationFlow,
-	GetOperationsHistoryEvent: GetOperationsHistoryFlow,
-	DeleteOperationEvent:      DeleteOperationFlow,
-	UpdateOperationEvent:      UpdateOperationFlow,
+	CreateOperationEvent:                     CreateOperationFlow,
+	GetOperationsHistoryEvent:                GetOperationsHistoryFlow,
+	DeleteOperationEvent:                     DeleteOperationFlow,
+	UpdateOperationEvent:                     UpdateOperationFlow,
+	CreateOperationsThroughOneTimeInputEvent: CreateOperationsThroughOneTimeInputFlow,
 }
