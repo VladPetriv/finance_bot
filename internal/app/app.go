@@ -9,6 +9,7 @@ import (
 
 	"github.com/VladPetriv/finance_bot/config"
 	currencybeacon "github.com/VladPetriv/finance_bot/internal/api/currency_beacon"
+	"github.com/VladPetriv/finance_bot/internal/api/gemini"
 	"github.com/VladPetriv/finance_bot/internal/api/telegram"
 	"github.com/VladPetriv/finance_bot/internal/migrations"
 	"github.com/VladPetriv/finance_bot/internal/service"
@@ -29,8 +30,14 @@ func Run(ctx context.Context, cfg *config.Config, logger *logger.Logger) {
 		logger.Fatal().Err(err).Msg("create new telegram api")
 	}
 
+	gemini, err := gemini.New(ctx, cfg.Gemini.APIKey, cfg.Gemini.Model)
+	if err != nil {
+		logger.Fatal().Err(err).Msg("create new gemini api")
+	}
+
 	apis := service.APIs{
 		Messenger:         telegram,
+		Prompter:          gemini,
 		CurrencyExchanger: currencybeacon.New(cfg.CurrencyBeacon.APIEndpoint, cfg.CurrencyBeacon.APIKey),
 	}
 
@@ -136,6 +143,11 @@ func Run(ctx context.Context, cfg *config.Config, logger *logger.Logger) {
 	err = telegram.Close()
 	if err != nil {
 		logger.Error().Err(err).Msg("close telegram bot connection")
+	}
+
+	err = gemini.Close()
+	if err != nil {
+		logger.Error().Err(err).Msg("close gemini connection")
 	}
 
 	err = server.Shutdown(ctx)

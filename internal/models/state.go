@@ -161,6 +161,8 @@ func (s *State) GetEvent() Event {
 		return GetOperationsHistoryEvent
 	case UpdateOperationFlowStep:
 		return UpdateOperationEvent
+	case CreateOperationsThroughOneTimeInputFlowStep:
+		return CreateOperationsThroughOneTimeInputEvent
 	case CreateBalanceSubscriptionFlowStep:
 		return CreateBalanceSubscriptionEvent
 	case ListBalanceSubscriptionsFlowStep:
@@ -216,6 +218,8 @@ const (
 	DeleteOperationFlow Flow = "delete_operation"
 	// UpdateOperationFlow represents the flow for updating an operation
 	UpdateOperationFlow Flow = "update_operation"
+	// CreateOperationsThroughOneTimeInputFlow represents the flow for creating operations through one-time input
+	CreateOperationsThroughOneTimeInputFlow Flow = "create_operations_through_one_time_input"
 
 	// CreateBalanceSubscriptionFlow represents the flow for creating a new balance subscription
 	CreateBalanceSubscriptionFlow Flow = "create_balance_subscription"
@@ -368,6 +372,10 @@ const (
 	ChooseUpdateOperationOptionFlowStep FlowStep = "choose_update_operation_option"
 	// EnterOperationDateFlowStep represents the step for entering operation date
 	EnterOperationDateFlowStep FlowStep = "enter_operation_date"
+	// CreateOperationsThroughOneTimeInputFlowStep represents the step for creating operations through one-time input
+	CreateOperationsThroughOneTimeInputFlowStep FlowStep = "create_operations_through_one_time_input"
+	// ConfirmOperationDetailsFlowStep represents the step for confirming operation details
+	ConfirmOperationDetailsFlowStep FlowStep = "confirm_operation_details"
 
 	// Steps that are related for balance subscription
 

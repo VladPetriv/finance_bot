@@ -26,12 +26,15 @@ type UserStore interface {
 	Create(ctx context.Context, user *models.User) error
 	// GetByUsername returns a user from store by username.
 	Get(ctx context.Context, filters GetUserFilter) (*models.User, error)
+	// CreateSettings creates a new user settings in store.
+	CreateSettings(ctx context.Context, settings *models.UserSettings) error
 }
 
 // GetUserFilter represents a filters for GetUser method.
 type GetUserFilter struct {
 	Username        string
 	PreloadBalances bool
+	PreloadSettings bool
 }
 
 // BalanceStore provides functionality for work with balance store.

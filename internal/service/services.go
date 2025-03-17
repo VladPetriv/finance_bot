@@ -40,8 +40,9 @@ type HandlerService interface {
 
 type flowProcessingOptions struct {
 	user          *models.User
-	stateMetaData map[string]any
 	message       Message
+	state         *models.State
+	stateMetaData map[string]any
 }
 
 // HandleErrorOptions represents input structure for HandleError method.
@@ -242,7 +243,7 @@ var (
 	// ErrCategoriesNotFound happens when received zero categories from store.
 	ErrCategoriesNotFound = errs.New("Categories not found")
 	// ErrCategoryNotFound happens when received not category from store.
-	ErrCategoryNotFound = errs.New("Category not found")
+	ErrCategoryNotFound = errs.New("Category not found. Please try again!")
 	// ErrNotEnoughCategories happens when received 0 categories after filtering.
 	ErrNotEnoughCategories = errs.New("Not enough categories.")
 
@@ -287,6 +288,7 @@ const (
 	// Operation related keys
 	exchangeRateMetadataKey         = "exchange_rate"
 	operationDescriptionMetadataKey = "operation_description"
+	operationAmountMetadataKey      = "operation_amount"
 	operationTypeMetadataKey        = "operation_type"
 	lastOperationDateMetadataKey    = "last_operation_date"
 	operationIDMetadataKey          = "operation_id"

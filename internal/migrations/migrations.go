@@ -29,6 +29,10 @@ var Migrations = []any{
 		Func: initStateTable,
 	},
 	&migrator.MigrationNoTx{
+		Name: "Init user settings table",
+		Func: initUserSettingsTable,
+	},
+	&migrator.MigrationNoTx{
 		Name: "Init balance_subscription table",
 		Func: initBalanceSubscriptionTable,
 	},

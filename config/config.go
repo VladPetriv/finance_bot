@@ -12,6 +12,7 @@ type Config struct {
 	Telegram       Telegram
 	PostgreSQL     PostgreSQL
 	CurrencyBeacon CurrencyBeacon
+	Gemini         Gemini
 	Logger         Logger
 }
 
@@ -38,6 +39,12 @@ type PostgreSQL struct {
 type CurrencyBeacon struct {
 	APIKey      string `env:"FB_CURRENCY_BEACON_API_KEY"`
 	APIEndpoint string `env:"FB_CURRENCY_BEACON_API_ENDPOINT" env-default:"https://api.currencybeacon.com"`
+}
+
+// Gemini represents a config for Gemini API.
+type Gemini struct {
+	APIKey string `env:"FB_GEMINI_API_KEY"`
+	Model  string `env:"FB_GEMINI_MODEL" env-default:"gemini-1.5-flash"`
 }
 
 // Logger represents a logger configuration.
