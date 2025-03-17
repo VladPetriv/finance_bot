@@ -51,15 +51,26 @@ func (h *handlerService) handleCreateOperationsThroughOneTimeInputFlowStep(ctx c
 		return "", ErrInvalidAmountFormat
 	}
 
-	opts.stateMetaData[operationDescriptionMetadataKey] = operationData.Description
-	opts.stateMetaData[operationAmountMetadataKey] = parsedAmount.StringFixed()
+	var categoryTitle string
+	for _, category := range categories {
+		if category.ID == operationData.CategoryID {
+			categoryTitle = category.Title
+			break
+		}
+	}
+	if categoryTitle == "" {
+		return models.EndFlowStep, ErrCategoryNotFound
+	}
+
+	opts.stateMetaData[categoryTitleMetadataKey] = categoryTitle
 	opts.stateMetaData[operationTypeMetadataKey] = operationData.Type
-	opts.stateMetaData[categoryIDMetadataKey] = operationData.CategoryID
+	opts.stateMetaData[operationAmountMetadataKey] = parsedAmount.StringFixed()
+	opts.stateMetaData[operationDescriptionMetadataKey] = operationData.Description
 
 	return models.ChooseBalanceFlowStep, h.apis.Messenger.SendWithKeyboard(SendWithKeyboardOptions{
 		ChatID:   opts.message.GetChatID(),
 		Message:  "Choose balance:",
-		Keyboard: getKeyboardRows(opts.user.Balances, 3, false),
+		Keyboard: getKeyboardRows(opts.user.Balances, 3, true),
 	})
 }
 
@@ -71,35 +82,24 @@ func (h *handlerService) handleChooseBalanceFlowStepForOneTimeInputOperationCrea
 	if balance == nil {
 		return models.EndFlowStep, ErrBalanceNotFound
 	}
-
-	opts.stateMetaData[balanceNameMetadataKey] = balance.Name
-
-	category, err := h.stores.Category.Get(ctx, GetCategoryFilter{
-		ID: opts.stateMetaData[categoryIDMetadataKey].(string),
-	})
-	if err != nil {
-		logger.Error().Err(err).Msg("get category from store")
-		return "", fmt.Errorf("get category from store: %w", err)
-	}
-	if category == nil {
-		logger.Info().Msg("category not found")
-		return models.EndFlowStep, ErrCategoryNotFound
-	}
-	opts.stateMetaData[categoryTitleMetadataKey] = category.Title
+	opts.stateMetaData[balanceNameMetadataKey] = balance.Name // and we'll avoid id
 
 	parsedAmount, err := money.NewFromString(opts.stateMetaData[operationAmountMetadataKey].(string))
 	if err != nil {
-		return "", err
+		logger.Error().Err(err).Msg("parse amount")
+		return "", fmt.Errorf("parse amount: %w", err)
 	}
+	operationType := models.OperationType(opts.stateMetaData[operationTypeMetadataKey].(string))
 
 	err = h.createSpendingOrIncomingOperation(ctx, createSpendingOrIncomingOperationOptions{
 		user:            opts.user,
 		metaData:        opts.stateMetaData,
-		operationType:   models.OperationType(opts.stateMetaData[operationTypeMetadataKey].(string)),
+		operationType:   operationType,
 		operationAmount: parsedAmount,
 	})
 	if err != nil {
-		return "", err
+		logger.Error().Err(err).Msgf("create %s operation", operationType)
+		return "", fmt.Errorf("create %s operation: %w", operationType, err)
 	}
 
 	return models.EndFlowStep, h.sendMessageWithDefaultKeyboard(opts.message.GetChatID(), "Operation successfully created!")

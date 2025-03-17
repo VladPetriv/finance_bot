@@ -126,6 +126,10 @@ func (h *handlerService) RegisterHandlers() {
 			models.ChooseOperationToDeleteFlowStep:  h.handleChooseOperationToDeleteFlowStep,
 			models.ConfirmOperationDeletionFlowStep: h.handleConfirmOperationDeletionFlowStep,
 		},
+		models.CreateOperationsThroughOneTimeInputFlow: {
+			models.CreateOperationsThroughOneTimeInputFlowStep: h.handleCreateOperationsThroughOneTimeInputFlowStep,
+			models.ChooseBalanceFlowStep:                       h.handleChooseBalanceFlowStepForOneTimeInputOperationCreate,
+		},
 	}
 }
 
@@ -288,6 +292,7 @@ func (h handlerService) processHandler(ctx context.Context, state *models.State,
 	user, err := h.stores.User.Get(ctx, GetUserFilter{
 		Username:        message.GetSenderName(),
 		PreloadBalances: true,
+		PreloadSettings: true,
 	})
 	if err != nil {
 		logger.Error().Err(err).Msg("get user from store")
