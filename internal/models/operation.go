@@ -1,7 +1,9 @@
 package models
 
 import (
+	"encoding/json"
 	"fmt"
+	"strings"
 	"time"
 )
 
@@ -105,3 +107,69 @@ const (
 	// OperationTypeTransferOut represents a transfer_out operation.
 	OperationTypeTransferOut OperationType = "transfer_out"
 )
+
+type createOperationPromptData struct {
+	UserInput  string     `json:"user_input"`
+	Categories []Category `json:"categories"`
+}
+
+// BuildCreateOperationFromTextPrompt builds a prompt for creating an operation based on provided categories and text from user.
+func BuildCreateOperationFromTextPrompt(userInput string, categories []Category) (string, error) {
+	basePromptTemplate := `You are a financial text parser. Extract structured data from user input and match the correct category.
+### **Instructions**:
+- **Input:** JSON with a category list and a financial text entry.
+- **Output:** A JSON with:
+  - "amount": Extracted **numeric string** (e.g., "10.00", "500", "123.31").
+  - "category_id": The **UUID** of the best-matching category or an **empty string** ("") if no category can be determined.
+  - "description": Extracted **description** (e.g., "Salary", "Food").
+  - "type": Could be incoming | spending based on user input
+- **Rules**:
+  - Amounts always follow this format: 100.12, 100, 123.31 (no commas).
+  - Negative (-) = **expense**, Positive (+) = **income**.
+  - Select the **most relevant category** based on the text.
+  - **If no suitable category is found, return "category_id": ""** (do not invent a category).
+  - Return **only JSON**, nothing else.
+
+### **User Input & Categories**:
+%s
+
+### **Expected Output Format**:
+{
+  "amount": "10.38",
+  "description": "Salary",
+  "category_id": "",
+  "type": "incoming"
+}`
+
+	encodedPromptData, err := json.Marshal(createOperationPromptData{
+		UserInput:  userInput,
+		Categories: categories,
+	})
+	if err != nil {
+		return "", fmt.Errorf("marshal categories: %w", err)
+	}
+
+	return fmt.Sprintf(basePromptTemplate, string(encodedPromptData)), nil
+}
+
+// OperationDataFromPromptOutput parses the output from the prompt and returns the OperationData.
+type OperationData struct {
+	Amount      string        `json:"amount"`
+	Description string        `json:"description"`
+	CategoryID  string        `json:"category_id"`
+	Type        OperationType `json:"type"`
+}
+
+// OperationDataFromPromptOutput parses the output from the prompt and returns the OperationData.
+func OperationDataFromPromptOutput(output string) (*OperationData, error) {
+	output = strings.ReplaceAll(output, "```json", "")
+	output = strings.ReplaceAll(output, "```", "")
+
+	var data OperationData
+	err := json.Unmarshal([]byte(output), &data)
+	if err != nil {
+		return nil, fmt.Errorf("unmarshal operation data: %w", err)
+	}
+
+	return &data, nil
+}

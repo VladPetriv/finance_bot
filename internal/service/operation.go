@@ -12,6 +12,99 @@ import (
 	"github.com/google/uuid"
 )
 
+func (h *handlerService) handleCreateOperationsThroughOneTimeInputFlowStep(ctx context.Context, opts flowProcessingOptions) (models.FlowStep, error) {
+	logger := h.logger.With().Str("name", "handlerService.handleCreateOperationsThroughOneTimeInputFlowStep").Logger()
+	logger.Debug().Any("opts", opts).Msg("got args")
+
+	categories, err := h.stores.Category.List(ctx, &ListCategoriesFilter{
+		UserID: opts.user.ID,
+	})
+	if err != nil {
+		logger.Error().Err(err).Msg("list categories from store")
+		return "", fmt.Errorf("list categories from store: %w", err)
+	}
+	if len(categories) == 0 {
+		logger.Info().Msg("no categories found")
+		return models.EndFlowStep, ErrCategoriesNotFound
+	}
+
+	prompt, err := models.BuildCreateOperationFromTextPrompt(opts.message.GetText(), categories)
+	if err != nil {
+		logger.Error().Err(err).Msg("build create operation from text prompt")
+		return "", fmt.Errorf("build create operation from text prompt: %w", err)
+	}
+
+	response, err := h.apis.Prompter.Execute(ctx, prompt)
+	if err != nil {
+		logger.Error().Err(err).Msg("execute prompt through prompter")
+		return "", fmt.Errorf("execute prompt through prompter: %w", err)
+	}
+
+	operationData, err := models.OperationDataFromPromptOutput(response)
+	if err != nil {
+		logger.Error().Err(err).Msg("parse operation data from prompt output")
+		return "", fmt.Errorf("parse operation data from prompt output: %w", err)
+	}
+
+	parsedAmount, err := money.NewFromString(operationData.Amount)
+	if err != nil {
+		return "", ErrInvalidAmountFormat
+	}
+
+	opts.stateMetaData[operationDescriptionMetadataKey] = operationData.Description
+	opts.stateMetaData[operationAmountMetadataKey] = parsedAmount.StringFixed()
+	opts.stateMetaData[operationTypeMetadataKey] = operationData.Type
+	opts.stateMetaData[categoryIDMetadataKey] = operationData.CategoryID
+
+	return models.ChooseBalanceFlowStep, h.apis.Messenger.SendWithKeyboard(SendWithKeyboardOptions{
+		ChatID:   opts.message.GetChatID(),
+		Message:  "Choose balance:",
+		Keyboard: getKeyboardRows(opts.user.Balances, 3, false),
+	})
+}
+
+func (h *handlerService) handleChooseBalanceFlowStepForOneTimeInputOperationCreate(ctx context.Context, opts flowProcessingOptions) (models.FlowStep, error) {
+	logger := h.logger.With().Str("name", "handlerService.handleChooseBalanceFlowStepForOneTimeInputOperationCreate").Logger()
+	logger.Debug().Any("opts", opts).Msg("got args")
+
+	balance := opts.user.GetBalance(opts.message.GetText())
+	if balance == nil {
+		return models.EndFlowStep, ErrBalanceNotFound
+	}
+
+	opts.stateMetaData[balanceNameMetadataKey] = balance.Name
+
+	category, err := h.stores.Category.Get(ctx, GetCategoryFilter{
+		ID: opts.stateMetaData[categoryIDMetadataKey].(string),
+	})
+	if err != nil {
+		logger.Error().Err(err).Msg("get category from store")
+		return "", fmt.Errorf("get category from store: %w", err)
+	}
+	if category == nil {
+		logger.Info().Msg("category not found")
+		return models.EndFlowStep, ErrCategoryNotFound
+	}
+	opts.stateMetaData[categoryTitleMetadataKey] = category.Title
+
+	parsedAmount, err := money.NewFromString(opts.stateMetaData[operationAmountMetadataKey].(string))
+	if err != nil {
+		return "", err
+	}
+
+	err = h.createSpendingOrIncomingOperation(ctx, createSpendingOrIncomingOperationOptions{
+		user:            opts.user,
+		metaData:        opts.stateMetaData,
+		operationType:   models.OperationType(opts.stateMetaData[operationTypeMetadataKey].(string)),
+		operationAmount: parsedAmount,
+	})
+	if err != nil {
+		return "", err
+	}
+
+	return models.EndFlowStep, h.sendMessageWithDefaultKeyboard(opts.message.GetChatID(), "Operation successfully created!")
+}
+
 func (h handlerService) handleCreateOperationFlowStep(ctx context.Context, opts flowProcessingOptions) (models.FlowStep, error) {
 	logger := h.logger.With().Str("name", "handlerService.handleCreateOperationFlowStep").Logger()
 	logger.Debug().Any("opts", opts).Msg("got args")
