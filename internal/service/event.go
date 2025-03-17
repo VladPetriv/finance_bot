@@ -107,17 +107,25 @@ func (e eventService) handlePanic(ctx context.Context, msg Message, r any) {
 		}
 	}
 
-	if err := e.services.Handler.HandleError(ctx, HandleErrorOptions{
+	err := e.services.Handler.HandleError(ctx, HandleErrorOptions{
 		Err:                 fmt.Errorf("internal error"),
 		Msg:                 msg,
 		SendDefaultKeyboard: true,
-	}); err != nil {
+	})
+	if err != nil {
 		logger.Error().Err(err).Msg("handle error")
 	}
 }
 
-func getEventFromMsg(msg Message) models.Event {
-	if !strings.Contains(strings.Join(models.AvailableCommands, " "), msg.GetText()) {
+func getEventFromMsg(user *models.User, msg Message) models.Event {
+	aiParserEnabled := user.Settings != nil && user.Settings.AIParserEnabled
+	inputIsNotACommand := !strings.Contains(strings.Join(models.AvailableCommands, " "), msg.GetText())
+
+	if aiParserEnabled && inputIsNotACommand {
+		return models.CreateOperationsThroughOneTimeInputEvent
+	}
+
+	if inputIsNotACommand {
 		return models.UnknownEvent
 	}
 

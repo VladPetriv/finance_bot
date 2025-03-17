@@ -45,6 +45,22 @@ func (s stateService) HandleState(ctx context.Context, message Message) (*Handle
 		Any("chat_id", message.GetChatID()).
 		Msg("handling message")
 
+	user, err := s.stores.User.Get(ctx, GetUserFilter{
+		Username:        message.GetSenderName(),
+		PreloadSettings: true,
+	})
+	if err != nil {
+		logger.Error().Err(err).Msg("get user from store")
+		return nil, fmt.Errorf("get user from store: %w", err)
+	}
+	if user == nil {
+		logger.Error().Msg("user not found")
+		return nil, fmt.Errorf("user not found")
+	}
+
+	event := getEventFromMsg(user, message)
+	logger.Debug().Any("event", event).Msg("got event based on bot message")
+
 	state, err := s.stores.State.Get(ctx, GetStateFilter{
 		UserID: message.GetSenderName(),
 	})
@@ -53,9 +69,6 @@ func (s stateService) HandleState(ctx context.Context, message Message) (*Handle
 		return nil, fmt.Errorf("get state from store: %w", err)
 	}
 	logger.Debug().Any("state", state).Msg("got state from store")
-
-	event := getEventFromMsg(message)
-	logger.Debug().Any("event", event).Msg("got event based on bot message")
 
 	if state == nil {
 		return s.handleNewState(ctx, message, event, logger)
@@ -95,6 +108,10 @@ func (s stateService) handleNewState(ctx context.Context, message Message, event
 		if ok {
 			newState.Steps = append(newState.Steps, firstStep)
 		}
+	}
+
+	if event == models.CreateOperationsThroughOneTimeInputEvent {
+		newState.Steps = append(newState.Steps, models.CreateOperationsThroughOneTimeInputFlowStep)
 	}
 
 	err := s.stores.State.Create(ctx, newState)
@@ -161,6 +178,12 @@ func (s stateService) handleUnfinishedFlow(message Message, state *models.State)
 
 func (s stateService) handleOngoingFlow(ctx context.Context, message Message, state *models.State, event models.Event) (*HandleStateOutput, error) {
 	if event == models.UnknownEvent && !state.IsFlowFinished() {
+		return &HandleStateOutput{
+			State: state,
+			Event: state.GetEvent(),
+		}, nil
+	}
+	if event == models.CreateOperationsThroughOneTimeInputEvent && !state.IsFlowFinished() {
 		return &HandleStateOutput{
 			State: state,
 			Event: state.GetEvent(),
