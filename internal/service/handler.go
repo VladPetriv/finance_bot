@@ -126,6 +126,10 @@ func (h *handlerService) RegisterHandlers() {
 			models.ChooseOperationToDeleteFlowStep:  h.handleChooseOperationToDeleteFlowStep,
 			models.ConfirmOperationDeletionFlowStep: h.handleConfirmOperationDeletionFlowStep,
 		},
+		models.CreateOperationsThroughOneTimeInputFlow: {
+			models.CreateOperationsThroughOneTimeInputFlowStep: h.handleCreateOperationsThroughOneTimeInputFlowStep,
+			models.ChooseBalanceFlowStep:                       h.handleChooseBalanceFlowStepForOneTimeInputOperationCreate,
+		},
 	}
 }
 
@@ -183,13 +187,24 @@ func (h handlerService) HandleStart(ctx context.Context, msg Message) error {
 		return h.sendMessageWithDefaultKeyboard(chatID, fmt.Sprintf("Happy to see you again @%s!", username))
 	}
 
+	userID := uuid.NewString()
 	err = h.stores.User.Create(ctx, &models.User{
-		ID:       uuid.NewString(),
+		ID:       userID,
 		Username: username,
 	})
 	if err != nil {
 		logger.Error().Err(err).Msg("create user in store")
 		return fmt.Errorf("create user in store: %w", err)
+	}
+
+	err = h.stores.User.CreateSettings(ctx, &models.UserSettings{
+		ID:              uuid.NewString(),
+		UserID:          userID,
+		AIParserEnabled: false,
+	})
+	if err != nil {
+		logger.Error().Err(err).Msg("create user settings in store")
+		return fmt.Errorf("create user settings in store: %w", err)
 	}
 
 	welcomeMessage := fmt.Sprintf("Hello, @%s!\nWelcome to @FinanceTracking_bot!", username)
@@ -277,6 +292,7 @@ func (h handlerService) processHandler(ctx context.Context, state *models.State,
 	user, err := h.stores.User.Get(ctx, GetUserFilter{
 		Username:        message.GetSenderName(),
 		PreloadBalances: true,
+		PreloadSettings: true,
 	})
 	if err != nil {
 		logger.Error().Err(err).Msg("get user from store")
