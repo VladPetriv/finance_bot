@@ -152,7 +152,7 @@ func BuildCreateOperationFromTextPrompt(userInput string, categories []Category)
 	return fmt.Sprintf(basePromptTemplate, string(encodedPromptData)), nil
 }
 
-// OperationDataFromPromptOutput parses the output from the prompt and returns the OperationData.
+// OperationData represents the data extracted from the prompt output.
 type OperationData struct {
 	Amount      string        `json:"amount"`
 	Description string        `json:"description"`
