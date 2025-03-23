@@ -11,6 +11,7 @@ func initBalanceSubscriptionTable(db *sql.DB) error {
 			balance_id VARCHAR(255) NOT NULL,
 			category_id VARCHAR(255) NOT NULL,
 			name VARCHAR(255) NOT NULL,
+			amount VARCHAR(255) NOT NULL,
 			period subscription_period,
 			start_at TIMESTAMP NOT NULL,
 			created_at TIMESTAMP NOT NULL DEFAULT NOW(),
