@@ -160,6 +160,7 @@ type ExistsCurrencyFilter struct {
 	ID string
 }
 
+// BalanceSubscriptionStore represents a store for balance subscriptions.
 type BalanceSubscriptionStore interface {
 	// Create creates a new balance subscription in store.
 	Create(ctx context.Context, subscription *models.BalanceSubscription) error
@@ -173,5 +174,6 @@ type BalanceSubscriptionStore interface {
 
 // ListBalanceSubscriptionFilter represents a filter for ListBalanceSubscriptionStore.List method.
 type ListBalanceSubscriptionFilter struct {
-	UserID string
+	BalanceID            string
+	OrderByCreatedAtDesc bool
 }

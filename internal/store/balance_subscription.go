@@ -41,8 +41,12 @@ func (b *balanceSubscriptionStore) List(ctx context.Context, filter service.List
 		Select("id", "balance_id", "category_id", "name", "amount", "period", "start_at", "created_at", "updated_at").
 		From("balance_subscriptions")
 
-	if filter.UserID != "" {
-		stmt = stmt.Where(sq.Eq{"user_id": filter.UserID})
+	if filter.BalanceID != "" {
+		stmt = stmt.Where(sq.Eq{"balance_id": filter.BalanceID})
+	}
+
+	if filter.OrderByCreatedAtDesc {
+		stmt = stmt.OrderBy("created_at DESC")
 	}
 
 	query, args, err := stmt.ToSql()
@@ -67,12 +71,12 @@ func (b *balanceSubscriptionStore) Update(ctx context.Context, subscription *mod
 		SET
 			category_id = $1,
 			name = $2,
-			amounnt = $3,
+			amount = $3,
 			period = $4,
 			start_at = $5,
 			updated_at = NOW()
 		WHERE
-			id = $5;`,
+			id = $6;`,
 		subscription.CategoryID, subscription.Name, subscription.Amount, subscription.Period, subscription.StartAt, subscription.ID,
 	)
 	return err
