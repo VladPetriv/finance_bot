@@ -277,6 +277,9 @@ var (
 
 	// ErrCurrencyNotFound happens when don't receive currency from store.
 	ErrCurrencyNotFound = errs.New("Currency not found. Please try to select another currency.")
+
+	// ErrNoBalanceSubscriptionsFound happens when don't receive balance subscriptions from store.
+	ErrNoBalanceSubscriptionsFound = errs.New("No balance subscriptions found. Please try to select another balance.")
 )
 
 const (

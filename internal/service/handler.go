@@ -142,6 +142,10 @@ func (h *handlerService) RegisterHandlers() {
 			models.ChooseBalanceSubscriptionFrequencyFlowStep:     h.handleChooseBalanceSubscriptionFrequencyFlowStep,
 			models.EnterStartAtDateForBalanceSubscriptionFlowStep: h.handleEnterStartAtDateForBalanceSubscriptionFlowStep,
 		},
+		models.ListBalanceSubscriptionsFlow: {
+			models.ListBalanceSubscriptionsFlowStep: h.handleListBalanceSubscriptionsFlowStep,
+			models.ChooseBalanceFlowStep:            h.handleChooseBalanceFlowStepForListBalanceSubscriptions,
+		},
 	}
 }
 

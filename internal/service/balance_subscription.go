@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 	"fmt"
+	"slices"
 	"time"
 
 	"github.com/VladPetriv/finance_bot/internal/models"
@@ -147,4 +148,65 @@ func (h *handlerService) handleEnterStartAtDateForBalanceSubscriptionFlowStep(ct
 	}
 
 	return models.EndFlowStep, h.sendMessageWithDefaultKeyboard(opts.message.GetChatID(), "Balance subscription successfully created!")
+}
+
+func (h *handlerService) handleListBalanceSubscriptionsFlowStep(_ context.Context, opts flowProcessingOptions) (models.FlowStep, error) {
+	logger := h.logger.With().Str("name", "handlerService.handleListBalanceSubscriptionsFlowStep").Logger()
+	logger.Debug().Any("opts", opts).Msg("got args")
+
+	return models.ChooseBalanceFlowStep, h.apis.Messenger.SendWithKeyboard(SendWithKeyboardOptions{
+		ChatID:   opts.message.GetChatID(),
+		Message:  "Select balance:",
+		Keyboard: getKeyboardRows(opts.user.Balances, 3, true),
+	})
+}
+
+func (h *handlerService) handleChooseBalanceFlowStepForListBalanceSubscriptions(ctx context.Context, opts flowProcessingOptions) (models.FlowStep, error) {
+	logger := h.logger.With().Str("name", "handlerService.handleChooseBalanceFlowStepForListBalanceSubscriptions").Logger()
+	logger.Debug().Any("opts", opts).Msg("got args")
+
+	balance := opts.user.GetBalance(opts.message.GetText())
+	if balance == nil {
+		return models.EndFlowStep, ErrBalanceNotFound
+	}
+
+	balanceSubscriptions, err := h.stores.BalanceSubscription.List(ctx, ListBalanceSubscriptionFilter{
+		BalanceID: balance.ID,
+	})
+	if err != nil {
+		logger.Error().Err(err).Msg("list balance subscriptions")
+		return "", fmt.Errorf("list balance subscriptions: %w", err)
+	}
+	if len(balanceSubscriptions) == 0 {
+		return models.EndFlowStep, ErrNoBalanceSubscriptionsFound
+	}
+
+	categories, err := h.stores.Category.List(ctx, &ListCategoriesFilter{
+		UserID: opts.user.ID,
+	})
+	if err != nil {
+		logger.Error().Err(err).Msg("list categories")
+		return "", fmt.Errorf("list categories: %w", err)
+	}
+	if len(categories) == 0 {
+		return models.EndFlowStep, ErrCategoriesNotFound
+	}
+
+	var outputMessage string
+	for _, subscription := range balanceSubscriptions {
+		var categoryTitle string
+		categoryIndex := slices.IndexFunc(categories, func(category models.Category) bool {
+			return category.ID == subscription.CategoryID
+		})
+		if categoryIndex != -1 {
+			categoryTitle = categories[categoryIndex].Title
+		}
+
+		outputMessage += fmt.Sprintf(
+			"Title: %s\nAmount: %s\nFrequency: %s\nCategory Title: %s\n--------\n",
+			subscription.Name, subscription.Amount, subscription.Period, categoryTitle,
+		)
+	}
+
+	return models.EndFlowStep, h.sendMessageWithDefaultKeyboard(opts.message.GetChatID(), outputMessage)
 }
