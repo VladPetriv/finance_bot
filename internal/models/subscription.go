@@ -1,6 +1,9 @@
 package models
 
-import "time"
+import (
+	"fmt"
+	"time"
+)
 
 // BalanceSubscription represents a subscription for an internal user balance.
 type BalanceSubscription struct {
@@ -28,3 +31,17 @@ const (
 	// SubscriptionPeriodYearly represents a yearly subscription period.
 	SubscriptionPeriodYearly SubscriptionPeriod = "yearly"
 )
+
+// ParseSubscriptionPeriod parses a string into a SubscriptionPeriod.
+func ParseSubscriptionPeriod(period string) (SubscriptionPeriod, error) {
+	switch period {
+	case "weekly":
+		return SubscriptionPeriodWeekly, nil
+	case "monthly":
+		return SubscriptionPeriodMonthly, nil
+	case "yearly":
+		return SubscriptionPeriodYearly, nil
+	default:
+		return "", fmt.Errorf("invalid subscription period: %s", period)
+	}
+}
