@@ -7,6 +7,7 @@ import (
 
 	"github.com/VladPetriv/finance_bot/internal/models"
 	"github.com/VladPetriv/finance_bot/pkg/money"
+	"github.com/google/uuid"
 )
 
 func (h *handlerService) handleCreateBalanceSubscriptionFlowStep(ctx context.Context, opts flowProcessingOptions) (models.FlowStep, error) {
@@ -24,7 +25,12 @@ func (h *handlerService) handleChooseBalanceFlowStepForCreateBalanceSubscription
 	logger := h.logger.With().Str("name", "handlerService.handleChooseBalanceFlowStepForCreateBalanceSubscription").Logger()
 	logger.Debug().Any("opts", opts).Msg("got args")
 
-	opts.stateMetaData[balanceNameMetadataKey] = opts.message.GetText()
+	balance := opts.user.GetBalance(opts.message.GetText())
+	if balance == nil {
+		return models.EndFlowStep, ErrBalanceNotFound
+	}
+
+	opts.stateMetaData[balanceIDMetadataKey] = balance.ID
 
 	categories, err := h.stores.Category.List(ctx, &ListCategoriesFilter{
 		UserID: opts.user.ID,
@@ -48,7 +54,18 @@ func (h *handlerService) handleChooseCategoryFlowStepForCreateBalanceSubscriptio
 	logger := h.logger.With().Str("name", "handlerService.handleChooseCategoryFlowStepForCreateBalanceSubscription").Logger()
 	logger.Debug().Any("opts", opts).Msg("got args")
 
-	opts.stateMetaData[categoryTitleMetadataKey] = opts.message.GetText()
+	category, err := h.stores.Category.Get(ctx, GetCategoryFilter{
+		Title: opts.message.GetText(),
+	})
+	if err != nil {
+		logger.Error().Err(err).Msg("get category from store")
+		return "", fmt.Errorf("get category from store: %w", err)
+	}
+	if category == nil {
+		return models.EndFlowStep, ErrCategoryNotFound
+	}
+
+	opts.stateMetaData[categoryIDMetadataKey] = category.ID
 	return models.EnterBalanceSubscriptionNameFlowStep, h.showCancelButton(opts.message.GetChatID(), "Enter balance subscription name:")
 }
 
@@ -56,7 +73,7 @@ func (h *handlerService) handleEnterBalanceSubscriptionNameFlowStep(ctx context.
 	logger := h.logger.With().Str("name", "handlerService.handleEnterBalanceSubscriptionNameFlowStep").Logger()
 	logger.Debug().Any("opts", opts).Msg("got args")
 
-	opts.stateMetaData[balanceNameMetadataKey] = opts.message.GetText()
+	opts.stateMetaData[balanceSubscriptionNameMetadataKey] = opts.message.GetText()
 
 	return models.EnterBalanceSubscriptionAmountFlowStep, h.apis.Messenger.SendMessage(opts.message.GetChatID(), "Enter balance subscription amount:")
 }
@@ -72,14 +89,32 @@ func (h *handlerService) handleEnterBalanceSubscriptionAmountFlowStep(ctx contex
 
 	opts.stateMetaData[balanceSubscriptionAmountMetadataKey] = parsedAmount.String()
 
-	return models.EndFlowStep, h.apis.Messenger.SendWithKeyboard(SendWithKeyboardOptions{
-		ChatID:  opts.message.GetChatID(),
-		Message: "Enter subscription start date and time:\nUse format: DD/MM/YYYY HH:MM\nExample: 01/01/2025 12:00",
-		Keyboard: []KeyboardRow{
-			{Buttons: []string{string(models.SubscriptionPeriodWeekly), string(models.SubscriptionPeriodMonthly), string(models.SubscriptionPeriodYearly)}},
-			{Buttons: []string{models.BotCancelCommand}},
-		},
+	return models.ChooseBalanceSubscriptionFrequencyFlowStep, h.apis.Messenger.SendWithKeyboard(SendWithKeyboardOptions{
+		ChatID:   opts.message.GetChatID(),
+		Message:  "Choose subscription frequency:",
+		Keyboard: balanceSubscriptionFrequencyKeyboard,
 	})
+}
+
+func (h *handlerService) handleChooseBalanceSubscriptionFrequencyFlowStep(_ context.Context, opts flowProcessingOptions) (models.FlowStep, error) {
+	logger := h.logger.With().Str("name", "handlerService.handleChooseBalanceSubscriptionFrequencyFlowStep").Logger()
+	logger.Debug().Any("opts", opts).Msg("got args")
+
+	period, err := models.ParseSubscriptionPeriod(opts.message.GetText())
+	if err != nil {
+		return models.ChooseBalanceSubscriptionFrequencyFlowStep, h.apis.Messenger.SendWithKeyboard(SendWithKeyboardOptions{
+			ChatID:   opts.message.GetChatID(),
+			Message:  "Invalid subscription frequency. Please choose from the options below:",
+			Keyboard: balanceSubscriptionFrequencyKeyboard,
+		})
+	}
+
+	opts.stateMetaData[balanceSubscriptionPeriodMetadataKey] = period
+
+	return models.EnterStartAtDateForBalanceSubscriptionFlowStep, h.showCancelButton(
+		opts.message.GetChatID(),
+		"Enter subscription start date and time:\nUse format: DD/MM/YYYY HH:MM\nExample: 01/01/2025 12:00:",
+	)
 }
 
 func (h *handlerService) handleEnterStartAtDateForBalanceSubscriptionFlowStep(ctx context.Context, opts flowProcessingOptions) (models.FlowStep, error) {
@@ -92,9 +127,24 @@ func (h *handlerService) handleEnterStartAtDateForBalanceSubscriptionFlowStep(ct
 		return "", ErrInvalidDateFormat
 	}
 
-	fmt.Printf("parsedStartAtTime: %v\n", parsedStartAtTime)
+	period, err := models.ParseSubscriptionPeriod(opts.stateMetaData[balanceSubscriptionPeriodMetadataKey].(string))
+	if err != nil {
+		return "", fmt.Errorf("parse subscription period: %w", err)
+	}
 
-	// TODO: create subscription in store
+	err = h.stores.BalanceSubscription.Create(ctx, models.BalanceSubscription{
+		ID:         uuid.NewString(),
+		BalanceID:  opts.stateMetaData[balanceIDMetadataKey].(string),
+		CategoryID: opts.stateMetaData[categoryIDMetadataKey].(string),
+		Name:       opts.stateMetaData[balanceSubscriptionNameMetadataKey].(string),
+		Amount:     opts.stateMetaData[balanceSubscriptionAmountMetadataKey].(string),
+		Period:     period,
+		StartAt:    parsedStartAtTime,
+	})
+	if err != nil {
+		logger.Error().Err(err).Msg("create balance subscription in store")
+		return "", fmt.Errorf("create balance subscription in store: %w", err)
+	}
 
 	return models.EndFlowStep, h.sendMessageWithDefaultKeyboard(opts.message.GetChatID(), "Balance subscription successfully created!")
 }

@@ -139,6 +139,7 @@ func (h *handlerService) RegisterHandlers() {
 			models.ChooseCategoryFlowStep:                         h.handleChooseCategoryFlowStepForCreateBalanceSubscription,
 			models.EnterBalanceSubscriptionNameFlowStep:           h.handleEnterBalanceSubscriptionNameFlowStep,
 			models.EnterBalanceSubscriptionAmountFlowStep:         h.handleEnterBalanceSubscriptionAmountFlowStep,
+			models.ChooseBalanceSubscriptionFrequencyFlowStep:     h.handleChooseBalanceSubscriptionFrequencyFlowStep,
 			models.EnterStartAtDateForBalanceSubscriptionFlowStep: h.handleEnterStartAtDateForBalanceSubscriptionFlowStep,
 		},
 	}
@@ -257,6 +258,9 @@ func (h handlerService) HandleWrappers(ctx context.Context, event models.Event, 
 	case models.OperationEvent:
 		rows = operationKeyboardRows
 		message = "Please choose operation command to execute:"
+	case models.BalanceSubscriptionsEvent:
+		rows = balanceSubscriptionKeyboardRows
+		message = "Please choose balance subscription command to execute:"
 	default:
 		return fmt.Errorf("unknown wrappers event: %s", event)
 	}

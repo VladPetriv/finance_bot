@@ -230,6 +230,16 @@ var (
 			},
 		},
 	}
+	balanceSubscriptionFrequencyKeyboard = []KeyboardRow{
+		{
+			Buttons: []string{
+				string(models.SubscriptionPeriodWeekly),
+				string(models.SubscriptionPeriodMonthly),
+				string(models.SubscriptionPeriodYearly),
+			},
+		},
+		{Buttons: []string{models.BotCancelCommand}},
+	}
 )
 
 var (
@@ -284,6 +294,7 @@ const (
 	// Category related keys
 	previousCategoryTitleMetadataKey = "previous_category_title"
 	categoryTitleMetadataKey         = "category_title"
+	categoryIDMetadataKey            = "category_id"
 
 	// Operation related keys
 	exchangeRateMetadataKey         = "exchange_rate"
@@ -295,8 +306,8 @@ const (
 
 	// Balance subscription related keys
 	balanceSubscriptionNameMetadataKey   = "balance_subscription_name"
+	balanceSubscriptionPeriodMetadataKey = "balance_subscription_period"
 	balanceSubscriptionAmountMetadataKey = "balance_subscription_amount"
-	balanceSubscriptionFromMetadataKey   = "balance_subscription_period"
 )
 
 // StateService represents a service for managing and handling complex bot flow using state.
