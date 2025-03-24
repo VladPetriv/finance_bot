@@ -66,9 +66,10 @@ var EventToFlow = map[Event]Flow{
 	CancelEvent: CancelFlow,
 
 	// Wrappers
-	BalanceEvent:   BalanceFlow,
-	CategoryEvent:  CategoryFlow,
-	OperationEvent: OperationFlow,
+	BalanceEvent:              BalanceFlow,
+	CategoryEvent:             CategoryFlow,
+	OperationEvent:            OperationFlow,
+	BalanceSubscriptionsEvent: BalanceSubscriptionsFlow,
 
 	// Balance
 	CreateBalanceEvent: CreateBalanceFlow,

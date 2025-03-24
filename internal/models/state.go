@@ -191,6 +191,8 @@ const (
 	CategoryFlow Flow = "category"
 	// OperationFlow represents the flow for getting operation actions
 	OperationFlow Flow = "operation"
+	// BalanceSubscriptionsFlow represents the flow for getting balance subscriptions actions
+	BalanceSubscriptionsFlow Flow = "balance_subscriptions"
 
 	// CreateBalanceFlow represents the flow for creating a new balance
 	CreateBalanceFlow Flow = "create_balance"
@@ -385,8 +387,6 @@ const (
 	EnterBalanceSubscriptionNameFlowStep FlowStep = "enter_balance_subscription_name"
 	// EnterBalanceSubscriptionAmountFlowStep represents the step for entering balance subscription amount
 	EnterBalanceSubscriptionAmountFlowStep FlowStep = "enter_balance_subscription_amount"
-	// ChooseBalanceSubscriptionPeriodFlowStep represents the step for choosing balance subscription period
-	ChooseBalanceSubscriptionPeriodFlowStep FlowStep = "choose_balance_subscription_period"
 	// ChooseBalanceSubscriptionFrequencyFlowStep represents the step for choosing balance subscription frequency
 	ChooseBalanceSubscriptionFrequencyFlowStep FlowStep = "choose_balance_subscription_frequency"
 	// EnterStartAtDateForBalanceSubscriptionFlowStep represents the step for entering start at date for balance subscription
