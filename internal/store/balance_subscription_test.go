@@ -149,6 +149,133 @@ func TestBalanceSubscription_Create(t *testing.T) {
 	}
 }
 
+func TestBalanceSubscription_Get(t *testing.T) {
+	t.Parallel()
+
+	ctx := context.Background() //nolint: forbidigo
+
+	testCaseDB := createTestDB(t, "balance_subscription_get")
+	currencyStore := store.NewCurrency(testCaseDB)
+	userStore := store.NewUser(testCaseDB)
+	balanceStore := store.NewBalance(testCaseDB)
+	categoryStore := store.NewCategory(testCaseDB)
+	balanceSubscriptionStore := store.NewBalanceSubscription(testCaseDB)
+
+	userID := uuid.NewString()
+	balanceID := uuid.NewString()
+	currencyID := uuid.NewString()
+	categoryID := uuid.NewString()
+	balanceSubscriptionID := uuid.NewString()
+
+	err := currencyStore.CreateIfNotExists(ctx, &models.Currency{
+		ID:   currencyID,
+		Code: "USD",
+	})
+
+	require.NoError(t, err)
+
+	err = userStore.Create(ctx, &models.User{
+		ID:       userID,
+		Username: "test" + userID,
+	})
+	require.NoError(t, err)
+
+	err = balanceStore.Create(ctx, &models.Balance{
+		ID:         balanceID,
+		UserID:     userID,
+		CurrencyID: currencyID,
+	})
+	assert.NoError(t, err)
+
+	err = categoryStore.Create(ctx, &models.Category{
+		ID:     categoryID,
+		UserID: userID,
+		Title:  "test_category",
+	})
+	require.NoError(t, err)
+
+	t.Cleanup(func() {
+		err = balanceStore.Delete(ctx, balanceID)
+		require.NoError(t, err)
+		err = categoryStore.Delete(ctx, categoryID)
+		require.NoError(t, err)
+		err := deleteCurrencyByID(testCaseDB.DB, currencyID)
+		require.NoError(t, err)
+		err = deleteUserByID(testCaseDB.DB, userID)
+		require.NoError(t, err)
+	})
+
+	testCases := [...]struct {
+		desc          string
+		preconditions *models.BalanceSubscription
+		args          service.GetBalanceSubscriptionFilter
+		expected      *models.BalanceSubscription
+	}{
+		{
+			desc: "balance subscriptions received by id",
+			preconditions: &models.BalanceSubscription{
+				ID:         balanceSubscriptionID,
+				BalanceID:  balanceID,
+				CategoryID: categoryID,
+				Name:       "test",
+				Amount:     amount100,
+				Period:     models.SubscriptionPeriodMonthly,
+			},
+			args: service.GetBalanceSubscriptionFilter{
+				ID: balanceSubscriptionID,
+			},
+			expected: &models.BalanceSubscription{
+				ID:         balanceSubscriptionID,
+				BalanceID:  balanceID,
+				CategoryID: categoryID,
+				Name:       "test",
+				Amount:     amount100,
+				Period:     models.SubscriptionPeriodMonthly,
+			},
+		},
+		{
+			desc: "balance subscription not found",
+			args: service.GetBalanceSubscriptionFilter{
+				ID: uuid.NewString(),
+			},
+			expected: nil,
+		},
+	}
+	for _, tc := range testCases {
+		tc := tc
+		t.Run(tc.desc, func(t *testing.T) {
+			t.Parallel()
+
+			if tc.preconditions != nil {
+				err := balanceSubscriptionStore.Create(ctx, *tc.preconditions)
+				assert.NoError(t, err)
+			}
+
+			t.Cleanup(func() {
+				if tc.preconditions != nil {
+					err := balanceSubscriptionStore.Delete(ctx, tc.preconditions.ID)
+					assert.NoError(t, err)
+				}
+			})
+
+			actual, err := balanceSubscriptionStore.Get(ctx, tc.args)
+			assert.NoError(t, err)
+
+			if tc.expected == nil {
+				assert.Nil(t, actual)
+				return
+			}
+
+			assert.Equal(t, tc.expected.ID, actual.ID)
+			assert.Equal(t, tc.expected.BalanceID, actual.BalanceID)
+			assert.Equal(t, tc.expected.CategoryID, actual.CategoryID)
+			assert.Equal(t, tc.expected.Name, actual.Name)
+			assert.Equal(t, tc.expected.Amount, actual.Amount)
+			assert.Equal(t, tc.expected.Period, actual.Period)
+		})
+	}
+}
+
 func TestBalanceSubscription_Count(t *testing.T) {
 	t.Parallel()
 
