@@ -210,3 +210,26 @@ func (h *handlerService) handleChooseBalanceFlowStepForListBalanceSubscriptions(
 
 	return models.EndFlowStep, h.sendMessageWithDefaultKeyboard(opts.message.GetChatID(), outputMessage)
 }
+
+func (h *handlerService) handleUpdateBalanceSubscriptionFlowStep(_ context.Context, opts flowProcessingOptions) (models.FlowStep, error) {
+	logger := h.logger.With().Str("name", "handlerService.handleUpdateBalanceSubscriptionFlowStep").Logger()
+	logger.Debug().Any("opts", opts).Msg("got args")
+
+	return models.ChooseBalanceFlowStep, h.apis.Messenger.SendWithKeyboard(SendWithKeyboardOptions{
+		ChatID:   opts.message.GetChatID(),
+		Message:  "Select balance:",
+		Keyboard: getKeyboardRows(opts.user.Balances, 3, true),
+	})
+}
+
+func (h *handlerService) handleChooseBalanceFlowStepForUpdateBalanceSubscription(ctx context.Context, opts flowProcessingOptions) (models.FlowStep, error) {
+	logger := h.logger.With().Str("name", "handlerService.handleChooseBalanceFlowStepForUpdateBalanceSubscription").Logger()
+	logger.Debug().Any("opts", opts).Msg("got args")
+
+	balance := opts.user.GetBalance(opts.message.GetText())
+	if balance == nil {
+		return models.EndFlowStep, ErrBalanceNotFound
+	}
+
+	
+}
