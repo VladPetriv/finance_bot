@@ -35,6 +35,35 @@ func (b *balanceSubscriptionStore) Create(ctx context.Context, subscription mode
 	return err
 }
 
+func (b *balanceSubscriptionStore) Get(ctx context.Context, filter service.GetBalanceSubscriptionFilter) (*models.BalanceSubscription, error) {
+	stmt := sq.
+		StatementBuilder.
+		PlaceholderFormat(sq.Dollar).
+		Select("id", "balance_id", "category_id", "name", "amount", "period", "start_at", "created_at", "updated_at").
+		From("balance_subscriptions")
+
+	if filter.ID != "" {
+		stmt = stmt.Where(sq.Eq{"id": filter.ID})
+	}
+
+	query, args, err := stmt.ToSql()
+	if err != nil {
+		return nil, fmt.Errorf("build get balance subscription query: %w", err)
+	}
+
+	var subscription models.BalanceSubscription
+	err = b.db.DB.GetContext(ctx, &subscription, query, args...)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, nil
+		}
+
+		return nil, err
+	}
+
+	return &subscription, nil
+}
+
 func (b *balanceSubscriptionStore) Count(ctx context.Context, filter service.ListBalanceSubscriptionFilter) (int, error) {
 	stmt := applyListBalanceSubscriptionFilter(applyListBalanceSubscriptionOptions{countQuery: true}, filter)
 	query, args, err := stmt.ToSql()

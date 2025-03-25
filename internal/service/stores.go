@@ -164,6 +164,8 @@ type ExistsCurrencyFilter struct {
 type BalanceSubscriptionStore interface {
 	// Create creates a new balance subscription in store.
 	Create(ctx context.Context, subscription models.BalanceSubscription) error
+	// Get retrieves balance subscription from store based on input filter.
+	Get(ctx context.Context, filter GetBalanceSubscriptionFilter) (*models.BalanceSubscription, error)
 	// Count returns a count of all balance subscriptions from store based on filter.
 	Count(ctx context.Context, filter ListBalanceSubscriptionFilter) (int, error)
 	// List returns a list of all balance subscriptions from store based on filter.
@@ -180,4 +182,9 @@ type ListBalanceSubscriptionFilter struct {
 	OrderByCreatedAtDesc bool
 	CreatedAtLessThan    time.Time
 	Limit                int
+}
+
+// GetBalanceSubscriptionFilter represents a filter for store.Get method.
+type GetBalanceSubscriptionFilter struct {
+	ID string
 }
