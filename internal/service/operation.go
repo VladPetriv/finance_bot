@@ -1419,15 +1419,13 @@ func (h handlerService) sendListOfOperationsWithAbilityToPaginate(ctx context.Co
 	logger.Debug().Any("opts", opts).Msg("got args")
 
 	filter := ListOperationsFilter{
-		BalanceID:           opts.balanceID,
-		SortByCreatedAtDesc: true,
-		Limit:               operationsPerMessage,
+		BalanceID: opts.balanceID,
 	}
 
 	if opts.includeLastShowedOperationDate {
 		lastOperationTime, ok := opts.stateMetadata[lastOperationDateMetadataKey].(string)
 		if ok {
-			parsedTime, err := time.Parse("2006-01-02 15:04:05", lastOperationTime)
+			parsedTime, err := time.Parse(time.RFC3339Nano, lastOperationTime)
 			if err != nil {
 				logger.Error().Err(err).Msg("parse last operation date")
 				return fmt.Errorf("parse last operation date: %w", err)
@@ -1446,6 +1444,8 @@ func (h handlerService) sendListOfOperationsWithAbilityToPaginate(ctx context.Co
 		return ErrOperationsNotFound
 	}
 
+	filter.SortByCreatedAtDesc = true
+	filter.Limit = operationsPerMessage
 	operations, err := h.stores.Operation.List(ctx, filter)
 	if err != nil {
 		logger.Error().Err(err).Msg("list operations from store")
