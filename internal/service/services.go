@@ -200,7 +200,7 @@ var (
 		},
 	}
 
-	updateBalanceSubscriptionKeyboard = []InlineKeyboardRow{
+	updateBalanceSubscriptionOptionsKeyboard = []InlineKeyboardRow{
 		{
 			Buttons: []InlineKeyboardButton{
 				{
@@ -280,6 +280,8 @@ var (
 
 	// ErrNoBalanceSubscriptionsFound happens when don't receive balance subscriptions from store.
 	ErrNoBalanceSubscriptionsFound = errs.New("No balance subscriptions found. Please try to select another balance.")
+	// ErrBalanceSubscriptionNotFound happens when don't receive balance subscription from store.
+	ErrBalanceSubscriptionNotFound = errs.New("Balance subscription not found. Please try to select another balance subscription.")
 )
 
 const (
@@ -308,9 +310,11 @@ const (
 	operationIDMetadataKey          = "operation_id"
 
 	// Balance subscription related keys
-	balanceSubscriptionNameMetadataKey   = "balance_subscription_name"
-	balanceSubscriptionPeriodMetadataKey = "balance_subscription_period"
-	balanceSubscriptionAmountMetadataKey = "balance_subscription_amount"
+	balanceSubscriptionIDMetadataKey       = "balance_subscription_id"
+	balanceSubscriptionNameMetadataKey     = "balance_subscription_name"
+	balanceSubscriptionPeriodMetadataKey   = "balance_subscription_period"
+	balanceSubscriptionAmountMetadataKey   = "balance_subscription_amount"
+	lastBalanceSubscriptionDateMetadataKey = "last_balance_subscription_date"
 )
 
 // StateService represents a service for managing and handling complex bot flow using state.

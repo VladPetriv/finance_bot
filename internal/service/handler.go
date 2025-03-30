@@ -146,6 +146,16 @@ func (h *handlerService) RegisterHandlers() {
 			models.ListBalanceSubscriptionsFlowStep: h.handleListBalanceSubscriptionsFlowStep,
 			models.ChooseBalanceFlowStep:            h.handleChooseBalanceFlowStepForListBalanceSubscriptions,
 		},
+		models.UpdateBalanceSubscriptionFlow: {
+			models.UpdateBalanceSubscriptionFlowStep:             h.handleUpdateBalanceSubscriptionFlowStep,
+			models.ChooseBalanceFlowStep:                         h.handleChooseBalanceFlowStepForUpdateBalanceSubscription,
+			models.ChooseBalanceSubscriptionToUpdateFlowStep:     h.handleChooseBalanceSubscriptionToUpdateFlowStep,
+			models.ChooseUpdateBalanceSubscriptionOptionFlowStep: h.handleChooseUpdateBalanceSubscriptionOptionFlowStep,
+			models.EnterBalanceSubscriptionNameFlowStep:          h.handleEnterBalanceSubscriptionNameFlowStepForUpdate,
+			models.EnterBalanceSubscriptionAmountFlowStep:        h.handleEnterBalanceSubscriptionAmountFlowStepForUpdate,
+			models.ChooseCategoryFlowStep:                        h.handleChooseCategoryFlowStepForBalanceSubscriptionUpdate,
+			models.ChooseBalanceSubscriptionFrequencyFlowStep:    h.handleChooseBalanceSubscriptionFrequencyFlowStepForUpdate,
+		},
 	}
 }
 
