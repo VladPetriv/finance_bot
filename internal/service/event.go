@@ -125,13 +125,9 @@ func getEventFromMsg(user *models.User, msg Message) models.Event {
 		return models.CreateOperationsThroughOneTimeInputEvent
 	}
 
-	if inputIsNotACommand {
-		return models.UnknownEvent
-	}
-
-	for _, c := range models.AvailableCommands {
-		if strings.Contains(c, msg.GetText()) {
-			if eventFromCommand, ok := models.CommandToEvent[c]; ok {
+	for _, command := range models.AvailableCommands {
+		if command == msg.GetText() {
+			if eventFromCommand, ok := models.CommandToEvent[command]; ok {
 				return eventFromCommand
 			}
 		}
