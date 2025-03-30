@@ -53,10 +53,6 @@ func (s stateService) HandleState(ctx context.Context, message Message) (*Handle
 		logger.Error().Err(err).Msg("get user from store")
 		return nil, fmt.Errorf("get user from store: %w", err)
 	}
-	if user == nil {
-		logger.Error().Msg("user not found")
-		return nil, fmt.Errorf("user not found")
-	}
 
 	event := getEventFromMsg(user, message)
 	logger.Debug().Any("event", event).Msg("got event based on bot message")
