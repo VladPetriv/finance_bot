@@ -470,23 +470,28 @@ func getKeyboardRows[T named](data []T, elementLimitPerRow int, includeRowWithCa
 	return keyboardRows
 }
 
-// convertOperationsToInlineKeyboardRowsWithPagination converts a slice of operations into inline keyboard rows with pagination support.
-// If there are more operations than the per-message limit, it adds a "Show More" button.
-func convertOperationsToInlineKeyboardRowsWithPagination(actualOperationsCount int, operations []models.Operation, limitPerMessage int) []InlineKeyboardRow {
-	inlineKeyboardRows := make([]InlineKeyboardRow, 0, len(operations))
-	for _, operation := range operations {
+type identifiable interface {
+	GetID() string
+	GetName() string
+}
+
+// convertModelToInlineKeyboardRowsWithPagination converts a slice of model into inline keyboard rows with pagination support.
+// If there are more models than the per-message limit, it adds a "Show More" button.
+func convertModelToInlineKeyboardRowsWithPagination[T identifiable](actualCount int, data []T, limitPerMessage int) []InlineKeyboardRow {
+	inlineKeyboardRows := make([]InlineKeyboardRow, 0, len(data))
+	for _, value := range data {
 		inlineKeyboardRows = append(inlineKeyboardRows, InlineKeyboardRow{
 			Buttons: []InlineKeyboardButton{
 				{
-					Text: operation.GetName(),
-					Data: operation.ID,
+					Text: value.GetName(),
+					Data: value.GetID(),
 				},
 			},
 		})
 	}
 
 	// Skip BotShowMoreOperationsForDeleteCommand if operations are within the operationsPerMessage limit.
-	if actualOperationsCount <= limitPerMessage {
+	if actualCount <= limitPerMessage {
 		return inlineKeyboardRows
 	}
 
@@ -494,7 +499,7 @@ func convertOperationsToInlineKeyboardRowsWithPagination(actualOperationsCount i
 		{
 			Buttons: []InlineKeyboardButton{
 				{
-					Text: models.BotShowMoreOperationsCommand,
+					Text: models.BotShowMoreCommand,
 				},
 			},
 		},

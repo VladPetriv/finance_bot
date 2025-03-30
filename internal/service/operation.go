@@ -1464,7 +1464,7 @@ func (h handlerService) sendListOfOperationsWithAbilityToPaginate(ctx context.Co
 	err = h.apis.Messenger.SendWithKeyboard(SendWithKeyboardOptions{
 		ChatID:         opts.chatID,
 		Message:        "Select operation to delete:",
-		InlineKeyboard: convertOperationsToInlineKeyboardRowsWithPagination(operationsCount, operations, operationsPerMessage),
+		InlineKeyboard: convertModelToInlineKeyboardRowsWithPagination(operationsCount, operations, operationsPerMessage),
 	})
 	if err != nil {
 		logger.Error().Err(err).Msg("create inline keyboard")

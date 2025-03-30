@@ -20,6 +20,24 @@ type BalanceSubscription struct {
 	UpdatedAt time.Time `db:"updated_at"`
 }
 
+// GetID returns the ID of the subscription.
+func (b BalanceSubscription) GetID() string {
+	return b.ID
+}
+
+// GetName returns the name of the subscription.
+func (b BalanceSubscription) GetName() string {
+	return b.Name
+}
+
+// GetDetails returns the balance subscription details in string format.
+func (b BalanceSubscription) GetDetails() string {
+	return fmt.Sprintf(
+		"Subscription Details:\nName: %s\nAmount: %s\nPeriod: %s\nStart At: %s",
+		b.Name, b.Amount, b.Period, b.StartAt.Format("2006-01-02 15:04"),
+	)
+}
+
 // SubscriptionPeriod represents the period of a subscription.
 type SubscriptionPeriod string
 
