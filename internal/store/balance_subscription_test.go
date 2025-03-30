@@ -840,8 +840,3 @@ func TestBalanceSubscription_Delete(t *testing.T) {
 		})
 	}
 }
-
-// func deleteBalanceByID(db *sqlx.DB, balanceID string) error {
-// 	_, err := db.Exec("DELETE FROM balances WHERE id = $1;", balanceID)
-// 	return err
-// }
