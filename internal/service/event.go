@@ -118,7 +118,7 @@ func (e eventService) handlePanic(ctx context.Context, msg Message, r any) {
 }
 
 func getEventFromMsg(user *models.User, msg Message) models.Event {
-	aiParserEnabled := user.Settings != nil && user.Settings.AIParserEnabled
+	aiParserEnabled := user != nil && user.Settings != nil && user.Settings.AIParserEnabled
 	inputIsNotACommand := !strings.Contains(strings.Join(models.AvailableCommands, " "), msg.GetText())
 
 	if aiParserEnabled && inputIsNotACommand {
