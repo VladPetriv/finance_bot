@@ -50,8 +50,6 @@ const (
 	BotGetOperationsHistory string = "Get Operations History 📖"
 	// BotDeleteOperationCommand represents the command to delete an operation
 	BotDeleteOperationCommand string = "Delete Operation ❌"
-	// BotShowMoreOperationsCommand represents the command to select more operations
-	BotShowMoreOperationsCommand string = "Show More Operations ➡️"
 	// BotUpdateOperationCommand represents the command to update an operation
 	BotUpdateOperationCommand string = "Update Operation ✏️"
 	// BotUpdateOperationAmountCommand represents the command to update operation amount
@@ -80,6 +78,8 @@ const (
 	// BotDeleteBalanceSubscriptionCommand represents the command to delete a balance subscription
 	BotDeleteBalanceSubscriptionCommand string = "Delete Balance Subscription 🗑️"
 
+	// BotShowMoreCommand represents the command to select more models.
+	BotShowMoreCommand string = "Show More ➡️"
 	// BotCancelCommand represents the command that will cancel the current flow
 	BotCancelCommand string = "Cancel action ⬅️"
 )
@@ -92,11 +92,11 @@ var AvailableCommands = []string{
 	BotUpdateBalanceNameCommand, BotUpdateBalanceAmountCommand, BotUpdateBalanceCurrencyCommand,
 	BotCreateCategoryCommand, BotListCategoriesCommand, BotUpdateCategoryCommand, BotDeleteCategoryCommand,
 	BotCreateOperationCommand, BotCreateIncomingOperationCommand, BotCreateSpendingOperationCommand, BotGetOperationsHistory, BotCreateTransferOperationCommand,
-	BotDeleteOperationCommand, BotShowMoreOperationsCommand, BotUpdateOperationCommand, BotUpdateOperationAmountCommand, BotUpdateOperationDescriptionCommand,
+	BotDeleteOperationCommand, BotUpdateOperationCommand, BotUpdateOperationAmountCommand, BotUpdateOperationDescriptionCommand,
 	BotUpdateOperationDateCommand, BotUpdateOperationCategoryCommand,
 	BotCreateBalanceSubscriptionCommand, BotListBalanceSubscriptionsCommand, BotDeleteBalanceSubscriptionCommand, BotUpdateBalanceSubscriptionCommand,
 	BotUpdateBalanceSubscriptionNameCommand, BotUpdateBalanceSubscriptionCategoryCommand, BotUpdateBalanceSubscriptionAmountCommand, BotUpdateBalanceSubscriptionPeriodCommand,
-	BotCancelCommand,
+	BotCancelCommand, BotShowMoreCommand,
 }
 
 // CommandToEvent maps bot commands to their corresponding events

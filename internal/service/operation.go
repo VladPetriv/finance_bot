@@ -695,7 +695,7 @@ func (h handlerService) handleChooseOperationToDeleteFlowStep(ctx context.Contex
 	logger := h.logger.With().Str("name", "handlerService.handleChooseOperationToDeleteFlowStep").Logger()
 	logger.Debug().Any("opts", opts).Msg("got args")
 
-	if opts.message.GetText() == models.BotShowMoreOperationsCommand {
+	if opts.message.GetText() == models.BotShowMoreCommand {
 		return models.ChooseOperationToDeleteFlowStep, h.sendListOfOperationsWithAbilityToPaginate(ctx, sendListOfOperationsWithAbilityToPaginateOptions{
 			balanceID:                      opts.user.GetBalance(opts.stateMetaData[balanceNameMetadataKey].(string)).ID,
 			chatID:                         opts.message.GetChatID(),
@@ -942,7 +942,7 @@ func (h handlerService) handleChooseOperationToUpdateFlowStep(ctx context.Contex
 	logger := h.logger.With().Str("name", "handlerService.handleChooseOperationToUpdateFlowStep").Logger()
 	logger.Debug().Any("opts", opts).Msg("got args")
 
-	if opts.message.GetText() == models.BotShowMoreOperationsCommand {
+	if opts.message.GetText() == models.BotShowMoreCommand {
 		return models.ChooseOperationToUpdateFlowStep, h.sendListOfOperationsWithAbilityToPaginate(ctx, sendListOfOperationsWithAbilityToPaginateOptions{
 			balanceID:                      opts.user.GetBalance(opts.stateMetaData[balanceNameMetadataKey].(string)).ID,
 			chatID:                         opts.message.GetChatID(),
