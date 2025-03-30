@@ -156,6 +156,12 @@ func (h *handlerService) RegisterHandlers() {
 			models.ChooseCategoryFlowStep:                        h.handleChooseCategoryFlowStepForBalanceSubscriptionUpdate,
 			models.ChooseBalanceSubscriptionFrequencyFlowStep:    h.handleChooseBalanceSubscriptionFrequencyFlowStepForUpdate,
 		},
+		models.DeleteBalanceSubscriptionFlow: {
+			models.DeleteBalanceSubscriptionFlowStep:         h.handleDeleteBalanceSubscriptionFlowStep,
+			models.ChooseBalanceFlowStep:                     h.handleChooseBalanceFlowStepForBalanceSubscriptionDelete,
+			models.ChooseBalanceSubscriptionToDeleteFlowStep: h.handleChooseBalanceSubscriptionToDeleteFlowStep,
+			models.ConfirmDeleteBalanceSubscriptionFlowStep:  h.handleConfirmDeleteBalanceSubscriptionFlowStep,
+		},
 	}
 }
 

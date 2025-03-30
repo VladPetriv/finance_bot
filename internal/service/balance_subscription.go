@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"slices"
+	"strconv"
 	"time"
 
 	"github.com/VladPetriv/finance_bot/internal/models"
@@ -515,6 +516,99 @@ func (h *handlerService) handleChooseBalanceSubscriptionFrequencyFlowStepForUpda
 		Message:        "Balance subscription period successfully updated!\nPlease choose other update operation option or finish action by canceling it!",
 		InlineKeyboard: updateBalanceSubscriptionOptionsKeyboard,
 	})
+}
+
+func (h *handlerService) handleDeleteBalanceSubscriptionFlowStep(ctx context.Context, opts flowProcessingOptions) (models.FlowStep, error) {
+	logger := h.logger.With().Str("name", "handlerService.handleDeleteBalanceSubscriptionFlowStep").Logger()
+	logger.Debug().Any("opts", opts).Msg("got args")
+
+	return models.ChooseBalanceFlowStep, h.apis.Messenger.SendWithKeyboard(SendWithKeyboardOptions{
+		ChatID:   opts.message.GetChatID(),
+		Message:  "Select balance:",
+		Keyboard: getKeyboardRows(opts.user.Balances, 3, true),
+	})
+}
+
+func (h *handlerService) handleChooseBalanceFlowStepForBalanceSubscriptionDelete(ctx context.Context, opts flowProcessingOptions) (models.FlowStep, error) {
+	logger := h.logger.With().Str("name", "handlerService.handleChooseBalanceFlowStepForBalanceSubscriptionDelete").Logger()
+	logger.Debug().Any("opts", opts).Msg("got args")
+
+	balance := opts.user.GetBalance(opts.message.GetText())
+	if balance == nil {
+		return models.EndFlowStep, ErrBalanceNotFound
+	}
+
+	opts.stateMetaData[balanceIDMetadataKey] = balance.ID
+
+	err := h.showCancelButton(opts.message.GetChatID(), "")
+	if err != nil {
+		logger.Error().Err(err).Msg("show cancel button")
+		return "", fmt.Errorf("show cancel button: %w", err)
+	}
+
+	return models.ChooseBalanceSubscriptionToDeleteFlowStep, h.sendBalanceSubscriptions(ctx, sendBalanceSubscriptionsOptions{
+		balanceID:                      balance.ID,
+		chatID:                         opts.message.GetChatID(),
+		includeLastShowedOperationDate: true,
+		stateMetadata:                  opts.stateMetaData,
+	})
+}
+
+func (h *handlerService) handleChooseBalanceSubscriptionToDeleteFlowStep(ctx context.Context, opts flowProcessingOptions) (models.FlowStep, error) {
+	logger := h.logger.With().Str("name", "handlerService.handleChooseBalanceSubscriptionToDeleteFlowStep").Logger()
+	logger.Debug().Any("opts", opts).Msg("got args")
+
+	if opts.message.GetText() == models.BotShowMoreCommand {
+		return models.ChooseBalanceSubscriptionToDeleteFlowStep, h.sendBalanceSubscriptions(ctx, sendBalanceSubscriptionsOptions{
+			balanceID:                      opts.stateMetaData[balanceIDMetadataKey].(string),
+			chatID:                         opts.message.GetChatID(),
+			includeLastShowedOperationDate: true,
+			stateMetadata:                  opts.stateMetaData,
+		})
+	}
+
+	balanceSubscription, err := h.stores.BalanceSubscription.Get(ctx, GetBalanceSubscriptionFilter{
+		ID: opts.message.GetText(),
+	})
+	if err != nil {
+		logger.Error().Err(err).Msg("get balance subscription from store")
+		return "", fmt.Errorf("get balance subscription from store: %w", err)
+	}
+	if balanceSubscription == nil {
+		logger.Info().Msg("balance subscription not found")
+		return "", ErrBalanceSubscriptionNotFound
+	}
+
+	opts.stateMetaData[balanceSubscriptionIDMetadataKey] = balanceSubscription.ID
+
+	return models.ConfirmDeleteBalanceSubscriptionFlowStep, h.sendMessageWithConfirmationInlineKeyboard(
+		opts.message.GetChatID(),
+		balanceSubscription.GetDeletionMessage(),
+	)
+}
+
+func (h *handlerService) handleConfirmDeleteBalanceSubscriptionFlowStep(ctx context.Context, opts flowProcessingOptions) (models.FlowStep, error) {
+	logger := h.logger.With().Str("name", "handlerService.handleConfirmDeleteBalanceSubscriptionFlowStep").Logger()
+	logger.Debug().Any("opts", opts).Msg("got args")
+
+	confirmDeletion, err := strconv.ParseBool(opts.message.GetText())
+	if err != nil {
+		logger.Error().Err(err).Msg("parse callback data to bool")
+		return "", fmt.Errorf("parse callback data to bool: %w", err)
+	}
+
+	if !confirmDeletion {
+		logger.Info().Msg("user did not confirm balance subscription deletion")
+		return models.EndFlowStep, h.notifyCancellationAndShowMenu(opts.message.GetChatID())
+	}
+
+	err = h.stores.BalanceSubscription.Delete(ctx, opts.stateMetaData[balanceSubscriptionIDMetadataKey].(string))
+	if err != nil {
+		logger.Error().Err(err).Msg("delete balance subscription")
+		return "", fmt.Errorf("delete balance subscription: %w", err)
+	}
+
+	return models.EndFlowStep, h.sendMessageWithDefaultKeyboard(opts.message.GetChatID(), "Balance subscription successfully deleted!")
 }
 
 type sendBalanceSubscriptionsOptions struct {

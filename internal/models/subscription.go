@@ -38,6 +38,16 @@ func (b BalanceSubscription) GetDetails() string {
 	)
 }
 
+// GetDeletionMessage returns the deletion message for the balance subscription.
+func (b BalanceSubscription) GetDeletionMessage() string {
+	return fmt.Sprintf(
+		"Are you sure you want to delete the subscription '%s' (%s, %s)?\nAll previously created operations will remain untouched, but no new operations will be generated in the future.",
+		b.Name,
+		b.Amount,
+		b.Period,
+	)
+}
+
 // SubscriptionPeriod represents the period of a subscription.
 type SubscriptionPeriod string
 
