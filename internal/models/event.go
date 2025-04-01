@@ -17,8 +17,8 @@ const (
 	CategoryEvent Event = "category/actions"
 	// OperationEvent represents the event for receiving operation actions
 	OperationEvent Event = "operation/actions"
-	// BalanceSubscriptionsEvent represents the event for receiving balance subscriptions actions
-	BalanceSubscriptionsEvent Event = "balance/subscriptions/actions"
+	// BalanceSubscriptionEvent represents the event for receiving balance subscriptions actions
+	BalanceSubscriptionEvent Event = "balance/subscriptions/actions"
 
 	// CreateBalanceEvent represents the event for creating a new balance
 	CreateBalanceEvent Event = "balance/create"
@@ -51,8 +51,8 @@ const (
 
 	// CreateBalanceSubscriptionEvent represents the event for creating a new balance subscription
 	CreateBalanceSubscriptionEvent Event = "balance_subscription/create"
-	// ListBalanceSubscriptionsEvent represents the event for listing all balance subscriptions
-	ListBalanceSubscriptionsEvent Event = "balance_subscription/list"
+	// ListBalanceSubscriptionEvent represents the event for listing all balance subscriptions
+	ListBalanceSubscriptionEvent Event = "balance_subscription/list"
 	// UpdateBalanceSubscriptionEvent represents the event for updating a balance subscription
 	UpdateBalanceSubscriptionEvent Event = "balance_subscription/update"
 	// DeleteBalanceSubscriptionEvent represents the event for deleting a balance subscription
@@ -66,10 +66,10 @@ var EventToFlow = map[Event]Flow{
 	CancelEvent: CancelFlow,
 
 	// Wrappers
-	BalanceEvent:              BalanceFlow,
-	CategoryEvent:             CategoryFlow,
-	OperationEvent:            OperationFlow,
-	BalanceSubscriptionsEvent: BalanceSubscriptionsFlow,
+	BalanceEvent:             BalanceFlow,
+	CategoryEvent:            CategoryFlow,
+	OperationEvent:           OperationFlow,
+	BalanceSubscriptionEvent: BalanceSubscriptionFlow,
 
 	// Balance
 	CreateBalanceEvent: CreateBalanceFlow,
@@ -92,7 +92,7 @@ var EventToFlow = map[Event]Flow{
 
 	// Balance subscriptions
 	CreateBalanceSubscriptionEvent: CreateBalanceSubscriptionFlow,
-	ListBalanceSubscriptionsEvent:  ListBalanceSubscriptionsFlow,
+	ListBalanceSubscriptionEvent:   ListBalanceSubscriptionFlow,
 	UpdateBalanceSubscriptionEvent: UpdateBalanceSubscriptionFlow,
 	DeleteBalanceSubscriptionEvent: DeleteBalanceSubscriptionFlow,
 }

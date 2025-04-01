@@ -178,8 +178,8 @@ func (s *State) GetEvent() Event {
 		return CreateOperationsThroughOneTimeInputEvent
 	case CreateBalanceSubscriptionFlowStep:
 		return CreateBalanceSubscriptionEvent
-	case ListBalanceSubscriptionsFlowStep:
-		return ListBalanceSubscriptionsEvent
+	case ListBalanceSubscriptionFlowStep:
+		return ListBalanceSubscriptionEvent
 	case UpdateBalanceSubscriptionFlowStep:
 		return UpdateBalanceSubscriptionEvent
 	case DeleteBalanceSubscriptionFlowStep:
@@ -204,8 +204,8 @@ const (
 	CategoryFlow Flow = "category"
 	// OperationFlow represents the flow for getting operation actions
 	OperationFlow Flow = "operation"
-	// BalanceSubscriptionsFlow represents the flow for getting balance subscriptions actions
-	BalanceSubscriptionsFlow Flow = "balance_subscriptions"
+	// BalanceSubscriptionFlow represents the flow for getting balance subscriptions actions
+	BalanceSubscriptionFlow Flow = "balance_subscriptions"
 
 	// CreateBalanceFlow represents the flow for creating a new balance
 	CreateBalanceFlow Flow = "create_balance"
@@ -238,8 +238,8 @@ const (
 
 	// CreateBalanceSubscriptionFlow represents the flow for creating a new balance subscription
 	CreateBalanceSubscriptionFlow Flow = "create_balance_subscription"
-	// ListBalanceSubscriptionsFlow represents the flow for listing all balance subscriptions
-	ListBalanceSubscriptionsFlow Flow = "list_balance_subscriptions"
+	// ListBalanceSubscriptionFlow represents the flow for listing all balance subscriptions
+	ListBalanceSubscriptionFlow Flow = "list_balance_subscriptions"
 	// UpdateBalanceSubscriptionFlow represents the flow for updating a balance subscription
 	UpdateBalanceSubscriptionFlow Flow = "update_balance_subscription"
 	// DeleteBalanceSubscriptionFlow represents the flow for deleting a balance subscription
@@ -404,8 +404,8 @@ const (
 	ChooseBalanceSubscriptionFrequencyFlowStep FlowStep = "choose_balance_subscription_frequency"
 	// EnterStartAtDateForBalanceSubscriptionFlowStep represents the step for entering start at date for balance subscription
 	EnterStartAtDateForBalanceSubscriptionFlowStep FlowStep = "enter_start_at_date_for_balance_subscription"
-	// ListBalanceSubscriptionsFlowStep represents the step for listing balance subscriptions
-	ListBalanceSubscriptionsFlowStep FlowStep = "list_balance_subscriptions"
+	// ListBalanceSubscriptionFlowStep represents the step for listing balance subscriptions
+	ListBalanceSubscriptionFlowStep FlowStep = "list_balance_subscriptions"
 	// UpdateBalanceSubscriptionFlowStep represents the step for updating a balance subscription
 	UpdateBalanceSubscriptionFlowStep FlowStep = "update_balance_subscription"
 	// ChooseBalanceSubscriptionToUpdateFlowStep represents the step for choosing balance subscription to update

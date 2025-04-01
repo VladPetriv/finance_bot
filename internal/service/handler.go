@@ -142,9 +142,9 @@ func (h *handlerService) RegisterHandlers() {
 			models.ChooseBalanceSubscriptionFrequencyFlowStep:     h.handleChooseBalanceSubscriptionFrequencyFlowStep,
 			models.EnterStartAtDateForBalanceSubscriptionFlowStep: h.handleEnterStartAtDateForBalanceSubscriptionFlowStep,
 		},
-		models.ListBalanceSubscriptionsFlow: {
-			models.ListBalanceSubscriptionsFlowStep: h.handleListBalanceSubscriptionsFlowStep,
-			models.ChooseBalanceFlowStep:            h.handleChooseBalanceFlowStepForListBalanceSubscriptions,
+		models.ListBalanceSubscriptionFlow: {
+			models.ListBalanceSubscriptionFlowStep: h.handleListBalanceSubscriptionFlowStep,
+			models.ChooseBalanceFlowStep:           h.handleChooseBalanceFlowStepForListBalanceSubscriptions,
 		},
 		models.UpdateBalanceSubscriptionFlow: {
 			models.UpdateBalanceSubscriptionFlowStep:             h.handleUpdateBalanceSubscriptionFlowStep,
@@ -278,7 +278,7 @@ func (h handlerService) HandleWrappers(ctx context.Context, event models.Event, 
 	case models.OperationEvent:
 		rows = operationKeyboardRows
 		message = "Please choose operation command to execute:"
-	case models.BalanceSubscriptionsEvent:
+	case models.BalanceSubscriptionEvent:
 		rows = balanceSubscriptionKeyboardRows
 		message = "Please choose balance subscription command to execute:"
 	default:

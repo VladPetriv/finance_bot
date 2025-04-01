@@ -151,8 +151,8 @@ func (h *handlerService) handleEnterStartAtDateForBalanceSubscriptionFlowStep(ct
 	return models.EndFlowStep, h.sendMessageWithDefaultKeyboard(opts.message.GetChatID(), "Balance subscription successfully created!")
 }
 
-func (h *handlerService) handleListBalanceSubscriptionsFlowStep(_ context.Context, opts flowProcessingOptions) (models.FlowStep, error) {
-	logger := h.logger.With().Str("name", "handlerService.handleListBalanceSubscriptionsFlowStep").Logger()
+func (h *handlerService) handleListBalanceSubscriptionFlowStep(_ context.Context, opts flowProcessingOptions) (models.FlowStep, error) {
+	logger := h.logger.With().Str("name", "handlerService.handleListBalanceSubscriptionFlowStep").Logger()
 	logger.Debug().Any("opts", opts).Msg("got args")
 
 	return models.ChooseBalanceFlowStep, h.apis.Messenger.SendWithKeyboard(SendWithKeyboardOptions{

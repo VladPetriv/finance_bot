@@ -125,7 +125,7 @@ func (s stateService) isSimpleEvent(event models.Event) bool {
 		models.BalanceEvent,
 		models.CategoryEvent,
 		models.OperationEvent,
-		models.BalanceSubscriptionsEvent,
+		models.BalanceSubscriptionEvent,
 	}, event)
 }
 

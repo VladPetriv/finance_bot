@@ -109,7 +109,7 @@ var CommandToEvent = map[string]Event{
 	BotBalanceCommand:              BalanceEvent,
 	BotCategoryCommand:             CategoryEvent,
 	BotOperationCommand:            OperationEvent,
-	BotBalanceSubscriptionsCommand: BalanceSubscriptionsEvent,
+	BotBalanceSubscriptionsCommand: BalanceSubscriptionEvent,
 
 	// Balance
 	BotCreateBalanceCommand: CreateBalanceEvent,
@@ -131,7 +131,7 @@ var CommandToEvent = map[string]Event{
 
 	// Balance Subscriptions
 	BotCreateBalanceSubscriptionCommand: CreateBalanceSubscriptionEvent,
-	BotListBalanceSubscriptionsCommand:  ListBalanceSubscriptionsEvent,
+	BotListBalanceSubscriptionsCommand:  ListBalanceSubscriptionEvent,
 	BotUpdateBalanceSubscriptionCommand: UpdateBalanceSubscriptionEvent,
 	BotDeleteBalanceSubscriptionCommand: DeleteBalanceSubscriptionEvent,
 }
@@ -158,7 +158,7 @@ var CommandToFistFlowStep = map[string]FlowStep{
 
 	// Balance Subscription
 	BotCreateBalanceSubscriptionCommand: CreateBalanceSubscriptionFlowStep,
-	BotListBalanceSubscriptionsCommand:  ListBalanceSubscriptionsFlowStep,
+	BotListBalanceSubscriptionsCommand:  ListBalanceSubscriptionFlowStep,
 	BotUpdateBalanceSubscriptionCommand: UpdateBalanceSubscriptionFlowStep,
 	BotDeleteBalanceSubscriptionCommand: DeleteBalanceSubscriptionFlowStep,
 }
