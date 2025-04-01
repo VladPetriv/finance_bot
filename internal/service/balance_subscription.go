@@ -68,6 +68,7 @@ func (h *handlerService) handleChooseCategoryFlowStepForCreateBalanceSubscriptio
 	}
 
 	opts.stateMetaData[categoryIDMetadataKey] = category.ID
+
 	return models.EnterBalanceSubscriptionNameFlowStep, h.showCancelButton(opts.message.GetChatID(), "Enter balance subscription name:")
 }
 
