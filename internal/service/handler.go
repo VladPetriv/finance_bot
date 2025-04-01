@@ -491,7 +491,7 @@ type identifiable interface {
 	GetName() string
 }
 
-// convertModelToInlineKeyboardRowsWithPagination converts a slice of model into inline keyboard rows with pagination support.
+// convertModelToInlineKeyboardRowsWithPagination converts a slice of any model that satisfy identifiable interface into inline keyboard rows with pagination support.
 // If there are more models than the per-message limit, it adds a "Show More" button.
 func convertModelToInlineKeyboardRowsWithPagination[T identifiable](actualCount int, data []T, limitPerMessage int) []InlineKeyboardRow {
 	inlineKeyboardRows := make([]InlineKeyboardRow, 0, len(data))
@@ -506,7 +506,7 @@ func convertModelToInlineKeyboardRowsWithPagination[T identifiable](actualCount 
 		})
 	}
 
-	// Skip BotShowMoreOperationsForDeleteCommand if operations are within the operationsPerMessage limit.
+	// Skip BotShowMoreCommand if models are within the limit.
 	if actualCount <= limitPerMessage {
 		return inlineKeyboardRows
 	}
