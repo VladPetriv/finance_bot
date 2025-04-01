@@ -1325,7 +1325,7 @@ func (h handlerService) handleEnterOperationDateFlowStep(ctx context.Context, op
 		return "", ErrOperationNotFound
 	}
 
-	parsedOperationDate, err := time.Parse("02/01/2006 15:04", opts.message.GetText())
+	parsedOperationDate, err := time.Parse(defaultTimeFormat, opts.message.GetText())
 	if err != nil {
 		logger.Error().Err(err).Msg("parse operation date")
 		return "", ErrInvalidDateFormat

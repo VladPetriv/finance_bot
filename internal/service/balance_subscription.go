@@ -124,7 +124,7 @@ func (h *handlerService) handleEnterStartAtDateForBalanceSubscriptionFlowStep(ct
 	logger := h.logger.With().Str("name", "handlerService.handleEnterStartAtDateForBalanceSubscriptionFlowStep").Logger()
 	logger.Debug().Any("opts", opts).Msg("got args")
 
-	parsedStartAtTime, err := time.Parse("02/01/2006 15:04", opts.message.GetText())
+	parsedStartAtTime, err := time.Parse(defaultTimeFormat, opts.message.GetText())
 	if err != nil {
 		logger.Error().Err(err).Msg("parse operation date")
 		return "", ErrInvalidDateFormat

@@ -317,6 +317,8 @@ const (
 	lastBalanceSubscriptionDateMetadataKey = "last_balance_subscription_date"
 )
 
+const defaultTimeFormat = "02/01/2006 15:04"
+
 // StateService represents a service for managing and handling complex bot flow using state.
 type StateService interface {
 	HandleState(ctx context.Context, message Message) (*HandleStateOutput, error)
