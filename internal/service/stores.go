@@ -186,5 +186,6 @@ type ListBalanceSubscriptionFilter struct {
 
 // GetBalanceSubscriptionFilter represents a filter for store.Get method.
 type GetBalanceSubscriptionFilter struct {
-	ID string
+	ID   string
+	Name string
 }

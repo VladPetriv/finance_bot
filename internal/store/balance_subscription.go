@@ -45,6 +45,9 @@ func (b *balanceSubscriptionStore) Get(ctx context.Context, filter service.GetBa
 	if filter.ID != "" {
 		stmt = stmt.Where(sq.Eq{"id": filter.ID})
 	}
+	if filter.Name != "" {
+		stmt = stmt.Where(sq.Eq{"name": filter.Name})
+	}
 
 	query, args, err := stmt.ToSql()
 	if err != nil {

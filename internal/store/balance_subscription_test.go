@@ -2,7 +2,6 @@ package store_test
 
 import (
 	"context"
-	"database/sql"
 	"testing"
 	"time"
 
@@ -705,9 +704,11 @@ func TestBalanceSubscription_Update(t *testing.T) {
 			err := balanceSubscriptionStore.Update(ctx, tc.args)
 			assert.NoError(t, err)
 
-			var actual models.BalanceSubscription
-			err = testCaseDB.DB.GetContext(ctx, &actual, "SELECT * FROM balance_subscriptions WHERE name = $1;", tc.preconditions.Name)
+			actual, err := balanceSubscriptionStore.Get(ctx, service.GetBalanceSubscriptionFilter{
+				Name: tc.preconditions.Name,
+			})
 			assert.NoError(t, err)
+			assert.NotNil(t, actual)
 			assert.Equal(t, tc.expected.ID, actual.ID)
 			assert.Equal(t, tc.expected.BalanceID, actual.BalanceID)
 			assert.Equal(t, tc.expected.CategoryID, actual.CategoryID)
@@ -826,17 +827,18 @@ func TestBalanceSubscription_Delete(t *testing.T) {
 			err := balanceSubscriptionStore.Delete(ctx, tc.args)
 			assert.NoError(t, err)
 
-			var actual models.BalanceSubscription
-			err = testCaseDB.DB.GetContext(ctx, &actual, "SELECT * FROM balance_subscriptions WHERE id = $1;", tc.preconditions.ID)
+			actual, err := balanceSubscriptionStore.Get(ctx, service.GetBalanceSubscriptionFilter{
+				ID: tc.preconditions.ID,
+			})
+			assert.NoError(t, err)
 
 			// balance subscription should not be deleted
 			if tc.preconditions.ID != tc.args {
-				assert.NotEmpty(t, actual.ID)
+				assert.NotNil(t, actual)
 				return
 			}
 
-			assert.Error(t, err)
-			assert.ErrorIs(t, err, sql.ErrNoRows)
+			assert.Nil(t, actual)
 		})
 	}
 }
