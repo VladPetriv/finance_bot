@@ -36,4 +36,8 @@ var Migrations = []any{
 		Name: "Init balance_subscription table",
 		Func: initBalanceSubscriptionTable,
 	},
+	&migrator.Migration{
+		Name: "Add balance_subscription_id column to operations table",
+		Func: addBalanceSubscriptionIDToOperationsTable,
+	},
 }
