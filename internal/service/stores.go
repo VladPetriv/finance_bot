@@ -9,12 +9,13 @@ import (
 
 // Stores represents all stores.
 type Stores struct {
-	Balance   BalanceStore
-	Operation OperationStore
-	Category  CategoryStore
-	User      UserStore
-	State     StateStore
-	Currency  CurrencyStore
+	Balance             BalanceStore
+	Operation           OperationStore
+	Category            CategoryStore
+	User                UserStore
+	State               StateStore
+	Currency            CurrencyStore
+	BalanceSubscription BalanceSubscriptionStore
 }
 
 // UserStore provides functionality for work with users store.
@@ -157,4 +158,34 @@ type CurrencyStore interface {
 // ExistsCurrencyFilter represents a filter for CurrencyStore.Exists method.
 type ExistsCurrencyFilter struct {
 	ID string
+}
+
+// BalanceSubscriptionStore represents a store for balance subscriptions.
+type BalanceSubscriptionStore interface {
+	// Create creates a new balance subscription in store.
+	Create(ctx context.Context, subscription models.BalanceSubscription) error
+	// Get retrieves balance subscription from store based on input filter.
+	Get(ctx context.Context, filter GetBalanceSubscriptionFilter) (*models.BalanceSubscription, error)
+	// Count returns a count of all balance subscriptions from store based on filter.
+	Count(ctx context.Context, filter ListBalanceSubscriptionFilter) (int, error)
+	// List returns a list of all balance subscriptions from store based on filter.
+	List(ctx context.Context, filter ListBalanceSubscriptionFilter) ([]models.BalanceSubscription, error)
+	// Update updates balance subscription model in store.
+	Update(ctx context.Context, subscription *models.BalanceSubscription) error
+	// Delete deletes balance subscription from store.
+	Delete(ctx context.Context, subscriptionID string) error
+}
+
+// ListBalanceSubscriptionFilter represents a filter for store.List and store.Count methods.
+type ListBalanceSubscriptionFilter struct {
+	BalanceID            string
+	OrderByCreatedAtDesc bool
+	CreatedAtLessThan    time.Time
+	Limit                int
+}
+
+// GetBalanceSubscriptionFilter represents a filter for store.Get method.
+type GetBalanceSubscriptionFilter struct {
+	ID   string
+	Name string
 }

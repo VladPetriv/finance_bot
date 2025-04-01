@@ -70,7 +70,7 @@ var (
 			Buttons: []string{models.BotBalanceCommand, models.BotCategoryCommand},
 		},
 		{
-			Buttons: []string{models.BotOperationCommand},
+			Buttons: []string{models.BotOperationCommand, models.BotBalanceSubscriptionsCommand},
 		},
 	}
 
@@ -110,6 +110,18 @@ var (
 		},
 		{
 			Buttons: []string{models.BotUpdateOperationCommand, models.BotDeleteOperationCommand},
+		},
+		{
+			Buttons: []string{models.BotCancelCommand},
+		},
+	}
+
+	balanceSubscriptionKeyboardRows = []KeyboardRow{
+		{
+			Buttons: []string{models.BotCreateBalanceSubscriptionCommand, models.BotListBalanceSubscriptionsCommand},
+		},
+		{
+			Buttons: []string{models.BotUpdateBalanceSubscriptionCommand, models.BotDeleteBalanceSubscriptionCommand},
 		},
 		{
 			Buttons: []string{models.BotCancelCommand},
@@ -187,6 +199,47 @@ var (
 			},
 		},
 	}
+
+	updateBalanceSubscriptionOptionsKeyboard = []InlineKeyboardRow{
+		{
+			Buttons: []InlineKeyboardButton{
+				{
+					Text: models.BotUpdateBalanceSubscriptionNameCommand,
+				},
+			},
+		},
+		{
+			Buttons: []InlineKeyboardButton{
+				{
+					Text: models.BotUpdateBalanceSubscriptionAmountCommand,
+				},
+			},
+		},
+		{
+			Buttons: []InlineKeyboardButton{
+				{
+					Text: models.BotUpdateBalanceSubscriptionCategoryCommand,
+				},
+			},
+		},
+		{
+			Buttons: []InlineKeyboardButton{
+				{
+					Text: models.BotUpdateBalanceSubscriptionPeriodCommand,
+				},
+			},
+		},
+	}
+	balanceSubscriptionFrequencyKeyboard = []KeyboardRow{
+		{
+			Buttons: []string{
+				string(models.SubscriptionPeriodWeekly),
+				string(models.SubscriptionPeriodMonthly),
+				string(models.SubscriptionPeriodYearly),
+			},
+		},
+		{Buttons: []string{models.BotCancelCommand}},
+	}
 )
 
 var (
@@ -224,6 +277,11 @@ var (
 
 	// ErrCurrencyNotFound happens when don't receive currency from store.
 	ErrCurrencyNotFound = errs.New("Currency not found. Please try to select another currency.")
+
+	// ErrNoBalanceSubscriptionsFound happens when don't receive balance subscriptions from store.
+	ErrNoBalanceSubscriptionsFound = errs.New("No balance subscriptions found. Please try to select another balance.")
+	// ErrBalanceSubscriptionNotFound happens when don't receive balance subscription from store.
+	ErrBalanceSubscriptionNotFound = errs.New("Balance subscription not found. Please try to select another balance subscription.")
 )
 
 const (
@@ -241,6 +299,7 @@ const (
 	// Category related keys
 	previousCategoryTitleMetadataKey = "previous_category_title"
 	categoryTitleMetadataKey         = "category_title"
+	categoryIDMetadataKey            = "category_id"
 
 	// Operation related keys
 	exchangeRateMetadataKey         = "exchange_rate"
@@ -249,7 +308,16 @@ const (
 	operationTypeMetadataKey        = "operation_type"
 	lastOperationDateMetadataKey    = "last_operation_date"
 	operationIDMetadataKey          = "operation_id"
+
+	// Balance subscription related keys
+	balanceSubscriptionIDMetadataKey       = "balance_subscription_id"
+	balanceSubscriptionNameMetadataKey     = "balance_subscription_name"
+	balanceSubscriptionPeriodMetadataKey   = "balance_subscription_period"
+	balanceSubscriptionAmountMetadataKey   = "balance_subscription_amount"
+	lastBalanceSubscriptionDateMetadataKey = "last_balance_subscription_date"
 )
+
+const defaultTimeFormat = "02/01/2006 15:04"
 
 // StateService represents a service for managing and handling complex bot flow using state.
 type StateService interface {

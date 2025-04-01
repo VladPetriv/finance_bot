@@ -65,12 +65,13 @@ func Run(ctx context.Context, cfg *config.Config, logger *logger.Logger) {
 	}
 
 	stores := service.Stores{
-		Category:  store.NewCategory(postgres),
-		User:      store.NewUser(postgres),
-		Balance:   store.NewBalance(postgres),
-		Operation: store.NewOperation(postgres),
-		State:     store.NewState(postgres),
-		Currency:  store.NewCurrency(postgres),
+		Category:            store.NewCategory(postgres),
+		User:                store.NewUser(postgres),
+		Balance:             store.NewBalance(postgres),
+		BalanceSubscription: store.NewBalanceSubscription(postgres),
+		Operation:           store.NewOperation(postgres),
+		State:               store.NewState(postgres),
+		Currency:            store.NewCurrency(postgres),
 	}
 
 	currencyService := service.NewCurrency(logger, apis, stores)

@@ -695,7 +695,7 @@ func (h handlerService) handleChooseOperationToDeleteFlowStep(ctx context.Contex
 	logger := h.logger.With().Str("name", "handlerService.handleChooseOperationToDeleteFlowStep").Logger()
 	logger.Debug().Any("opts", opts).Msg("got args")
 
-	if opts.message.GetText() == models.BotShowMoreOperationsCommand {
+	if opts.message.GetText() == models.BotShowMoreCommand {
 		return models.ChooseOperationToDeleteFlowStep, h.sendListOfOperationsWithAbilityToPaginate(ctx, sendListOfOperationsWithAbilityToPaginateOptions{
 			balanceID:                      opts.user.GetBalance(opts.stateMetaData[balanceNameMetadataKey].(string)).ID,
 			chatID:                         opts.message.GetChatID(),
@@ -942,7 +942,7 @@ func (h handlerService) handleChooseOperationToUpdateFlowStep(ctx context.Contex
 	logger := h.logger.With().Str("name", "handlerService.handleChooseOperationToUpdateFlowStep").Logger()
 	logger.Debug().Any("opts", opts).Msg("got args")
 
-	if opts.message.GetText() == models.BotShowMoreOperationsCommand {
+	if opts.message.GetText() == models.BotShowMoreCommand {
 		return models.ChooseOperationToUpdateFlowStep, h.sendListOfOperationsWithAbilityToPaginate(ctx, sendListOfOperationsWithAbilityToPaginateOptions{
 			balanceID:                      opts.user.GetBalance(opts.stateMetaData[balanceNameMetadataKey].(string)).ID,
 			chatID:                         opts.message.GetChatID(),
@@ -1325,7 +1325,7 @@ func (h handlerService) handleEnterOperationDateFlowStep(ctx context.Context, op
 		return "", ErrOperationNotFound
 	}
 
-	parsedOperationDate, err := time.Parse("02/01/2006 15:04", opts.message.GetText())
+	parsedOperationDate, err := time.Parse(defaultTimeFormat, opts.message.GetText())
 	if err != nil {
 		logger.Error().Err(err).Msg("parse operation date")
 		return "", ErrInvalidDateFormat
@@ -1464,7 +1464,7 @@ func (h handlerService) sendListOfOperationsWithAbilityToPaginate(ctx context.Co
 	err = h.apis.Messenger.SendWithKeyboard(SendWithKeyboardOptions{
 		ChatID:         opts.chatID,
 		Message:        "Select operation to delete:",
-		InlineKeyboard: convertOperationsToInlineKeyboardRowsWithPagination(operationsCount, operations, operationsPerMessage),
+		InlineKeyboard: convertModelToInlineKeyboardRowsWithPagination(operationsCount, operations, operationsPerMessage),
 	})
 	if err != nil {
 		logger.Error().Err(err).Msg("create inline keyboard")

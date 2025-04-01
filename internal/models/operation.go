@@ -30,7 +30,7 @@ var typeShort = map[OperationType]string{
 }
 
 // GetName returns a string representation of the operation.
-func (o *Operation) GetName() string {
+func (o Operation) GetName() string {
 	truncatedDescription := o.Description
 	if len(o.Description) > 10 {
 		truncatedDescription = o.Description[:10] + "..."
@@ -42,6 +42,11 @@ func (o *Operation) GetName() string {
 		typeShort[o.Type],
 		truncatedDescription,
 	)
+}
+
+// GetID returns the ID of the operation.
+func (o Operation) GetID() string {
+	return o.ID
 }
 
 // GetDeletionMessage generates a confirmation message for operation deletion,

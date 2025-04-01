@@ -125,13 +125,9 @@ func getEventFromMsg(user *models.User, msg Message) models.Event {
 		return models.CreateOperationsThroughOneTimeInputEvent
 	}
 
-	if inputIsNotACommand {
-		return models.UnknownEvent
-	}
-
-	for _, c := range models.AvailableCommands {
-		if strings.Contains(c, msg.GetText()) {
-			if eventFromCommand, ok := models.CommandToEvent[c]; ok {
+	for _, command := range models.AvailableCommands {
+		if command == msg.GetText() {
+			if eventFromCommand, ok := models.CommandToEvent[command]; ok {
 				return eventFromCommand
 			}
 		}
@@ -175,7 +171,7 @@ func (e eventService) ReactOnEvent(ctx context.Context, event models.Event, msg 
 			return fmt.Errorf("handle event cancel: %w", err)
 		}
 
-	case models.BalanceEvent, models.CategoryEvent, models.OperationEvent:
+	case models.BalanceEvent, models.CategoryEvent, models.OperationEvent, models.BalanceSubscriptionEvent:
 		err := e.services.Handler.HandleWrappers(ctx, event, msg)
 		if err != nil {
 			logger.Error().Err(err).Msg("handle wrappers")
@@ -185,6 +181,7 @@ func (e eventService) ReactOnEvent(ctx context.Context, event models.Event, msg 
 	case models.CreateBalanceEvent, models.GetBalanceEvent, models.UpdateBalanceEvent, models.DeleteBalanceEvent,
 		models.CreateCategoryEvent, models.ListCategoriesEvent, models.UpdateCategoryEvent, models.DeleteCategoryEvent,
 		models.CreateOperationEvent, models.GetOperationsHistoryEvent, models.DeleteOperationEvent, models.UpdateOperationEvent,
+		models.CreateBalanceSubscriptionEvent, models.ListBalanceSubscriptionEvent, models.UpdateBalanceSubscriptionEvent, models.DeleteBalanceSubscriptionEvent,
 		models.CreateOperationsThroughOneTimeInputEvent:
 		err := e.services.Handler.HandleAction(ctx, msg)
 		if err != nil {

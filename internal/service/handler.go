@@ -131,6 +131,37 @@ func (h *handlerService) RegisterHandlers() {
 			models.ChooseBalanceFlowStep:                       h.handleChooseBalanceFlowStepForOneTimeInputOperationCreate,
 			models.ConfirmOperationDetailsFlowStep:             h.handleConfirmOperationDetailsFlowStepForOneTimeInputOperationCreate,
 		},
+
+		// Flows with balance subscriptions
+		models.CreateBalanceSubscriptionFlow: {
+			models.CreateBalanceSubscriptionFlowStep:              h.handleCreateBalanceSubscriptionFlowStep,
+			models.ChooseBalanceFlowStep:                          h.handleChooseBalanceFlowStepForCreateBalanceSubscription,
+			models.ChooseCategoryFlowStep:                         h.handleChooseCategoryFlowStepForCreateBalanceSubscription,
+			models.EnterBalanceSubscriptionNameFlowStep:           h.handleEnterBalanceSubscriptionNameFlowStep,
+			models.EnterBalanceSubscriptionAmountFlowStep:         h.handleEnterBalanceSubscriptionAmountFlowStep,
+			models.ChooseBalanceSubscriptionFrequencyFlowStep:     h.handleChooseBalanceSubscriptionFrequencyFlowStep,
+			models.EnterStartAtDateForBalanceSubscriptionFlowStep: h.handleEnterStartAtDateForBalanceSubscriptionFlowStep,
+		},
+		models.ListBalanceSubscriptionFlow: {
+			models.ListBalanceSubscriptionFlowStep: h.handleListBalanceSubscriptionFlowStep,
+			models.ChooseBalanceFlowStep:           h.handleChooseBalanceFlowStepForListBalanceSubscriptions,
+		},
+		models.UpdateBalanceSubscriptionFlow: {
+			models.UpdateBalanceSubscriptionFlowStep:             h.handleUpdateBalanceSubscriptionFlowStep,
+			models.ChooseBalanceFlowStep:                         h.handleChooseBalanceFlowStepForUpdateBalanceSubscription,
+			models.ChooseBalanceSubscriptionToUpdateFlowStep:     h.handleChooseBalanceSubscriptionToUpdateFlowStep,
+			models.ChooseUpdateBalanceSubscriptionOptionFlowStep: h.handleChooseUpdateBalanceSubscriptionOptionFlowStep,
+			models.EnterBalanceSubscriptionNameFlowStep:          h.handleEnterBalanceSubscriptionNameFlowStepForUpdate,
+			models.EnterBalanceSubscriptionAmountFlowStep:        h.handleEnterBalanceSubscriptionAmountFlowStepForUpdate,
+			models.ChooseCategoryFlowStep:                        h.handleChooseCategoryFlowStepForBalanceSubscriptionUpdate,
+			models.ChooseBalanceSubscriptionFrequencyFlowStep:    h.handleChooseBalanceSubscriptionFrequencyFlowStepForUpdate,
+		},
+		models.DeleteBalanceSubscriptionFlow: {
+			models.DeleteBalanceSubscriptionFlowStep:         h.handleDeleteBalanceSubscriptionFlowStep,
+			models.ChooseBalanceFlowStep:                     h.handleChooseBalanceFlowStepForBalanceSubscriptionDelete,
+			models.ChooseBalanceSubscriptionToDeleteFlowStep: h.handleChooseBalanceSubscriptionToDeleteFlowStep,
+			models.ConfirmDeleteBalanceSubscriptionFlowStep:  h.handleConfirmDeleteBalanceSubscriptionFlowStep,
+		},
 	}
 }
 
@@ -247,6 +278,9 @@ func (h handlerService) HandleWrappers(ctx context.Context, event models.Event, 
 	case models.OperationEvent:
 		rows = operationKeyboardRows
 		message = "Please choose operation command to execute:"
+	case models.BalanceSubscriptionEvent:
+		rows = balanceSubscriptionKeyboardRows
+		message = "Please choose balance subscription command to execute:"
 	default:
 		return fmt.Errorf("unknown wrappers event: %s", event)
 	}
@@ -452,23 +486,28 @@ func getKeyboardRows[T named](data []T, elementLimitPerRow int, includeRowWithCa
 	return keyboardRows
 }
 
-// convertOperationsToInlineKeyboardRowsWithPagination converts a slice of operations into inline keyboard rows with pagination support.
-// If there are more operations than the per-message limit, it adds a "Show More" button.
-func convertOperationsToInlineKeyboardRowsWithPagination(actualOperationsCount int, operations []models.Operation, limitPerMessage int) []InlineKeyboardRow {
-	inlineKeyboardRows := make([]InlineKeyboardRow, 0, len(operations))
-	for _, operation := range operations {
+type identifiable interface {
+	GetID() string
+	GetName() string
+}
+
+// convertModelToInlineKeyboardRowsWithPagination converts a slice of any model that satisfy identifiable interface into inline keyboard rows with pagination support.
+// If there are more models than the per-message limit, it adds a "Show More" button.
+func convertModelToInlineKeyboardRowsWithPagination[T identifiable](actualCount int, data []T, limitPerMessage int) []InlineKeyboardRow {
+	inlineKeyboardRows := make([]InlineKeyboardRow, 0, len(data))
+	for _, value := range data {
 		inlineKeyboardRows = append(inlineKeyboardRows, InlineKeyboardRow{
 			Buttons: []InlineKeyboardButton{
 				{
-					Text: operation.GetName(),
-					Data: operation.ID,
+					Text: value.GetName(),
+					Data: value.GetID(),
 				},
 			},
 		})
 	}
 
-	// Skip BotShowMoreOperationsForDeleteCommand if operations are within the operationsPerMessage limit.
-	if actualOperationsCount <= limitPerMessage {
+	// Skip BotShowMoreCommand if models are within the limit.
+	if actualCount <= limitPerMessage {
 		return inlineKeyboardRows
 	}
 
@@ -476,7 +515,7 @@ func convertOperationsToInlineKeyboardRowsWithPagination(actualOperationsCount i
 		{
 			Buttons: []InlineKeyboardButton{
 				{
-					Text: models.BotShowMoreOperationsCommand,
+					Text: models.BotShowMoreCommand,
 				},
 			},
 		},

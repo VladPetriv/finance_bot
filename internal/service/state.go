@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"slices"
-	"strings"
 	"time"
 
 	"github.com/VladPetriv/finance_bot/internal/models"
@@ -126,6 +125,7 @@ func (s stateService) isSimpleEvent(event models.Event) bool {
 		models.BalanceEvent,
 		models.CategoryEvent,
 		models.OperationEvent,
+		models.BalanceSubscriptionEvent,
 	}, event)
 }
 
@@ -208,8 +208,8 @@ func (s stateService) createNewFlow(ctx context.Context, message Message, state 
 	return s.handleNewState(ctx, message, event, logger)
 }
 
-func isBotCommand(command string) bool {
-	return strings.Contains(strings.Join(models.AvailableCommands, " "), command)
+func isBotCommand(value string) bool {
+	return slices.Contains(models.AvailableCommands, value)
 }
 
 func (s stateService) DeleteState(ctx context.Context, message Message) error {

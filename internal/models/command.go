@@ -11,6 +11,8 @@ const (
 	BotCategoryCommand string = "📂 Category"
 	// BotOperationCommand represents the wrapper command for operations action
 	BotOperationCommand string = "💸 Operation"
+	// BotBalanceSubscriptionsCommand represents the wrapper command for managing balance subscription actions
+	BotBalanceSubscriptionsCommand string = "🔄 Balance Subscriptions"
 
 	// BotCreateBalanceCommand represents the command to create a new balance
 	BotCreateBalanceCommand string = "Create Balance 💰"
@@ -42,14 +44,12 @@ const (
 	BotCreateIncomingOperationCommand string = "Incoming 🤑"
 	// BotCreateSpendingOperationCommand represents the command to create a spending operation
 	BotCreateSpendingOperationCommand string = "Spending 💸"
-	// BotCreateagsingOperationCommand represents the command to create a transfer operation
+	// BotCreateTransferOperationCommand represents the command to create a transfer operation
 	BotCreateTransferOperationCommand string = "Transfer ➡️"
 	// BotGetOperationsHistory represents the command to get operations history
 	BotGetOperationsHistory string = "Get Operations History 📖"
 	// BotDeleteOperationCommand represents the command to delete an operation
 	BotDeleteOperationCommand string = "Delete Operation ❌"
-	// BotShowMoreOperationsCommand represents the command to select more operations
-	BotShowMoreOperationsCommand string = "Show More Operations ➡️"
 	// BotUpdateOperationCommand represents the command to update an operation
 	BotUpdateOperationCommand string = "Update Operation ✏️"
 	// BotUpdateOperationAmountCommand represents the command to update operation amount
@@ -61,6 +61,25 @@ const (
 	// BotUpdateOperationCategoryCommand represents the command to update operation category
 	BotUpdateOperationCategoryCommand string = "Update Category 🏷️"
 
+	// BotCreateBalanceSubscriptionCommand represents the command to create a balance subscription
+	BotCreateBalanceSubscriptionCommand string = "Create Balance Subscription 📈"
+	// BotListBalanceSubscriptionsCommand represents the command to list balance subscriptions
+	BotListBalanceSubscriptionsCommand string = "List Balance Subscriptions 📋"
+	// BotUpdateBalanceSubscriptionCommand represents the command to update a balance subscription
+	BotUpdateBalanceSubscriptionCommand string = "Update Balance Subscription 📝"
+	// BotUpdateBalanceSubscriptionNameCommand represents the command to update balance subscription name
+	BotUpdateBalanceSubscriptionNameCommand string = "Update Name 📝"
+	// BotUpdateBalanceSubscriptionAmountCommand represents the command to update balance subscription amount
+	BotUpdateBalanceSubscriptionAmountCommand string = "Update Amount 📝"
+	// BotUpdateBalanceSubscriptionCategoryCommand represents the command to update balance subscription category
+	BotUpdateBalanceSubscriptionCategoryCommand string = "Update Category 🏷️"
+	// BotUpdateBalanceSubscriptionPeriodCommand represents the command to update balance subscription period
+	BotUpdateBalanceSubscriptionPeriodCommand string = "Update Period 📅"
+	// BotDeleteBalanceSubscriptionCommand represents the command to delete a balance subscription
+	BotDeleteBalanceSubscriptionCommand string = "Delete Balance Subscription 🗑️"
+
+	// BotShowMoreCommand represents the command to select more models.
+	BotShowMoreCommand string = "Show More ➡️"
 	// BotCancelCommand represents the command that will cancel the current flow
 	BotCancelCommand string = "Cancel action ⬅️"
 )
@@ -68,14 +87,16 @@ const (
 // AvailableCommands is a list of all available bot commands.
 var AvailableCommands = []string{
 	BotStartCommand,
-	BotBalanceCommand, BotCategoryCommand, BotOperationCommand,
+	BotBalanceCommand, BotCategoryCommand, BotOperationCommand, BotBalanceSubscriptionsCommand,
 	BotGetBalanceCommand, BotCreateBalanceCommand, BotUpdateBalanceCommand, BotDeleteBalanceCommand,
 	BotUpdateBalanceNameCommand, BotUpdateBalanceAmountCommand, BotUpdateBalanceCurrencyCommand,
 	BotCreateCategoryCommand, BotListCategoriesCommand, BotUpdateCategoryCommand, BotDeleteCategoryCommand,
 	BotCreateOperationCommand, BotCreateIncomingOperationCommand, BotCreateSpendingOperationCommand, BotGetOperationsHistory, BotCreateTransferOperationCommand,
-	BotDeleteOperationCommand, BotShowMoreOperationsCommand, BotUpdateOperationCommand, BotUpdateOperationAmountCommand, BotUpdateOperationDescriptionCommand,
+	BotDeleteOperationCommand, BotUpdateOperationCommand, BotUpdateOperationAmountCommand, BotUpdateOperationDescriptionCommand,
 	BotUpdateOperationDateCommand, BotUpdateOperationCategoryCommand,
-	BotCancelCommand,
+	BotCreateBalanceSubscriptionCommand, BotListBalanceSubscriptionsCommand, BotDeleteBalanceSubscriptionCommand, BotUpdateBalanceSubscriptionCommand,
+	BotUpdateBalanceSubscriptionNameCommand, BotUpdateBalanceSubscriptionCategoryCommand, BotUpdateBalanceSubscriptionAmountCommand, BotUpdateBalanceSubscriptionPeriodCommand,
+	BotCancelCommand, BotShowMoreCommand,
 }
 
 // CommandToEvent maps bot commands to their corresponding events
@@ -85,9 +106,10 @@ var CommandToEvent = map[string]Event{
 	BotCancelCommand: CancelEvent,
 
 	// Wrappers
-	BotBalanceCommand:   BalanceEvent,
-	BotCategoryCommand:  CategoryEvent,
-	BotOperationCommand: OperationEvent,
+	BotBalanceCommand:              BalanceEvent,
+	BotCategoryCommand:             CategoryEvent,
+	BotOperationCommand:            OperationEvent,
+	BotBalanceSubscriptionsCommand: BalanceSubscriptionEvent,
 
 	// Balance
 	BotCreateBalanceCommand: CreateBalanceEvent,
@@ -106,6 +128,12 @@ var CommandToEvent = map[string]Event{
 	BotGetOperationsHistory:   GetOperationsHistoryEvent,
 	BotDeleteOperationCommand: DeleteOperationEvent,
 	BotUpdateOperationCommand: UpdateOperationEvent,
+
+	// Balance Subscriptions
+	BotCreateBalanceSubscriptionCommand: CreateBalanceSubscriptionEvent,
+	BotListBalanceSubscriptionsCommand:  ListBalanceSubscriptionEvent,
+	BotUpdateBalanceSubscriptionCommand: UpdateBalanceSubscriptionEvent,
+	BotDeleteBalanceSubscriptionCommand: DeleteBalanceSubscriptionEvent,
 }
 
 // CommandToFistFlowStep maps commands to their initial flow steps
@@ -127,6 +155,12 @@ var CommandToFistFlowStep = map[string]FlowStep{
 	BotGetOperationsHistory:   GetOperationsHistoryFlowStep,
 	BotDeleteOperationCommand: DeleteOperationFlowStep,
 	BotUpdateOperationCommand: UpdateOperationFlowStep,
+
+	// Balance Subscription
+	BotCreateBalanceSubscriptionCommand: CreateBalanceSubscriptionFlowStep,
+	BotListBalanceSubscriptionsCommand:  ListBalanceSubscriptionFlowStep,
+	BotUpdateBalanceSubscriptionCommand: UpdateBalanceSubscriptionFlowStep,
+	BotDeleteBalanceSubscriptionCommand: DeleteBalanceSubscriptionFlowStep,
 }
 
 // OperationCommandToOperationType maps operation commands to their corresponding operation types
