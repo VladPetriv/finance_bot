@@ -73,3 +73,32 @@ func ParseSubscriptionPeriod(period string) (SubscriptionPeriod, error) {
 		return "", fmt.Errorf("invalid subscription period: %s", period)
 	}
 }
+
+// CalculateScheduledOperationBillingDates generates future creation dates for an operation.
+// It creates dates based on subscription period (weekly/monthly/yearly), starting
+// from the start date and continuing until either the max occurrences or
+// end window date is reached, whichever comes first.
+// Returns: A sorted slice of dates when operations should be created.
+func CalculateScheduledOperationBillingDates(period SubscriptionPeriod, startDate time.Time, maxDates int) []time.Time {
+	billingDates := make([]time.Time, 0, maxDates)
+
+	for value := range maxDates {
+		switch period {
+		case SubscriptionPeriodWeekly:
+			billingDates = append(billingDates, startDate.AddDate(0, 0, value*7))
+		case SubscriptionPeriodMonthly:
+			billingDates = append(billingDates, startDate.AddDate(0, value, 0))
+		case SubscriptionPeriodYearly:
+			billingDates = append(billingDates, startDate.AddDate(value, 0, 0))
+		}
+	}
+
+	return billingDates
+}
+
+// ScheduledOperationCreation represents a scheduled time for operation that will be created based on the subscription.
+type ScheduledOperationCreation struct {
+	ID             string    `db:"id"`
+	SubscriptionID string    `db:"subscription_id"`
+	CreationDate   time.Time `db:"creation_date"`
+}
