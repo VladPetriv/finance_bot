@@ -116,15 +116,17 @@ func (h *handlerService) handleChooseBalanceSubscriptionFrequencyFlowStep(_ cont
 
 	return models.EnterStartAtDateForBalanceSubscriptionFlowStep, h.showCancelButton(
 		opts.message.GetChatID(),
-		"Enter subscription start date and time:\nUse format: DD/MM/YYYY HH:MM\nExample: 01/01/2025 12:00:",
+		"Enter subscription start date and time:\nUse format: DD/MM/YYYY\nExample: 01/01/2025:",
 	)
 }
+
+const balanceSubscriptionTimeFormat = "02/01/2006"
 
 func (h *handlerService) handleEnterStartAtDateForBalanceSubscriptionFlowStep(ctx context.Context, opts flowProcessingOptions) (models.FlowStep, error) {
 	logger := h.logger.With().Str("name", "handlerService.handleEnterStartAtDateForBalanceSubscriptionFlowStep").Logger()
 	logger.Debug().Any("opts", opts).Msg("got args")
 
-	parsedStartAtTime, err := time.Parse(defaultTimeFormat, opts.message.GetText())
+	parsedStartAtTime, err := time.Parse(balanceSubscriptionTimeFormat, opts.message.GetText())
 	if err != nil {
 		logger.Error().Err(err).Msg("parse operation date")
 		return "", ErrInvalidDateFormat

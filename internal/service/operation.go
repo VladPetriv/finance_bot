@@ -1308,6 +1308,8 @@ func (h handlerService) handleChooseCategoryFlowStepForOperationUpdate(ctx conte
 	})
 }
 
+const operationTimeFormat = "02/01/2006 15:04"
+
 func (h handlerService) handleEnterOperationDateFlowStep(ctx context.Context, opts flowProcessingOptions) (models.FlowStep, error) {
 	logger := h.logger.With().Str("name", "handlerService.handleEnterOperationDateFlowStep").Logger()
 	logger.Debug().Any("opts", opts).Msg("got args")
@@ -1325,7 +1327,7 @@ func (h handlerService) handleEnterOperationDateFlowStep(ctx context.Context, op
 		return "", ErrOperationNotFound
 	}
 
-	parsedOperationDate, err := time.Parse(defaultTimeFormat, opts.message.GetText())
+	parsedOperationDate, err := time.Parse(operationTimeFormat, opts.message.GetText())
 	if err != nil {
 		logger.Error().Err(err).Msg("parse operation date")
 		return "", ErrInvalidDateFormat
