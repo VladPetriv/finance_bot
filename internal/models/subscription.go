@@ -76,13 +76,12 @@ func ParseSubscriptionPeriod(period string) (SubscriptionPeriod, error) {
 
 // CalculateScheduledOperationBillingDates generates future creation dates for an operation.
 // It creates dates based on subscription period (weekly/monthly/yearly), starting
-// from the start date and continuing until either the max occurrences or
-// end window date is reached, whichever comes first.
+// from the start date and continuing until the max billing periods limit is reached.
 // Returns: A sorted slice of dates when operations should be created.
-func CalculateScheduledOperationBillingDates(period SubscriptionPeriod, startDate time.Time, maxDates int) []time.Time {
-	billingDates := make([]time.Time, 0, maxDates)
+func CalculateScheduledOperationBillingDates(period SubscriptionPeriod, startDate time.Time, maxBillingPeriods int) []time.Time {
+	billingDates := make([]time.Time, 0, maxBillingPeriods)
 
-	for value := range maxDates {
+	for value := range maxBillingPeriods {
 		switch period {
 		case SubscriptionPeriodWeekly:
 			billingDates = append(billingDates, startDate.AddDate(0, 0, value*7))
