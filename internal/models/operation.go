@@ -9,9 +9,10 @@ import (
 
 // Operation represent a financial operation.
 type Operation struct {
-	ID         string `db:"id"`
-	CategoryID string `db:"category_id"`
-	BalanceID  string `db:"balance_id"`
+	ID                    string `db:"id"`
+	CategoryID            string `db:"category_id"`
+	BalanceID             string `db:"balance_id"`
+	BalanceSubscriptionID string `db:"balance_subscription_id"`
 
 	Type        OperationType `db:"type"`
 	Amount      string        `db:"amount"`
