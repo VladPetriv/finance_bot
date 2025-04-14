@@ -35,6 +35,18 @@ func (b *balanceSubscriptionStore) Create(ctx context.Context, subscription mode
 	return err
 }
 
+func (b *balanceSubscriptionStore) CreateScheduledOperationCreation(ctx context.Context, operation models.ScheduledOperationCreation) error {
+	_, err := b.db.DB.ExecContext(
+		ctx,
+		`INSERT INTO
+				scheduled_operation_creations (id, subscription_id, creation_date)
+    	VALUES
+     		($1, $2, $3);`,
+		operation.ID, operation.SubscriptionID, operation.CreationDate,
+	)
+	return err
+}
+
 func (b *balanceSubscriptionStore) Get(ctx context.Context, filter service.GetBalanceSubscriptionFilter) (*models.BalanceSubscription, error) {
 	stmt := sq.
 		StatementBuilder.
@@ -142,6 +154,31 @@ func applyListBalanceSubscriptionFilter(options applyListBalanceSubscriptionOpti
 	}
 
 	return &stmt
+}
+
+func (b *balanceSubscriptionStore) ListScheduledOperationCreation(ctx context.Context, filter service.ListScheduledOperationCreation) ([]models.ScheduledOperationCreation, error) {
+	stmt := sq.
+		StatementBuilder.
+		PlaceholderFormat(sq.Dollar).
+		Select("id", "subscription_id", "creation_date").
+		From("scheduled_operation_creations")
+
+	if !filter.CreationDateGreaterThan.IsZero() {
+		stmt = stmt.Where(sq.Gt{"creation_date": filter.CreationDateGreaterThan})
+	}
+
+	query, args, err := stmt.ToSql()
+	if err != nil {
+		return nil, fmt.Errorf("build list scheduled operation creations query: %w", err)
+	}
+
+	var scheduledOperationCreations []models.ScheduledOperationCreation
+	err = b.db.DB.SelectContext(ctx, &scheduledOperationCreations, query, args...)
+	if err != nil {
+		return nil, err
+	}
+
+	return scheduledOperationCreations, nil
 }
 
 func (b *balanceSubscriptionStore) Update(ctx context.Context, subscription *models.BalanceSubscription) error {

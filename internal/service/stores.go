@@ -164,12 +164,16 @@ type ExistsCurrencyFilter struct {
 type BalanceSubscriptionStore interface {
 	// Create creates a new balance subscription in store.
 	Create(ctx context.Context, subscription models.BalanceSubscription) error
+	// CreateScheduledOperationCreation creates a new scheduled operation creation in store.
+	CreateScheduledOperationCreation(ctx context.Context, operation models.ScheduledOperationCreation) error
 	// Get retrieves balance subscription from store based on input filter.
 	Get(ctx context.Context, filter GetBalanceSubscriptionFilter) (*models.BalanceSubscription, error)
 	// Count returns a count of all balance subscriptions from store based on filter.
 	Count(ctx context.Context, filter ListBalanceSubscriptionFilter) (int, error)
 	// List returns a list of all balance subscriptions from store based on filter.
 	List(ctx context.Context, filter ListBalanceSubscriptionFilter) ([]models.BalanceSubscription, error)
+	// ListScheduledOperationCreation returns a list of all scheduled operation creation based on input filters.
+	ListScheduledOperationCreation(ctx context.Context, filter ListScheduledOperationCreation) ([]models.ScheduledOperationCreation, error)
 	// Update updates balance subscription model in store.
 	Update(ctx context.Context, subscription *models.BalanceSubscription) error
 	// Delete deletes balance subscription from store.
@@ -188,4 +192,9 @@ type ListBalanceSubscriptionFilter struct {
 type GetBalanceSubscriptionFilter struct {
 	ID   string
 	Name string
+}
+
+// ListScheduledOperationCreation represents a fitler for store.ListScheduledOperationCreation method.
+type ListScheduledOperationCreation struct {
+	CreationDateGreaterThan time.Time
 }
