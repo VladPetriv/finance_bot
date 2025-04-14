@@ -11,7 +11,7 @@ func initScheduledOperationCreationTable(db *sql.DB) error {
 		);
 
 		ALTER TABLE scheduled_operation_creations
-	        ADD CONSTRAINT fk_scheduled_operation_creations_subscription_id FOREIGN KEY (subscription_id) REFERENCES subscription(id) ON DELETE CASCADE;
+	        ADD CONSTRAINT fk_scheduled_operation_creations_subscription_id FOREIGN KEY (subscription_id) REFERENCES balance_subscriptions(id) ON DELETE CASCADE;
 	`)
 
 	return err
