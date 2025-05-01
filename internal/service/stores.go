@@ -178,6 +178,8 @@ type BalanceSubscriptionStore interface {
 	Update(ctx context.Context, subscription *models.BalanceSubscription) error
 	// Delete deletes balance subscription from store.
 	Delete(ctx context.Context, subscriptionID string) error
+	// DeleteScheduledOperationCreation deletes scheduled operation creation from store.
+	DeleteScheduledOperationCreation(ctx context.Context, id string) error
 }
 
 // ListBalanceSubscriptionFilter represents a filter for store.List and store.Count methods.
@@ -196,5 +198,10 @@ type GetBalanceSubscriptionFilter struct {
 
 // ListScheduledOperationCreation represents a fitler for store.ListScheduledOperationCreation method.
 type ListScheduledOperationCreation struct {
-	CreationDateGreaterThan time.Time
+	BetweenFilter *BetweenFilter
+}
+
+type BetweenFilter struct {
+	From time.Time
+	To   time.Time
 }

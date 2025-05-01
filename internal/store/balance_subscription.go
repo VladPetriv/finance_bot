@@ -163,8 +163,11 @@ func (b *balanceSubscriptionStore) ListScheduledOperationCreation(ctx context.Co
 		Select("id", "subscription_id", "creation_date").
 		From("scheduled_operation_creations")
 
-	if !filter.CreationDateGreaterThan.IsZero() {
-		stmt = stmt.Where(sq.Gt{"creation_date": filter.CreationDateGreaterThan})
+	if filter.BetweenFilter != nil {
+		stmt = stmt.Where(sq.And{
+			sq.GtOrEq{"creation_date": filter.BetweenFilter.From},
+			sq.LtOrEq{"creation_date": filter.BetweenFilter.To},
+		})
 	}
 
 	query, args, err := stmt.ToSql()
@@ -202,5 +205,10 @@ func (b *balanceSubscriptionStore) Update(ctx context.Context, subscription *mod
 
 func (b *balanceSubscriptionStore) Delete(ctx context.Context, subscriptionID string) error {
 	_, err := b.db.DB.ExecContext(ctx, "DELETE FROM balance_subscriptions WHERE id = $1;", subscriptionID)
+	return err
+}
+
+func (b *balanceSubscriptionStore) DeleteScheduledOperationCreation(ctx context.Context, shceduledOperationID string) error {
+	_, err := b.db.DB.ExecContext(ctx, "DELETE FROM scheduled_operation_creations WHERE id = $1;", shceduledOperationID)
 	return err
 }
