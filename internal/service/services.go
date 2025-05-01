@@ -352,6 +352,11 @@ type BalanceSubscriptionEngine interface {
 	//   - For weekly/monthly frequencies: schedules operations for the next quarter (3 months)
 	//   - For yearly frequencies: schedules operations for the next year
 	ScheduleOperationsCreation(ctx context.Context, balanceSubscription models.BalanceSubscription)
+	// ExtendScheduledOperations creates additional scheduled operations for an active balance subscription.
+	// When a subscription reaches its last scheduled operation date, this method extends the timeline by
+	// generating new scheduled operations for the upcoming billing period (quarter/year).
+	// It only executes when the subscription is active and has reached its final scheduled operation.
+	ExtendScheduledOperations(ctx context.Context)
 	// CreateOperations creates operations based on balance subscriptions details.
 	CreateOperations(ctx context.Context)
 	// NotifyAboutSubscriptionPayment sends a notification a day before subscription payment.

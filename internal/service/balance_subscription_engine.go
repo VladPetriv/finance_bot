@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/VladPetriv/finance_bot/config"
 	"github.com/VladPetriv/finance_bot/internal/models"
 	"github.com/VladPetriv/finance_bot/pkg/logger"
 	"github.com/VladPetriv/finance_bot/pkg/money"
@@ -17,48 +18,79 @@ type balanceSubscriptionEngine struct {
 	stores Stores
 	apis   APIs
 
-	operationCreationInterval                    time.Duration
-	notificationAboutSubscriptionPaymentInterval time.Duration
+	operationCreationInterval            time.Duration
+	extendingScheduledOperationsInterval time.Duration
 }
 
 // NewBalanceSubscriptionEngine creates a new instance of balanceSubscriptionEngine.
-func NewBalanceSubscriptionEngine(logger *logger.Logger, stores Stores, apis APIs) *balanceSubscriptionEngine {
+func NewBalanceSubscriptionEngine(config *config.Config, logger *logger.Logger, stores Stores, apis APIs) *balanceSubscriptionEngine {
 	return &balanceSubscriptionEngine{
-		logger:                    logger,
-		stores:                    stores,
-		apis:                      apis,
-		operationCreationInterval: 10 * time.Second,
+		logger:                               logger,
+		stores:                               stores,
+		apis:                                 apis,
+		operationCreationInterval:            config.App.OperationCreationInterval,
+		extendingScheduledOperationsInterval: config.App.ExtendingScheduledOperationsInterval,
 	}
 }
-
-const (
-	maxBillingDatesForWeeklySubscription = 13 // Represents a quarter in a week.
-	maxBillingDatesForMontlySubscription = 3  // Represents a quarter in a months.
-	maxBillingDatesForYearlySubscription = 1  // Represents one year.
-)
 
 func (b *balanceSubscriptionEngine) ScheduleOperationsCreation(ctx context.Context, balanceSubscription models.BalanceSubscription) {
 	logger := b.logger.With().Str("name", "balanceSubscriptionEngine.ScheduleOperationsCreation").Logger()
 	logger.Debug().Any("balanceSubscription", balanceSubscription).Msg("got args")
 
-	var maxBillingDates int
-	switch balanceSubscription.Period {
-	case models.SubscriptionPeriodWeekly:
-		maxBillingDates = maxBillingDatesForWeeklySubscription
-	case models.SubscriptionPeriodMonthly:
-		maxBillingDates = maxBillingDatesForMontlySubscription
-	case models.SubscriptionPeriodYearly:
-		maxBillingDates = maxBillingDatesForYearlySubscription
-	default:
-		logger.Error().Msg("invalid period")
-		return
+	err := b.createScheduledOperations(ctx, balanceSubscription.StartAt, balanceSubscription)
+	if err != nil {
+		logger.Error().Err(err).Msg("create scheduled operation")
 	}
+}
 
-	billingDates := models.CalculateScheduledOperationBillingDates(balanceSubscription.Period, balanceSubscription.StartAt, maxBillingDates)
-	if len(billingDates) == 0 {
-		logger.Error().Msg("no billing dates")
-		return
+func (b *balanceSubscriptionEngine) ExtendScheduledOperations(ctx context.Context) {
+	logger := b.logger.With().Str("name", "balanceSubscriptionEngine.ExtendScheduledOperations").Logger()
+
+	ticker := time.NewTicker(b.extendingScheduledOperationsInterval)
+	defer ticker.Stop()
+
+	for {
+		select {
+		case <-ctx.Done():
+			logger.Info().Msg("finished extending scheduled operations")
+			return
+		case <-ticker.C:
+			balanceSubscriptions, err := b.stores.BalanceSubscription.List(ctx, ListBalanceSubscriptionFilter{
+				SubscriptionsWithLastScheduledOperation: true,
+			})
+			if err != nil {
+				logger.Error().Err(err).Msg("list balance subscriptions")
+				continue
+			}
+
+			now := time.Now()
+			for _, balanceSubscription := range balanceSubscriptions {
+				startAt := time.Date(
+					now.Year(),
+					now.Month(),
+					balanceSubscription.StartAt.Day(),
+					balanceSubscription.StartAt.Hour(),
+					balanceSubscription.StartAt.Minute(),
+					balanceSubscription.StartAt.Second(),
+					balanceSubscription.StartAt.Nanosecond(),
+					balanceSubscription.StartAt.Location(),
+				)
+
+				err := b.createScheduledOperations(ctx, startAt, balanceSubscription)
+				if err != nil {
+					logger.Error().Err(err).Msg("create scheduled operation")
+				}
+			}
+		}
 	}
+}
+
+func (b *balanceSubscriptionEngine) createScheduledOperations(ctx context.Context, startAt time.Time, balanceSubscription models.BalanceSubscription) error {
+	logger := b.logger.With().Str("name", "balanceSubscriptionEngine.createScheduledOperations").Logger()
+	logger.Debug().Time("startAt", startAt).Any("balanceSubscription", balanceSubscription)
+
+	maxBillingDates := getMaxBillingDatesFromSubscriptionPeriod(balanceSubscription.Period)
+	billingDates := models.CalculateScheduledOperationBillingDates(balanceSubscription.Period, startAt, maxBillingDates)
 
 	for _, billingDate := range billingDates {
 		err := b.stores.BalanceSubscription.CreateScheduledOperationCreation(ctx, models.ScheduledOperationCreation{
@@ -68,8 +100,31 @@ func (b *balanceSubscriptionEngine) ScheduleOperationsCreation(ctx context.Conte
 		})
 		if err != nil {
 			logger.Error().Err(err).Msg("create scheduled operation creation in store")
+			return fmt.Errorf("create scheduled operation creation in store: %w", err)
 		}
 	}
+
+	return nil
+}
+
+const (
+	maxBillingDatesForWeeklySubscription = 13 // Represents a quarter in a week.
+	maxBillingDatesForMontlySubscription = 3  // Represents a quarter in a months.
+	maxBillingDatesForYearlySubscription = 1  // Represents one year.
+)
+
+func getMaxBillingDatesFromSubscriptionPeriod(period models.SubscriptionPeriod) int {
+	var maxBillingDates int
+	switch period {
+	case models.SubscriptionPeriodWeekly:
+		maxBillingDates = maxBillingDatesForWeeklySubscription
+	case models.SubscriptionPeriodMonthly:
+		maxBillingDates = maxBillingDatesForMontlySubscription
+	case models.SubscriptionPeriodYearly:
+		maxBillingDates = maxBillingDatesForYearlySubscription
+	}
+
+	return maxBillingDates
 }
 
 func (b *balanceSubscriptionEngine) CreateOperations(ctx context.Context) {
@@ -196,6 +251,6 @@ func (b *balanceSubscriptionEngine) createOperation(ctx context.Context, id stri
 }
 
 func (b *balanceSubscriptionEngine) NotifyAboutSubscriptionPayment(ctx context.Context) error {
-	// TODO: Add this logic in separate PR, since it requires much more changes.
+	// TODO: Delivery this logic as separate feature, since it requires a lot of changes.
 	return nil
 }

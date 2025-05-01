@@ -83,7 +83,7 @@ func Run(ctx context.Context, cfg *config.Config, logger *logger.Logger) {
 			APIs:   apis,
 		}),
 		Currency:                  currencyService,
-		BalanceSubscriptionEngine: service.NewBalanceSubscriptionEngine(logger, stores, apis),
+		BalanceSubscriptionEngine: service.NewBalanceSubscriptionEngine(cfg, logger, stores, apis),
 	}
 
 	handlerService := service.NewHandler(&service.HandlerOptions{
@@ -108,6 +108,7 @@ func Run(ctx context.Context, cfg *config.Config, logger *logger.Logger) {
 
 	go eventService.Listen(ctx)
 	go services.BalanceSubscriptionEngine.CreateOperations(ctx)
+	go services.BalanceSubscriptionEngine.ExtendScheduledOperations(ctx)
 
 	// Setup health check server
 	mux := http.NewServeMux()

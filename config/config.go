@@ -3,17 +3,25 @@ package config
 import (
 	"log"
 	"sync"
+	"time"
 
 	"github.com/ilyakaznacheev/cleanenv"
 )
 
 // Config represents an app config.
 type Config struct {
+	App            App
 	Telegram       Telegram
 	PostgreSQL     PostgreSQL
 	CurrencyBeacon CurrencyBeacon
 	Gemini         Gemini
 	Logger         Logger
+}
+
+// App represents an app configuration.
+type App struct {
+	OperationCreationInterval            time.Duration `env:"FB_APP_OPERATION_CREATION_INTERVAL" env-default:"5m"`
+	ExtendingScheduledOperationsInterval time.Duration `env:"FB_APP_EXTENDING_SCHEDULED_OPERATIONS_INTERVAL" env-default:"1h"`
 }
 
 // Telegram represents a telegram bot configuration.
