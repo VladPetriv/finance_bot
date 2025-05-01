@@ -127,7 +127,11 @@ func applyListBalanceSubscriptionFilter(options applyListBalanceSubscriptionOpti
 	}
 
 	if options.listQuery {
-		expectedColumns = []string{"id", "balance_id", "category_id", "name", "amount", "period", "start_at", "created_at", "updated_at"}
+		expectedColumns = []string{
+			"balance_subscriptions.id", "balance_subscriptions.balance_id", "balance_subscriptions.category_id",
+			"balance_subscriptions.name", "balance_subscriptions.amount", "balance_subscriptions.period",
+			"balance_subscriptions.start_at", "balance_subscriptions.created_at", "balance_subscriptions.updated_at",
+		}
 	}
 
 	stmt := sq.
@@ -137,20 +141,26 @@ func applyListBalanceSubscriptionFilter(options applyListBalanceSubscriptionOpti
 		From("balance_subscriptions")
 
 	if filter.BalanceID != "" {
-		stmt = stmt.Where(sq.Eq{"balance_id": filter.BalanceID})
+		stmt = stmt.Where(sq.Eq{"balance_subscriptions.balance_id": filter.BalanceID})
 	}
 
 	if !filter.CreatedAtLessThan.IsZero() {
-		stmt = stmt.Where(sq.Lt{"created_at": filter.CreatedAtLessThan})
+		stmt = stmt.Where(sq.Lt{"balance_subscriptions.created_at": filter.CreatedAtLessThan})
 	}
 
 	if filter.Limit != 0 {
 		stmt = stmt.Limit(uint64(filter.Limit))
 	}
 
+	if filter.SubscriptionsWithLastScheduledOperation {
+		stmt = stmt.Join("scheduled_operation_creations ON scheduled_operation_creations.subscription_id = balance_subscriptions.id").
+			GroupBy("balance_subscriptions.id").
+			Having(sq.Eq{"COUNT(scheduled_operation_creations.id)": 1})
+	}
+
 	if filter.OrderByCreatedAtDesc {
-		stmt = stmt.GroupBy("id", "balance_id", "category_id", "name", "amount", "period", "start_at", "created_at", "updated_at").
-			OrderBy("created_at DESC")
+		stmt = stmt.GroupBy(expectedColumns...).
+			OrderBy("balance_subscriptions.created_at DESC")
 	}
 
 	return &stmt

@@ -184,10 +184,11 @@ type BalanceSubscriptionStore interface {
 
 // ListBalanceSubscriptionFilter represents a filter for store.List and store.Count methods.
 type ListBalanceSubscriptionFilter struct {
-	BalanceID            string
-	OrderByCreatedAtDesc bool
-	CreatedAtLessThan    time.Time
-	Limit                int
+	BalanceID                               string
+	OrderByCreatedAtDesc                    bool
+	CreatedAtLessThan                       time.Time
+	Limit                                   int
+	SubscriptionsWithLastScheduledOperation bool
 }
 
 // GetBalanceSubscriptionFilter represents a filter for store.Get method.
@@ -196,11 +197,13 @@ type GetBalanceSubscriptionFilter struct {
 	Name string
 }
 
-// ListScheduledOperationCreation represents a fitler for store.ListScheduledOperationCreation method.
+// ListScheduledOperationCreation represents a filter for store.ListScheduledOperationCreation method.
 type ListScheduledOperationCreation struct {
 	BetweenFilter *BetweenFilter
 }
 
+// BetweenFilter represents a time range filter with inclusive From and To boundaries
+// for filtering data between two points in time.
 type BetweenFilter struct {
 	From time.Time
 	To   time.Time
