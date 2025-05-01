@@ -10,10 +10,11 @@ import (
 
 // Services represents structure with all services.
 type Services struct {
-	Event    EventService
-	Handler  HandlerService
-	State    StateService
-	Currency CurrencyService
+	Event                     EventService
+	Handler                   HandlerService
+	State                     StateService
+	Currency                  CurrencyService
+	BalanceSubscriptionEngine BalanceSubscriptionEngine
 }
 
 // HandlerService provides functionally for handling bot events.
@@ -342,4 +343,17 @@ type ConvertCurrencyOptions struct {
 	BaseCurrency   string
 	TargetCurrency string
 	Amount         money.Money
+}
+
+// BalanceSubscriptionEngine represents a service for processing balance subscriptions and operation creations based on their details.
+type BalanceSubscriptionEngine interface {
+	// ScheduleOperationsCreation creates scheduled operation entries for a balance subscription.
+	// It generates future operation dates based on the subscription's frequency (period) and start date:
+	//   - For weekly/monthly frequencies: schedules operations for the next quarter (3 months)
+	//   - For yearly frequencies: schedules operations for the next year
+	ScheduleOperationsCreation(ctx context.Context, balanceSubscription models.BalanceSubscription)
+	// CreateOperations creates operations based on balance subscriptions details.
+	CreateOperations(ctx context.Context)
+	// NotifyAboutSubscriptionPayment sends a notification a day before subscription payment.
+	NotifyAboutSubscriptionPayment(ctx context.Context) error
 }
