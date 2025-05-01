@@ -76,15 +76,14 @@ func Run(ctx context.Context, cfg *config.Config, logger *logger.Logger) {
 
 	currencyService := service.NewCurrency(logger, apis, stores)
 
-	stateService := service.NewState(&service.StateOptions{
-		Logger: logger,
-		Stores: stores,
-		APIs:   apis,
-	})
-
 	services := service.Services{
-		State:    stateService,
-		Currency: currencyService,
+		State: service.NewState(&service.StateOptions{
+			Logger: logger,
+			Stores: stores,
+			APIs:   apis,
+		}),
+		Currency:                  currencyService,
+		BalanceSubscriptionEngine: service.NewBalanceSubscriptionEngine(logger, stores, apis),
 	}
 
 	handlerService := service.NewHandler(&service.HandlerOptions{
@@ -108,6 +107,7 @@ func Run(ctx context.Context, cfg *config.Config, logger *logger.Logger) {
 	}
 
 	go eventService.Listen(ctx)
+	go services.BalanceSubscriptionEngine.CreateOperations(ctx)
 
 	// Setup health check server
 	mux := http.NewServeMux()

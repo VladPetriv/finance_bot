@@ -12,6 +12,7 @@ import (
 	"github.com/google/uuid"
 )
 
+// Create Balance Subscriptions
 func (h *handlerService) handleCreateBalanceSubscriptionFlowStep(ctx context.Context, opts flowProcessingOptions) (models.FlowStep, error) {
 	logger := h.logger.With().Str("name", "handlerService.handleCreateInitialBalanceFlowStep").Logger()
 	logger.Debug().Any("opts", opts).Msg("got args")
@@ -137,7 +138,7 @@ func (h *handlerService) handleEnterStartAtDateForBalanceSubscriptionFlowStep(ct
 		return "", fmt.Errorf("parse subscription period: %w", err)
 	}
 
-	err = h.stores.BalanceSubscription.Create(ctx, models.BalanceSubscription{
+	balanceSubscription := models.BalanceSubscription{
 		ID:         uuid.NewString(),
 		BalanceID:  opts.stateMetaData[balanceIDMetadataKey].(string),
 		CategoryID: opts.stateMetaData[categoryIDMetadataKey].(string),
@@ -145,15 +146,20 @@ func (h *handlerService) handleEnterStartAtDateForBalanceSubscriptionFlowStep(ct
 		Amount:     opts.stateMetaData[balanceSubscriptionAmountMetadataKey].(string),
 		Period:     period,
 		StartAt:    parsedStartAtTime,
-	})
+	}
+
+	err = h.stores.BalanceSubscription.Create(ctx, balanceSubscription)
 	if err != nil {
 		logger.Error().Err(err).Msg("create balance subscription in store")
 		return "", fmt.Errorf("create balance subscription in store: %w", err)
 	}
 
+	go h.services.BalanceSubscriptionEngine.ScheduleOperationsCreation(ctx, balanceSubscription)
+
 	return models.EndFlowStep, h.sendMessageWithDefaultKeyboard(opts.message.GetChatID(), "Balance subscription successfully created!")
 }
 
+// List Balance Subscriptions
 func (h *handlerService) handleListBalanceSubscriptionFlowStep(_ context.Context, opts flowProcessingOptions) (models.FlowStep, error) {
 	logger := h.logger.With().Str("name", "handlerService.handleListBalanceSubscriptionFlowStep").Logger()
 	logger.Debug().Any("opts", opts).Msg("got args")
@@ -215,6 +221,7 @@ func (h *handlerService) handleChooseBalanceFlowStepForListBalanceSubscriptions(
 	return models.EndFlowStep, h.sendMessageWithDefaultKeyboard(opts.message.GetChatID(), outputMessage)
 }
 
+// Update Balance Subscriptions
 func (h *handlerService) handleUpdateBalanceSubscriptionFlowStep(_ context.Context, opts flowProcessingOptions) (models.FlowStep, error) {
 	logger := h.logger.With().Str("name", "handlerService.handleUpdateBalanceSubscriptionFlowStep").Logger()
 	logger.Debug().Any("opts", opts).Msg("got args")
@@ -521,6 +528,7 @@ func (h *handlerService) handleChooseBalanceSubscriptionFrequencyFlowStepForUpda
 	})
 }
 
+// Delete Balance Subscriptions
 func (h *handlerService) handleDeleteBalanceSubscriptionFlowStep(ctx context.Context, opts flowProcessingOptions) (models.FlowStep, error) {
 	logger := h.logger.With().Str("name", "handlerService.handleDeleteBalanceSubscriptionFlowStep").Logger()
 	logger.Debug().Any("opts", opts).Msg("got args")
