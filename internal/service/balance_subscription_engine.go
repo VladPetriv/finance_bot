@@ -37,7 +37,10 @@ func (b *balanceSubscriptionEngine) ScheduleOperationsCreation(ctx context.Conte
 	logger := b.logger.With().Str("name", "balanceSubscriptionEngine.ScheduleOperationsCreation").Logger()
 	logger.Debug().Any("balanceSubscription", balanceSubscription).Msg("got args")
 
-	err := b.createScheduledOperations(ctx, balanceSubscription.StartAt, balanceSubscription)
+	maxBillingDates := getMaxBillingDatesFromSubscriptionPeriod(balanceSubscription.Period)
+	billingDates := models.CalculateScheduledOperationBillingDates(balanceSubscription.Period, balanceSubscription.StartAt, maxBillingDates)
+
+	err := b.createScheduledOperations(ctx, billingDates, balanceSubscription)
 	if err != nil {
 		logger.Error().Err(err).Msg("create scheduled operation")
 	}
@@ -63,20 +66,32 @@ func (b *balanceSubscriptionEngine) ExtendScheduledOperations(ctx context.Contex
 				continue
 			}
 
-			now := time.Now()
-			for _, balanceSubscription := range balanceSubscriptions {
-				startAt := time.Date(
-					now.Year(),
-					now.Month(),
-					balanceSubscription.StartAt.Day(),
-					balanceSubscription.StartAt.Hour(),
-					balanceSubscription.StartAt.Minute(),
-					balanceSubscription.StartAt.Second(),
-					balanceSubscription.StartAt.Nanosecond(),
-					balanceSubscription.StartAt.Location(),
-				)
+			scheduledOperations, err := b.stores.BalanceSubscription.ListScheduledOperation(ctx, ListScheduledOperation{
+				BalanceSubscriptionIDs: extractIDs(balanceSubscriptions, func(bs models.BalanceSubscription) string {
+					return bs.ID
+				}),
+			})
+			if err != nil {
+				logger.Error().Err(err).Msg("list scheduled operations")
+				continue
+			}
 
-				err := b.createScheduledOperations(ctx, startAt, balanceSubscription)
+			balanceSubscriptionToScheduledOperation := make(map[string]models.ScheduledOperation)
+			for _, operation := range scheduledOperations {
+				balanceSubscriptionToScheduledOperation[operation.SubscriptionID] = operation
+			}
+
+			for _, balanceSubscription := range balanceSubscriptions {
+				scheduledOperation, ok := balanceSubscriptionToScheduledOperation[balanceSubscription.ID]
+				if !ok {
+					logger.Warn().Msg("could not find scheduled opreation by subscription id")
+					continue
+				}
+
+				maxBillingDates := getMaxBillingDatesFromSubscriptionPeriod(balanceSubscription.Period) + 1
+				billingDates := models.CalculateScheduledOperationBillingDates(balanceSubscription.Period, scheduledOperation.CreationDate, maxBillingDates)
+
+				err := b.createScheduledOperations(ctx, billingDates[1:], balanceSubscription)
 				if err != nil {
 					logger.Error().Err(err).Msg("create scheduled operation")
 				}
@@ -85,12 +100,17 @@ func (b *balanceSubscriptionEngine) ExtendScheduledOperations(ctx context.Contex
 	}
 }
 
-func (b *balanceSubscriptionEngine) createScheduledOperations(ctx context.Context, startAt time.Time, balanceSubscription models.BalanceSubscription) error {
-	logger := b.logger.With().Str("name", "balanceSubscriptionEngine.createScheduledOperations").Logger()
-	logger.Debug().Time("startAt", startAt).Any("balanceSubscription", balanceSubscription)
+func extractIDs[T any](items []T, getID func(T) string) []string {
+	ids := make([]string, len(items))
+	for i, item := range items {
+		ids[i] = getID(item)
+	}
+	return ids
+}
 
-	maxBillingDates := getMaxBillingDatesFromSubscriptionPeriod(balanceSubscription.Period)
-	billingDates := models.CalculateScheduledOperationBillingDates(balanceSubscription.Period, startAt, maxBillingDates)
+func (b *balanceSubscriptionEngine) createScheduledOperations(ctx context.Context, billingDates []time.Time, balanceSubscription models.BalanceSubscription) error {
+	logger := b.logger.With().Str("name", "balanceSubscriptionEngine.createScheduledOperations").Logger()
+	logger.Debug().Any("billingDates", billingDates).Any("balanceSubscription", balanceSubscription).Msg("got args")
 
 	for _, billingDate := range billingDates {
 		err := b.stores.BalanceSubscription.CreateScheduledOperation(ctx, models.ScheduledOperation{
@@ -110,7 +130,7 @@ func (b *balanceSubscriptionEngine) createScheduledOperations(ctx context.Contex
 const (
 	maxBillingDatesForWeeklySubscription = 13 // Represents a quarter in a week.
 	maxBillingDatesForMontlySubscription = 3  // Represents a quarter in a months.
-	maxBillingDatesForYearlySubscription = 1  // Represents one year.
+	maxBillingDatesForYearlySubscription = 2  // Represents two year.
 )
 
 func getMaxBillingDatesFromSubscriptionPeriod(period models.SubscriptionPeriod) int {

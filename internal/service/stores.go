@@ -199,7 +199,8 @@ type GetBalanceSubscriptionFilter struct {
 
 // ListScheduledOperation represents a filter for store.ListScheduledOperation method.
 type ListScheduledOperation struct {
-	BetweenFilter *BetweenFilter
+	BetweenFilter          *BetweenFilter
+	BalanceSubscriptionIDs []string
 }
 
 // BetweenFilter represents a time range filter with inclusive From and To boundaries
