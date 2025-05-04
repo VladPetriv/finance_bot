@@ -10,10 +10,11 @@ import (
 
 // Services represents structure with all services.
 type Services struct {
-	Event    EventService
-	Handler  HandlerService
-	State    StateService
-	Currency CurrencyService
+	Event                     EventService
+	Handler                   HandlerService
+	State                     StateService
+	Currency                  CurrencyService
+	BalanceSubscriptionEngine BalanceSubscriptionEngine
 }
 
 // HandlerService provides functionally for handling bot events.
@@ -317,8 +318,6 @@ const (
 	lastBalanceSubscriptionDateMetadataKey = "last_balance_subscription_date"
 )
 
-const defaultTimeFormat = "02/01/2006 15:04"
-
 // StateService represents a service for managing and handling complex bot flow using state.
 type StateService interface {
 	HandleState(ctx context.Context, message Message) (*HandleStateOutput, error)
@@ -344,4 +343,22 @@ type ConvertCurrencyOptions struct {
 	BaseCurrency   string
 	TargetCurrency string
 	Amount         money.Money
+}
+
+// BalanceSubscriptionEngine represents a service for processing balance subscriptions and operation creations based on their details.
+type BalanceSubscriptionEngine interface {
+	// ScheduleOperationsCreation creates scheduled operation entries for a balance subscription.
+	// It generates future operation dates based on the subscription's frequency (period) and start date:
+	//   - For weekly/monthly frequencies: schedules operations for the next quarter (3 months)
+	//   - For yearly frequencies: schedules operations for the next two year
+	ScheduleOperationsCreation(ctx context.Context, balanceSubscription models.BalanceSubscription)
+	// ExtendScheduledOperations creates additional scheduled operations for an active balance subscription.
+	// When a subscription reaches its last scheduled operation date, this method extends the timeline by
+	// generating new scheduled operations for the upcoming billing period (quarter/year).
+	// It only executes when the subscription is active and has reached its final scheduled operation.
+	ExtendScheduledOperations(ctx context.Context)
+	// CreateOperations creates operations based on balance subscriptions details.
+	CreateOperations(ctx context.Context)
+	// NotifyAboutSubscriptionPayment sends a notification a day before subscription payment.
+	NotifyAboutSubscriptionPayment(ctx context.Context) error
 }

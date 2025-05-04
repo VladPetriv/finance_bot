@@ -35,6 +35,18 @@ func (b *balanceSubscriptionStore) Create(ctx context.Context, subscription mode
 	return err
 }
 
+func (b *balanceSubscriptionStore) CreateScheduledOperation(ctx context.Context, operation models.ScheduledOperation) error {
+	_, err := b.db.DB.ExecContext(
+		ctx,
+		`INSERT INTO
+				scheduled_operations (id, subscription_id, creation_date)
+    	VALUES
+     		($1, $2, $3);`,
+		operation.ID, operation.SubscriptionID, operation.CreationDate,
+	)
+	return err
+}
+
 func (b *balanceSubscriptionStore) Get(ctx context.Context, filter service.GetBalanceSubscriptionFilter) (*models.BalanceSubscription, error) {
 	stmt := sq.
 		StatementBuilder.
@@ -115,7 +127,11 @@ func applyListBalanceSubscriptionFilter(options applyListBalanceSubscriptionOpti
 	}
 
 	if options.listQuery {
-		expectedColumns = []string{"id", "balance_id", "category_id", "name", "amount", "period", "start_at", "created_at", "updated_at"}
+		expectedColumns = []string{
+			"balance_subscriptions.id", "balance_subscriptions.balance_id", "balance_subscriptions.category_id",
+			"balance_subscriptions.name", "balance_subscriptions.amount", "balance_subscriptions.period",
+			"balance_subscriptions.start_at", "balance_subscriptions.created_at", "balance_subscriptions.updated_at",
+		}
 	}
 
 	stmt := sq.
@@ -125,23 +141,60 @@ func applyListBalanceSubscriptionFilter(options applyListBalanceSubscriptionOpti
 		From("balance_subscriptions")
 
 	if filter.BalanceID != "" {
-		stmt = stmt.Where(sq.Eq{"balance_id": filter.BalanceID})
+		stmt = stmt.Where(sq.Eq{"balance_subscriptions.balance_id": filter.BalanceID})
 	}
 
 	if !filter.CreatedAtLessThan.IsZero() {
-		stmt = stmt.Where(sq.Lt{"created_at": filter.CreatedAtLessThan})
+		stmt = stmt.Where(sq.Lt{"balance_subscriptions.created_at": filter.CreatedAtLessThan})
 	}
 
 	if filter.Limit != 0 {
 		stmt = stmt.Limit(uint64(filter.Limit))
 	}
 
+	if filter.SubscriptionsWithLastScheduledOperation {
+		stmt = stmt.Join("scheduled_operations ON scheduled_operations.subscription_id = balance_subscriptions.id").
+			GroupBy("balance_subscriptions.id").
+			Having(sq.Eq{"COUNT(scheduled_operations.id)": 1})
+	}
+
 	if filter.OrderByCreatedAtDesc {
-		stmt = stmt.GroupBy("id", "balance_id", "category_id", "name", "amount", "period", "start_at", "created_at", "updated_at").
-			OrderBy("created_at DESC")
+		stmt = stmt.GroupBy(expectedColumns...).
+			OrderBy("balance_subscriptions.created_at DESC")
 	}
 
 	return &stmt
+}
+
+func (b *balanceSubscriptionStore) ListScheduledOperation(ctx context.Context, filter service.ListScheduledOperation) ([]models.ScheduledOperation, error) {
+	stmt := sq.
+		StatementBuilder.
+		PlaceholderFormat(sq.Dollar).
+		Select("id", "subscription_id", "creation_date").
+		From("scheduled_operations")
+
+	if filter.BetweenFilter != nil {
+		stmt = stmt.Where(sq.And{
+			sq.GtOrEq{"creation_date": filter.BetweenFilter.From},
+			sq.LtOrEq{"creation_date": filter.BetweenFilter.To},
+		})
+	}
+	if len(filter.BalanceSubscriptionIDs) != 0 {
+		stmt = stmt.Where(sq.Eq{"subscription_id": filter.BalanceSubscriptionIDs})
+	}
+
+	query, args, err := stmt.ToSql()
+	if err != nil {
+		return nil, fmt.Errorf("build list scheduled operation query: %w", err)
+	}
+
+	var scheduledOperations []models.ScheduledOperation
+	err = b.db.DB.SelectContext(ctx, &scheduledOperations, query, args...)
+	if err != nil {
+		return nil, err
+	}
+
+	return scheduledOperations, nil
 }
 
 func (b *balanceSubscriptionStore) Update(ctx context.Context, subscription *models.BalanceSubscription) error {
@@ -165,5 +218,10 @@ func (b *balanceSubscriptionStore) Update(ctx context.Context, subscription *mod
 
 func (b *balanceSubscriptionStore) Delete(ctx context.Context, subscriptionID string) error {
 	_, err := b.db.DB.ExecContext(ctx, "DELETE FROM balance_subscriptions WHERE id = $1;", subscriptionID)
+	return err
+}
+
+func (b *balanceSubscriptionStore) DeleteScheduledOperation(ctx context.Context, shceduledOperationID string) error {
+	_, err := b.db.DB.ExecContext(ctx, "DELETE FROM scheduled_operations WHERE id = $1;", shceduledOperationID)
 	return err
 }

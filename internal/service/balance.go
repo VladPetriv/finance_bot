@@ -522,12 +522,6 @@ func (h handlerService) handleChooseBalanceFlowStepForDelete(ctx context.Context
 	}
 	logger.Debug().Any("balance", balance).Msg("got balance for deletion")
 
-	err = h.stores.Balance.Delete(ctx, balance.ID)
-	if err != nil {
-		logger.Error().Err(err).Msg("delete balance from store")
-		return "", fmt.Errorf("delete balance from store: %w", err)
-	}
-
 	// Run in separate goroutine to not block the main thread and respond to the user as soon as possible.
 	go func() {
 		balanceOperations, err := h.stores.Operation.List(ctx, ListOperationsFilter{
@@ -546,6 +540,13 @@ func (h handlerService) handleChooseBalanceFlowStepForDelete(ctx context.Context
 
 				continue
 			}
+		}
+
+		err = h.stores.Balance.Delete(ctx, balance.ID)
+		if err != nil {
+			logger.Error().Err(err).Msg("delete balance from store")
+
+			return
 		}
 	}()
 

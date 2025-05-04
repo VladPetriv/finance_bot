@@ -164,28 +164,48 @@ type ExistsCurrencyFilter struct {
 type BalanceSubscriptionStore interface {
 	// Create creates a new balance subscription in store.
 	Create(ctx context.Context, subscription models.BalanceSubscription) error
+	// CreateScheduledOperation creates a new scheduled operation in store.
+	CreateScheduledOperation(ctx context.Context, operation models.ScheduledOperation) error
 	// Get retrieves balance subscription from store based on input filter.
 	Get(ctx context.Context, filter GetBalanceSubscriptionFilter) (*models.BalanceSubscription, error)
 	// Count returns a count of all balance subscriptions from store based on filter.
 	Count(ctx context.Context, filter ListBalanceSubscriptionFilter) (int, error)
 	// List returns a list of all balance subscriptions from store based on filter.
 	List(ctx context.Context, filter ListBalanceSubscriptionFilter) ([]models.BalanceSubscription, error)
+	// ListScheduledOperation returns a list of all scheduled operation based on input filters.
+	ListScheduledOperation(ctx context.Context, filter ListScheduledOperation) ([]models.ScheduledOperation, error)
 	// Update updates balance subscription model in store.
 	Update(ctx context.Context, subscription *models.BalanceSubscription) error
 	// Delete deletes balance subscription from store.
 	Delete(ctx context.Context, subscriptionID string) error
+	// DeleteScheduledOperation deletes scheduled operation from store.
+	DeleteScheduledOperation(ctx context.Context, id string) error
 }
 
 // ListBalanceSubscriptionFilter represents a filter for store.List and store.Count methods.
 type ListBalanceSubscriptionFilter struct {
-	BalanceID            string
-	OrderByCreatedAtDesc bool
-	CreatedAtLessThan    time.Time
-	Limit                int
+	BalanceID                               string
+	OrderByCreatedAtDesc                    bool
+	CreatedAtLessThan                       time.Time
+	Limit                                   int
+	SubscriptionsWithLastScheduledOperation bool
 }
 
 // GetBalanceSubscriptionFilter represents a filter for store.Get method.
 type GetBalanceSubscriptionFilter struct {
 	ID   string
 	Name string
+}
+
+// ListScheduledOperation represents a filter for store.ListScheduledOperation method.
+type ListScheduledOperation struct {
+	BetweenFilter          *BetweenFilter
+	BalanceSubscriptionIDs []string
+}
+
+// BetweenFilter represents a time range filter with inclusive From and To boundaries
+// for filtering data between two points in time.
+type BetweenFilter struct {
+	From time.Time
+	To   time.Time
 }

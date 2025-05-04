@@ -9,6 +9,7 @@ import (
 	"github.com/VladPetriv/finance_bot/internal/service"
 	"github.com/VladPetriv/finance_bot/internal/store"
 	"github.com/google/uuid"
+	"github.com/jmoiron/sqlx"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -841,4 +842,420 @@ func TestBalanceSubscription_Delete(t *testing.T) {
 			assert.Nil(t, actual)
 		})
 	}
+}
+
+func TestBalanceSubscription_CreateScheduledOperation(t *testing.T) {
+	t.Parallel()
+
+	ctx := context.Background() //nolint: forbidigo
+
+	testCaseDB := createTestDB(t, "balance_subscription_create_scheduled_operations")
+	currencyStore := store.NewCurrency(testCaseDB)
+	userStore := store.NewUser(testCaseDB)
+	balanceStore := store.NewBalance(testCaseDB)
+	categoryStore := store.NewCategory(testCaseDB)
+	balanceSubscriptionStore := store.NewBalanceSubscription(testCaseDB)
+
+	userID := uuid.NewString()
+	balanceID := uuid.NewString()
+	currencyID := uuid.NewString()
+	categoryID := uuid.NewString()
+	balanceSubscriptionID := uuid.NewString()
+	scheduledOperationID := uuid.NewString()
+
+	err := currencyStore.CreateIfNotExists(ctx, &models.Currency{
+		ID:   currencyID,
+		Code: "USD",
+	})
+
+	require.NoError(t, err)
+
+	err = userStore.Create(ctx, &models.User{
+		ID:       userID,
+		Username: "test" + userID,
+	})
+	require.NoError(t, err)
+
+	err = balanceStore.Create(ctx, &models.Balance{
+		ID:         balanceID,
+		UserID:     userID,
+		CurrencyID: currencyID,
+	})
+	assert.NoError(t, err)
+
+	err = categoryStore.Create(ctx, &models.Category{
+		ID:     categoryID,
+		UserID: userID,
+		Title:  "test_category",
+	})
+	require.NoError(t, err)
+
+	err = balanceSubscriptionStore.Create(ctx, models.BalanceSubscription{
+		ID:         balanceSubscriptionID,
+		BalanceID:  balanceID,
+		CategoryID: categoryID,
+		Name:       "test",
+		Amount:     amount100,
+		Period:     models.SubscriptionPeriodMonthly,
+	})
+	require.NoError(t, err)
+
+	t.Cleanup(func() {
+		err = balanceSubscriptionStore.Delete(ctx, balanceSubscriptionID)
+		require.NoError(t, err)
+		err = balanceStore.Delete(ctx, balanceID)
+		require.NoError(t, err)
+		err = categoryStore.Delete(ctx, categoryID)
+		require.NoError(t, err)
+		err := deleteCurrencyByID(testCaseDB.DB, currencyID)
+		require.NoError(t, err)
+		err = deleteUserByID(testCaseDB.DB, userID)
+		require.NoError(t, err)
+		err = balanceSubscriptionStore.Delete(ctx, balanceSubscriptionID)
+		require.NoError(t, err)
+	})
+
+	testCases := [...]struct {
+		desc                 string
+		preconditions        *models.ScheduledOperation
+		args                 *models.ScheduledOperation
+		expectDuplicateError bool
+	}{
+		{
+			desc: "scheduled operation created",
+			args: &models.ScheduledOperation{
+				ID:             uuid.NewString(),
+				SubscriptionID: balanceSubscriptionID,
+				CreationDate:   time.Date(2025, time.May, 2, 13, 12, 0, 0, time.UTC),
+			},
+		},
+		{
+			desc: "duplicate key error because scheduled operation already exists",
+			preconditions: &models.ScheduledOperation{
+				ID:             scheduledOperationID,
+				SubscriptionID: balanceSubscriptionID,
+				CreationDate:   time.Date(2025, time.May, 1, 12, 12, 0, 0, time.UTC),
+			},
+			args: &models.ScheduledOperation{
+				ID:             scheduledOperationID,
+				SubscriptionID: balanceSubscriptionID,
+				CreationDate:   time.Date(2025, time.May, 1, 12, 12, 0, 0, time.UTC),
+			},
+			expectDuplicateError: true,
+		},
+	}
+	for _, tc := range testCases {
+		tc := tc
+		t.Run(tc.desc, func(t *testing.T) {
+			t.Parallel()
+
+			if tc.preconditions != nil {
+				err := balanceSubscriptionStore.CreateScheduledOperation(ctx, *tc.preconditions)
+				assert.NoError(t, err)
+			}
+
+			t.Cleanup(func() {
+				err = balanceSubscriptionStore.DeleteScheduledOperation(ctx, tc.args.ID)
+				assert.NoError(t, err)
+			})
+
+			err := balanceSubscriptionStore.CreateScheduledOperation(ctx, *tc.args)
+			if tc.expectDuplicateError {
+				assert.True(t, isDuplicateKeyError(err))
+				return
+			}
+
+			assert.NoError(t, err)
+
+			var actual models.ScheduledOperation
+			err = testCaseDB.DB.GetContext(ctx, &actual, "SELECT * FROM scheduled_operations WHERE id = $1;", tc.args.ID)
+			assert.NoError(t, err)
+			assert.Equal(t, tc.args.ID, actual.ID)
+			assert.Equal(t, tc.args.SubscriptionID, actual.SubscriptionID)
+			assert.Equal(t, tc.args.CreationDate, actual.CreationDate.UTC())
+		})
+	}
+}
+
+func TestBalanceSubscription_ListScheduledOperation(t *testing.T) {
+	t.Parallel()
+
+	ctx := context.Background() //nolint: forbidigo
+
+	testCaseDB := createTestDB(t, "balance_subscription_list_scheduled_operations")
+	currencyStore := store.NewCurrency(testCaseDB)
+	userStore := store.NewUser(testCaseDB)
+	balanceStore := store.NewBalance(testCaseDB)
+	categoryStore := store.NewCategory(testCaseDB)
+	balanceSubscriptionStore := store.NewBalanceSubscription(testCaseDB)
+
+	userID := uuid.NewString()
+	balanceID := uuid.NewString()
+	currencyID := uuid.NewString()
+	categoryID := uuid.NewString()
+	balanceSubscriptionID := uuid.NewString()
+	scheduledOperationID1, scheduledOperationID2,
+		scheduledOperationID3, scheduledOperationID4 := uuid.NewString(), uuid.NewString(), uuid.NewString(), uuid.NewString()
+
+	err := currencyStore.CreateIfNotExists(ctx, &models.Currency{
+		ID:   currencyID,
+		Code: "USD",
+	})
+
+	require.NoError(t, err)
+
+	err = userStore.Create(ctx, &models.User{
+		ID:       userID,
+		Username: "test" + userID,
+	})
+	require.NoError(t, err)
+
+	err = balanceStore.Create(ctx, &models.Balance{
+		ID:         balanceID,
+		UserID:     userID,
+		CurrencyID: currencyID,
+	})
+	assert.NoError(t, err)
+
+	err = categoryStore.Create(ctx, &models.Category{
+		ID:     categoryID,
+		UserID: userID,
+		Title:  "test_category",
+	})
+	require.NoError(t, err)
+
+	err = balanceSubscriptionStore.Create(ctx, models.BalanceSubscription{
+		ID:         balanceSubscriptionID,
+		BalanceID:  balanceID,
+		CategoryID: categoryID,
+		Name:       "test",
+		Amount:     amount100,
+		Period:     models.SubscriptionPeriodMonthly,
+	})
+	require.NoError(t, err)
+
+	t.Cleanup(func() {
+		err = balanceSubscriptionStore.Delete(ctx, balanceSubscriptionID)
+		require.NoError(t, err)
+		err = balanceStore.Delete(ctx, balanceID)
+		require.NoError(t, err)
+		err = categoryStore.Delete(ctx, categoryID)
+		require.NoError(t, err)
+		err := deleteCurrencyByID(testCaseDB.DB, currencyID)
+		require.NoError(t, err)
+		err = deleteUserByID(testCaseDB.DB, userID)
+		require.NoError(t, err)
+		err = balanceSubscriptionStore.Delete(ctx, balanceSubscriptionID)
+		require.NoError(t, err)
+	})
+
+	testCases := [...]struct {
+		desc          string
+		preconditions []models.ScheduledOperation
+		args          service.ListScheduledOperation
+		expected      []models.ScheduledOperation
+	}{
+		{
+			desc: "received scheduled operation with date greater than filter",
+			preconditions: []models.ScheduledOperation{
+				{
+					ID:             scheduledOperationID1,
+					SubscriptionID: balanceSubscriptionID,
+					CreationDate:   time.Date(2025, time.March, 11, 10, 0, 0, 0, time.UTC),
+				},
+				{
+					ID:             scheduledOperationID2,
+					SubscriptionID: balanceSubscriptionID,
+					CreationDate:   time.Date(2025, time.March, 11, 11, 0, 0, 0, time.UTC),
+				},
+				{
+					ID:             scheduledOperationID3,
+					SubscriptionID: balanceSubscriptionID,
+					CreationDate:   time.Date(2025, time.March, 11, 13, 0, 0, 0, time.UTC),
+				},
+				{
+					ID:             scheduledOperationID4,
+					SubscriptionID: balanceSubscriptionID,
+					CreationDate:   time.Date(2025, time.March, 11, 14, 0, 0, 0, time.UTC),
+				},
+			},
+			args: service.ListScheduledOperation{
+				BetweenFilter: &service.BetweenFilter{
+					From: time.Date(2025, time.March, 11, 11, 0, 0, 0, time.UTC),
+					To:   time.Date(2025, time.March, 11, 13, 0, 0, 0, time.UTC),
+				},
+			},
+			expected: []models.ScheduledOperation{
+				{
+					ID:             scheduledOperationID2,
+					SubscriptionID: balanceSubscriptionID,
+					CreationDate:   time.Date(2025, time.March, 11, 11, 0, 0, 0, time.UTC),
+				},
+				{
+					ID:             scheduledOperationID3,
+					SubscriptionID: balanceSubscriptionID,
+					CreationDate:   time.Date(2025, time.March, 11, 13, 0, 0, 0, time.UTC),
+				},
+			},
+		},
+	}
+	for _, tc := range testCases {
+		tc := tc
+		t.Run(tc.desc, func(t *testing.T) {
+			t.Parallel()
+
+			for _, scheduledOperation := range tc.preconditions {
+				err := balanceSubscriptionStore.CreateScheduledOperation(ctx, scheduledOperation)
+				assert.NoError(t, err)
+			}
+
+			t.Cleanup(func() {
+				for _, scheduledOperation := range tc.preconditions {
+					err = balanceSubscriptionStore.DeleteScheduledOperation(ctx, scheduledOperation.ID)
+					assert.NoError(t, err)
+				}
+			})
+
+			actual, err := balanceSubscriptionStore.ListScheduledOperation(ctx, tc.args)
+			assert.NoError(t, err)
+
+			for i := range actual {
+				assert.Equal(t, tc.expected[i].ID, actual[i].ID)
+				assert.Equal(t, tc.expected[i].SubscriptionID, actual[i].SubscriptionID)
+				assert.Equal(t, tc.expected[i].CreationDate, actual[i].CreationDate.UTC())
+			}
+		})
+	}
+}
+
+func TestBalanceSubscription_DeleteScheduledOperation(t *testing.T) {
+	t.Parallel()
+
+	ctx := context.Background() //nolint: forbidigo
+
+	testCaseDB := createTestDB(t, "balance_subscription_delete_scheduled_operations")
+	currencyStore := store.NewCurrency(testCaseDB)
+	userStore := store.NewUser(testCaseDB)
+	balanceStore := store.NewBalance(testCaseDB)
+	categoryStore := store.NewCategory(testCaseDB)
+	balanceSubscriptionStore := store.NewBalanceSubscription(testCaseDB)
+
+	userID := uuid.NewString()
+	balanceID := uuid.NewString()
+	currencyID := uuid.NewString()
+	categoryID := uuid.NewString()
+	balanceSubscriptionID := uuid.NewString()
+	scheduledOperationID := uuid.NewString()
+
+	err := currencyStore.CreateIfNotExists(ctx, &models.Currency{
+		ID:   currencyID,
+		Code: "USD",
+	})
+	require.NoError(t, err)
+
+	err = userStore.Create(ctx, &models.User{
+		ID:       userID,
+		Username: "test" + userID,
+	})
+	require.NoError(t, err)
+
+	err = balanceStore.Create(ctx, &models.Balance{
+		ID:         balanceID,
+		UserID:     userID,
+		CurrencyID: currencyID,
+	})
+	require.NoError(t, err)
+
+	err = categoryStore.Create(ctx, &models.Category{
+		ID:     categoryID,
+		UserID: userID,
+		Title:  "test_category",
+	})
+	require.NoError(t, err)
+
+	err = balanceSubscriptionStore.Create(ctx, models.BalanceSubscription{
+		ID:         balanceSubscriptionID,
+		BalanceID:  balanceID,
+		CategoryID: categoryID,
+		Name:       "test",
+		Amount:     amount100,
+		Period:     models.SubscriptionPeriodMonthly,
+	})
+	require.NoError(t, err)
+
+	t.Cleanup(func() {
+		err = balanceSubscriptionStore.Delete(ctx, balanceSubscriptionID)
+		require.NoError(t, err)
+		err = balanceStore.Delete(ctx, balanceID)
+		require.NoError(t, err)
+		err = categoryStore.Delete(ctx, categoryID)
+		require.NoError(t, err)
+		err := deleteCurrencyByID(testCaseDB.DB, currencyID)
+		require.NoError(t, err)
+		err = deleteUserByID(testCaseDB.DB, userID)
+		require.NoError(t, err)
+		err = balanceSubscriptionStore.Delete(ctx, balanceSubscriptionID)
+		require.NoError(t, err)
+	})
+
+	testCases := [...]struct {
+		desc          string
+		preconditions *models.ScheduledOperation
+		args          string
+	}{
+		{
+			desc: "scheduled operation deleted",
+			preconditions: &models.ScheduledOperation{
+				ID:             scheduledOperationID,
+				SubscriptionID: balanceSubscriptionID,
+			},
+			args: balanceSubscriptionID,
+		},
+		{
+			desc: "scheduled operation not deleted because of not existed id",
+			preconditions: &models.ScheduledOperation{
+				ID:             uuid.NewString(),
+				SubscriptionID: balanceSubscriptionID,
+			},
+			args: uuid.NewString(),
+		},
+	}
+	for _, tc := range testCases {
+		tc := tc
+		t.Run(tc.desc, func(t *testing.T) {
+			t.Parallel()
+
+			if tc.preconditions != nil {
+				err = balanceSubscriptionStore.CreateScheduledOperation(ctx, *tc.preconditions)
+				assert.NoError(t, err)
+			}
+
+			t.Cleanup(func() {
+				if tc.preconditions != nil {
+					err = balanceSubscriptionStore.DeleteScheduledOperation(ctx, tc.preconditions.ID)
+					assert.NoError(t, err)
+				}
+			})
+
+			err := balanceSubscriptionStore.DeleteScheduledOperation(ctx, tc.args)
+			assert.NoError(t, err)
+
+			actual, err := getScheledOperationByID(testCaseDB.DB, tc.preconditions.ID)
+			assert.NoError(t, err)
+
+			// scheduled opration should not be deleted
+			if tc.preconditions.ID != tc.args {
+				assert.NotNil(t, actual)
+				return
+			}
+
+			assert.Nil(t, actual)
+		})
+	}
+}
+
+func getScheledOperationByID(db *sqlx.DB, id string) (*models.ScheduledOperation, error) {
+	var scheduleOperation models.ScheduledOperation
+	err := db.Get(&scheduleOperation, "SELECT * FROM scheduled_operations WHERE id = $1;", id)
+	return &scheduleOperation, err
 }
