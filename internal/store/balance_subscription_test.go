@@ -844,12 +844,12 @@ func TestBalanceSubscription_Delete(t *testing.T) {
 	}
 }
 
-func TestBalanceSubscription_CreateScheduledOperationCreation(t *testing.T) {
+func TestBalanceSubscription_CreateScheduledOperation(t *testing.T) {
 	t.Parallel()
 
 	ctx := context.Background() //nolint: forbidigo
 
-	testCaseDB := createTestDB(t, "balance_subscription_create_scheduled_operation_creation")
+	testCaseDB := createTestDB(t, "balance_subscription_create_scheduled_operations")
 	currencyStore := store.NewCurrency(testCaseDB)
 	userStore := store.NewUser(testCaseDB)
 	balanceStore := store.NewBalance(testCaseDB)
@@ -861,7 +861,7 @@ func TestBalanceSubscription_CreateScheduledOperationCreation(t *testing.T) {
 	currencyID := uuid.NewString()
 	categoryID := uuid.NewString()
 	balanceSubscriptionID := uuid.NewString()
-	scheduledOperationCreationID := uuid.NewString()
+	scheduledOperationID := uuid.NewString()
 
 	err := currencyStore.CreateIfNotExists(ctx, &models.Currency{
 		ID:   currencyID,
@@ -917,27 +917,27 @@ func TestBalanceSubscription_CreateScheduledOperationCreation(t *testing.T) {
 
 	testCases := [...]struct {
 		desc                 string
-		preconditions        *models.ScheduledOperationCreation
-		args                 *models.ScheduledOperationCreation
+		preconditions        *models.ScheduledOperation
+		args                 *models.ScheduledOperation
 		expectDuplicateError bool
 	}{
 		{
-			desc: "scheduled operation creation created",
-			args: &models.ScheduledOperationCreation{
+			desc: "scheduled operation created",
+			args: &models.ScheduledOperation{
 				ID:             uuid.NewString(),
 				SubscriptionID: balanceSubscriptionID,
 				CreationDate:   time.Date(2025, time.May, 2, 13, 12, 0, 0, time.UTC),
 			},
 		},
 		{
-			desc: "duplicate key error because scheduled operation creation already exists",
-			preconditions: &models.ScheduledOperationCreation{
-				ID:             scheduledOperationCreationID,
+			desc: "duplicate key error because scheduled operation already exists",
+			preconditions: &models.ScheduledOperation{
+				ID:             scheduledOperationID,
 				SubscriptionID: balanceSubscriptionID,
 				CreationDate:   time.Date(2025, time.May, 1, 12, 12, 0, 0, time.UTC),
 			},
-			args: &models.ScheduledOperationCreation{
-				ID:             scheduledOperationCreationID,
+			args: &models.ScheduledOperation{
+				ID:             scheduledOperationID,
 				SubscriptionID: balanceSubscriptionID,
 				CreationDate:   time.Date(2025, time.May, 1, 12, 12, 0, 0, time.UTC),
 			},
@@ -950,16 +950,16 @@ func TestBalanceSubscription_CreateScheduledOperationCreation(t *testing.T) {
 			t.Parallel()
 
 			if tc.preconditions != nil {
-				err := balanceSubscriptionStore.CreateScheduledOperationCreation(ctx, *tc.preconditions)
+				err := balanceSubscriptionStore.CreateScheduledOperation(ctx, *tc.preconditions)
 				assert.NoError(t, err)
 			}
 
 			t.Cleanup(func() {
-				err = balanceSubscriptionStore.DeleteScheduledOperationCreation(ctx, tc.args.ID)
+				err = balanceSubscriptionStore.DeleteScheduledOperation(ctx, tc.args.ID)
 				assert.NoError(t, err)
 			})
 
-			err := balanceSubscriptionStore.CreateScheduledOperationCreation(ctx, *tc.args)
+			err := balanceSubscriptionStore.CreateScheduledOperation(ctx, *tc.args)
 			if tc.expectDuplicateError {
 				assert.True(t, isDuplicateKeyError(err))
 				return
@@ -967,8 +967,8 @@ func TestBalanceSubscription_CreateScheduledOperationCreation(t *testing.T) {
 
 			assert.NoError(t, err)
 
-			var actual models.ScheduledOperationCreation
-			err = testCaseDB.DB.GetContext(ctx, &actual, "SELECT * FROM scheduled_operation_creations WHERE id = $1;", tc.args.ID)
+			var actual models.ScheduledOperation
+			err = testCaseDB.DB.GetContext(ctx, &actual, "SELECT * FROM scheduled_operations WHERE id = $1;", tc.args.ID)
 			assert.NoError(t, err)
 			assert.Equal(t, tc.args.ID, actual.ID)
 			assert.Equal(t, tc.args.SubscriptionID, actual.SubscriptionID)
@@ -977,12 +977,12 @@ func TestBalanceSubscription_CreateScheduledOperationCreation(t *testing.T) {
 	}
 }
 
-func TestBalanceSubscription_ListScheduledOperationCreation(t *testing.T) {
+func TestBalanceSubscription_ListScheduledOperation(t *testing.T) {
 	t.Parallel()
 
 	ctx := context.Background() //nolint: forbidigo
 
-	testCaseDB := createTestDB(t, "balance_subscription_list_scheduled_operation_creation")
+	testCaseDB := createTestDB(t, "balance_subscription_list_scheduled_operations")
 	currencyStore := store.NewCurrency(testCaseDB)
 	userStore := store.NewUser(testCaseDB)
 	balanceStore := store.NewBalance(testCaseDB)
@@ -994,8 +994,8 @@ func TestBalanceSubscription_ListScheduledOperationCreation(t *testing.T) {
 	currencyID := uuid.NewString()
 	categoryID := uuid.NewString()
 	balanceSubscriptionID := uuid.NewString()
-	scheduledOperationCreationID1, scheduledOperationCreationID2,
-		scheduledOperationCreationID3, scheduledOperationCreationID4 := uuid.NewString(), uuid.NewString(), uuid.NewString(), uuid.NewString()
+	scheduledOperationID1, scheduledOperationID2,
+		scheduledOperationID3, scheduledOperationID4 := uuid.NewString(), uuid.NewString(), uuid.NewString(), uuid.NewString()
 
 	err := currencyStore.CreateIfNotExists(ctx, &models.Currency{
 		ID:   currencyID,
@@ -1051,48 +1051,48 @@ func TestBalanceSubscription_ListScheduledOperationCreation(t *testing.T) {
 
 	testCases := [...]struct {
 		desc          string
-		preconditions []models.ScheduledOperationCreation
-		args          service.ListScheduledOperationCreation
-		expected      []models.ScheduledOperationCreation
+		preconditions []models.ScheduledOperation
+		args          service.ListScheduledOperation
+		expected      []models.ScheduledOperation
 	}{
 		{
-			desc: "received scheduled operation creations with creation date greater than filter",
-			preconditions: []models.ScheduledOperationCreation{
+			desc: "received scheduled operation with date greater than filter",
+			preconditions: []models.ScheduledOperation{
 				{
-					ID:             scheduledOperationCreationID1,
+					ID:             scheduledOperationID1,
 					SubscriptionID: balanceSubscriptionID,
 					CreationDate:   time.Date(2025, time.March, 11, 10, 0, 0, 0, time.UTC),
 				},
 				{
-					ID:             scheduledOperationCreationID2,
+					ID:             scheduledOperationID2,
 					SubscriptionID: balanceSubscriptionID,
 					CreationDate:   time.Date(2025, time.March, 11, 11, 0, 0, 0, time.UTC),
 				},
 				{
-					ID:             scheduledOperationCreationID3,
+					ID:             scheduledOperationID3,
 					SubscriptionID: balanceSubscriptionID,
 					CreationDate:   time.Date(2025, time.March, 11, 13, 0, 0, 0, time.UTC),
 				},
 				{
-					ID:             scheduledOperationCreationID4,
+					ID:             scheduledOperationID4,
 					SubscriptionID: balanceSubscriptionID,
 					CreationDate:   time.Date(2025, time.March, 11, 14, 0, 0, 0, time.UTC),
 				},
 			},
-			args: service.ListScheduledOperationCreation{
+			args: service.ListScheduledOperation{
 				BetweenFilter: &service.BetweenFilter{
 					From: time.Date(2025, time.March, 11, 11, 0, 0, 0, time.UTC),
 					To:   time.Date(2025, time.March, 11, 13, 0, 0, 0, time.UTC),
 				},
 			},
-			expected: []models.ScheduledOperationCreation{
+			expected: []models.ScheduledOperation{
 				{
-					ID:             scheduledOperationCreationID2,
+					ID:             scheduledOperationID2,
 					SubscriptionID: balanceSubscriptionID,
 					CreationDate:   time.Date(2025, time.March, 11, 11, 0, 0, 0, time.UTC),
 				},
 				{
-					ID:             scheduledOperationCreationID3,
+					ID:             scheduledOperationID3,
 					SubscriptionID: balanceSubscriptionID,
 					CreationDate:   time.Date(2025, time.March, 11, 13, 0, 0, 0, time.UTC),
 				},
@@ -1104,19 +1104,19 @@ func TestBalanceSubscription_ListScheduledOperationCreation(t *testing.T) {
 		t.Run(tc.desc, func(t *testing.T) {
 			t.Parallel()
 
-			for _, scheduledOprationCreation := range tc.preconditions {
-				err := balanceSubscriptionStore.CreateScheduledOperationCreation(ctx, scheduledOprationCreation)
+			for _, scheduledOperation := range tc.preconditions {
+				err := balanceSubscriptionStore.CreateScheduledOperation(ctx, scheduledOperation)
 				assert.NoError(t, err)
 			}
 
 			t.Cleanup(func() {
-				for _, scheduledOprationCreation := range tc.preconditions {
-					err = balanceSubscriptionStore.DeleteScheduledOperationCreation(ctx, scheduledOprationCreation.ID)
+				for _, scheduledOperation := range tc.preconditions {
+					err = balanceSubscriptionStore.DeleteScheduledOperation(ctx, scheduledOperation.ID)
 					assert.NoError(t, err)
 				}
 			})
 
-			actual, err := balanceSubscriptionStore.ListScheduledOperationCreation(ctx, tc.args)
+			actual, err := balanceSubscriptionStore.ListScheduledOperation(ctx, tc.args)
 			assert.NoError(t, err)
 
 			for i := range actual {
@@ -1128,12 +1128,12 @@ func TestBalanceSubscription_ListScheduledOperationCreation(t *testing.T) {
 	}
 }
 
-func TestBalanceSubscription_DeleteScheduledOperationCreation(t *testing.T) {
+func TestBalanceSubscription_DeleteScheduledOperation(t *testing.T) {
 	t.Parallel()
 
 	ctx := context.Background() //nolint: forbidigo
 
-	testCaseDB := createTestDB(t, "balance_subscription_delete_scheduled_operation_creation")
+	testCaseDB := createTestDB(t, "balance_subscription_delete_scheduled_operations")
 	currencyStore := store.NewCurrency(testCaseDB)
 	userStore := store.NewUser(testCaseDB)
 	balanceStore := store.NewBalance(testCaseDB)
@@ -1145,7 +1145,7 @@ func TestBalanceSubscription_DeleteScheduledOperationCreation(t *testing.T) {
 	currencyID := uuid.NewString()
 	categoryID := uuid.NewString()
 	balanceSubscriptionID := uuid.NewString()
-	scheduledOperationCreationID := uuid.NewString()
+	scheduledOperationID := uuid.NewString()
 
 	err := currencyStore.CreateIfNotExists(ctx, &models.Currency{
 		ID:   currencyID,
@@ -1200,20 +1200,20 @@ func TestBalanceSubscription_DeleteScheduledOperationCreation(t *testing.T) {
 
 	testCases := [...]struct {
 		desc          string
-		preconditions *models.ScheduledOperationCreation
+		preconditions *models.ScheduledOperation
 		args          string
 	}{
 		{
-			desc: "scheduled operation creation deleted",
-			preconditions: &models.ScheduledOperationCreation{
-				ID:             scheduledOperationCreationID,
+			desc: "scheduled operation deleted",
+			preconditions: &models.ScheduledOperation{
+				ID:             scheduledOperationID,
 				SubscriptionID: balanceSubscriptionID,
 			},
 			args: balanceSubscriptionID,
 		},
 		{
-			desc: "scheduled operation creation not deleted because of not existed id",
-			preconditions: &models.ScheduledOperationCreation{
+			desc: "scheduled operation not deleted because of not existed id",
+			preconditions: &models.ScheduledOperation{
 				ID:             uuid.NewString(),
 				SubscriptionID: balanceSubscriptionID,
 			},
@@ -1226,21 +1226,21 @@ func TestBalanceSubscription_DeleteScheduledOperationCreation(t *testing.T) {
 			t.Parallel()
 
 			if tc.preconditions != nil {
-				err = balanceSubscriptionStore.CreateScheduledOperationCreation(ctx, *tc.preconditions)
+				err = balanceSubscriptionStore.CreateScheduledOperation(ctx, *tc.preconditions)
 				assert.NoError(t, err)
 			}
 
 			t.Cleanup(func() {
 				if tc.preconditions != nil {
-					err = balanceSubscriptionStore.DeleteScheduledOperationCreation(ctx, tc.preconditions.ID)
+					err = balanceSubscriptionStore.DeleteScheduledOperation(ctx, tc.preconditions.ID)
 					assert.NoError(t, err)
 				}
 			})
 
-			err := balanceSubscriptionStore.DeleteScheduledOperationCreation(ctx, tc.args)
+			err := balanceSubscriptionStore.DeleteScheduledOperation(ctx, tc.args)
 			assert.NoError(t, err)
 
-			actual, err := getScheledOperationCreationByID(testCaseDB.DB, tc.preconditions.ID)
+			actual, err := getScheledOperationByID(testCaseDB.DB, tc.preconditions.ID)
 			assert.NoError(t, err)
 
 			// scheduled opration should not be deleted
@@ -1254,8 +1254,8 @@ func TestBalanceSubscription_DeleteScheduledOperationCreation(t *testing.T) {
 	}
 }
 
-func getScheledOperationCreationByID(db *sqlx.DB, id string) (*models.ScheduledOperationCreation, error) {
-	var scheduleOperation models.ScheduledOperationCreation
-	err := db.Get(&scheduleOperation, "SELECT * FROM scheduled_operation_creations WHERE id = $1;", id)
+func getScheledOperationByID(db *sqlx.DB, id string) (*models.ScheduledOperation, error) {
+	var scheduleOperation models.ScheduledOperation
+	err := db.Get(&scheduleOperation, "SELECT * FROM scheduled_operations WHERE id = $1;", id)
 	return &scheduleOperation, err
 }

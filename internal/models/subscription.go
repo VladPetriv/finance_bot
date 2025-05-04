@@ -95,8 +95,8 @@ func CalculateScheduledOperationBillingDates(period SubscriptionPeriod, startDat
 	return billingDates
 }
 
-// ScheduledOperationCreation represents a scheduled time for operation that will be created based on the subscription.
-type ScheduledOperationCreation struct {
+// ScheduledOperation represents a scheduled time for operation that will be created based on the subscription.
+type ScheduledOperation struct {
 	ID             string    `db:"id"`
 	SubscriptionID string    `db:"subscription_id"`
 	CreationDate   time.Time `db:"creation_date"`

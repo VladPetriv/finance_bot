@@ -164,22 +164,22 @@ type ExistsCurrencyFilter struct {
 type BalanceSubscriptionStore interface {
 	// Create creates a new balance subscription in store.
 	Create(ctx context.Context, subscription models.BalanceSubscription) error
-	// CreateScheduledOperationCreation creates a new scheduled operation creation in store.
-	CreateScheduledOperationCreation(ctx context.Context, operation models.ScheduledOperationCreation) error
+	// CreateScheduledOperation creates a new scheduled operation in store.
+	CreateScheduledOperation(ctx context.Context, operation models.ScheduledOperation) error
 	// Get retrieves balance subscription from store based on input filter.
 	Get(ctx context.Context, filter GetBalanceSubscriptionFilter) (*models.BalanceSubscription, error)
 	// Count returns a count of all balance subscriptions from store based on filter.
 	Count(ctx context.Context, filter ListBalanceSubscriptionFilter) (int, error)
 	// List returns a list of all balance subscriptions from store based on filter.
 	List(ctx context.Context, filter ListBalanceSubscriptionFilter) ([]models.BalanceSubscription, error)
-	// ListScheduledOperationCreation returns a list of all scheduled operation creation based on input filters.
-	ListScheduledOperationCreation(ctx context.Context, filter ListScheduledOperationCreation) ([]models.ScheduledOperationCreation, error)
+	// ListScheduledOperation returns a list of all scheduled operation based on input filters.
+	ListScheduledOperation(ctx context.Context, filter ListScheduledOperation) ([]models.ScheduledOperation, error)
 	// Update updates balance subscription model in store.
 	Update(ctx context.Context, subscription *models.BalanceSubscription) error
 	// Delete deletes balance subscription from store.
 	Delete(ctx context.Context, subscriptionID string) error
-	// DeleteScheduledOperationCreation deletes scheduled operation creation from store.
-	DeleteScheduledOperationCreation(ctx context.Context, id string) error
+	// DeleteScheduledOperation deletes scheduled operation from store.
+	DeleteScheduledOperation(ctx context.Context, id string) error
 }
 
 // ListBalanceSubscriptionFilter represents a filter for store.List and store.Count methods.
@@ -197,8 +197,8 @@ type GetBalanceSubscriptionFilter struct {
 	Name string
 }
 
-// ListScheduledOperationCreation represents a filter for store.ListScheduledOperationCreation method.
-type ListScheduledOperationCreation struct {
+// ListScheduledOperation represents a filter for store.ListScheduledOperation method.
+type ListScheduledOperation struct {
 	BetweenFilter *BetweenFilter
 }
 

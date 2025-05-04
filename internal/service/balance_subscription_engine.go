@@ -93,14 +93,14 @@ func (b *balanceSubscriptionEngine) createScheduledOperations(ctx context.Contex
 	billingDates := models.CalculateScheduledOperationBillingDates(balanceSubscription.Period, startAt, maxBillingDates)
 
 	for _, billingDate := range billingDates {
-		err := b.stores.BalanceSubscription.CreateScheduledOperationCreation(ctx, models.ScheduledOperationCreation{
+		err := b.stores.BalanceSubscription.CreateScheduledOperation(ctx, models.ScheduledOperation{
 			ID:             uuid.NewString(),
 			SubscriptionID: balanceSubscription.ID,
 			CreationDate:   billingDate,
 		})
 		if err != nil {
-			logger.Error().Err(err).Msg("create scheduled operation creation in store")
-			return fmt.Errorf("create scheduled operation creation in store: %w", err)
+			logger.Error().Err(err).Msg("create scheduled operation in store")
+			return fmt.Errorf("create scheduled operation in store: %w", err)
 		}
 	}
 
@@ -144,7 +144,7 @@ func (b *balanceSubscriptionEngine) CreateOperations(ctx context.Context) {
 			return
 		case <-ticker.C:
 			now := time.Now()
-			scheduledOperations, err := b.stores.BalanceSubscription.ListScheduledOperationCreation(ctx, ListScheduledOperationCreation{
+			scheduledOperations, err := b.stores.BalanceSubscription.ListScheduledOperation(ctx, ListScheduledOperation{
 				BetweenFilter: &BetweenFilter{
 					From: time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, now.Location()),
 					To:   time.Date(now.Year(), now.Month(), now.Day(), 23, 59, 59, 999999999, now.Location()),
@@ -163,19 +163,19 @@ func (b *balanceSubscriptionEngine) CreateOperations(ctx context.Context) {
 	}
 }
 
-func (b *balanceSubscriptionEngine) createOperation(ctx context.Context, id string, scheduledOperationCreation models.ScheduledOperationCreation) error {
+func (b *balanceSubscriptionEngine) createOperation(ctx context.Context, id string, scheduledOperation models.ScheduledOperation) error {
 	logger := b.logger.With().Str("name", "balanceSubscriptionEngine.createOperation").Logger()
-	logger.Debug().Any("scheduledOperationCreation", scheduledOperationCreation).Msg("got args")
+	logger.Debug().Any("scheduledOperation", scheduledOperation).Msg("got args")
 
 	balanceSubscription, err := b.stores.BalanceSubscription.Get(ctx, GetBalanceSubscriptionFilter{
-		ID: scheduledOperationCreation.SubscriptionID,
+		ID: scheduledOperation.SubscriptionID,
 	})
 	if err != nil {
 		logger.Error().Err(err).Msg("get balance subscription from store")
 		return fmt.Errorf("get balance subscription from store: %w", err)
 	}
 	if balanceSubscription == nil {
-		logger.Warn().Msg("balance subscription during operation creation not found")
+		logger.Warn().Msg("balance subscription during operation not found")
 		return ErrBalanceSubscriptionNotFound
 	}
 
@@ -187,7 +187,7 @@ func (b *balanceSubscriptionEngine) createOperation(ctx context.Context, id stri
 		return fmt.Errorf("get balance from store: %w", err)
 	}
 	if balance == nil {
-		logger.Warn().Msg("balance during operation creation not found")
+		logger.Warn().Msg("balance during operation not found")
 		return ErrBalanceNotFound
 	}
 
@@ -199,7 +199,7 @@ func (b *balanceSubscriptionEngine) createOperation(ctx context.Context, id stri
 		return fmt.Errorf("get category from store: %w", err)
 	}
 	if category == nil {
-		logger.Warn().Msg("category during operation creation not found")
+		logger.Warn().Msg("category during operation not found")
 		return ErrCategoryNotFound
 	}
 
@@ -241,10 +241,10 @@ func (b *balanceSubscriptionEngine) createOperation(ctx context.Context, id stri
 		return fmt.Errorf("update balance: %w", err)
 	}
 
-	err = b.stores.BalanceSubscription.DeleteScheduledOperationCreation(ctx, scheduledOperationCreation.ID)
+	err = b.stores.BalanceSubscription.DeleteScheduledOperation(ctx, scheduledOperation.ID)
 	if err != nil {
-		logger.Error().Err(err).Msg("delete scheduled operation creation")
-		return fmt.Errorf("delete scheduled operation creation: %w", err)
+		logger.Error().Err(err).Msg("delete scheduled operation")
+		return fmt.Errorf("delete scheduled operation: %w", err)
 	}
 
 	return nil

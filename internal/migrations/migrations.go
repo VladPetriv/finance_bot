@@ -41,7 +41,7 @@ var Migrations = []any{
 		Func: addBalanceSubscriptionIDToOperationsTable,
 	},
 	&migrator.MigrationNoTx{
-		Name: "Init scheduled operation_creations table",
-		Func: initScheduledOperationCreationTable,
+		Name: "Init scheduled operations table",
+		Func: initScheduledOperationTable,
 	},
 }

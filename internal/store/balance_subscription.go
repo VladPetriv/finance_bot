@@ -35,11 +35,11 @@ func (b *balanceSubscriptionStore) Create(ctx context.Context, subscription mode
 	return err
 }
 
-func (b *balanceSubscriptionStore) CreateScheduledOperationCreation(ctx context.Context, operation models.ScheduledOperationCreation) error {
+func (b *balanceSubscriptionStore) CreateScheduledOperation(ctx context.Context, operation models.ScheduledOperation) error {
 	_, err := b.db.DB.ExecContext(
 		ctx,
 		`INSERT INTO
-				scheduled_operation_creations (id, subscription_id, creation_date)
+				scheduled_operations (id, subscription_id, creation_date)
     	VALUES
      		($1, $2, $3);`,
 		operation.ID, operation.SubscriptionID, operation.CreationDate,
@@ -153,9 +153,9 @@ func applyListBalanceSubscriptionFilter(options applyListBalanceSubscriptionOpti
 	}
 
 	if filter.SubscriptionsWithLastScheduledOperation {
-		stmt = stmt.Join("scheduled_operation_creations ON scheduled_operation_creations.subscription_id = balance_subscriptions.id").
+		stmt = stmt.Join("scheduled_operations ON scheduled_operations.subscription_id = balance_subscriptions.id").
 			GroupBy("balance_subscriptions.id").
-			Having(sq.Eq{"COUNT(scheduled_operation_creations.id)": 1})
+			Having(sq.Eq{"COUNT(scheduled_operations.id)": 1})
 	}
 
 	if filter.OrderByCreatedAtDesc {
@@ -166,12 +166,12 @@ func applyListBalanceSubscriptionFilter(options applyListBalanceSubscriptionOpti
 	return &stmt
 }
 
-func (b *balanceSubscriptionStore) ListScheduledOperationCreation(ctx context.Context, filter service.ListScheduledOperationCreation) ([]models.ScheduledOperationCreation, error) {
+func (b *balanceSubscriptionStore) ListScheduledOperation(ctx context.Context, filter service.ListScheduledOperation) ([]models.ScheduledOperation, error) {
 	stmt := sq.
 		StatementBuilder.
 		PlaceholderFormat(sq.Dollar).
 		Select("id", "subscription_id", "creation_date").
-		From("scheduled_operation_creations")
+		From("scheduled_operations")
 
 	if filter.BetweenFilter != nil {
 		stmt = stmt.Where(sq.And{
@@ -182,16 +182,16 @@ func (b *balanceSubscriptionStore) ListScheduledOperationCreation(ctx context.Co
 
 	query, args, err := stmt.ToSql()
 	if err != nil {
-		return nil, fmt.Errorf("build list scheduled operation creations query: %w", err)
+		return nil, fmt.Errorf("build list scheduled operation query: %w", err)
 	}
 
-	var scheduledOperationCreations []models.ScheduledOperationCreation
-	err = b.db.DB.SelectContext(ctx, &scheduledOperationCreations, query, args...)
+	var scheduledOperations []models.ScheduledOperation
+	err = b.db.DB.SelectContext(ctx, &scheduledOperations, query, args...)
 	if err != nil {
 		return nil, err
 	}
 
-	return scheduledOperationCreations, nil
+	return scheduledOperations, nil
 }
 
 func (b *balanceSubscriptionStore) Update(ctx context.Context, subscription *models.BalanceSubscription) error {
@@ -218,7 +218,7 @@ func (b *balanceSubscriptionStore) Delete(ctx context.Context, subscriptionID st
 	return err
 }
 
-func (b *balanceSubscriptionStore) DeleteScheduledOperationCreation(ctx context.Context, shceduledOperationID string) error {
-	_, err := b.db.DB.ExecContext(ctx, "DELETE FROM scheduled_operation_creations WHERE id = $1;", shceduledOperationID)
+func (b *balanceSubscriptionStore) DeleteScheduledOperation(ctx context.Context, shceduledOperationID string) error {
+	_, err := b.db.DB.ExecContext(ctx, "DELETE FROM scheduled_operations WHERE id = $1;", shceduledOperationID)
 	return err
 }
