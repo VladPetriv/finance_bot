@@ -25,8 +25,8 @@ func NewUser(db *database.PostgreSQL) *userStore {
 func (u *userStore) Create(ctx context.Context, user *models.User) error {
 	_, err := u.DB.ExecContext(
 		ctx,
-		"INSERT INTO users (id, username) VALUES ($1, $2);",
-		user.ID, user.Username,
+		"INSERT INTO users (id, chat_id, username) VALUES ($1, $2, $3);",
+		user.ID, user.ChatID, user.Username,
 	)
 
 	return err
@@ -46,7 +46,7 @@ func (u userStore) Get(ctx context.Context, filter service.GetUserFilter) (*mode
 	stmt := sq.
 		StatementBuilder.
 		PlaceholderFormat(sq.Dollar).
-		Select("id", "username").
+		Select("id", "chat_id", "username").
 		From("users")
 
 	if filter.Username != "" {

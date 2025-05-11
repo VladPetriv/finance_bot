@@ -33,6 +33,7 @@ func TestUser_Create(t *testing.T) {
 			desc: "user created",
 			args: &models.User{
 				ID:       uuid.NewString(),
+				ChatID:   1,
 				Username: "test",
 			},
 		},
@@ -40,6 +41,7 @@ func TestUser_Create(t *testing.T) {
 			desc: "user not created because already exist",
 			preconditions: &models.User{
 				ID:       userID,
+				ChatID:   2,
 				Username: "test_create_2",
 			},
 			args: &models.User{
@@ -81,6 +83,7 @@ func TestUser_Create(t *testing.T) {
 			err = testCaseDB.DB.Get(&createdUser, "SELECT * FROM users WHERE id=$1;", tc.args.ID)
 			assert.NoError(t, err)
 			assert.Equal(t, tc.args.ID, createdUser.ID)
+			assert.Equal(t, tc.args.ChatID, createdUser.ChatID)
 			assert.Equal(t, tc.args.Username, createdUser.Username)
 		})
 	}
@@ -205,6 +208,7 @@ func TestUser_Get(t *testing.T) {
 			desc: "found user by username",
 			preconditions: &models.User{
 				ID:       userID,
+				ChatID:   1,
 				Username: "test",
 			},
 			args: service.GetUserFilter{
@@ -212,6 +216,7 @@ func TestUser_Get(t *testing.T) {
 			},
 			expected: &models.User{
 				ID:       userID,
+				ChatID:   1,
 				Username: "test",
 			},
 		},
@@ -219,6 +224,7 @@ func TestUser_Get(t *testing.T) {
 			desc: "user with balance preload by username found",
 			preconditions: &models.User{
 				ID:       userID2,
+				ChatID:   2,
 				Username: "test2",
 				Balances: []models.Balance{
 					{
@@ -235,6 +241,7 @@ func TestUser_Get(t *testing.T) {
 			},
 			expected: &models.User{
 				ID:       userID2,
+				ChatID:   2,
 				Username: "test2",
 				Balances: []models.Balance{
 					{
@@ -250,6 +257,7 @@ func TestUser_Get(t *testing.T) {
 			desc: "user with settings preload by username found",
 			preconditions: &models.User{
 				ID:       userID3,
+				ChatID:   3,
 				Username: "test3",
 				Settings: &models.UserSettings{
 					ID:              userSettingsID,
@@ -263,6 +271,7 @@ func TestUser_Get(t *testing.T) {
 			},
 			expected: &models.User{
 				ID:       userID3,
+				ChatID:   3,
 				Username: "test3",
 				Settings: &models.UserSettings{
 					ID:              userSettingsID,
@@ -326,6 +335,7 @@ func TestUser_Get(t *testing.T) {
 			}
 
 			assert.Equal(t, tc.expected.ID, actual.ID)
+			assert.Equal(t, tc.expected.ChatID, actual.ChatID)
 			assert.Equal(t, tc.expected.Username, actual.Username)
 
 			// NOTE: We don't care about balances order, since in all test cases we have only one balance.

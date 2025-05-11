@@ -44,4 +44,8 @@ var Migrations = []any{
 		Name: "Init scheduled operations table",
 		Func: initScheduledOperationTable,
 	},
+	&migrator.Migration{
+		Name: "Add chat id to users table",
+		Func: addChatIDToUsersTable,
+	},
 }

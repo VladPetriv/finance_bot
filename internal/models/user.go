@@ -5,6 +5,7 @@ import "time"
 // User represents an user model.
 type User struct {
 	ID       string `db:"id"`
+	ChatID   int    `db:"chat_id"`
 	Username string `db:"username"`
 
 	Balances []Balance
