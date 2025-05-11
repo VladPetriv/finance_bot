@@ -222,6 +222,7 @@ func (h handlerService) HandleStart(ctx context.Context, msg Message) error {
 	userID := uuid.NewString()
 	err = h.stores.User.Create(ctx, &models.User{
 		ID:       userID,
+		ChatID:   chatID,
 		Username: username,
 	})
 	if err != nil {
@@ -230,9 +231,10 @@ func (h handlerService) HandleStart(ctx context.Context, msg Message) error {
 	}
 
 	err = h.stores.User.CreateSettings(ctx, &models.UserSettings{
-		ID:              uuid.NewString(),
-		UserID:          userID,
-		AIParserEnabled: false,
+		ID:                              uuid.NewString(),
+		UserID:                          userID,
+		AIParserEnabled:                 false,
+		NotifyAboutSubscriptionPayments: true,
 	})
 	if err != nil {
 		logger.Error().Err(err).Msg("create user settings in store")

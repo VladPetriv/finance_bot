@@ -35,9 +35,12 @@ func (u *User) GetBalance(value string) *Balance {
 
 // UserSettings represents a user settings model.
 type UserSettings struct {
-	ID              string    `db:"id"`
-	UserID          string    `db:"user_id"`
-	AIParserEnabled bool      `db:"ai_parser_enabled"`
-	CreatedAt       time.Time `db:"created_at"`
-	UpdatedAt       time.Time `db:"updated_at"`
+	ID     string `db:"id"`
+	UserID string `db:"user_id"`
+
+	AIParserEnabled                 bool `db:"ai_parser_enabled"`
+	NotifyAboutSubscriptionPayments bool `db:"notify_about_subscription_payments"`
+
+	CreatedAt time.Time `db:"created_at"`
+	UpdatedAt time.Time `db:"updated_at"`
 }

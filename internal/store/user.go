@@ -35,8 +35,8 @@ func (u *userStore) Create(ctx context.Context, user *models.User) error {
 func (u *userStore) CreateSettings(ctx context.Context, settings *models.UserSettings) error {
 	_, err := u.DB.ExecContext(
 		ctx,
-		"INSERT INTO user_settings (id, user_id, ai_parser_enabled) VALUES ($1, $2, $3);",
-		settings.ID, settings.UserID, settings.AIParserEnabled,
+		"INSERT INTO user_settings (id, user_id, ai_parser_enabled, notify_about_subscription_payments) VALUES ($1, $2, $3, $4);",
+		settings.ID, settings.UserID, settings.AIParserEnabled, settings.NotifyAboutSubscriptionPayments,
 	)
 
 	return err
@@ -93,7 +93,7 @@ func (u userStore) Get(ctx context.Context, filter service.GetUserFilter) (*mode
 		stmt := sq.
 			StatementBuilder.
 			PlaceholderFormat(sq.Dollar).
-			Select("id", "user_id", "ai_parser_enabled", "created_at", "updated_at").
+			Select("id", "user_id", "ai_parser_enabled", "notify_about_subscription_payments", "created_at", "updated_at").
 			From("user_settings").
 			Where(sq.Eq{"user_id": user.ID})
 

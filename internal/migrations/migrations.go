@@ -48,4 +48,8 @@ var Migrations = []any{
 		Name: "Add chat id to users table",
 		Func: addChatIDToUsersTable,
 	},
+	&migrator.Migration{
+		Name: "Add notify_about_subscription_payments to user_settings table",
+		Func: addNotifyAboutSubscriptionPaymentsToUserSettings,
+	},
 }

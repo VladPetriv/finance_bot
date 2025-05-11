@@ -120,22 +120,25 @@ func TestUser_CreateSettings(t *testing.T) {
 		{
 			desc: "user settings created",
 			args: &models.UserSettings{
-				ID:              uuid.NewString(),
-				UserID:          user.ID,
-				AIParserEnabled: true,
+				ID:                              uuid.NewString(),
+				UserID:                          user.ID,
+				AIParserEnabled:                 true,
+				NotifyAboutSubscriptionPayments: true,
 			},
 		},
 		{
 			desc: "user settings not created because already exist",
 			preconditions: &models.UserSettings{
-				ID:              userSettingsID,
-				UserID:          user.ID,
-				AIParserEnabled: false,
+				ID:                              userSettingsID,
+				UserID:                          user.ID,
+				AIParserEnabled:                 false,
+				NotifyAboutSubscriptionPayments: false,
 			},
 			args: &models.UserSettings{
-				ID:              userSettingsID,
-				UserID:          user.ID,
-				AIParserEnabled: false,
+				ID:                              userSettingsID,
+				UserID:                          user.ID,
+				AIParserEnabled:                 false,
+				NotifyAboutSubscriptionPayments: false,
 			},
 			expectDuplicateError: true,
 		},
@@ -175,6 +178,7 @@ func TestUser_CreateSettings(t *testing.T) {
 			assert.Equal(t, tc.args.ID, createdUserSettings.ID)
 			assert.Equal(t, tc.args.UserID, createdUserSettings.UserID)
 			assert.Equal(t, tc.args.AIParserEnabled, createdUserSettings.AIParserEnabled)
+			assert.Equal(t, tc.args.NotifyAboutSubscriptionPayments, createdUserSettings.NotifyAboutSubscriptionPayments)
 		})
 	}
 }
@@ -350,6 +354,7 @@ func TestUser_Get(t *testing.T) {
 				assert.Equal(t, tc.expected.Settings.ID, actual.Settings.ID)
 				assert.Equal(t, tc.expected.Settings.UserID, actual.Settings.UserID)
 				assert.Equal(t, tc.expected.Settings.AIParserEnabled, actual.Settings.AIParserEnabled)
+				assert.Equal(t, tc.expected.Settings.NotifyAboutSubscriptionPayments, actual.Settings.NotifyAboutSubscriptionPayments)
 			}
 		})
 	}
