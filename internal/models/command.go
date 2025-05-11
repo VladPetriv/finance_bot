@@ -62,11 +62,11 @@ const (
 	BotUpdateOperationCategoryCommand string = "Update Category 🏷️"
 
 	// BotCreateBalanceSubscriptionCommand represents the command to create a balance subscription
-	BotCreateBalanceSubscriptionCommand string = "Create Balance Subscription 📈"
+	BotCreateBalanceSubscriptionCommand string = "Create 📈"
 	// BotListBalanceSubscriptionsCommand represents the command to list balance subscriptions
-	BotListBalanceSubscriptionsCommand string = "List Balance Subscriptions 📋"
+	BotListBalanceSubscriptionsCommand string = "List 📋"
 	// BotUpdateBalanceSubscriptionCommand represents the command to update a balance subscription
-	BotUpdateBalanceSubscriptionCommand string = "Update Balance Subscription 📝"
+	BotUpdateBalanceSubscriptionCommand string = "Update 📝"
 	// BotUpdateBalanceSubscriptionNameCommand represents the command to update balance subscription name
 	BotUpdateBalanceSubscriptionNameCommand string = "Update Name 📝"
 	// BotUpdateBalanceSubscriptionAmountCommand represents the command to update balance subscription amount
@@ -76,7 +76,7 @@ const (
 	// BotUpdateBalanceSubscriptionPeriodCommand represents the command to update balance subscription period
 	BotUpdateBalanceSubscriptionPeriodCommand string = "Update Period 📅"
 	// BotDeleteBalanceSubscriptionCommand represents the command to delete a balance subscription
-	BotDeleteBalanceSubscriptionCommand string = "Delete Balance Subscription 🗑️"
+	BotDeleteBalanceSubscriptionCommand string = "Delete 🗑️"
 
 	// BotShowMoreCommand represents the command to select more models.
 	BotShowMoreCommand string = "Show More ➡️"
