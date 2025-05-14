@@ -158,6 +158,13 @@ func applyListBalanceSubscriptionFilter(options applyListBalanceSubscriptionOpti
 			Having(sq.Eq{"COUNT(scheduled_operations.id)": 1})
 	}
 
+	if filter.SubscriptionsForUserWhoHasEnabledSubscriptionNotifications {
+		stmt = stmt.InnerJoin("balances ON balances.id = balance_subscriptions.balance_id").
+			InnerJoin("users ON users.id = balances.user_id").
+			InnerJoin("user_settings ON user_settings.user_id = users.id").
+			Where(sq.Eq{"user_settings.notify_about_subscription_payments": true})
+	}
+
 	if filter.OrderByCreatedAtDesc {
 		stmt = stmt.GroupBy(expectedColumns...).
 			OrderBy("balance_subscriptions.created_at DESC")

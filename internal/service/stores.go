@@ -184,11 +184,12 @@ type BalanceSubscriptionStore interface {
 
 // ListBalanceSubscriptionFilter represents a filter for store.List and store.Count methods.
 type ListBalanceSubscriptionFilter struct {
-	BalanceID                               string
-	OrderByCreatedAtDesc                    bool
-	CreatedAtLessThan                       time.Time
-	Limit                                   int
-	SubscriptionsWithLastScheduledOperation bool
+	BalanceID                                                  string
+	OrderByCreatedAtDesc                                       bool
+	CreatedAtLessThan                                          time.Time
+	Limit                                                      int
+	SubscriptionsWithLastScheduledOperation                    bool
+	SubscriptionsForUserWhoHasEnabledSubscriptionNotifications bool
 }
 
 // GetBalanceSubscriptionFilter represents a filter for store.Get method.
