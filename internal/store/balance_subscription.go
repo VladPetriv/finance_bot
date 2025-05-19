@@ -176,7 +176,7 @@ func (b *balanceSubscriptionStore) ListScheduledOperation(ctx context.Context, f
 	if filter.BetweenFilter != nil {
 		stmt = stmt.Where(sq.And{
 			sq.GtOrEq{"creation_date": filter.BetweenFilter.From},
-			sq.LtOrEq{"creation_date": filter.BetweenFilter.To},
+			sq.Lt{"creation_date": filter.BetweenFilter.To},
 		})
 	}
 	if len(filter.BalanceSubscriptionIDs) != 0 {

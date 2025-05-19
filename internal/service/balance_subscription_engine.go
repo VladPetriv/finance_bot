@@ -166,8 +166,8 @@ func (b *balanceSubscriptionEngine) CreateOperations(ctx context.Context) {
 			now := time.Now()
 			scheduledOperations, err := b.stores.BalanceSubscription.ListScheduledOperation(ctx, ListScheduledOperation{
 				BetweenFilter: &BetweenFilter{
-					From: time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, now.Location()),
-					To:   time.Date(now.Year(), now.Month(), now.Day(), 23, 59, 59, 999999999, now.Location()),
+					From: time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, time.UTC),
+					To:   time.Date(now.Year(), now.Month(), now.Day(), 23, 59, 59, 999999999, time.UTC),
 				},
 			})
 			if err != nil {
