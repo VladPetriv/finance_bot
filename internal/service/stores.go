@@ -33,6 +33,7 @@ type UserStore interface {
 // GetUserFilter represents a filters for GetUser method.
 type GetUserFilter struct {
 	Username        string
+	BalanceID       string
 	PreloadBalances bool
 	PreloadSettings bool
 }

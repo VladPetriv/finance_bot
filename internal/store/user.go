@@ -46,11 +46,14 @@ func (u userStore) Get(ctx context.Context, filter service.GetUserFilter) (*mode
 	stmt := sq.
 		StatementBuilder.
 		PlaceholderFormat(sq.Dollar).
-		Select("id", "chat_id", "username").
+		Select("users.id", "users.chat_id", "users.username").
 		From("users")
 
 	if filter.Username != "" {
 		stmt = stmt.Where(sq.Eq{"username": filter.Username})
+	}
+	if filter.BalanceID != "" {
+		stmt = stmt.InnerJoin("balances ON balances.user_id = users.id")
 	}
 
 	query, args, err := stmt.ToSql()
