@@ -39,10 +39,10 @@ func (b *balanceSubscriptionStore) CreateScheduledOperation(ctx context.Context,
 	_, err := b.db.DB.ExecContext(
 		ctx,
 		`INSERT INTO
-				scheduled_operations (id, subscription_id, creation_date)
+				scheduled_operations (id, subscription_id, notified, creation_date)
     	VALUES
-     		($1, $2, $3);`,
-		operation.ID, operation.SubscriptionID, operation.CreationDate,
+     		($1, $2, $3, $4);`,
+		operation.ID, operation.SubscriptionID, operation.Notified, operation.CreationDate,
 	)
 	return err
 }
@@ -177,7 +177,7 @@ func (b *balanceSubscriptionStore) ListScheduledOperation(ctx context.Context, f
 	stmt := sq.
 		StatementBuilder.
 		PlaceholderFormat(sq.Dollar).
-		Select("id", "subscription_id", "creation_date").
+		Select("scheduled_operations.id", "scheduled_operations.subscription_id", "scheduled_operations.notified", "scheduled_operations.creation_date").
 		From("scheduled_operations")
 
 	if filter.BetweenFilter != nil {
@@ -188,6 +188,9 @@ func (b *balanceSubscriptionStore) ListScheduledOperation(ctx context.Context, f
 	}
 	if len(filter.BalanceSubscriptionIDs) != 0 {
 		stmt = stmt.Where(sq.Eq{"subscription_id": filter.BalanceSubscriptionIDs})
+	}
+	if filter.NotNotified {
+		stmt = stmt.Where(sq.Eq{"notified": false})
 	}
 
 	query, args, err := stmt.ToSql()
@@ -219,6 +222,20 @@ func (b *balanceSubscriptionStore) Update(ctx context.Context, subscription *mod
 		WHERE
 			id = $6;`,
 		subscription.CategoryID, subscription.Name, subscription.Amount, subscription.Period, subscription.StartAt, subscription.ID,
+	)
+	return err
+}
+
+func (b *balanceSubscriptionStore) MarkScheduledOperationAsNotified(ctx context.Context, scheduledOperationID string) error {
+	_, err := b.db.DB.ExecContext(
+		ctx,
+		`
+		UPDATE scheduled_operations
+		SET
+			notified = true
+		WHERE
+			id = $1;`,
+		scheduledOperationID,
 	)
 	return err
 }

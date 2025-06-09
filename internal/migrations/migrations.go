@@ -52,4 +52,8 @@ var Migrations = []any{
 		Name: "Add notify_about_subscription_payments to user_settings table",
 		Func: addNotifyAboutSubscriptionPaymentsToUserSettings,
 	},
+	&migrator.Migration{
+		Name: "Add notified to scheduled_operations table",
+		Func: addNotifiedToScheduledOperationsTable,
+	},
 }
