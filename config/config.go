@@ -20,8 +20,9 @@ type Config struct {
 
 // App represents an app configuration.
 type App struct {
-	OperationCreationInterval            time.Duration `env:"FB_APP_OPERATION_CREATION_INTERVAL" env-default:"5m"`
-	ExtendingScheduledOperationsInterval time.Duration `env:"FB_APP_EXTENDING_SCHEDULED_OPERATIONS_INTERVAL" env-default:"1h"`
+	OperationCreationInterval               time.Duration `env:"FB_APP_OPERATION_CREATION_INTERVAL" env-default:"5m"`
+	ExtendingScheduledOperationsInterval    time.Duration `env:"FB_APP_EXTENDING_SCHEDULED_OPERATIONS_INTERVAL" env-default:"1h"`
+	NotifyAboutSubscriptionPaymentsInterval time.Duration `env:"FB_APP_NOTIFY_ABOUT_SUBSCRIPTION_PAYMENTS_INTERVAL" env-default:"1m"`
 }
 
 // Telegram represents a telegram bot configuration.

@@ -44,4 +44,16 @@ var Migrations = []any{
 		Name: "Init scheduled operations table",
 		Func: initScheduledOperationTable,
 	},
+	&migrator.Migration{
+		Name: "Add chat id to users table",
+		Func: addChatIDToUsersTable,
+	},
+	&migrator.Migration{
+		Name: "Add notify_about_subscription_payments to user_settings table",
+		Func: addNotifyAboutSubscriptionPaymentsToUserSettings,
+	},
+	&migrator.Migration{
+		Name: "Add notified to scheduled_operations table",
+		Func: addNotifiedToScheduledOperationsTable,
+	},
 }
