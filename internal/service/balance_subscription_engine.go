@@ -87,7 +87,7 @@ func (b *balanceSubscriptionEngine) ExtendScheduledOperations(ctx context.Contex
 			for _, balanceSubscription := range balanceSubscriptions {
 				scheduledOperation, ok := balanceSubscriptionToScheduledOperation[balanceSubscription.ID]
 				if !ok {
-					logger.Warn().Msg("could not find scheduled opreation by subscription id")
+					logger.Warn().Msg("could not find scheduled operation by subscription id")
 					continue
 				}
 
@@ -123,9 +123,9 @@ func (b *balanceSubscriptionEngine) createScheduledOperations(ctx context.Contex
 }
 
 const (
-	maxBillingDatesForWeeklySubscription = 13 // Represents a quarter in a week.
-	maxBillingDatesForMontlySubscription = 3  // Represents a quarter in a months.
-	maxBillingDatesForYearlySubscription = 2  // Represents two year.
+	maxBillingDatesForWeeklySubscription  = 13 // Represents a quarter in a week.
+	maxBillingDatesForMonthlySubscription = 3  // Represents a quarter in a months.
+	maxBillingDatesForYearlySubscription  = 2  // Represents two year.
 )
 
 func getMaxBillingDatesFromSubscriptionPeriod(period models.SubscriptionPeriod) int {
@@ -134,7 +134,7 @@ func getMaxBillingDatesFromSubscriptionPeriod(period models.SubscriptionPeriod) 
 	case models.SubscriptionPeriodWeekly:
 		maxBillingDates = maxBillingDatesForWeeklySubscription
 	case models.SubscriptionPeriodMonthly:
-		maxBillingDates = maxBillingDatesForMontlySubscription
+		maxBillingDates = maxBillingDatesForMonthlySubscription
 	case models.SubscriptionPeriodYearly:
 		maxBillingDates = maxBillingDatesForYearlySubscription
 	}
@@ -161,8 +161,8 @@ func (b *balanceSubscriptionEngine) CreateOperations(ctx context.Context) {
 			now := time.Now()
 			scheduledOperations, err := b.stores.BalanceSubscription.ListScheduledOperation(ctx, ListScheduledOperation{
 				BetweenFilter: &BetweenFilter{
-					From: time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, now.Location()),
-					To:   time.Date(now.Year(), now.Month(), now.Day(), 23, 59, 59, 999999999, now.Location()),
+					From: time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, time.UTC),
+					To:   time.Date(now.Year(), now.Month(), now.Day(), 23, 59, 59, 999999999, time.UTC),
 				},
 			})
 			if err != nil {
@@ -282,12 +282,17 @@ func (b *balanceSubscriptionEngine) NotifyAboutSubscriptionPayment(ctx context.C
 			return
 		case <-ticker.C:
 			balanceSubscriptions, err := b.stores.BalanceSubscription.List(ctx, ListBalanceSubscriptionFilter{
-				SubscriptionsWithLastScheduledOperation: true,
+				SubscriptionsForUserWhoHasEnabledSubscriptionNotifications: true,
 			})
 			if err != nil {
 				logger.Error().Err(err).Msg("list balance subscriptions")
 				continue
 			}
+			if len(balanceSubscriptions) == 0 {
+				logger.Debug().Msg("no balance subscriptions for users who have enabled subscription notifications found")
+				continue
+			}
+			logger.Debug().Any("balanceSubscriptions", balanceSubscriptions).Msg("got balance subscriptions")
 
 			now := time.Now()
 			nextDay := now.Day() + 1
@@ -355,14 +360,21 @@ func (b *balanceSubscriptionEngine) notifyUserAboutSubscriptionPayment(ctx conte
 	}
 	logger.Debug().Any("user", user).Msg("got user")
 
-	message := fmt.Sprintf(
-		"🔔 Upcoming payment: your subscription \"%s\" will be charged tomorrow.\n\n💰 Amount: %s\n📅 Period: %s\n\nMake sure your balance is ready. 👍",
-		opts.balanceSubscription.Name,
-		opts.balanceSubscription.Amount,
-		opts.balanceSubscription.Period,
-	)
+	balance, err := b.stores.Balance.Get(ctx, GetBalanceFilter{
+		BalanceID:       opts.balanceSubscription.BalanceID,
+		PreloadCurrency: true,
+	})
+	if err != nil {
+		logger.Error().Err(err).Msg("get balance from store")
+		return fmt.Errorf("get balance from store: %w", err)
+	}
+	if balance == nil {
+		logger.Warn().Msg("balance during operation not found")
+		return ErrBalanceNotFound
+	}
+	logger.Debug().Any("balance", balance).Msg("got balance")
 
-	err = b.apis.Messenger.SendMessage(user.ChatID, message)
+	err = b.apis.Messenger.SendMessage(user.ChatID, buildSubscriptionNotificationMessage(opts.balanceSubscription, balance))
 	if err != nil {
 		logger.Error().Err(err).Msg("send message to user")
 		return fmt.Errorf("send message to user: %w", err)
@@ -375,4 +387,38 @@ func (b *balanceSubscriptionEngine) notifyUserAboutSubscriptionPayment(ctx conte
 	}
 
 	return nil
+}
+
+func buildSubscriptionNotificationMessage(subscription models.BalanceSubscription, balance *models.Balance) string {
+	subscriptionAmount, _ := money.NewFromString(subscription.Amount)
+	balanceAmount, _ := money.NewFromString(balance.Amount)
+
+	remaining := balanceAmount.Sub(subscriptionAmount)
+	symbol := balance.Currency.Symbol
+
+	var balanceStatus string
+
+	if remaining.GreaterThan(money.Zero) {
+		balanceStatus = fmt.Sprintf("✅ Balance after payment: %s%s",
+			symbol, remaining.StringFixed())
+	}
+
+	if remaining.String() == "0" {
+		balanceStatus = "⚠️ Balance will be exactly zero after payment"
+	}
+
+	if !remaining.GreaterThan(money.Zero) && remaining.String() != "0" {
+		deficit := subscriptionAmount.Sub(balanceAmount)
+		balanceStatus = fmt.Sprintf("❌ Insufficient funds! Need %s%s more",
+			symbol, deficit.StringFixed())
+	}
+
+	return fmt.Sprintf(
+		"🔔 Your subscription payment \"%s\" charges tomorrow\n\n💰 Amount: %s%s\n📅 Period: %s\n💳 Current balance: %s%s\n%s",
+		subscription.Name,
+		symbol, subscriptionAmount.StringFixed(),
+		subscription.Period,
+		symbol, balanceAmount.StringFixed(),
+		balanceStatus,
+	)
 }
