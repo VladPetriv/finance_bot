@@ -360,5 +360,5 @@ type BalanceSubscriptionEngine interface {
 	// CreateOperations creates operations based on balance subscriptions details.
 	CreateOperations(ctx context.Context)
 	// NotifyAboutSubscriptionPayment sends a notification a day before subscription payment.
-	NotifyAboutSubscriptionPayment(ctx context.Context) error
+	NotifyAboutSubscriptionPayment(ctx context.Context)
 }

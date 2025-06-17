@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 	"fmt"
+	"slices"
 	"time"
 
 	"github.com/VladPetriv/finance_bot/config"
@@ -18,18 +19,20 @@ type balanceSubscriptionEngine struct {
 	stores Stores
 	apis   APIs
 
-	operationCreationInterval            time.Duration
-	extendingScheduledOperationsInterval time.Duration
+	operationCreationInterval               time.Duration
+	extendingScheduledOperationsInterval    time.Duration
+	notifyAboutSubscriptionPaymentsInterval time.Duration
 }
 
 // NewBalanceSubscriptionEngine creates a new instance of balanceSubscriptionEngine.
 func NewBalanceSubscriptionEngine(config *config.Config, logger *logger.Logger, stores Stores, apis APIs) *balanceSubscriptionEngine {
 	return &balanceSubscriptionEngine{
-		logger:                               logger,
-		stores:                               stores,
-		apis:                                 apis,
-		operationCreationInterval:            config.App.OperationCreationInterval,
-		extendingScheduledOperationsInterval: config.App.ExtendingScheduledOperationsInterval,
+		logger:                                  logger,
+		stores:                                  stores,
+		apis:                                    apis,
+		operationCreationInterval:               config.App.OperationCreationInterval,
+		extendingScheduledOperationsInterval:    config.App.ExtendingScheduledOperationsInterval,
+		notifyAboutSubscriptionPaymentsInterval: config.App.NotifyAboutSubscriptionPaymentsInterval,
 	}
 }
 
@@ -84,7 +87,7 @@ func (b *balanceSubscriptionEngine) ExtendScheduledOperations(ctx context.Contex
 			for _, balanceSubscription := range balanceSubscriptions {
 				scheduledOperation, ok := balanceSubscriptionToScheduledOperation[balanceSubscription.ID]
 				if !ok {
-					logger.Warn().Msg("could not find scheduled opreation by subscription id")
+					logger.Warn().Msg("could not find scheduled operation by subscription id")
 					continue
 				}
 
@@ -98,14 +101,6 @@ func (b *balanceSubscriptionEngine) ExtendScheduledOperations(ctx context.Contex
 			}
 		}
 	}
-}
-
-func extractIDs[T any](items []T, getID func(T) string) []string {
-	ids := make([]string, len(items))
-	for i, item := range items {
-		ids[i] = getID(item)
-	}
-	return ids
 }
 
 func (b *balanceSubscriptionEngine) createScheduledOperations(ctx context.Context, billingDates []time.Time, balanceSubscription models.BalanceSubscription) error {
@@ -128,9 +123,9 @@ func (b *balanceSubscriptionEngine) createScheduledOperations(ctx context.Contex
 }
 
 const (
-	maxBillingDatesForWeeklySubscription = 13 // Represents a quarter in a week.
-	maxBillingDatesForMontlySubscription = 3  // Represents a quarter in a months.
-	maxBillingDatesForYearlySubscription = 2  // Represents two year.
+	maxBillingDatesForWeeklySubscription  = 13 // Represents a quarter in a week.
+	maxBillingDatesForMonthlySubscription = 3  // Represents a quarter in a months.
+	maxBillingDatesForYearlySubscription  = 2  // Represents two year.
 )
 
 func getMaxBillingDatesFromSubscriptionPeriod(period models.SubscriptionPeriod) int {
@@ -139,7 +134,7 @@ func getMaxBillingDatesFromSubscriptionPeriod(period models.SubscriptionPeriod) 
 	case models.SubscriptionPeriodWeekly:
 		maxBillingDates = maxBillingDatesForWeeklySubscription
 	case models.SubscriptionPeriodMonthly:
-		maxBillingDates = maxBillingDatesForMontlySubscription
+		maxBillingDates = maxBillingDatesForMonthlySubscription
 	case models.SubscriptionPeriodYearly:
 		maxBillingDates = maxBillingDatesForYearlySubscription
 	}
@@ -270,7 +265,160 @@ func (b *balanceSubscriptionEngine) createOperation(ctx context.Context, id stri
 	return nil
 }
 
-func (b *balanceSubscriptionEngine) NotifyAboutSubscriptionPayment(ctx context.Context) error {
-	// TODO: Delivery this logic as separate feature, since it requires a lot of changes.
+func (b *balanceSubscriptionEngine) NotifyAboutSubscriptionPayment(ctx context.Context) {
+	logger := b.logger.With().Str("name", "balanceSubscriptionEngine.NotifyAboutSubscriptionPayment").Logger()
+
+	ticker := time.NewTicker(b.notifyAboutSubscriptionPaymentsInterval)
+	defer ticker.Stop()
+
+	pool := worker.NewPool(5, b.notifyUserAboutSubscriptionPayment)
+	pool.Start(ctx)
+	defer pool.Stop()
+
+	for {
+		select {
+		case <-ctx.Done():
+			logger.Info().Msg("finished notifying users about subscription payments")
+			return
+		case <-ticker.C:
+			balanceSubscriptions, err := b.stores.BalanceSubscription.List(ctx, ListBalanceSubscriptionFilter{
+				SubscriptionsForUserWhoHasEnabledSubscriptionNotifications: true,
+			})
+			if err != nil {
+				logger.Error().Err(err).Msg("list balance subscriptions")
+				continue
+			}
+			if len(balanceSubscriptions) == 0 {
+				logger.Debug().Msg("no balance subscriptions for users who have enabled subscription notifications found")
+				continue
+			}
+			logger.Debug().Any("balanceSubscriptions", balanceSubscriptions).Msg("got balance subscriptions")
+
+			now := time.Now()
+			nextDay := now.Day() + 1
+			scheduledOperations, err := b.stores.BalanceSubscription.ListScheduledOperation(ctx, ListScheduledOperation{
+				BetweenFilter: &BetweenFilter{
+					From: time.Date(now.Year(), now.Month(), nextDay, 0, 0, 0, 0, time.UTC),
+					To:   time.Date(now.Year(), now.Month(), nextDay, 23, 59, 59, 999999999, time.UTC),
+				},
+				BalanceSubscriptionIDs: extractIDs(balanceSubscriptions, func(bs models.BalanceSubscription) string {
+					return bs.ID
+				}),
+				NotNotified: true,
+			})
+			if err != nil {
+				logger.Error().Err(err).Msg("get scheduled operations from store")
+				continue
+			}
+			logger.Debug().Any("scheduledOperations", scheduledOperations).Msg("got scheduled operations")
+
+			for _, scheduledOperation := range scheduledOperations {
+				balanceSubscriptionIndex := slices.IndexFunc(balanceSubscriptions, func(bs models.BalanceSubscription) bool {
+					return bs.ID == scheduledOperation.SubscriptionID
+				})
+				if balanceSubscriptionIndex == -1 {
+					logger.Error().Str("subscriptionID", scheduledOperation.SubscriptionID).Msg("subscription not found")
+					continue
+				}
+
+				pool.AddJob(scheduledOperation.ID, notifyUserAboutSubscriptionPaymentOptions{
+					scheduledOperation:  scheduledOperation,
+					balanceSubscription: balanceSubscriptions[balanceSubscriptionIndex],
+				})
+			}
+		}
+	}
+}
+
+func extractIDs[T any](items []T, getID func(T) string) []string {
+	ids := make([]string, len(items))
+	for i, item := range items {
+		ids[i] = getID(item)
+	}
+	return ids
+}
+
+type notifyUserAboutSubscriptionPaymentOptions struct {
+	scheduledOperation  models.ScheduledOperation
+	balanceSubscription models.BalanceSubscription
+}
+
+func (b *balanceSubscriptionEngine) notifyUserAboutSubscriptionPayment(ctx context.Context, id string, opts notifyUserAboutSubscriptionPaymentOptions) error {
+	logger := b.logger.With().Str("name", "balanceSubscriptionEngine.notifyUserAboutSubscriptionPayment").Logger()
+	logger.Debug().Any("opts", opts).Msg("got args")
+
+	user, err := b.stores.User.Get(ctx, GetUserFilter{
+		BalanceID: opts.balanceSubscription.BalanceID,
+	})
+	if err != nil {
+		logger.Error().Err(err).Msg("get user from store")
+		return fmt.Errorf("get user from store: %w", err)
+	}
+	if user == nil {
+		logger.Warn().Msg("user during operation not found")
+		return ErrUserNotFound
+	}
+	logger.Debug().Any("user", user).Msg("got user")
+
+	balance, err := b.stores.Balance.Get(ctx, GetBalanceFilter{
+		BalanceID:       opts.balanceSubscription.BalanceID,
+		PreloadCurrency: true,
+	})
+	if err != nil {
+		logger.Error().Err(err).Msg("get balance from store")
+		return fmt.Errorf("get balance from store: %w", err)
+	}
+	if balance == nil {
+		logger.Warn().Msg("balance during operation not found")
+		return ErrBalanceNotFound
+	}
+	logger.Debug().Any("balance", balance).Msg("got balance")
+
+	err = b.apis.Messenger.SendMessage(user.ChatID, buildSubscriptionNotificationMessage(opts.balanceSubscription, balance))
+	if err != nil {
+		logger.Error().Err(err).Msg("send message to user")
+		return fmt.Errorf("send message to user: %w", err)
+	}
+
+	err = b.stores.BalanceSubscription.MarkScheduledOperationAsNotified(ctx, opts.scheduledOperation.ID)
+	if err != nil {
+		logger.Error().Err(err).Msg("mark scheduled operation as notified")
+		return fmt.Errorf("mark scheduled operation as notified: %w", err)
+	}
+
 	return nil
+}
+
+func buildSubscriptionNotificationMessage(subscription models.BalanceSubscription, balance *models.Balance) string {
+	subscriptionAmount, _ := money.NewFromString(subscription.Amount)
+	balanceAmount, _ := money.NewFromString(balance.Amount)
+
+	remaining := balanceAmount.Sub(subscriptionAmount)
+	symbol := balance.Currency.Symbol
+
+	var balanceStatus string
+
+	if remaining.GreaterThan(money.Zero) {
+		balanceStatus = fmt.Sprintf("✅ Balance after payment: %s%s",
+			symbol, remaining.StringFixed())
+	}
+
+	if remaining.String() == "0" {
+		balanceStatus = "⚠️ Balance will be exactly zero after payment"
+	}
+
+	if !remaining.GreaterThan(money.Zero) && remaining.String() != "0" {
+		deficit := subscriptionAmount.Sub(balanceAmount)
+		balanceStatus = fmt.Sprintf("❌ Insufficient funds! Need %s%s more",
+			symbol, deficit.StringFixed())
+	}
+
+	return fmt.Sprintf(
+		"🔔 Your subscription payment \"%s\" charges tomorrow\n\n💰 Amount: %s%s\n📅 Period: %s\n💳 Current balance: %s%s\n%s",
+		subscription.Name,
+		symbol, subscriptionAmount.StringFixed(),
+		subscription.Period,
+		symbol, balanceAmount.StringFixed(),
+		balanceStatus,
+	)
 }

@@ -99,5 +99,6 @@ func CalculateScheduledOperationBillingDates(period SubscriptionPeriod, startDat
 type ScheduledOperation struct {
 	ID             string    `db:"id"`
 	SubscriptionID string    `db:"subscription_id"`
+	Notified       bool      `db:"notified"`
 	CreationDate   time.Time `db:"creation_date"`
 }

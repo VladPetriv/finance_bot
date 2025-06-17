@@ -33,6 +33,7 @@ type UserStore interface {
 // GetUserFilter represents a filters for GetUser method.
 type GetUserFilter struct {
 	Username        string
+	BalanceID       string
 	PreloadBalances bool
 	PreloadSettings bool
 }
@@ -176,6 +177,8 @@ type BalanceSubscriptionStore interface {
 	ListScheduledOperation(ctx context.Context, filter ListScheduledOperation) ([]models.ScheduledOperation, error)
 	// Update updates balance subscription model in store.
 	Update(ctx context.Context, subscription *models.BalanceSubscription) error
+	// MarkScheduledOperationAsNotified marks a scheduled operation as notified in store.
+	MarkScheduledOperationAsNotified(ctx context.Context, scheduledOperationID string) error
 	// Delete deletes balance subscription from store.
 	Delete(ctx context.Context, subscriptionID string) error
 	// DeleteScheduledOperation deletes scheduled operation from store.
@@ -184,11 +187,12 @@ type BalanceSubscriptionStore interface {
 
 // ListBalanceSubscriptionFilter represents a filter for store.List and store.Count methods.
 type ListBalanceSubscriptionFilter struct {
-	BalanceID                               string
-	OrderByCreatedAtDesc                    bool
-	CreatedAtLessThan                       time.Time
-	Limit                                   int
-	SubscriptionsWithLastScheduledOperation bool
+	BalanceID                                                  string
+	OrderByCreatedAtDesc                                       bool
+	CreatedAtLessThan                                          time.Time
+	Limit                                                      int
+	SubscriptionsWithLastScheduledOperation                    bool
+	SubscriptionsForUserWhoHasEnabledSubscriptionNotifications bool
 }
 
 // GetBalanceSubscriptionFilter represents a filter for store.Get method.
@@ -201,6 +205,7 @@ type GetBalanceSubscriptionFilter struct {
 type ListScheduledOperation struct {
 	BetweenFilter          *BetweenFilter
 	BalanceSubscriptionIDs []string
+	NotNotified            bool
 }
 
 // BetweenFilter represents a time range filter with inclusive From and To boundaries
