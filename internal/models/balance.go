@@ -1,5 +1,7 @@
 package models
 
+import "time"
+
 // Balance represents a balance model.
 type Balance struct {
 	ID         string `db:"id"`
@@ -8,6 +10,9 @@ type Balance struct {
 
 	Name   string `db:"name"`
 	Amount string `db:"amount"`
+
+	CreatedAt time.Time `db:"created_at"`
+	UpdatedAt time.Time `db:"updated_at"`
 
 	Currency Currency
 }
