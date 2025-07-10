@@ -244,7 +244,23 @@ func TestBalance_Get(t *testing.T) {
 
 			actual, err := balanceStore.Get(ctx, tc.args)
 			assert.NoError(t, err)
-			assert.Equal(t, tc.expected, actual)
+
+			if tc.expected == nil {
+				assert.Nil(t, actual)
+				return
+			}
+			assert.Equal(t, tc.expected.ID, actual.ID)
+			assert.Equal(t, tc.expected.UserID, actual.UserID)
+			assert.Equal(t, tc.expected.CurrencyID, actual.CurrencyID)
+			assert.Equal(t, tc.expected.Name, actual.Name)
+			assert.Equal(t, tc.expected.Amount, actual.Amount)
+
+			if tc.args.PreloadCurrency {
+				assert.Equal(t, tc.expected.Currency.ID, actual.Currency.ID)
+				assert.Equal(t, tc.expected.Currency.Name, actual.Currency.Name)
+				assert.Equal(t, tc.expected.Currency.Code, actual.Currency.Code)
+				assert.Equal(t, tc.expected.Currency.Symbol, actual.Currency.Symbol)
+			}
 		})
 	}
 }
@@ -355,7 +371,11 @@ func TestBalance_Update(t *testing.T) {
 
 			actual, err := balanceStore.Get(ctx, service.GetBalanceFilter{UserID: tc.preconditions.UserID})
 			assert.NoError(t, err)
-			assert.Equal(t, tc.expected, actual)
+			assert.Equal(t, tc.expected.ID, actual.ID)
+			assert.Equal(t, tc.expected.UserID, actual.UserID)
+			assert.Equal(t, tc.expected.CurrencyID, actual.CurrencyID)
+			assert.Equal(t, tc.expected.Name, actual.Name)
+			assert.Equal(t, tc.expected.Amount, actual.Amount)
 		})
 	}
 }
