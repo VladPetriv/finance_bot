@@ -148,6 +148,13 @@ func (s stateService) handleSimpleEvent(ctx context.Context, message Message, st
 		CreatedAt: time.Now(),
 		UpdatedAt: time.Now(),
 	}
+	// Store the base flow in metadata when canceling to preserve the user's context.
+	// This allows returning to the previous keyboard layout instead of the default one.
+	if event == models.CancelEvent {
+		completedState.Metedata = map[string]any{
+			baseFlowKey: models.GetBaseFlowFromCurrentFlow(state.Flow),
+		}
+	}
 
 	err = s.stores.State.Create(ctx, completedState)
 	if err != nil {
@@ -155,7 +162,7 @@ func (s stateService) handleSimpleEvent(ctx context.Context, message Message, st
 		return nil, fmt.Errorf("create state in store: %w", err)
 	}
 
-	return &HandleStateOutput{State: state, Event: event}, nil
+	return &HandleStateOutput{State: completedState, Event: event}, nil
 }
 
 func (s stateService) handleUnfinishedFlow(message Message, state *models.State) (*HandleStateOutput, error) {

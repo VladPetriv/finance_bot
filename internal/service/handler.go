@@ -258,7 +258,54 @@ func (h handlerService) HandleStart(ctx context.Context, msg Message) error {
 }
 
 func (h handlerService) HandleCancel(ctx context.Context, msg Message) error {
-	return h.sendMessageWithDefaultKeyboard(msg.GetChatID(), "Please choose command to execute:")
+	logger := h.logger.With().Str("name", "handlerService.HandleCancel").Logger()
+	logger.Debug().Any("msg", msg).Msg("got args")
+
+	state, err := getStateFromContext(ctx)
+	if err != nil {
+		logger.Error().Err(err).Msg("get state from context")
+		return fmt.Errorf("get state from context: %w", err)
+	}
+
+	previousBaseFlow, ok := state.Metedata[baseFlowKey].(models.Flow)
+	if !ok {
+		logger.Warn().Msg("no base flow found in metadata, showing default menu")
+		return h.sendMessageWithDefaultKeyboard(msg.GetChatID(), "Please choose command to execute:")
+	}
+
+	flowConfigs := map[models.Flow]struct {
+		rows    []KeyboardRow
+		message string
+	}{
+		models.BalanceFlow: {
+			rows:    balanceKeyboardRows,
+			message: "Action cancelled!\nPlease choose balance command to execute:",
+		},
+		models.CategoryFlow: {
+			rows:    categoryKeyboardRows,
+			message: "Action cancelled!\nPlease choose category command to execute:",
+		},
+		models.OperationFlow: {
+			rows:    operationKeyboardRows,
+			message: "Action cancelled!\nPlease choose operation command to execute:",
+		},
+		models.BalanceSubscriptionFlow: {
+			rows:    balanceSubscriptionKeyboardRows,
+			message: "Action cancelled!\nPlease choose balance subscription command to execute:",
+		},
+	}
+
+	config, exists := flowConfigs[previousBaseFlow]
+	if !exists {
+		logger.Error().Str("flow", string(previousBaseFlow)).Msg("unknown flow")
+		return fmt.Errorf("unknown flow: %s", previousBaseFlow)
+	}
+
+	return h.apis.Messenger.SendWithKeyboard(SendWithKeyboardOptions{
+		ChatID:   msg.GetChatID(),
+		Message:  config.message,
+		Keyboard: config.rows,
+	})
 }
 
 func (h handlerService) HandleBack(ctx context.Context, msg Message) error {
