@@ -8,6 +8,8 @@ const (
 	StartEvent Event = "start"
 	// CancelEvent represents the event when user wants to stop the current floe
 	CancelEvent Event = "cancel"
+	// BackEvent represents the event when user wants to go back to the previous menu
+	BackEvent Event = "back"
 	// UnknownEvent represents an unrecognized or unsupported event
 	UnknownEvent Event = "unknown"
 
@@ -64,6 +66,7 @@ var EventToFlow = map[Event]Flow{
 	// General
 	StartEvent:  StartFlow,
 	CancelEvent: CancelFlow,
+	BackEvent:   BackFlow,
 
 	// Wrappers
 	BalanceEvent:             BalanceFlow,

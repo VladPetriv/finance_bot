@@ -149,6 +149,10 @@ func (s *State) GetEvent() Event {
 		return CancelEvent
 	}
 
+	if s.Flow == BackFlow && len(s.Steps) == 1 {
+		return BackEvent
+	}
+
 	switch s.Steps[indexOfInitialFlowStep] {
 	case CreateInitialBalanceFlowStep, CreateBalanceFlowStep:
 		return CreateBalanceEvent
@@ -197,6 +201,8 @@ const (
 	StartFlow Flow = "start"
 	// CancelFlow represents the flow for stopping current flow
 	CancelFlow Flow = "cancel"
+	// BackFlow represents the flow for going back to the previous menu
+	BackFlow Flow = "back"
 
 	// BalanceFlow represents the flow for getting balance actions
 	BalanceFlow Flow = "balance"
@@ -246,6 +252,35 @@ const (
 	DeleteBalanceSubscriptionFlow Flow = "delete_balance_subscription"
 )
 
+// GetBaseFlowFromCurrentFlow returns base(wrapper) flow from current one.
+func GetBaseFlowFromCurrentFlow(flow Flow) Flow {
+	if slices.Contains([]Flow{
+		CreateBalanceFlow, UpdateBalanceFlow, GetBalanceFlow, DeleteBalanceFlow,
+	}, flow) {
+		return BalanceFlow
+	}
+
+	if slices.Contains([]Flow{
+		CreateCategoryFlow, ListCategoriesFlow, UpdateCategoryFlow, DeleteCategoryFlow,
+	}, flow) {
+		return CategoryFlow
+	}
+
+	if slices.Contains([]Flow{
+		CreateOperationFlow, GetOperationsHistoryFlow, UpdateOperationFlow, DeleteOperationFlow,
+	}, flow) {
+		return OperationFlow
+	}
+
+	if slices.Contains([]Flow{
+		CreateBalanceSubscriptionFlow, ListBalanceSubscriptionFlow, UpdateBalanceSubscriptionFlow, DeleteBalanceSubscriptionFlow,
+	}, flow) {
+		return BalanceSubscriptionFlow
+	}
+
+	return ""
+}
+
 // FlowSteps represents a slice of FlowStep
 type FlowSteps []FlowStep
 
@@ -258,7 +293,7 @@ func (s FlowSteps) Value() (driver.Value, error) {
 }
 
 // Scan implements the sql.Scanner interface
-func (s *FlowSteps) Scan(value interface{}) error {
+func (s *FlowSteps) Scan(value any) error {
 	if value == nil {
 		*s = nil
 		return nil
@@ -284,7 +319,7 @@ func (s Metadata) Value() (driver.Value, error) {
 }
 
 // Scan implements the sql.Scanner interface
-func (s *Metadata) Scan(value interface{}) error {
+func (s *Metadata) Scan(value any) error {
 	if value == nil {
 		*s = nil
 		return nil

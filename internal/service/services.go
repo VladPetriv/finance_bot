@@ -31,6 +31,8 @@ type HandlerService interface {
 	HandleStart(ctx context.Context, msg Message) error
 	// HandleCancel cancel current user flow and returns the default keyboard
 	HandleCancel(ctx context.Context, msg Message) error
+	// HandleBack returns user to previous menu.
+	HandleBack(ctx context.Context, msg Message) error
 	// HandleWrappers processes main keyboard selections, where each button (Balance/Operations/Categories)
 	// maps to corresponding model wrapper to handle its specific actions.
 	HandleWrappers(ctx context.Context, event models.Event, msg Message) error
@@ -89,7 +91,7 @@ var (
 			Buttons: []string{models.BotUpdateBalanceCommand, models.BotDeleteBalanceCommand},
 		},
 		{
-			Buttons: []string{models.BotCancelCommand},
+			Buttons: []string{models.BotBackCommand},
 		},
 	}
 
@@ -101,7 +103,7 @@ var (
 			Buttons: []string{models.BotUpdateCategoryCommand, models.BotDeleteCategoryCommand},
 		},
 		{
-			Buttons: []string{models.BotCancelCommand},
+			Buttons: []string{models.BotBackCommand},
 		},
 	}
 
@@ -113,7 +115,7 @@ var (
 			Buttons: []string{models.BotUpdateOperationCommand, models.BotDeleteOperationCommand},
 		},
 		{
-			Buttons: []string{models.BotCancelCommand},
+			Buttons: []string{models.BotBackCommand},
 		},
 	}
 
@@ -125,7 +127,7 @@ var (
 			Buttons: []string{models.BotUpdateBalanceSubscriptionCommand, models.BotDeleteBalanceSubscriptionCommand},
 		},
 		{
-			Buttons: []string{models.BotCancelCommand},
+			Buttons: []string{models.BotBackCommand},
 		},
 	}
 
@@ -286,6 +288,9 @@ var (
 )
 
 const (
+	// General keys
+	baseFlowKey = "base_flow"
+
 	// Balance related keys
 	balanceIDMetadataKey              = "balance_id"
 	balanceNameMetadataKey            = "balance_name"
