@@ -56,4 +56,8 @@ var Migrations = []any{
 		Name: "Add notified to scheduled_operations table",
 		Func: addNotifiedToScheduledOperationsTable,
 	},
+	&migrator.Migration{
+		Name: "Add created_at and updated_at column to balances table",
+		Func: addCreatedAtAndUpdatedAtColumnsToBalancesTable,
+	},
 }
