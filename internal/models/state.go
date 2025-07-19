@@ -252,6 +252,7 @@ const (
 	DeleteBalanceSubscriptionFlow Flow = "delete_balance_subscription"
 )
 
+// GetBaseFlowFromCurrentFlow returns base(wrapper) flow from current one.
 func GetBaseFlowFromCurrentFlow(flow Flow) Flow {
 	if slices.Contains([]Flow{
 		CreateBalanceFlow, UpdateBalanceFlow, GetBalanceFlow, DeleteBalanceFlow,
