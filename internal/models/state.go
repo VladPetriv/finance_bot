@@ -252,6 +252,34 @@ const (
 	DeleteBalanceSubscriptionFlow Flow = "delete_balance_subscription"
 )
 
+func GetBaseFlowFromCurrentFlow(flow Flow) Flow {
+	if slices.Contains([]Flow{
+		CreateBalanceFlow, UpdateBalanceFlow, GetBalanceFlow, DeleteBalanceFlow,
+	}, flow) {
+		return BalanceFlow
+	}
+
+	if slices.Contains([]Flow{
+		CreateCategoryFlow, ListCategoriesFlow, UpdateCategoryFlow, DeleteCategoryFlow,
+	}, flow) {
+		return CategoryFlow
+	}
+
+	if slices.Contains([]Flow{
+		CreateOperationFlow, GetOperationsHistoryFlow, UpdateOperationFlow, DeleteOperationFlow,
+	}, flow) {
+		return OperationFlow
+	}
+
+	if slices.Contains([]Flow{
+		CreateBalanceSubscriptionFlow, ListBalanceSubscriptionFlow, UpdateBalanceSubscriptionFlow, DeleteBalanceSubscriptionFlow,
+	}, flow) {
+		return BalanceSubscriptionFlow
+	}
+
+	return ""
+}
+
 // FlowSteps represents a slice of FlowStep
 type FlowSteps []FlowStep
 
