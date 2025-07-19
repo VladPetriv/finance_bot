@@ -171,6 +171,13 @@ func (e eventService) ReactOnEvent(ctx context.Context, event models.Event, msg 
 			return fmt.Errorf("handle event cancel: %w", err)
 		}
 
+	case models.BackEvent:
+		err := e.services.Handler.HandleBack(ctx, msg)
+		if err != nil {
+			logger.Error().Err(err).Msg("handle event back")
+			return fmt.Errorf("handle event back: %w", err)
+		}
+
 	case models.BalanceEvent, models.CategoryEvent, models.OperationEvent, models.BalanceSubscriptionEvent:
 		err := e.services.Handler.HandleWrappers(ctx, event, msg)
 		if err != nil {

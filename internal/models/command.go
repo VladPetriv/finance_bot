@@ -82,6 +82,8 @@ const (
 	BotShowMoreCommand string = "Show More ➡️"
 	// BotCancelCommand represents the command that will cancel the current flow
 	BotCancelCommand string = "Cancel action ⬅️"
+	// BotBackCommand represents the command to go back to the previous menu
+	BotBackCommand string = "Back ⬅️"
 )
 
 // AvailableCommands is a list of all available bot commands.
@@ -96,7 +98,7 @@ var AvailableCommands = []string{
 	BotUpdateOperationDateCommand, BotUpdateOperationCategoryCommand,
 	BotCreateBalanceSubscriptionCommand, BotListBalanceSubscriptionsCommand, BotDeleteBalanceSubscriptionCommand, BotUpdateBalanceSubscriptionCommand,
 	BotUpdateBalanceSubscriptionNameCommand, BotUpdateBalanceSubscriptionCategoryCommand, BotUpdateBalanceSubscriptionAmountCommand, BotUpdateBalanceSubscriptionPeriodCommand,
-	BotCancelCommand, BotShowMoreCommand,
+	BotCancelCommand, BotBackCommand, BotShowMoreCommand,
 }
 
 // CommandToEvent maps bot commands to their corresponding events
@@ -104,6 +106,7 @@ var CommandToEvent = map[string]Event{
 	// General
 	BotStartCommand:  StartEvent,
 	BotCancelCommand: CancelEvent,
+	BotBackCommand:   BackEvent,
 
 	// Wrappers
 	BotBalanceCommand:              BalanceEvent,

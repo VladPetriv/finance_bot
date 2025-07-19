@@ -122,6 +122,7 @@ func (s stateService) handleNewState(ctx context.Context, message Message, event
 func (s stateService) isSimpleEvent(event models.Event) bool {
 	return slices.Contains([]models.Event{
 		models.CancelEvent,
+		models.BackEvent,
 		models.BalanceEvent,
 		models.CategoryEvent,
 		models.OperationEvent,

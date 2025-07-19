@@ -149,6 +149,10 @@ func (s *State) GetEvent() Event {
 		return CancelEvent
 	}
 
+	if s.Flow == BackFlow && len(s.Steps) == 1 {
+		return BackEvent
+	}
+
 	switch s.Steps[indexOfInitialFlowStep] {
 	case CreateInitialBalanceFlowStep, CreateBalanceFlowStep:
 		return CreateBalanceEvent
@@ -197,6 +201,8 @@ const (
 	StartFlow Flow = "start"
 	// CancelFlow represents the flow for stopping current flow
 	CancelFlow Flow = "cancel"
+	// BackFlow represents the flow for going back to the previous menu
+	BackFlow Flow = "back"
 
 	// BalanceFlow represents the flow for getting balance actions
 	BalanceFlow Flow = "balance"
@@ -258,7 +264,7 @@ func (s FlowSteps) Value() (driver.Value, error) {
 }
 
 // Scan implements the sql.Scanner interface
-func (s *FlowSteps) Scan(value interface{}) error {
+func (s *FlowSteps) Scan(value any) error {
 	if value == nil {
 		*s = nil
 		return nil
@@ -284,7 +290,7 @@ func (s Metadata) Value() (driver.Value, error) {
 }
 
 // Scan implements the sql.Scanner interface
-func (s *Metadata) Scan(value interface{}) error {
+func (s *Metadata) Scan(value any) error {
 	if value == nil {
 		*s = nil
 		return nil

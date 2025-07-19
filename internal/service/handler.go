@@ -261,6 +261,10 @@ func (h handlerService) HandleCancel(ctx context.Context, msg Message) error {
 	return h.sendMessageWithDefaultKeyboard(msg.GetChatID(), "Please choose command to execute:")
 }
 
+func (h handlerService) HandleBack(ctx context.Context, msg Message) error {
+	return h.sendMessageWithDefaultKeyboard(msg.GetChatID(), "Please choose command to execute:")
+}
+
 func (h handlerService) HandleWrappers(ctx context.Context, event models.Event, msg Message) error {
 	logger := h.logger.With().Str("name", "handlerService.HandleWrappers").Logger()
 	logger.Debug().Any("msg", msg).Any("event", event).Msg("got args")
