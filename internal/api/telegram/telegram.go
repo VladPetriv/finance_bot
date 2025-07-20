@@ -130,6 +130,29 @@ func (t *Update) GetChatID() int {
 	return chatID
 }
 
+// GetMessageID returns the ID of the message.
+func (t *Update) GetMessageID() int {
+	var messageID int
+
+	if t.update.Message != nil {
+		messageID = t.update.Message.MessageID
+	}
+	if t.update.CallbackQuery != nil {
+		messageID = t.update.CallbackQuery.Message.MessageID
+	}
+
+	return messageID
+}
+
+// GetInlineMessageID returns the inline message ID of the callback query.
+func (t *Update) GetInlineMessageID() string {
+	if t.update.CallbackQuery != nil {
+		return t.update.CallbackQuery.InlineMessageID
+	}
+
+	return ""
+}
+
 // GetText returns the text content of the message or callback data.
 func (t *Update) GetText() string {
 	var text string
