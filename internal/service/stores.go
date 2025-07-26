@@ -151,9 +151,14 @@ type CurrencyStore interface {
 	// Count returns a count of all currencies from store.
 	Count(ctx context.Context) (int, error)
 	// List returns a list of all currencies from store.
-	List(ctx context.Context) ([]models.Currency, error)
+	List(ctx context.Context, filter ListCurrenciesFilter) ([]models.Currency, error)
 	// Exists checks if currency exists in store based on input filter.
 	Exists(ctx context.Context, opts ExistsCurrencyFilter) (bool, error)
+}
+
+// ListCurrenciesFilter represents a filter for CurrencyStore.List method.
+type ListCurrenciesFilter struct {
+	Pagination *Pagination
 }
 
 // ExistsCurrencyFilter represents a filter for CurrencyStore.Exists method.
@@ -213,4 +218,10 @@ type ListScheduledOperation struct {
 type BetweenFilter struct {
 	From time.Time
 	To   time.Time
+}
+
+// Pagination represents a pagination filter for store.List methods.
+type Pagination struct {
+	Page  int
+	Limit int
 }
