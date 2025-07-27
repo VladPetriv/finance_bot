@@ -32,6 +32,11 @@ const (
 	MonthDecember Month = "December"
 )
 
+// GetID returns the string representation of the month
+func (m Month) GetID() string {
+	return string(m)
+}
+
 // GetName returns the string representation of the month
 func (m Month) GetName() string {
 	return string(m)
