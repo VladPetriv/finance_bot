@@ -71,7 +71,7 @@ func (s *State) IsCommandAllowedDuringFlow(command string) bool {
 	case DeleteOperationFlow:
 		if s.GetCurrentStep() == ChooseOperationToDeleteFlowStep {
 			return slices.Contains(
-				[]string{BotShowMoreCommand},
+				[]string{BotPreviousCommand, BotNextCommand},
 				command,
 			)
 		}
@@ -82,7 +82,7 @@ func (s *State) IsCommandAllowedDuringFlow(command string) bool {
 		switch s.GetCurrentStep() {
 		case ChooseOperationToUpdateFlowStep:
 			return slices.Contains(
-				[]string{BotShowMoreCommand},
+				[]string{BotPreviousCommand, BotNextCommand},
 				command,
 			)
 		case ChooseUpdateOperationOptionFlowStep:
@@ -110,13 +110,24 @@ func (s *State) IsCommandAllowedDuringFlow(command string) bool {
 
 		return false
 
+	case CreateBalanceFlow:
+		switch s.GetCurrentStep() {
+		case EnterBalanceCurrencyFlowStep:
+			return slices.Contains(
+				[]string{
+					BotNextCommand, BotPreviousCommand,
+				},
+				command,
+			)
+		}
+
+		return false
+
 	case UpdateBalanceSubscriptionFlow:
 		switch s.GetCurrentStep() {
 		case ChooseBalanceSubscriptionToUpdateFlowStep:
 			return slices.Contains(
-				[]string{
-					BotShowMoreCommand,
-				},
+				[]string{BotPreviousCommand, BotNextCommand},
 				command,
 			)
 
