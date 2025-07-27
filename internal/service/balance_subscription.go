@@ -256,7 +256,7 @@ func (h *handlerService) handleChooseBalanceFlowStepForUpdateBalanceSubscription
 		page:      1,
 	})
 	if err != nil {
-		return "", fmt.Errorf("get operations keyboard: %w", err)
+		return "", fmt.Errorf("get balance subscriptions keyboard: %w", err)
 	}
 
 	return models.ChooseBalanceSubscriptionToUpdateFlowStep, h.apis.Messenger.SendWithKeyboard(SendWithKeyboardOptions{
