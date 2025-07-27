@@ -389,17 +389,22 @@ func TestOperation_List(t *testing.T) {
 
 	userID := uuid.NewString()
 	balanceID1, balanceID2, balanceID3,
-		balanceID4, balanceID5, balanceID6 := uuid.NewString(), uuid.NewString(), uuid.NewString(),
-		uuid.NewString(), uuid.NewString(), uuid.NewString()
+		balanceID4, balanceID5, balanceID6,
+		balanceID7, balanceID8 := uuid.NewString(), uuid.NewString(), uuid.NewString(),
+		uuid.NewString(), uuid.NewString(), uuid.NewString(),
+		uuid.NewString(), uuid.NewString()
+
 	categoryID := uuid.NewString()
 	operationID1, operationID2,
 		operationID3, operationID4, operationID5,
 		operationID6, operationID7, operationID8,
 		operationID9, operationID10, operationID11, operationID12,
 		operationID13, operationID14, operationID15, operationID16,
-		operationID17, operationID18, operationID19, operationID20 := uuid.NewString(), uuid.NewString(),
+		operationID17, operationID18, operationID19, operationID20,
+		operationID21, operationID22, operationID23, operationID24 := uuid.NewString(), uuid.NewString(),
 		uuid.NewString(), uuid.NewString(), uuid.NewString(),
 		uuid.NewString(), uuid.NewString(), uuid.NewString(),
+		uuid.NewString(), uuid.NewString(), uuid.NewString(), uuid.NewString(),
 		uuid.NewString(), uuid.NewString(), uuid.NewString(), uuid.NewString(),
 		uuid.NewString(), uuid.NewString(), uuid.NewString(), uuid.NewString(),
 		uuid.NewString(), uuid.NewString(), uuid.NewString(), uuid.NewString()
@@ -418,7 +423,11 @@ func TestOperation_List(t *testing.T) {
 	})
 	require.NoError(t, err)
 
-	for _, balanceID := range [...]string{balanceID1, balanceID2, balanceID3, balanceID4, balanceID5, balanceID6} {
+	for _, balanceID := range [...]string{
+		balanceID1, balanceID2, balanceID3,
+		balanceID4, balanceID5, balanceID6,
+		balanceID7, balanceID8,
+	} {
 		err = balanceStore.Create(ctx, &models.Balance{
 			ID:         balanceID,
 			UserID:     userID,
@@ -435,7 +444,11 @@ func TestOperation_List(t *testing.T) {
 	require.NoError(t, err)
 
 	t.Cleanup(func() {
-		for _, balanceID := range [...]string{balanceID1, balanceID2, balanceID3, balanceID4, balanceID5, balanceID6} {
+		for _, balanceID := range [...]string{
+			balanceID1, balanceID2, balanceID3,
+			balanceID4, balanceID5, balanceID6,
+			balanceID7, balanceID8,
+		} {
 			err = balanceStore.Delete(ctx, balanceID)
 			require.NoError(t, err)
 		}
@@ -686,55 +699,102 @@ func TestOperation_List(t *testing.T) {
 			},
 		},
 		{
-			desc: "received all operations where time less than args time",
+			desc: "received all operations on page 1 with limit of 2, total amount 4",
 			preconditions: []models.Operation{
 				{
 					ID:         operationID17,
 					CategoryID: categoryID,
-					BalanceID:  balanceID6,
+					BalanceID:  balanceID7,
 					Type:       models.OperationTypeIncoming,
-					CreatedAt:  time.Now().Add(-48 * time.Hour),
 				},
 				{
 					ID:         operationID18,
 					CategoryID: categoryID,
-					BalanceID:  balanceID6,
+					BalanceID:  balanceID7,
 					Type:       models.OperationTypeIncoming,
-					CreatedAt:  time.Now().Add(-24 * time.Hour),
 				},
 				{
 					ID:         operationID19,
 					CategoryID: categoryID,
-					BalanceID:  balanceID6,
+					BalanceID:  balanceID7,
 					Type:       models.OperationTypeIncoming,
-					CreatedAt:  time.Now().Add(-1 * time.Hour),
 				},
 				{
 					ID:         operationID20,
 					CategoryID: categoryID,
-					BalanceID:  balanceID6,
+					BalanceID:  balanceID7,
 					Type:       models.OperationTypeIncoming,
-					CreatedAt:  time.Now(),
 				},
 			},
 			args: service.ListOperationsFilter{
-				BalanceID:         balanceID6,
-				CreatedAtLessThan: time.Now().Add(-10 * time.Hour),
+				BalanceID: balanceID7,
+				Pagination: &service.Pagination{
+					Page:  1,
+					Limit: 2,
+				},
 			},
 			expected: []models.Operation{
 				{
 					ID:         operationID17,
 					CategoryID: categoryID,
-					BalanceID:  balanceID6,
+					BalanceID:  balanceID7,
 					Type:       models.OperationTypeIncoming,
-					CreatedAt:  time.Now().Add(-48 * time.Hour),
 				},
 				{
 					ID:         operationID18,
 					CategoryID: categoryID,
-					BalanceID:  balanceID6,
+					BalanceID:  balanceID7,
 					Type:       models.OperationTypeIncoming,
-					CreatedAt:  time.Now().Add(-24 * time.Hour),
+				},
+			},
+		},
+		{
+			desc: "received all operations on page 2 with limit of 2, total amount 4",
+			preconditions: []models.Operation{
+				{
+					ID:         operationID21,
+					CategoryID: categoryID,
+					BalanceID:  balanceID8,
+					Type:       models.OperationTypeIncoming,
+				},
+				{
+					ID:         operationID22,
+					CategoryID: categoryID,
+					BalanceID:  balanceID8,
+					Type:       models.OperationTypeIncoming,
+				},
+				{
+					ID:         operationID23,
+					CategoryID: categoryID,
+					BalanceID:  balanceID8,
+					Type:       models.OperationTypeIncoming,
+				},
+				{
+					ID:         operationID24,
+					CategoryID: categoryID,
+					BalanceID:  balanceID8,
+					Type:       models.OperationTypeIncoming,
+				},
+			},
+			args: service.ListOperationsFilter{
+				BalanceID: balanceID8,
+				Pagination: &service.Pagination{
+					Page:  2,
+					Limit: 2,
+				},
+			},
+			expected: []models.Operation{
+				{
+					ID:         operationID23,
+					CategoryID: categoryID,
+					BalanceID:  balanceID8,
+					Type:       models.OperationTypeIncoming,
+				},
+				{
+					ID:         operationID24,
+					CategoryID: categoryID,
+					BalanceID:  balanceID8,
+					Type:       models.OperationTypeIncoming,
 				},
 			},
 		},
@@ -804,11 +864,9 @@ func TestOperation_Count(t *testing.T) {
 		operationID3, operationID4, operationID5,
 		operationID6, operationID7, operationID8,
 		operationID9, operationID10, operationID11, operationID12,
-		operationID13, operationID14, operationID15, operationID16,
-		operationID17, operationID18, operationID19, operationID20 := uuid.NewString(), uuid.NewString(),
+		operationID13, operationID14, operationID15, operationID16 := uuid.NewString(), uuid.NewString(),
 		uuid.NewString(), uuid.NewString(), uuid.NewString(),
 		uuid.NewString(), uuid.NewString(), uuid.NewString(),
-		uuid.NewString(), uuid.NewString(), uuid.NewString(), uuid.NewString(),
 		uuid.NewString(), uuid.NewString(), uuid.NewString(), uuid.NewString(),
 		uuid.NewString(), uuid.NewString(), uuid.NewString(), uuid.NewString()
 
@@ -1019,44 +1077,6 @@ func TestOperation_Count(t *testing.T) {
 				CreationPeriod: models.CreationPeriodYear,
 			},
 			expected: 3,
-		},
-		{
-			desc: "received all operations where time less than args time",
-			preconditions: []models.Operation{
-				{
-					ID:         operationID17,
-					CategoryID: categoryID,
-					BalanceID:  balanceID6,
-					Type:       models.OperationTypeIncoming,
-					CreatedAt:  time.Now().Add(-48 * time.Hour),
-				},
-				{
-					ID:         operationID18,
-					CategoryID: categoryID,
-					BalanceID:  balanceID6,
-					Type:       models.OperationTypeIncoming,
-					CreatedAt:  time.Now().Add(-24 * time.Hour),
-				},
-				{
-					ID:         operationID19,
-					CategoryID: categoryID,
-					BalanceID:  balanceID6,
-					Type:       models.OperationTypeIncoming,
-					CreatedAt:  time.Now().Add(-1 * time.Hour),
-				},
-				{
-					ID:         operationID20,
-					CategoryID: categoryID,
-					BalanceID:  balanceID6,
-					Type:       models.OperationTypeIncoming,
-					CreatedAt:  time.Now(),
-				},
-			},
-			args: service.ListOperationsFilter{
-				BalanceID:         balanceID6,
-				CreatedAtLessThan: time.Now().Add(-10 * time.Hour),
-			},
-			expected: 2,
 		},
 		{
 			desc: "negative: operations not found",

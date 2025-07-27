@@ -332,9 +332,9 @@ func TestCurrency_List(t *testing.T) {
 			}
 
 			for i, currency := range currencies {
-				assert.Equal(t, preconditions[i].Name, currency.Name)
-				assert.Equal(t, preconditions[i].Symbol, currency.Symbol)
-				assert.Equal(t, preconditions[i].Code, currency.Code)
+				assert.Equal(t, tc.expected[i].Name, currency.Name)
+				assert.Equal(t, tc.expected[i].Symbol, currency.Symbol)
+				assert.Equal(t, tc.expected[i].Code, currency.Code)
 			}
 		})
 	}
