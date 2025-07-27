@@ -289,7 +289,8 @@ var (
 
 const (
 	// General keys
-	baseFlowKey = "base_flow"
+	baseFlowKey     = "base_flow"
+	pageMetadataKey = "page"
 
 	// Balance related keys
 	balanceIDMetadataKey              = "balance_id"

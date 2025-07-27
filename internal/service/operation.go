@@ -97,7 +97,7 @@ func (h *handlerService) handleConfirmOperationDetailsFlowStepForOneTimeInputOpe
 	return models.ChooseBalanceFlowStep, h.apis.Messenger.SendWithKeyboard(SendWithKeyboardOptions{
 		ChatID:   opts.message.GetChatID(),
 		Message:  "Choose balance:",
-		Keyboard: getKeyboardRows(opts.user.Balances, 3, true),
+		Keyboard: getRowKeyboardRows(opts.user.Balances, 3, true),
 	})
 }
 
@@ -109,7 +109,7 @@ func (h *handlerService) handleChooseBalanceFlowStepForOneTimeInputOperationCrea
 	if balance == nil {
 		return models.EndFlowStep, ErrBalanceNotFound
 	}
-	opts.stateMetaData[balanceNameMetadataKey] = balance.Name // and we'll avoid id
+	opts.stateMetaData[balanceNameMetadataKey] = balance.Name
 
 	parsedAmount, err := money.NewFromString(opts.stateMetaData[operationAmountMetadataKey].(string))
 	if err != nil {
@@ -191,7 +191,7 @@ func (h handlerService) handleProcessOperationTypeFlowStep(_ context.Context, op
 	return nextStep, h.apis.Messenger.SendWithKeyboard(SendWithKeyboardOptions{
 		ChatID:   opts.message.GetChatID(),
 		Message:  message,
-		Keyboard: getKeyboardRows(opts.user.Balances, 3, true),
+		Keyboard: getRowKeyboardRows(opts.user.Balances, 3, true),
 	})
 }
 
@@ -217,7 +217,7 @@ func (h handlerService) handleChooseBalanceFlowStepForCreatingOperation(ctx cont
 	return models.ChooseCategoryFlowStep, h.apis.Messenger.SendWithKeyboard(SendWithKeyboardOptions{
 		ChatID:   opts.message.GetChatID(),
 		Message:  "Choose operation category:",
-		Keyboard: getKeyboardRows(categories, 3, true),
+		Keyboard: getRowKeyboardRows(categories, 3, true),
 	})
 }
 
@@ -234,7 +234,7 @@ func (h handlerService) handleChooseBalanceFromFlowStep(_ context.Context, opts 
 	return models.ChooseBalanceToFlowStep, h.apis.Messenger.SendWithKeyboard(SendWithKeyboardOptions{
 		ChatID:   opts.message.GetChatID(),
 		Message:  "Choose balance to which transfer operation should be performed:",
-		Keyboard: getKeyboardRows(userBalancesWithoutBalanceFrom, 3, true),
+		Keyboard: getRowKeyboardRows(userBalancesWithoutBalanceFrom, 3, true),
 	})
 }
 
@@ -586,7 +586,7 @@ func (h handlerService) handleGetOperationsHistoryFlowStep(_ context.Context, op
 	return models.ChooseBalanceFlowStep, h.apis.Messenger.SendWithKeyboard(SendWithKeyboardOptions{
 		ChatID:   opts.message.GetChatID(),
 		Message:  "Choose balance to view operations history for:",
-		Keyboard: getKeyboardRows(opts.user.Balances, 3, true),
+		Keyboard: getRowKeyboardRows(opts.user.Balances, 3, true),
 	})
 }
 
@@ -668,7 +668,7 @@ func (h handlerService) handleDeleteOperationFlowStep(_ context.Context, opts fl
 	return models.ChooseBalanceFlowStep, h.apis.Messenger.SendWithKeyboard(SendWithKeyboardOptions{
 		ChatID:   opts.message.GetChatID(),
 		Message:  "Choose balance to delete operation from:",
-		Keyboard: getKeyboardRows(opts.user.Balances, 3, true),
+		Keyboard: getRowKeyboardRows(opts.user.Balances, 3, true),
 	})
 }
 
@@ -677,6 +677,7 @@ func (h handlerService) handleChooseBalanceFlowStepForDeleteOperation(ctx contex
 	logger.Debug().Any("opts", opts).Msg("got args")
 
 	opts.stateMetaData[balanceNameMetadataKey] = opts.message.GetText()
+	opts.stateMetaData[pageMetadataKey] = 1
 
 	err := h.showCancelButton(opts.message.GetChatID(), "")
 	if err != nil {
@@ -684,10 +685,18 @@ func (h handlerService) handleChooseBalanceFlowStepForDeleteOperation(ctx contex
 		return "", fmt.Errorf("show cancel button: %w", err)
 	}
 
-	return models.ChooseOperationToDeleteFlowStep, h.sendListOfOperationsWithAbilityToPaginate(ctx, sendListOfOperationsWithAbilityToPaginateOptions{
-		balanceID:     opts.user.GetBalance(opts.message.GetText()).ID,
-		chatID:        opts.message.GetChatID(),
-		stateMetadata: opts.stateMetaData,
+	keyboard, err := h.getOperationsKeyboard(ctx, getOperationsKeyboardOptions{
+		balanceID: opts.user.GetBalance(opts.message.GetText()).ID,
+		page:      1,
+	})
+	if err != nil {
+		return "", fmt.Errorf("get operations keyboard: %w", err)
+	}
+
+	return models.ChooseOperationToDeleteFlowStep, h.apis.Messenger.SendWithKeyboard(SendWithKeyboardOptions{
+		ChatID:         opts.message.GetChatID(),
+		Message:        "Choose operation to delete:",
+		InlineKeyboard: keyboard,
 	})
 }
 
@@ -695,17 +704,31 @@ func (h handlerService) handleChooseOperationToDeleteFlowStep(ctx context.Contex
 	logger := h.logger.With().Str("name", "handlerService.handleChooseOperationToDeleteFlowStep").Logger()
 	logger.Debug().Any("opts", opts).Msg("got args")
 
-	if opts.message.GetText() == models.BotShowMoreCommand {
-		return models.ChooseOperationToDeleteFlowStep, h.sendListOfOperationsWithAbilityToPaginate(ctx, sendListOfOperationsWithAbilityToPaginateOptions{
-			balanceID:                      opts.user.GetBalance(opts.stateMetaData[balanceNameMetadataKey].(string)).ID,
-			chatID:                         opts.message.GetChatID(),
-			stateMetadata:                  opts.stateMetaData,
-			includeLastShowedOperationDate: true,
+	messageText := opts.message.GetText()
+	if isPaginationNeeded(messageText) {
+		nextPage := calculateNextPage(messageText, opts.stateMetaData)
+		opts.stateMetaData[pageMetadataKey] = nextPage
+
+		keyboard, err := h.getOperationsKeyboard(ctx, getOperationsKeyboardOptions{
+			balanceID: opts.user.GetBalance(opts.stateMetaData[balanceNameMetadataKey].(string)).ID,
+			page:      nextPage,
+		})
+		if err != nil {
+			logger.Error().Err(err).Msg("get operations keyboard for balance")
+			return "", fmt.Errorf("get operations keyboard for balance: %w", err)
+		}
+
+		return models.ChooseOperationToDeleteFlowStep, h.apis.Messenger.SendWithKeyboard(SendWithKeyboardOptions{
+			Message:               "Choose operation to delete:",
+			ChatID:                opts.message.GetChatID(),
+			MessageID:             opts.message.GetMessageID(),
+			InlineMessageID:       opts.message.GetInlineMessageID(),
+			UpdatedInlineKeyboard: keyboard,
 		})
 	}
 
 	operation, err := h.stores.Operation.Get(ctx, GetOperationFilter{
-		ID: opts.message.GetText(),
+		ID: messageText,
 	})
 	if err != nil {
 		logger.Error().Err(err).Msg("get operation from store")
@@ -915,7 +938,7 @@ func (h handlerService) handleUpdateOperationFlowStep(ctx context.Context, opts 
 	return models.ChooseBalanceFlowStep, h.apis.Messenger.SendWithKeyboard(SendWithKeyboardOptions{
 		ChatID:   opts.message.GetChatID(),
 		Message:  "Choose balance to update operation from:",
-		Keyboard: getKeyboardRows(opts.user.Balances, 3, true),
+		Keyboard: getRowKeyboardRows(opts.user.Balances, 3, true),
 	})
 }
 
@@ -924,6 +947,7 @@ func (h handlerService) handleChooseBalanceFlowStepForUpdateOperation(ctx contex
 	logger.Debug().Any("opts", opts).Msg("got args")
 
 	opts.stateMetaData[balanceNameMetadataKey] = opts.message.GetText()
+	opts.stateMetaData[pageMetadataKey] = 1
 
 	err := h.showCancelButton(opts.message.GetChatID(), "")
 	if err != nil {
@@ -931,10 +955,18 @@ func (h handlerService) handleChooseBalanceFlowStepForUpdateOperation(ctx contex
 		return "", fmt.Errorf("show cancel button: %w", err)
 	}
 
-	return models.ChooseOperationToUpdateFlowStep, h.sendListOfOperationsWithAbilityToPaginate(ctx, sendListOfOperationsWithAbilityToPaginateOptions{
-		balanceID:     opts.user.GetBalance(opts.message.GetText()).ID,
-		chatID:        opts.message.GetChatID(),
-		stateMetadata: opts.stateMetaData,
+	keyboard, err := h.getOperationsKeyboard(ctx, getOperationsKeyboardOptions{
+		balanceID: opts.user.GetBalance(opts.message.GetText()).ID,
+		page:      1,
+	})
+	if err != nil {
+		return "", fmt.Errorf("get operations keyboard: %w", err)
+	}
+
+	return models.ChooseOperationToUpdateFlowStep, h.apis.Messenger.SendWithKeyboard(SendWithKeyboardOptions{
+		ChatID:         opts.message.GetChatID(),
+		Message:        "Choose operation to update:",
+		InlineKeyboard: keyboard,
 	})
 }
 
@@ -942,17 +974,31 @@ func (h handlerService) handleChooseOperationToUpdateFlowStep(ctx context.Contex
 	logger := h.logger.With().Str("name", "handlerService.handleChooseOperationToUpdateFlowStep").Logger()
 	logger.Debug().Any("opts", opts).Msg("got args")
 
-	if opts.message.GetText() == models.BotShowMoreCommand {
-		return models.ChooseOperationToUpdateFlowStep, h.sendListOfOperationsWithAbilityToPaginate(ctx, sendListOfOperationsWithAbilityToPaginateOptions{
-			balanceID:                      opts.user.GetBalance(opts.stateMetaData[balanceNameMetadataKey].(string)).ID,
-			chatID:                         opts.message.GetChatID(),
-			stateMetadata:                  opts.stateMetaData,
-			includeLastShowedOperationDate: true,
+	messageText := opts.message.GetText()
+	if isPaginationNeeded(messageText) {
+		nextPage := calculateNextPage(messageText, opts.stateMetaData)
+		opts.stateMetaData[pageMetadataKey] = nextPage
+
+		keyboard, err := h.getOperationsKeyboard(ctx, getOperationsKeyboardOptions{
+			balanceID: opts.user.GetBalance(opts.stateMetaData[balanceNameMetadataKey].(string)).ID,
+			page:      nextPage,
+		})
+		if err != nil {
+			logger.Error().Err(err).Msg("get operations keyboard for balance")
+			return "", fmt.Errorf("get operations keyboard for balance: %w", err)
+		}
+
+		return models.ChooseOperationToUpdateFlowStep, h.apis.Messenger.SendWithKeyboard(SendWithKeyboardOptions{
+			Message:               "Choose operation to update:",
+			ChatID:                opts.message.GetChatID(),
+			MessageID:             opts.message.GetMessageID(),
+			InlineMessageID:       opts.message.GetInlineMessageID(),
+			UpdatedInlineKeyboard: keyboard,
 		})
 	}
 
 	operation, err := h.stores.Operation.Get(ctx, GetOperationFilter{
-		ID:         opts.message.GetText(),
+		ID:         messageText,
 		BalanceIDs: opts.user.GetBalancesIDs(),
 	})
 	if err != nil {
@@ -1033,7 +1079,7 @@ func (h handlerService) handleChooseUpdateOperationOptionFlowStep(ctx context.Co
 		return models.ChooseCategoryFlowStep, h.apis.Messenger.SendWithKeyboard(SendWithKeyboardOptions{
 			ChatID:   opts.message.GetChatID(),
 			Message:  "Choose updated operation category:",
-			Keyboard: getKeyboardRows(categoriesWithoutAlreadyUsedCategory, 3, true),
+			Keyboard: getRowKeyboardRows(categoriesWithoutAlreadyUsedCategory, 3, true),
 		})
 	case models.BotUpdateOperationDateCommand:
 		return models.EnterOperationDateFlowStep, h.apis.Messenger.SendMessage(opts.message.GetChatID(), "Enter updated operation date:\nPlease use the following format: DD/MM/YYYY HH:MM. Example: 01/01/2025 12:00")
@@ -1405,73 +1451,4 @@ func (h handlerService) findPairedTransferOperation(ctx context.Context, user *m
 	}
 
 	return pairedTransferOperation, nil
-}
-
-type sendListOfOperationsWithAbilityToPaginateOptions struct {
-	balanceID                      string
-	chatID                         int
-	includeLastShowedOperationDate bool
-	stateMetadata                  map[string]any
-}
-
-const operationsPerMessage = 10
-
-func (h handlerService) sendListOfOperationsWithAbilityToPaginate(ctx context.Context, opts sendListOfOperationsWithAbilityToPaginateOptions) error {
-	logger := h.logger.With().Str("name", "handlerService.sendListOfOperationsWithAbilityToPaginate").Logger()
-	logger.Debug().Any("opts", opts).Msg("got args")
-
-	filter := ListOperationsFilter{
-		BalanceID: opts.balanceID,
-	}
-
-	if opts.includeLastShowedOperationDate {
-		lastOperationTime, ok := opts.stateMetadata[lastOperationDateMetadataKey].(string)
-		if ok {
-			parsedTime, err := time.Parse(time.RFC3339Nano, lastOperationTime)
-			if err != nil {
-				logger.Error().Err(err).Msg("parse last operation date")
-				return fmt.Errorf("parse last operation date: %w", err)
-			}
-			filter.CreatedAtLessThan = parsedTime
-		}
-	}
-
-	operationsCount, err := h.stores.Operation.Count(ctx, filter)
-	if err != nil {
-		logger.Error().Err(err).Msg("count operations")
-		return fmt.Errorf("count operations: %w", err)
-	}
-	if operationsCount == 0 {
-		logger.Info().Any("balanceID", opts.balanceID).Msg("operations not found")
-		return ErrOperationsNotFound
-	}
-
-	filter.SortByCreatedAtDesc = true
-	filter.Limit = operationsPerMessage
-	operations, err := h.stores.Operation.List(ctx, filter)
-	if err != nil {
-		logger.Error().Err(err).Msg("list operations from store")
-		return fmt.Errorf("list operations from store: %w", err)
-	}
-	if len(operations) == 0 {
-		logger.Info().Any("balanceID", opts.balanceID).Msg("operations not found")
-		return ErrOperationsNotFound
-	}
-
-	// Store the timestamp of the most recent operation in metadata.
-	// This timestamp serves as a pagination cursor, enabling the retrieval
-	// of subsequent operations in chronological order.
-	opts.stateMetadata[lastOperationDateMetadataKey] = operations[len(operations)-1].CreatedAt
-
-	err = h.apis.Messenger.SendWithKeyboard(SendWithKeyboardOptions{
-		ChatID:         opts.chatID,
-		Message:        "Select operation to delete:",
-		InlineKeyboard: convertModelToInlineKeyboardRowsWithPagination(operationsCount, operations, operationsPerMessage),
-	})
-	if err != nil {
-		logger.Error().Err(err).Msg("create inline keyboard")
-		return fmt.Errorf("create inline keyboard: %w", err)
-	}
-
-	return nil
 }
