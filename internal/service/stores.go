@@ -93,9 +93,8 @@ type ListOperationsFilter struct {
 	BalanceID           string
 	CreationPeriod      models.CreationPeriod
 	Month               models.Month
-	Limit               int
-	CreatedAtLessThan   time.Time
 	SortByCreatedAtDesc bool
+	Pagination          *Pagination
 }
 
 // CategoryStore provides functionality for work with categories store.
@@ -194,10 +193,9 @@ type BalanceSubscriptionStore interface {
 type ListBalanceSubscriptionFilter struct {
 	BalanceID                                                  string
 	OrderByCreatedAtDesc                                       bool
-	CreatedAtLessThan                                          time.Time
-	Limit                                                      int
 	SubscriptionsWithLastScheduledOperation                    bool
 	SubscriptionsForUserWhoHasEnabledSubscriptionNotifications bool
+	Pagination                                                 *Pagination
 }
 
 // GetBalanceSubscriptionFilter represents a filter for store.Get method.

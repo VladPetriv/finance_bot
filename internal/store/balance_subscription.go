@@ -144,14 +144,6 @@ func applyListBalanceSubscriptionFilter(options applyListBalanceSubscriptionOpti
 		stmt = stmt.Where(sq.Eq{"balance_subscriptions.balance_id": filter.BalanceID})
 	}
 
-	if !filter.CreatedAtLessThan.IsZero() {
-		stmt = stmt.Where(sq.Lt{"balance_subscriptions.created_at": filter.CreatedAtLessThan})
-	}
-
-	if filter.Limit != 0 {
-		stmt = stmt.Limit(uint64(filter.Limit))
-	}
-
 	if filter.SubscriptionsWithLastScheduledOperation {
 		stmt = stmt.Join("scheduled_operations ON scheduled_operations.subscription_id = balance_subscriptions.id").
 			GroupBy("balance_subscriptions.id").
@@ -163,6 +155,17 @@ func applyListBalanceSubscriptionFilter(options applyListBalanceSubscriptionOpti
 			InnerJoin("users ON users.id = balances.user_id").
 			InnerJoin("user_settings ON user_settings.user_id = users.id").
 			Where(sq.Eq{"user_settings.notify_about_subscription_payments": true})
+	}
+
+	if filter.Pagination != nil {
+		var offset uint64
+		if filter.Pagination.Page > 1 {
+			offset = uint64(filter.Pagination.Page*filter.Pagination.Limit) - uint64(filter.Pagination.Limit)
+		}
+
+		stmt = stmt.
+			Limit(uint64(filter.Pagination.Limit)).
+			Offset(offset)
 	}
 
 	if filter.OrderByCreatedAtDesc {

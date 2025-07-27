@@ -51,7 +51,7 @@ func (c *currencyStore) List(ctx context.Context, filter service.ListCurrenciesF
 	if filter.Pagination != nil {
 		var offset uint64
 		if filter.Pagination.Page > 1 {
-			offset = uint64(filter.Pagination.Page * filter.Pagination.Limit)
+			offset = uint64(filter.Pagination.Page*filter.Pagination.Limit) - uint64(filter.Pagination.Limit)
 		}
 
 		stmt = stmt.
