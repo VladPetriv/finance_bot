@@ -34,6 +34,10 @@ type SendWithKeyboardOptions struct {
 	FormatMessageInMarkDown bool
 	Keyboard                []KeyboardRow
 	InlineKeyboard          []InlineKeyboardRow
+
+	MessageID             int
+	InlineMessageID       string
+	UpdatedInlineKeyboard []InlineKeyboardRow
 }
 
 // KeyboardRow represents keyboard row with buttons.
