@@ -157,7 +157,9 @@ func applyListBalanceSubscriptionFilter(options applyListBalanceSubscriptionOpti
 			Where(sq.Eq{"user_settings.notify_about_subscription_payments": true})
 	}
 
-	stmt = applyLimitAndOffsetForStatement(stmt, filter.Pagination)
+	if filter.Pagination != nil {
+		stmt = applyLimitAndOffsetForStatement(stmt, filter.Pagination)
+	}
 
 	if filter.OrderByCreatedAtDesc {
 		stmt = stmt.GroupBy(expectedColumns...).
