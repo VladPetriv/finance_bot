@@ -162,16 +162,7 @@ func applyListOperationsFilter(options applyListOperationsOptions, filter servic
 		stmt = stmt.Where(sq.GtOrEq{"created_at": startDate}).Where(sq.LtOrEq{"created_at": endDate})
 	}
 
-	if filter.Pagination != nil {
-		var offset uint64
-		if filter.Pagination.Page > 1 {
-			offset = uint64(filter.Pagination.Page*filter.Pagination.Limit) - uint64(filter.Pagination.Limit)
-		}
-
-		stmt = stmt.
-			Limit(uint64(filter.Pagination.Limit)).
-			Offset(offset)
-	}
+	stmt = applyLimitAndOffsetForStatement(stmt, filter.Pagination)
 
 	if filter.OrderByCreatedAtDesc {
 		stmt = stmt.GroupBy("id", "category_id", "balance_id", "type", "amount", "description", "created_at", "updated_at").

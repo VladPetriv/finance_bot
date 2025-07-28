@@ -48,16 +48,7 @@ func (c *currencyStore) List(ctx context.Context, filter service.ListCurrenciesF
 		Select("id", "name", "code", "symbol").
 		From("currencies")
 
-	if filter.Pagination != nil {
-		var offset uint64
-		if filter.Pagination.Page > 1 {
-			offset = uint64(filter.Pagination.Page*filter.Pagination.Limit) - uint64(filter.Pagination.Limit)
-		}
-
-		stmt = stmt.
-			Limit(uint64(filter.Pagination.Limit)).
-			Offset(offset)
-	}
+	stmt = applyLimitAndOffsetForStatement(stmt, filter.Pagination)
 
 	query, args, err := stmt.ToSql()
 	if err != nil {
