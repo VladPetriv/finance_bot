@@ -714,8 +714,8 @@ func (h handlerService) handleChooseOperationToDeleteFlowStep(ctx context.Contex
 			page:      nextPage,
 		})
 		if err != nil {
-			logger.Error().Err(err).Msg("get operations keyboard for balance")
-			return "", fmt.Errorf("get operations keyboard for balance: %w", err)
+			logger.Error().Err(err).Msg("get operations keyboard")
+			return "", fmt.Errorf("get operations keyboard: %w", err)
 		}
 
 		return models.ChooseOperationToDeleteFlowStep, h.apis.Messenger.SendWithKeyboard(SendWithKeyboardOptions{
@@ -984,8 +984,8 @@ func (h handlerService) handleChooseOperationToUpdateFlowStep(ctx context.Contex
 			page:      nextPage,
 		})
 		if err != nil {
-			logger.Error().Err(err).Msg("get operations keyboard for balance")
-			return "", fmt.Errorf("get operations keyboard for balance: %w", err)
+			logger.Error().Err(err).Msg("get operations keyboard")
+			return "", fmt.Errorf("get operations keyboard: %w", err)
 		}
 
 		return models.ChooseOperationToUpdateFlowStep, h.apis.Messenger.SendWithKeyboard(SendWithKeyboardOptions{
