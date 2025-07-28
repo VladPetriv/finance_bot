@@ -17,7 +17,7 @@ func isPaginationNeeded(text string) bool {
 func calculateNextPage(text string, metadata map[string]any) int {
 	currentPage := metadata[pageMetadataKey].(float64)
 	switch {
-	case text == models.BotPreviousCommand && currentPage > 1:
+	case text == models.BotPreviousCommand && currentPage > firstPage:
 		currentPage--
 	case text == models.BotNextCommand:
 		currentPage++
@@ -33,7 +33,9 @@ type inlineKeyboardPaginatorOptions struct {
 	currentPage    int
 }
 
-func paginateInlineKeyboard[T identifiable](opts inlineKeyboardPaginatorOptions, getValues func() ([]T, error)) ([]InlineKeyboardRow, error) {
+type getValuesFunc[T identifiable] func() ([]T, error)
+
+func paginateInlineKeyboard[T identifiable](opts inlineKeyboardPaginatorOptions, getValues getValuesFunc[T]) ([]InlineKeyboardRow, error) {
 	values, err := getValues()
 	if err != nil {
 		return nil, fmt.Errorf("get values for inline keyboard pagination: %w", err)
@@ -54,13 +56,13 @@ func paginateInlineKeyboard[T identifiable](opts inlineKeyboardPaginatorOptions,
 		}
 	}
 
+	if opts.totalCount == 1 {
+		return keyboard, nil
+	}
+
 	maxPage := int(math.Ceil(float64(opts.totalCount) / float64(opts.maxPerKeyboard)))
 	switch {
-	case opts.currentPage == maxPage: // Max page do not display Next button or any buttons if only one item
-		if opts.totalCount == 1 {
-			return keyboard, nil
-		}
-
+	case opts.currentPage == maxPage: // Max page do not display Next button
 		keyboard = append(keyboard, InlineKeyboardRow{
 			Buttons: []InlineKeyboardButton{
 				{
@@ -68,7 +70,7 @@ func paginateInlineKeyboard[T identifiable](opts inlineKeyboardPaginatorOptions,
 				},
 			},
 		})
-	case opts.currentPage > 1: // Current page is not the first page and not last page, display both buttons
+	case opts.currentPage > firstPage: // Current page is not the first page and not last page, display both buttons
 		keyboard = append(keyboard, InlineKeyboardRow{
 			Buttons: []InlineKeyboardButton{
 				{
@@ -79,11 +81,7 @@ func paginateInlineKeyboard[T identifiable](opts inlineKeyboardPaginatorOptions,
 				},
 			},
 		})
-	case opts.currentPage == 1: // First page, display Next button only or no buttons if only one item
-		if opts.totalCount == 1 {
-			return keyboard, nil
-		}
-
+	case opts.currentPage == firstPage: // First page, display Next button only
 		keyboard = append(keyboard, InlineKeyboardRow{
 			Buttons: []InlineKeyboardButton{
 				{
