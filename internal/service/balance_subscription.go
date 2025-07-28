@@ -243,7 +243,7 @@ func (h *handlerService) handleChooseBalanceFlowStepForUpdateBalanceSubscription
 	}
 
 	opts.stateMetaData[balanceIDMetadataKey] = balance.ID
-	opts.stateMetaData[pageMetadataKey] = 1
+	opts.stateMetaData[pageMetadataKey] = firstPage
 
 	err := h.showCancelButton(opts.message.GetChatID(), "")
 	if err != nil {
@@ -253,7 +253,7 @@ func (h *handlerService) handleChooseBalanceFlowStepForUpdateBalanceSubscription
 
 	keyboard, err := h.getBalanceSubscriptionsKeyboard(ctx, getBalanceSubscriptionsKeyboardOptions{
 		balanceID: balance.ID,
-		page:      1,
+		page:      firstPage,
 	})
 	if err != nil {
 		return "", fmt.Errorf("get balance subscriptions keyboard: %w", err)
@@ -570,7 +570,7 @@ func (h *handlerService) handleChooseBalanceFlowStepForBalanceSubscriptionDelete
 	}
 
 	opts.stateMetaData[balanceIDMetadataKey] = balance.ID
-	opts.stateMetaData[pageMetadataKey] = 1
+	opts.stateMetaData[pageMetadataKey] = firstPage
 
 	err := h.showCancelButton(opts.message.GetChatID(), "")
 	if err != nil {
@@ -580,7 +580,7 @@ func (h *handlerService) handleChooseBalanceFlowStepForBalanceSubscriptionDelete
 
 	keyboard, err := h.getBalanceSubscriptionsKeyboard(ctx, getBalanceSubscriptionsKeyboardOptions{
 		balanceID: balance.ID,
-		page:      1,
+		page:      firstPage,
 	})
 	if err != nil {
 		return "", fmt.Errorf("get operations keyboard: %w", err)

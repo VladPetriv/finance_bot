@@ -80,9 +80,9 @@ func (h handlerService) handleEnterBalanceAmountFlowStepForCreate(ctx context.Co
 	}
 
 	opts.stateMetaData[balanceAmountMetadataKey] = parsedAmount.StringFixed()
-	opts.stateMetaData[pageMetadataKey] = 1
+	opts.stateMetaData[pageMetadataKey] = firstPage
 
-	currenciesKeyboard, err := h.getCurrenciesKeyboard(ctx, 1)
+	currenciesKeyboard, err := h.getCurrenciesKeyboard(ctx, firstPage)
 	if err != nil {
 		logger.Error().Err(err).Msg("get currencies keyboard for balance")
 		return "", fmt.Errorf("get currencies keyboard for balance: %w", err)
@@ -287,8 +287,8 @@ func (h handlerService) handleChooseUpdateBalanceOptionFlowStep(ctx context.Cont
 	case models.BotUpdateBalanceAmountCommand:
 		return models.EnterBalanceAmountFlowStep, h.apis.Messenger.SendMessage(opts.message.GetChatID(), "Enter updated balance amount:")
 	case models.BotUpdateBalanceCurrencyCommand:
-		opts.stateMetaData[pageMetadataKey] = 1
-		currenciesKeyboard, err := h.getCurrenciesKeyboard(ctx, 1)
+		opts.stateMetaData[pageMetadataKey] = firstPage
+		currenciesKeyboard, err := h.getCurrenciesKeyboard(ctx, firstPage)
 		if err != nil {
 			logger.Error().Err(err).Msg("get currencies keyboard for balance")
 			return "", fmt.Errorf("get currencies keyboard for balance: %w", err)
@@ -370,8 +370,8 @@ func (h handlerService) handleEnterBalanceAmountFlowStepForUpdate(ctx context.Co
 	}
 
 	if opts.state.Flow == models.StartFlow {
-		opts.stateMetaData[pageMetadataKey] = 1
-		currenciesKeyboard, err := h.getCurrenciesKeyboard(ctx, 1)
+		opts.stateMetaData[pageMetadataKey] = firstPage
+		currenciesKeyboard, err := h.getCurrenciesKeyboard(ctx, firstPage)
 		if err != nil {
 			logger.Error().Err(err).Msg("get currencies keyboard for balance")
 			return "", fmt.Errorf("get currencies keyboard for balance: %w", err)

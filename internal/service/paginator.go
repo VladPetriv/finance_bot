@@ -8,6 +8,8 @@ import (
 	"github.com/VladPetriv/finance_bot/internal/models"
 )
 
+const firstPage = 1
+
 func isPaginationNeeded(text string) bool {
 	return slices.Contains([]string{models.BotPreviousCommand, models.BotNextCommand}, text)
 }

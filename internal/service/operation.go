@@ -677,7 +677,7 @@ func (h handlerService) handleChooseBalanceFlowStepForDeleteOperation(ctx contex
 	logger.Debug().Any("opts", opts).Msg("got args")
 
 	opts.stateMetaData[balanceNameMetadataKey] = opts.message.GetText()
-	opts.stateMetaData[pageMetadataKey] = 1
+	opts.stateMetaData[pageMetadataKey] = firstPage
 
 	err := h.showCancelButton(opts.message.GetChatID(), "")
 	if err != nil {
@@ -687,7 +687,7 @@ func (h handlerService) handleChooseBalanceFlowStepForDeleteOperation(ctx contex
 
 	keyboard, err := h.getOperationsKeyboard(ctx, getOperationsKeyboardOptions{
 		balanceID: opts.user.GetBalance(opts.message.GetText()).ID,
-		page:      1,
+		page:      firstPage,
 	})
 	if err != nil {
 		return "", fmt.Errorf("get operations keyboard: %w", err)
@@ -947,7 +947,7 @@ func (h handlerService) handleChooseBalanceFlowStepForUpdateOperation(ctx contex
 	logger.Debug().Any("opts", opts).Msg("got args")
 
 	opts.stateMetaData[balanceNameMetadataKey] = opts.message.GetText()
-	opts.stateMetaData[pageMetadataKey] = 1
+	opts.stateMetaData[pageMetadataKey] = firstPage
 
 	err := h.showCancelButton(opts.message.GetChatID(), "")
 	if err != nil {
@@ -957,7 +957,7 @@ func (h handlerService) handleChooseBalanceFlowStepForUpdateOperation(ctx contex
 
 	keyboard, err := h.getOperationsKeyboard(ctx, getOperationsKeyboardOptions{
 		balanceID: opts.user.GetBalance(opts.message.GetText()).ID,
-		page:      1,
+		page:      firstPage,
 	})
 	if err != nil {
 		return "", fmt.Errorf("get operations keyboard: %w", err)
