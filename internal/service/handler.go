@@ -512,71 +512,6 @@ func (h handlerService) showCancelButton(chatID int, message string) error {
 	})
 }
 
-type named interface {
-	GetName() string
-}
-
-func getKeyboardRows[T named](data []T, elementLimitPerRow int, includeRowWithCancelButton bool) []KeyboardRow {
-	keyboardRows := make([]KeyboardRow, 0)
-
-	var currentRow KeyboardRow
-	for i, entry := range data {
-		currentRow.Buttons = append(currentRow.Buttons, entry.GetName())
-
-		// When row is full or we're at the last data item, append row
-		if len(currentRow.Buttons) == elementLimitPerRow || i == len(data)-1 {
-			keyboardRows = append(keyboardRows, currentRow)
-			currentRow = KeyboardRow{} // Reset current row
-		}
-	}
-
-	if includeRowWithCancelButton {
-		keyboardRows = append(keyboardRows, KeyboardRow{
-			Buttons: []string{models.BotCancelCommand},
-		})
-	}
-
-	return keyboardRows
-}
-
-type identifiable interface {
-	GetID() string
-	GetName() string
-}
-
-// convertModelToInlineKeyboardRowsWithPagination converts a slice of any model that satisfy identifiable interface into inline keyboard rows with pagination support.
-// If there are more models than the per-message limit, it adds a "Show More" button.
-func convertModelToInlineKeyboardRowsWithPagination[T identifiable](actualCount int, data []T, limitPerMessage int) []InlineKeyboardRow {
-	inlineKeyboardRows := make([]InlineKeyboardRow, 0, len(data))
-	for _, value := range data {
-		inlineKeyboardRows = append(inlineKeyboardRows, InlineKeyboardRow{
-			Buttons: []InlineKeyboardButton{
-				{
-					Text: value.GetName(),
-					Data: value.GetID(),
-				},
-			},
-		})
-	}
-
-	// Skip BotShowMoreCommand if models are within the limit.
-	if actualCount <= limitPerMessage {
-		return inlineKeyboardRows
-	}
-
-	inlineKeyboardRows = append(inlineKeyboardRows, []InlineKeyboardRow{
-		{
-			Buttons: []InlineKeyboardButton{
-				{
-					Text: models.BotShowMoreCommand,
-				},
-			},
-		},
-	}...)
-
-	return inlineKeyboardRows
-}
-
 // sendMessageWithDefaultKeyboard sends a message to the specified chat with the default keyboard interface.
 func (h handlerService) sendMessageWithDefaultKeyboard(chatID int, message string) error {
 	return h.apis.Messenger.SendWithKeyboard(SendWithKeyboardOptions{
@@ -584,37 +519,4 @@ func (h handlerService) sendMessageWithDefaultKeyboard(chatID int, message strin
 		Message:  message,
 		Keyboard: defaultKeyboardRows,
 	})
-}
-
-const currenciesPerKeyboardRow = 3
-
-func (h handlerService) getCurrenciesKeyboardForBalance(ctx context.Context) ([]InlineKeyboardRow, error) {
-	logger := h.logger.With().Str("name", "handlerService.getCurrenciesKeyboardForBalance").Logger()
-
-	currencies, err := h.stores.Currency.List(ctx)
-	if err != nil {
-		logger.Error().Err(err).Msg("list currencies from store")
-		return nil, fmt.Errorf("list currencies from store: %w", err)
-	}
-	if len(currencies) == 0 {
-		logger.Info().Msg("currencies not found")
-		return nil, fmt.Errorf("no currencies found")
-	}
-
-	currenciesKeyboard := make([]InlineKeyboardRow, 0)
-
-	var currentRow InlineKeyboardRow
-	for index, currency := range currencies {
-		currentRow.Buttons = append(currentRow.Buttons, InlineKeyboardButton{
-			Text: currency.Name,
-			Data: currency.ID,
-		})
-
-		if len(currentRow.Buttons) == currenciesPerKeyboardRow || index == len(currencies)-1 {
-			currenciesKeyboard = append(currenciesKeyboard, currentRow)
-			currentRow = InlineKeyboardRow{}
-		}
-	}
-
-	return currenciesKeyboard, nil
 }

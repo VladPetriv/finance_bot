@@ -34,6 +34,10 @@ type SendWithKeyboardOptions struct {
 	FormatMessageInMarkDown bool
 	Keyboard                []KeyboardRow
 	InlineKeyboard          []InlineKeyboardRow
+
+	MessageID             int
+	InlineMessageID       string
+	UpdatedInlineKeyboard []InlineKeyboardRow
 }
 
 // KeyboardRow represents keyboard row with buttons.
@@ -56,6 +60,10 @@ type InlineKeyboardButton struct {
 type Message interface {
 	// GetChatID returns the ID of the chat the message was sent to.
 	GetChatID() int
+	// GetMessageID returns the ID of the message.
+	GetMessageID() int
+	// GetInlineMessageID returns the ID of the inline message.
+	GetInlineMessageID() string
 	// GetText returns the text content of the message.
 	GetText() string
 	// GetSenderName returns the name of the user who sent the message.

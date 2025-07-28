@@ -17,6 +17,11 @@ type Balance struct {
 	Currency Currency
 }
 
+// GetID returns the balance ID.
+func (b Balance) GetID() string {
+	return b.ID
+}
+
 // GetName returns the balance name.
 func (b Balance) GetName() string {
 	return b.Name

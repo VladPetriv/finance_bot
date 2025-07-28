@@ -78,8 +78,10 @@ const (
 	// BotDeleteBalanceSubscriptionCommand represents the command to delete a balance subscription
 	BotDeleteBalanceSubscriptionCommand string = "Delete 🗑️"
 
-	// BotShowMoreCommand represents the command to select more models.
-	BotShowMoreCommand string = "Show More ➡️"
+	// BotPreviousCommand represents the command to go back to the previous page
+	BotPreviousCommand string = "Previous ⬅️"
+	// BotNextCommand represents the command to go to the next page
+	BotNextCommand string = "Next ➡️"
 	// BotCancelCommand represents the command that will cancel the current flow
 	BotCancelCommand string = "Cancel action ⬅️"
 	// BotBackCommand represents the command to go back to the previous menu
@@ -98,7 +100,7 @@ var AvailableCommands = []string{
 	BotUpdateOperationDateCommand, BotUpdateOperationCategoryCommand,
 	BotCreateBalanceSubscriptionCommand, BotListBalanceSubscriptionsCommand, BotDeleteBalanceSubscriptionCommand, BotUpdateBalanceSubscriptionCommand,
 	BotUpdateBalanceSubscriptionNameCommand, BotUpdateBalanceSubscriptionCategoryCommand, BotUpdateBalanceSubscriptionAmountCommand, BotUpdateBalanceSubscriptionPeriodCommand,
-	BotCancelCommand, BotBackCommand, BotShowMoreCommand,
+	BotCancelCommand, BotBackCommand,
 }
 
 // CommandToEvent maps bot commands to their corresponding events

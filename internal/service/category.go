@@ -94,7 +94,7 @@ func (h handlerService) handleUpdateCategoryFlowStep(ctx context.Context, opts f
 	return models.ChooseCategoryFlowStep, h.apis.Messenger.SendWithKeyboard(SendWithKeyboardOptions{
 		ChatID:   opts.message.GetChatID(),
 		Message:  "Choose category to update:",
-		Keyboard: getKeyboardRows(categories, 3, true),
+		Keyboard: getRowKeyboardRows(categories, 3, true),
 	})
 }
 
@@ -153,7 +153,7 @@ func (h handlerService) handleDeleteCategoryFlowStep(ctx context.Context, opts f
 	return models.ChooseCategoryFlowStep, h.apis.Messenger.SendWithKeyboard(SendWithKeyboardOptions{
 		ChatID:   opts.message.GetChatID(),
 		Message:  "Choose category to delete:",
-		Keyboard: getKeyboardRows(categories, 3, true),
+		Keyboard: getRowKeyboardRows(categories, 3, true),
 	})
 }
 

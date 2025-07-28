@@ -41,10 +41,24 @@ func (c *currencyStore) Count(ctx context.Context) (int, error) {
 	return count, nil
 }
 
-func (c *currencyStore) List(ctx context.Context) ([]models.Currency, error) {
-	var currencies []models.Currency
+func (c *currencyStore) List(ctx context.Context, filter service.ListCurrenciesFilter) ([]models.Currency, error) {
+	stmt := sq.
+		StatementBuilder.
+		PlaceholderFormat(sq.Dollar).
+		Select("id", "name", "code", "symbol").
+		From("currencies")
 
-	err := c.DB.SelectContext(ctx, &currencies, "SELECT * FROM currencies;")
+	if filter.Pagination != nil {
+		stmt = applyLimitAndOffsetForStatement(stmt, filter.Pagination)
+	}
+
+	query, args, err := stmt.ToSql()
+	if err != nil {
+		return nil, err
+	}
+
+	var currencies []models.Currency
+	err = c.DB.SelectContext(ctx, &currencies, query, args...)
 	if err != nil {
 		return nil, err
 	}

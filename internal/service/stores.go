@@ -90,12 +90,11 @@ type GetOperationFilter struct {
 
 // ListOperationsFilter represents filters for list operations from store.
 type ListOperationsFilter struct {
-	BalanceID           string
-	CreationPeriod      models.CreationPeriod
-	Month               models.Month
-	Limit               int
-	CreatedAtLessThan   time.Time
-	SortByCreatedAtDesc bool
+	BalanceID            string
+	CreationPeriod       models.CreationPeriod
+	Month                models.Month
+	OrderByCreatedAtDesc bool
+	Pagination           *Pagination
 }
 
 // CategoryStore provides functionality for work with categories store.
@@ -151,9 +150,14 @@ type CurrencyStore interface {
 	// Count returns a count of all currencies from store.
 	Count(ctx context.Context) (int, error)
 	// List returns a list of all currencies from store.
-	List(ctx context.Context) ([]models.Currency, error)
+	List(ctx context.Context, filter ListCurrenciesFilter) ([]models.Currency, error)
 	// Exists checks if currency exists in store based on input filter.
 	Exists(ctx context.Context, opts ExistsCurrencyFilter) (bool, error)
+}
+
+// ListCurrenciesFilter represents a filter for CurrencyStore.List method.
+type ListCurrenciesFilter struct {
+	Pagination *Pagination
 }
 
 // ExistsCurrencyFilter represents a filter for CurrencyStore.Exists method.
@@ -189,10 +193,9 @@ type BalanceSubscriptionStore interface {
 type ListBalanceSubscriptionFilter struct {
 	BalanceID                                                  string
 	OrderByCreatedAtDesc                                       bool
-	CreatedAtLessThan                                          time.Time
-	Limit                                                      int
 	SubscriptionsWithLastScheduledOperation                    bool
 	SubscriptionsForUserWhoHasEnabledSubscriptionNotifications bool
+	Pagination                                                 *Pagination
 }
 
 // GetBalanceSubscriptionFilter represents a filter for store.Get method.
@@ -213,4 +216,10 @@ type ListScheduledOperation struct {
 type BetweenFilter struct {
 	From time.Time
 	To   time.Time
+}
+
+// Pagination represents a pagination filter for store.List methods.
+type Pagination struct {
+	Page  int
+	Limit int
 }

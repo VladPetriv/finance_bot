@@ -111,53 +111,6 @@ func (t *telegramMessenger) ReadUpdates(result chan service.Message, errors chan
 	}
 }
 
-// Update represents the update received from the Telegram.
-type Update struct {
-	update telego.Update
-}
-
-// GetChatID returns the ID of the chat the message was sent to.
-func (t *Update) GetChatID() int {
-	var chatID int
-
-	if t.update.Message != nil {
-		chatID = int(t.update.Message.Chat.ID)
-	}
-	if t.update.CallbackQuery != nil {
-		chatID = int(t.update.CallbackQuery.Message.Chat.ID)
-	}
-
-	return chatID
-}
-
-// GetText returns the text content of the message or callback data.
-func (t *Update) GetText() string {
-	var text string
-
-	if t.update.Message != nil {
-		text = t.update.Message.Text
-	}
-	if t.update.CallbackQuery != nil {
-		text = t.update.CallbackQuery.Data
-	}
-
-	return text
-}
-
-// GetSenderName returns the name of the user who sent the message.
-func (t *Update) GetSenderName() string {
-	var senderName string
-
-	if t.update.Message != nil {
-		senderName = t.update.Message.From.Username
-	}
-	if t.update.CallbackQuery != nil {
-		senderName = t.update.CallbackQuery.From.Username
-	}
-
-	return senderName
-}
-
 func (t *telegramMessenger) Close() error {
 	return t.api.StopWebhook()
 }
@@ -171,21 +124,28 @@ func (t *telegramMessenger) SendMessage(chatID int, text string) error {
 
 func (t *telegramMessenger) SendWithKeyboard(opts service.SendWithKeyboardOptions) error {
 	return t.send(&sendOptions{
-		chatID:           int64(opts.ChatID),
-		message:          opts.Message,
-		formatInMarkdown: opts.FormatMessageInMarkDown,
-		keyboard:         opts.Keyboard,
-		inlineKeyboard:   opts.InlineKeyboard,
+		chatID:                int64(opts.ChatID),
+		messageID:             opts.MessageID,
+		inlineMessageID:       opts.InlineMessageID,
+		message:               opts.Message,
+		formatInMarkdown:      opts.FormatMessageInMarkDown,
+		keyboard:              opts.Keyboard,
+		inlineKeyboard:        opts.InlineKeyboard,
+		updatedInlineKeyboard: opts.UpdatedInlineKeyboard,
 	})
 }
 
 type sendOptions struct {
-	chatID           int64
+	chatID          int64
+	messageID       int
+	inlineMessageID string
+
 	message          string
 	formatInMarkdown bool
 
-	keyboard       []service.KeyboardRow
-	inlineKeyboard []service.InlineKeyboardRow
+	keyboard              []service.KeyboardRow
+	inlineKeyboard        []service.InlineKeyboardRow
+	updatedInlineKeyboard []service.InlineKeyboardRow
 }
 
 const (
@@ -230,6 +190,24 @@ func (t *telegramMessenger) send(opts *sendOptions) error {
 		}
 
 		message = message.WithReplyMarkup(inlineKeyboards[0])
+	}
+
+	if len(opts.updatedInlineKeyboard) > 0 {
+		inlineKeyboard := t.createInlineKeyboard(opts.updatedInlineKeyboard)
+
+		_, err := t.api.EditMessageReplyMarkup(&telego.EditMessageReplyMarkupParams{
+			ChatID: telego.ChatID{
+				ID: opts.chatID,
+			},
+			MessageID:       opts.messageID,
+			InlineMessageID: opts.inlineMessageID,
+			ReplyMarkup:     inlineKeyboard[0],
+		})
+		if err != nil {
+			return fmt.Errorf("edit message reply markup: %w", err)
+		}
+
+		return nil
 	}
 
 	_, err := t.api.SendMessage(message)

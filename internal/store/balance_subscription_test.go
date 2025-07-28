@@ -420,10 +420,18 @@ func TestBalanceSubscription_List(t *testing.T) {
 	balanceSubscriptionStore := store.NewBalanceSubscription(testCaseDB)
 
 	userID := uuid.NewString()
-	balanceID1, balanceID2 := uuid.NewString(), uuid.NewString()
+	balanceID1, balanceID2,
+		balanceID3, balanceID4 := uuid.NewString(), uuid.NewString(),
+		uuid.NewString(), uuid.NewString()
 	currencyID := uuid.NewString()
 	categoryID := uuid.NewString()
-	balanceSubscriptionID1, balanceSubscriptionID2, balanceSubscriptionID3 := uuid.NewString(), uuid.NewString(), uuid.NewString()
+	balanceSubscriptionID1, balanceSubscriptionID2, balanceSubscriptionID3,
+		balanceSubscriptionID4, balanceSubscriptionID5, balanceSubscriptionID6,
+		balanceSubscriptionID7, balanceSubscriptionID8, balanceSubscriptionID9,
+		balanceSubscriptionID10, balanceSubscriptionID11 := uuid.NewString(), uuid.NewString(),
+		uuid.NewString(), uuid.NewString(), uuid.NewString(),
+		uuid.NewString(), uuid.NewString(), uuid.NewString(),
+		uuid.NewString(), uuid.NewString(), uuid.NewString()
 
 	err := currencyStore.CreateIfNotExists(ctx, &models.Currency{
 		ID:   currencyID,
@@ -438,7 +446,7 @@ func TestBalanceSubscription_List(t *testing.T) {
 	})
 	require.NoError(t, err)
 
-	for _, balanceID := range []string{balanceID1, balanceID2} {
+	for _, balanceID := range []string{balanceID1, balanceID2, balanceID3, balanceID4} {
 		err = balanceStore.Create(ctx, &models.Balance{
 			ID:         balanceID,
 			UserID:     userID,
@@ -455,7 +463,7 @@ func TestBalanceSubscription_List(t *testing.T) {
 	require.NoError(t, err)
 
 	t.Cleanup(func() {
-		for _, balanceID := range []string{balanceID1, balanceID2} {
+		for _, balanceID := range []string{balanceID1, balanceID2, balanceID3, balanceID4} {
 			err = balanceStore.Delete(ctx, balanceID)
 			assert.NoError(t, err)
 		}
@@ -517,6 +525,130 @@ func TestBalanceSubscription_List(t *testing.T) {
 				{
 					ID:         balanceSubscriptionID1,
 					BalanceID:  balanceID1,
+					CategoryID: categoryID,
+					Name:       "test1",
+					Amount:     amount100,
+					Period:     models.SubscriptionPeriodWeekly,
+				},
+			},
+		},
+		{
+			desc: "received a list of balance subscriptions with pagination: page: 1, limit: 2, total: 4",
+			preconditions: []models.BalanceSubscription{
+				{
+					ID:         balanceSubscriptionID4,
+					BalanceID:  balanceID3,
+					CategoryID: categoryID,
+					Name:       "test1",
+					Amount:     amount100,
+					Period:     models.SubscriptionPeriodWeekly,
+				},
+				{
+					ID:         balanceSubscriptionID5,
+					BalanceID:  balanceID3,
+					CategoryID: categoryID,
+					Name:       "test2",
+					Amount:     amount100,
+					Period:     models.SubscriptionPeriodYearly,
+				},
+				{
+					ID:         balanceSubscriptionID6,
+					BalanceID:  balanceID3,
+					CategoryID: categoryID,
+					Name:       "test3",
+					Amount:     amount100,
+					Period:     models.SubscriptionPeriodWeekly,
+				},
+				{
+					ID:         balanceSubscriptionID7,
+					BalanceID:  balanceID3,
+					CategoryID: categoryID,
+					Name:       "test4",
+					Amount:     amount100,
+					Period:     models.SubscriptionPeriodWeekly,
+				},
+			},
+			args: service.ListBalanceSubscriptionFilter{
+				BalanceID: balanceID3,
+				Pagination: &service.Pagination{
+					Page:  1,
+					Limit: 2,
+				},
+			},
+			expected: []models.BalanceSubscription{
+				{
+					ID:         balanceSubscriptionID7,
+					BalanceID:  balanceID3,
+					CategoryID: categoryID,
+					Name:       "test4",
+					Amount:     amount100,
+					Period:     models.SubscriptionPeriodWeekly,
+				},
+				{
+					ID:         balanceSubscriptionID6,
+					BalanceID:  balanceID3,
+					CategoryID: categoryID,
+					Name:       "test3",
+					Amount:     amount100,
+					Period:     models.SubscriptionPeriodWeekly,
+				},
+			},
+		},
+		{
+			desc: "received a list of balance subscriptions with pagination: page: 2, limit: 2, total: 4",
+			preconditions: []models.BalanceSubscription{
+				{
+					ID:         balanceSubscriptionID8,
+					BalanceID:  balanceID4,
+					CategoryID: categoryID,
+					Name:       "test1",
+					Amount:     amount100,
+					Period:     models.SubscriptionPeriodWeekly,
+				},
+				{
+					ID:         balanceSubscriptionID9,
+					BalanceID:  balanceID4,
+					CategoryID: categoryID,
+					Name:       "test2",
+					Amount:     amount100,
+					Period:     models.SubscriptionPeriodYearly,
+				},
+				{
+					ID:         balanceSubscriptionID10,
+					BalanceID:  balanceID4,
+					CategoryID: categoryID,
+					Name:       "test3",
+					Amount:     amount100,
+					Period:     models.SubscriptionPeriodWeekly,
+				},
+				{
+					ID:         balanceSubscriptionID11,
+					BalanceID:  balanceID4,
+					CategoryID: categoryID,
+					Name:       "test4",
+					Amount:     amount100,
+					Period:     models.SubscriptionPeriodWeekly,
+				},
+			},
+			args: service.ListBalanceSubscriptionFilter{
+				BalanceID: balanceID4,
+				Pagination: &service.Pagination{
+					Page:  2,
+					Limit: 2,
+				},
+			},
+			expected: []models.BalanceSubscription{
+				{
+					ID:         balanceSubscriptionID9,
+					BalanceID:  balanceID4,
+					CategoryID: categoryID,
+					Name:       "test2",
+					Amount:     amount100,
+					Period:     models.SubscriptionPeriodYearly,
+				},
+				{
+					ID:         balanceSubscriptionID8,
+					BalanceID:  balanceID4,
 					CategoryID: categoryID,
 					Name:       "test1",
 					Amount:     amount100,

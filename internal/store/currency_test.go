@@ -2,6 +2,7 @@ package store_test
 
 import (
 	"context"
+	"fmt"
 	"testing"
 
 	"github.com/VladPetriv/finance_bot/internal/models"
@@ -164,24 +165,27 @@ func TestCurrency_List(t *testing.T) {
 
 	testCases := [...]struct {
 		desc          string
-		preconditions []models.Currency
+		preconditions func() []models.Currency
+		args          service.ListCurrenciesFilter
 		expected      []models.Currency
 	}{
 		{
 			desc: "list all currencies",
-			preconditions: []models.Currency{
-				{
-					ID:     uuid.NewString(),
-					Name:   "US Dollar",
-					Symbol: "$",
-					Code:   "USD_test_list_1",
-				},
-				{
-					ID:     uuid.NewString(),
-					Name:   "Euro",
-					Symbol: "€",
-					Code:   "EUR_test_list_1",
-				},
+			preconditions: func() []models.Currency {
+				return []models.Currency{
+					{
+						ID:     uuid.NewString(),
+						Name:   "US Dollar",
+						Symbol: "$",
+						Code:   "USD_test_list_1",
+					},
+					{
+						ID:     uuid.NewString(),
+						Name:   "Euro",
+						Symbol: "€",
+						Code:   "EUR_test_list_1",
+					},
+				}
 			},
 			expected: []models.Currency{
 				{
@@ -199,37 +203,138 @@ func TestCurrency_List(t *testing.T) {
 			},
 		},
 		{
-			desc:     "positive: empty list when no currencies",
+			desc: "list currencies with pagination: total:10, page:1, limit:5",
+			preconditions: func() []models.Currency {
+				currencies := make([]models.Currency, 0, 10)
+				for i := range 10 {
+					currencies = append(currencies, models.Currency{
+						ID:     uuid.NewString(),
+						Name:   fmt.Sprintf("Currency %d", i),
+						Symbol: fmt.Sprintf("$%d", i),
+						Code:   fmt.Sprintf("C%d", i),
+					})
+				}
+				return currencies
+			},
+			args: service.ListCurrenciesFilter{
+				Pagination: &service.Pagination{
+					Page:  1,
+					Limit: 5,
+				},
+			},
+			expected: []models.Currency{
+				{
+					Name:   "Currency 0",
+					Symbol: "$0",
+					Code:   "C0",
+				},
+				{
+					Name:   "Currency 1",
+					Symbol: "$1",
+					Code:   "C1",
+				},
+				{
+					Name:   "Currency 2",
+					Symbol: "$2",
+					Code:   "C2",
+				},
+				{
+					Name:   "Currency 3",
+					Symbol: "$3",
+					Code:   "C3",
+				},
+				{
+					Name:   "Currency 4",
+					Symbol: "$4",
+					Code:   "C4",
+				},
+			},
+		},
+		{
+			desc: "list currencies with pagination: total:10, page 2, limit 5",
+			preconditions: func() []models.Currency {
+				currencies := make([]models.Currency, 0, 10)
+				for i := range 10 {
+					currencies = append(currencies, models.Currency{
+						ID:     uuid.NewString(),
+						Name:   fmt.Sprintf("tc2_Currency %d", i),
+						Symbol: fmt.Sprintf("tc2_$%d", i),
+						Code:   fmt.Sprintf("tc2_C%d", i),
+					})
+				}
+				return currencies
+			},
+			args: service.ListCurrenciesFilter{
+				Pagination: &service.Pagination{
+					Page:  2,
+					Limit: 5,
+				},
+			},
+			expected: []models.Currency{
+				{
+					Name:   "tc2_Currency 5",
+					Symbol: "tc2_$5",
+					Code:   "tc2_C5",
+				},
+				{
+					Name:   "tc2_Currency 6",
+					Symbol: "tc2_$6",
+					Code:   "tc2_C6",
+				},
+				{
+					Name:   "tc2_Currency 7",
+					Symbol: "tc2_$7",
+					Code:   "tc2_C7",
+				},
+				{
+					Name:   "tc2_Currency 8",
+					Symbol: "tc2_$8",
+					Code:   "tc2_C8",
+				},
+				{
+					Name:   "tc2_Currency 9",
+					Symbol: "tc2_$9",
+					Code:   "tc2_C9",
+				},
+			},
+		},
+		{
+			desc: "positive: empty list when no currencies",
+			preconditions: func() []models.Currency {
+				return []models.Currency{}
+			},
 			expected: []models.Currency{},
 		},
 	}
 	for _, tc := range testCases {
 		tc := tc
 		t.Run(tc.desc, func(t *testing.T) {
-			for _, currency := range tc.preconditions {
+			preconditions := tc.preconditions()
+
+			for _, currency := range preconditions {
 				err := currencyStore.CreateIfNotExists(ctx, &currency)
 				assert.NoError(t, err)
 			}
 
 			t.Cleanup(func() {
-				for _, currency := range tc.preconditions {
+				for _, currency := range preconditions {
 					err := deleteCurrencyByID(testCaseDB.DB, currency.ID)
 					assert.NoError(t, err)
 				}
 			})
 
-			currencies, err := currencyStore.List(ctx)
+			currencies, err := currencyStore.List(ctx, tc.args)
 			assert.NoError(t, err)
 
-			if len(tc.preconditions) == 0 {
+			if len(preconditions) == 0 {
 				assert.Empty(t, currencies)
 				return
 			}
 
 			for i, currency := range currencies {
-				assert.Equal(t, tc.preconditions[i].Name, currency.Name)
-				assert.Equal(t, tc.preconditions[i].Symbol, currency.Symbol)
-				assert.Equal(t, tc.preconditions[i].Code, currency.Code)
+				assert.Equal(t, tc.expected[i].Name, currency.Name)
+				assert.Equal(t, tc.expected[i].Symbol, currency.Symbol)
+				assert.Equal(t, tc.expected[i].Code, currency.Code)
 			}
 		})
 	}
