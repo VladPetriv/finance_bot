@@ -173,7 +173,7 @@ func applyListOperationsFilter(options applyListOperationsOptions, filter servic
 			Offset(offset)
 	}
 
-	if filter.SortByCreatedAtDesc {
+	if filter.OrderByCreatedAtDesc {
 		stmt = stmt.GroupBy("id", "category_id", "balance_id", "type", "amount", "description", "created_at", "updated_at").
 			OrderBy("created_at DESC")
 	}

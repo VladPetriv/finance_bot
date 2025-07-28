@@ -90,11 +90,11 @@ type GetOperationFilter struct {
 
 // ListOperationsFilter represents filters for list operations from store.
 type ListOperationsFilter struct {
-	BalanceID           string
-	CreationPeriod      models.CreationPeriod
-	Month               models.Month
-	SortByCreatedAtDesc bool
-	Pagination          *Pagination
+	BalanceID            string
+	CreationPeriod       models.CreationPeriod
+	Month                models.Month
+	OrderByCreatedAtDesc bool
+	Pagination           *Pagination
 }
 
 // CategoryStore provides functionality for work with categories store.

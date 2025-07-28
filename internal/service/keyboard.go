@@ -70,8 +70,8 @@ func (h handlerService) getOperationsKeyboard(ctx context.Context, opts getOpera
 		},
 		func() ([]models.Operation, error) {
 			operations, err := h.stores.Operation.List(ctx, ListOperationsFilter{
-				BalanceID:           opts.balanceID,
-				SortByCreatedAtDesc: true,
+				BalanceID:            opts.balanceID,
+				OrderByCreatedAtDesc: true,
 				Pagination: &Pagination{
 					Limit: operationsPerKeyboard,
 					Page:  opts.page,
