@@ -114,9 +114,7 @@ func (s *State) IsCommandAllowedDuringFlow(command string) bool {
 		switch s.GetCurrentStep() {
 		case EnterBalanceCurrencyFlowStep:
 			return slices.Contains(
-				[]string{
-					BotNextCommand, BotPreviousCommand,
-				},
+				[]string{BotNextCommand, BotPreviousCommand},
 				command,
 			)
 		}
