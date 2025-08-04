@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/VladPetriv/finance_bot/internal/models"
 )
@@ -95,6 +96,117 @@ func (h handlerService) getOperationsKeyboard(ctx context.Context, opts getOpera
 	}
 
 	return keyboard, nil
+}
+
+type getOperationsHistoryKeyboardOptions struct {
+	balance        *models.Balance
+	creationPeriod models.CreationPeriod
+	page           int
+}
+
+func (h handlerService) getOperationsHistoryKeyboard(ctx context.Context, opts getOperationsHistoryKeyboardOptions) (string, []InlineKeyboardRow, error) {
+	logger := h.logger.With().Str("name", "handlerService.getOperationsHistoryKeyboard").Logger()
+	logger.Debug().Any("opts", opts).Msg("got args")
+
+	operationsCount, err := h.stores.Operation.Count(ctx, ListOperationsFilter{
+		BalanceID: opts.balance.ID,
+	})
+	if err != nil {
+		logger.Error().Err(err).Msg("count operations")
+		return "", nil, fmt.Errorf("count operations: %w", err)
+	}
+	if operationsCount == 0 {
+		logger.Info().Any("balanceID", opts.balance.ID).Msg("operations not found")
+		return "", nil, ErrOperationsNotFound
+	}
+
+	message, keyboard, err := paginateTextUsingInlineKeybaord(
+		inlineKeyboardPaginatorOptions{
+			totalCount:     operationsCount,
+			maxPerKeyboard: operationsPerKeyboard,
+			maxPerRow:      operationsPerKeyboardRow,
+			currentPage:    opts.page,
+		},
+		func() (string, error) {
+			operations, err := h.stores.Operation.List(ctx, ListOperationsFilter{
+				BalanceID:            opts.balance.ID,
+				CreationPeriod:       opts.creationPeriod,
+				OrderByCreatedAtDesc: true,
+				Pagination: &Pagination{
+					Limit: operationsPerKeyboard,
+					Page:  opts.page,
+				},
+			})
+			if err != nil {
+				logger.Error().Err(err).Msg("list operations from store")
+				return "", fmt.Errorf("list operations from store: %w", err)
+			}
+			if len(operations) == 0 {
+				logger.Info().Msg("operations not found")
+				return "", ErrOperationsNotFound
+			}
+
+			outputMessage := fmt.Sprintf(
+				"💰 *Balance:* %v%s\n📅 *Period:* %v\n\n",
+				opts.balance.Amount, opts.balance.GetCurrency().Symbol, opts.creationPeriod,
+			)
+
+			separator := "━━━━━━━━━━━━━━━"
+			for _, o := range operations {
+				category, err := h.stores.Category.Get(ctx, GetCategoryFilter{
+					ID: o.CategoryID,
+				})
+				if err != nil {
+					logger.Error().Err(err).Msg("get category from store")
+					return "", fmt.Errorf("get category from store: %w", err)
+				}
+				if category == nil {
+					logger.Error().Msg("category not found")
+					continue
+				}
+
+				emoji, typeLabel := getOperationTypeLabel(o.Type)
+
+				outputMessage += fmt.Sprintf(
+					"%s\n📌 *Operation Type:* %s %s\n📝 Description: %s\n📂 Category: %s\n💵 Amount: %v%s\n🕒 Date: %v\n",
+					separator,
+					emoji,
+					typeLabel,
+					o.Description,
+					category.Title,
+					o.Amount,
+					opts.balance.GetCurrency().Symbol,
+					o.CreatedAt.Format(time.ANSIC),
+				)
+			}
+			outputMessage += separator
+
+			return outputMessage, nil
+		},
+	)
+	if err != nil {
+		logger.Error().Err(err).Msg("paginate operations")
+		return "", nil, fmt.Errorf("paginate operations: %w", err)
+	}
+
+	return message, keyboard, nil
+}
+
+func getOperationTypeLabel(t models.OperationType) (string, string) {
+	switch t {
+	case models.OperationTypeIncoming:
+		return "🔼", "Income (incoming)"
+	case models.OperationTypeSpending:
+		return "🔻", "Expense (spending)"
+	case models.OperationTypeTransfer:
+		return "🔄", "Transfer"
+	case models.OperationTypeTransferIn:
+		return "⬅️", "Transfer In"
+	case models.OperationTypeTransferOut:
+		return "➡️", "Transfer Out"
+	default:
+		return "❓", string(t)
+	}
 }
 
 const (
