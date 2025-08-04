@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"strconv"
-	"strings"
 	"time"
 
 	"github.com/VladPetriv/finance_bot/internal/models"
@@ -223,14 +222,6 @@ func (h handlerService) handleChooseBalanceFlowStepForGetBalance(ctx context.Con
 		logger.Error().Err(err).Msg("build statistic message")
 		return "", fmt.Errorf("build statistic message: %w", err)
 	}
-
-	// Unescape markdown symbols.
-	outputMessage = strings.ReplaceAll(outputMessage, "(", `\(`)
-	outputMessage = strings.ReplaceAll(outputMessage, ")", `\)`)
-	outputMessage = strings.ReplaceAll(outputMessage, "!", `\!`)
-	outputMessage = strings.ReplaceAll(outputMessage, "-", `\-`)
-	outputMessage = strings.ReplaceAll(outputMessage, "+", `\+`)
-	outputMessage = strings.ReplaceAll(outputMessage, ".", `\.`)
 
 	return models.EndFlowStep, h.apis.Messenger.SendWithKeyboard(SendWithKeyboardOptions{
 		ChatID:                  opts.message.GetChatID(),
