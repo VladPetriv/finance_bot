@@ -38,6 +38,7 @@ type SendWithKeyboardOptions struct {
 	MessageID             int
 	InlineMessageID       string
 	UpdatedInlineKeyboard []InlineKeyboardRow
+	UpdatedMessage        string
 }
 
 // KeyboardRow represents keyboard row with buttons.

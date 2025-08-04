@@ -595,6 +595,7 @@ func (h handlerService) handleChooseBalanceFlowStepForGetOperationsHistory(_ con
 	logger.Debug().Any("opts", opts).Msg("got args")
 
 	opts.stateMetaData[balanceNameMetadataKey] = opts.message.GetText()
+	opts.stateMetaData[pageMetadataKey] = firstPage
 
 	return models.ChooseTimePeriodForOperationsHistoryFlowStep, h.apis.Messenger.SendWithKeyboard(SendWithKeyboardOptions{
 		ChatID:  opts.message.GetChatID(),
@@ -635,30 +636,64 @@ func (h handlerService) handleChooseTimePeriodForOperationsHistoryFlowStep(ctx c
 	}
 	logger.Debug().Any("balance", balance).Msg("got balance")
 
-	creationPeriod := models.GetCreationPeriodFromText(opts.message.GetText())
-	operations, err := h.stores.Operation.List(ctx, ListOperationsFilter{
-		BalanceID:      balance.ID,
-		CreationPeriod: creationPeriod,
-	})
-	if err != nil {
-		logger.Error().Err(err).Msg("get all operations from store")
-		return "", fmt.Errorf("get all operations from store: %w", err)
-	}
-	if operations == nil {
-		logger.Info().Msg("operations not found")
-		return models.EndFlowStep, ErrOperationsNotFound
-	}
+	messageText := opts.message.GetText()
 
-	outputMessage := fmt.Sprintf("Balance Amount: %v%s\nPeriod: %v\n", balance.Amount, balance.GetCurrency().Symbol, creationPeriod)
+	if isPaginationNeeded(messageText) {
+		nextPage := calculateNextPage(messageText, opts.stateMetaData)
+		opts.stateMetaData[pageMetadataKey] = nextPage
+		creationPeriod := models.CreationPeriod(opts.stateMetaData[operationCreationPeriodMetadataKey].(string))
 
-	for _, o := range operations {
-		outputMessage += fmt.Sprintf(
-			"\nOperation: %s\nDescription: %s\nCategory: %s\nAmount: %v%s\nCreation date: %v\n- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -",
-			o.Type, o.Description, o.CategoryID, o.Amount, balance.GetCurrency().Symbol, o.CreatedAt.Format(time.ANSIC),
+		message, keyboard, err := h.getOperationsHistoryKeyboard(
+			ctx,
+			getOperationsHistoryKeyboardOptions{
+				balance:        balance,
+				creationPeriod: creationPeriod,
+				page:           nextPage,
+			},
 		)
+		if err != nil {
+			logger.Error().Err(err).Msg("get operations keyboard")
+			return "", fmt.Errorf("get operations keyboard: %w", err)
+		}
+
+		return models.ChooseTimePeriodForOperationsHistoryFlowStep, h.apis.Messenger.SendWithKeyboard(SendWithKeyboardOptions{
+			ChatID:                opts.message.GetChatID(),
+			MessageID:             opts.message.GetMessageID(),
+			InlineMessageID:       opts.message.GetInlineMessageID(),
+			UpdatedInlineKeyboard: keyboard,
+			UpdatedMessage:        message,
+		})
 	}
 
-	return models.EndFlowStep, h.sendMessageWithDefaultKeyboard(opts.message.GetChatID(), outputMessage)
+	creationPeriod := models.GetCreationPeriodFromText(messageText)
+	opts.stateMetaData[operationCreationPeriodMetadataKey] = creationPeriod
+
+	message, keyboard, err := h.getOperationsHistoryKeyboard(
+		ctx,
+		getOperationsHistoryKeyboardOptions{
+			balance:        balance,
+			creationPeriod: creationPeriod,
+			page:           firstPage,
+		},
+	)
+	if err != nil {
+		logger.Error().Err(err).Msg("get operations keyboard")
+		return "", fmt.Errorf("get operations keyboard: %w", err)
+	}
+
+	err = h.showCancelButton(opts.message.GetChatID(), "")
+	if err != nil {
+		logger.Error().Err(err).Msg("show cancel button")
+		return "", fmt.Errorf("show cancel button: %w", err)
+	}
+
+	return models.ChooseTimePeriodForOperationsHistoryFlowStep, h.apis.Messenger.SendWithKeyboard(SendWithKeyboardOptions{
+		Message:                 message,
+		FormatMessageInMarkDown: true,
+		ChatID:                  opts.message.GetChatID(),
+		MessageID:               opts.message.GetMessageID(),
+		InlineKeyboard:          keyboard,
+	})
 }
 
 func (h handlerService) handleDeleteOperationFlowStep(_ context.Context, opts flowProcessingOptions) (models.FlowStep, error) {

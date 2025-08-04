@@ -100,7 +100,7 @@ var AvailableCommands = []string{
 	BotUpdateOperationDateCommand, BotUpdateOperationCategoryCommand,
 	BotCreateBalanceSubscriptionCommand, BotListBalanceSubscriptionsCommand, BotDeleteBalanceSubscriptionCommand, BotUpdateBalanceSubscriptionCommand,
 	BotUpdateBalanceSubscriptionNameCommand, BotUpdateBalanceSubscriptionCategoryCommand, BotUpdateBalanceSubscriptionAmountCommand, BotUpdateBalanceSubscriptionPeriodCommand,
-	BotCancelCommand, BotBackCommand,
+	BotCancelCommand, BotBackCommand, BotNextCommand, BotPreviousCommand,
 }
 
 // CommandToEvent maps bot commands to their corresponding events

@@ -2,6 +2,7 @@ package telegram
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/VladPetriv/finance_bot/internal/service"
 	"github.com/fasthttp/router"
@@ -123,15 +124,35 @@ func (t *telegramMessenger) SendMessage(chatID int, text string) error {
 }
 
 func (t *telegramMessenger) SendWithKeyboard(opts service.SendWithKeyboardOptions) error {
+	message := opts.Message
+	updatedMessage := opts.UpdatedMessage
+	if opts.FormatMessageInMarkDown {
+		// Unescape markdown symbols.
+		message = strings.ReplaceAll(message, "(", `\(`)
+		message = strings.ReplaceAll(message, ")", `\)`)
+		message = strings.ReplaceAll(message, "!", `\!`)
+		message = strings.ReplaceAll(message, "-", `\-`)
+		message = strings.ReplaceAll(message, "+", `\+`)
+		message = strings.ReplaceAll(message, ".", `\.`)
+
+		updatedMessage = strings.ReplaceAll(updatedMessage, "(", `\(`)
+		updatedMessage = strings.ReplaceAll(updatedMessage, ")", `\)`)
+		updatedMessage = strings.ReplaceAll(updatedMessage, "!", `\!`)
+		updatedMessage = strings.ReplaceAll(updatedMessage, "-", `\-`)
+		updatedMessage = strings.ReplaceAll(updatedMessage, "+", `\+`)
+		updatedMessage = strings.ReplaceAll(updatedMessage, ".", `\.`)
+	}
+
 	return t.send(&sendOptions{
 		chatID:                int64(opts.ChatID),
 		messageID:             opts.MessageID,
 		inlineMessageID:       opts.InlineMessageID,
-		message:               opts.Message,
+		message:               message,
 		formatInMarkdown:      opts.FormatMessageInMarkDown,
 		keyboard:              opts.Keyboard,
 		inlineKeyboard:        opts.InlineKeyboard,
 		updatedInlineKeyboard: opts.UpdatedInlineKeyboard,
+		updatedMessage:        updatedMessage,
 	})
 }
 
@@ -146,6 +167,7 @@ type sendOptions struct {
 	keyboard              []service.KeyboardRow
 	inlineKeyboard        []service.InlineKeyboardRow
 	updatedInlineKeyboard []service.InlineKeyboardRow
+	updatedMessage        string
 }
 
 const (
@@ -190,6 +212,30 @@ func (t *telegramMessenger) send(opts *sendOptions) error {
 		}
 
 		message = message.WithReplyMarkup(inlineKeyboards[0])
+	}
+
+	if len(opts.updatedMessage) > 0 {
+		var inlineKeyboard *telego.InlineKeyboardMarkup
+
+		if len(opts.updatedInlineKeyboard) > 0 {
+			inlineKeyboards := t.createInlineKeyboard(opts.updatedInlineKeyboard)
+			inlineKeyboard = inlineKeyboards[0]
+		}
+
+		_, err := t.api.EditMessageText(&telego.EditMessageTextParams{
+			ChatID: telego.ChatID{
+				ID: opts.chatID,
+			},
+			MessageID:       opts.messageID,
+			InlineMessageID: opts.inlineMessageID,
+			Text:            opts.updatedMessage,
+			ReplyMarkup:     inlineKeyboard,
+		})
+		if err != nil {
+			return fmt.Errorf("edit message text: %w", err)
+		}
+
+		return nil
 	}
 
 	if len(opts.updatedInlineKeyboard) > 0 {
