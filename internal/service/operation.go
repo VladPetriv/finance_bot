@@ -642,8 +642,6 @@ func (h handlerService) handleChooseTimePeriodForOperationsHistoryFlowStep(ctx c
 		nextPage := calculateNextPage(messageText, opts.stateMetaData)
 		opts.stateMetaData[pageMetadataKey] = nextPage
 		creationPeriod := models.CreationPeriod(opts.stateMetaData[operationCreationPeriodMetadataKey].(string))
-		fmt.Printf("creationPeriod: %v\n", creationPeriod)
-		fmt.Printf("creationPeriod: %T\n", creationPeriod)
 
 		message, keyboard, err := h.getOperationsHistoryKeyboard(
 			ctx,
