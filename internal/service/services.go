@@ -309,19 +309,18 @@ const (
 	categoryIDMetadataKey            = "category_id"
 
 	// Operation related keys
-	exchangeRateMetadataKey         = "exchange_rate"
-	operationDescriptionMetadataKey = "operation_description"
-	operationAmountMetadataKey      = "operation_amount"
-	operationTypeMetadataKey        = "operation_type"
-	lastOperationDateMetadataKey    = "last_operation_date"
-	operationIDMetadataKey          = "operation_id"
+	exchangeRateMetadataKey            = "exchange_rate"
+	operationDescriptionMetadataKey    = "operation_description"
+	operationAmountMetadataKey         = "operation_amount"
+	operationTypeMetadataKey           = "operation_type"
+	operationIDMetadataKey             = "operation_id"
+	operationCreationPeriodMetadataKey = "operation_creation_period"
 
 	// Balance subscription related keys
-	balanceSubscriptionIDMetadataKey       = "balance_subscription_id"
-	balanceSubscriptionNameMetadataKey     = "balance_subscription_name"
-	balanceSubscriptionPeriodMetadataKey   = "balance_subscription_period"
-	balanceSubscriptionAmountMetadataKey   = "balance_subscription_amount"
-	lastBalanceSubscriptionDateMetadataKey = "last_balance_subscription_date"
+	balanceSubscriptionIDMetadataKey     = "balance_subscription_id"
+	balanceSubscriptionNameMetadataKey   = "balance_subscription_name"
+	balanceSubscriptionPeriodMetadataKey = "balance_subscription_period"
+	balanceSubscriptionAmountMetadataKey = "balance_subscription_amount"
 )
 
 // StateService represents a service for managing and handling complex bot flow using state.
