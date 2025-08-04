@@ -60,9 +60,38 @@ func paginateInlineKeyboard[T identifiable](opts inlineKeyboardPaginatorOptions,
 		return keyboard, nil
 	}
 
-	maxPage := int(math.Ceil(float64(opts.totalCount) / float64(opts.maxPerKeyboard)))
+	maxPage := calculateMaxPage(opts.totalCount, opts.maxPerKeyboard)
+	keyboard = handlePaginationInlineKeyboardButtons(keyboard, opts.currentPage, maxPage)
+
+	return keyboard, nil
+}
+
+type getMessageText func() (string, error)
+
+func paginateTextUsingInlineKeybaord(opts inlineKeyboardPaginatorOptions, getMessage getMessageText) (string, []InlineKeyboardRow, error) {
+	message, err := getMessage()
+	if err != nil {
+		return "", nil, fmt.Errorf("get message: %w", err)
+	}
+
+	keyboard := make([]InlineKeyboardRow, 0, opts.maxPerKeyboard)
+	if opts.totalCount == 1 {
+		return message, keyboard, nil
+	}
+
+	maxPage := calculateMaxPage(opts.totalCount, opts.maxPerKeyboard)
+	keyboard = handlePaginationInlineKeyboardButtons(keyboard, opts.currentPage, maxPage)
+
+	return message, keyboard, nil
+}
+
+func calculateMaxPage(totalCount, maxPerKeyboard int) int {
+	return int(math.Ceil(float64(totalCount) / float64(maxPerKeyboard)))
+}
+
+func handlePaginationInlineKeyboardButtons(keyboard []InlineKeyboardRow, currentPage, maxPage int) []InlineKeyboardRow {
 	switch {
-	case opts.currentPage == maxPage: // Max page do not display Next button
+	case currentPage == maxPage: // Max page do not display Next button
 		keyboard = append(keyboard, InlineKeyboardRow{
 			Buttons: []InlineKeyboardButton{
 				{
@@ -70,7 +99,7 @@ func paginateInlineKeyboard[T identifiable](opts inlineKeyboardPaginatorOptions,
 				},
 			},
 		})
-	case opts.currentPage > firstPage: // Current page is not the first page and not last page, display both buttons
+	case currentPage > firstPage: // Current page is not the first page and not last page, display both buttons
 		keyboard = append(keyboard, InlineKeyboardRow{
 			Buttons: []InlineKeyboardButton{
 				{
@@ -81,7 +110,7 @@ func paginateInlineKeyboard[T identifiable](opts inlineKeyboardPaginatorOptions,
 				},
 			},
 		})
-	case opts.currentPage == firstPage: // First page, display Next button only
+	case currentPage == firstPage: // First page, display Next button only
 		keyboard = append(keyboard, InlineKeyboardRow{
 			Buttons: []InlineKeyboardButton{
 				{
@@ -91,5 +120,5 @@ func paginateInlineKeyboard[T identifiable](opts inlineKeyboardPaginatorOptions,
 		})
 	}
 
-	return keyboard, nil
+	return keyboard
 }
