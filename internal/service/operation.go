@@ -637,7 +637,6 @@ func (h handlerService) handleChooseTimePeriodForOperationsHistoryFlowStep(ctx c
 	logger.Debug().Any("balance", balance).Msg("got balance")
 
 	messageText := opts.message.GetText()
-
 	if isPaginationNeeded(messageText) {
 		nextPage := calculateNextPage(messageText, opts.stateMetaData)
 		opts.stateMetaData[pageMetadataKey] = nextPage
@@ -657,11 +656,12 @@ func (h handlerService) handleChooseTimePeriodForOperationsHistoryFlowStep(ctx c
 		}
 
 		return models.ChooseTimePeriodForOperationsHistoryFlowStep, h.apis.Messenger.SendWithKeyboard(SendWithKeyboardOptions{
-			ChatID:                opts.message.GetChatID(),
-			MessageID:             opts.message.GetMessageID(),
-			InlineMessageID:       opts.message.GetInlineMessageID(),
-			UpdatedInlineKeyboard: keyboard,
-			UpdatedMessage:        message,
+			FormatMessageInMarkDown: true,
+			ChatID:                  opts.message.GetChatID(),
+			MessageID:               opts.message.GetMessageID(),
+			InlineMessageID:         opts.message.GetInlineMessageID(),
+			UpdatedInlineKeyboard:   keyboard,
+			UpdatedMessage:          message,
 		})
 	}
 

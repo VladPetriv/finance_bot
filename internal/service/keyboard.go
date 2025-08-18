@@ -109,7 +109,8 @@ func (h handlerService) getOperationsHistoryKeyboard(ctx context.Context, opts g
 	logger.Debug().Any("opts", opts).Msg("got args")
 
 	operationsCount, err := h.stores.Operation.Count(ctx, ListOperationsFilter{
-		BalanceID: opts.balance.ID,
+		BalanceID:      opts.balance.ID,
+		CreationPeriod: opts.creationPeriod,
 	})
 	if err != nil {
 		logger.Error().Err(err).Msg("count operations")
