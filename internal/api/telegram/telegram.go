@@ -222,7 +222,7 @@ func (t *telegramMessenger) send(opts *sendOptions) error {
 			inlineKeyboard = inlineKeyboards[0]
 		}
 
-		_, err := t.api.EditMessageText(&telego.EditMessageTextParams{
+		editMessageParams := &telego.EditMessageTextParams{
 			ChatID: telego.ChatID{
 				ID: opts.chatID,
 			},
@@ -230,7 +230,12 @@ func (t *telegramMessenger) send(opts *sendOptions) error {
 			InlineMessageID: opts.inlineMessageID,
 			Text:            opts.updatedMessage,
 			ReplyMarkup:     inlineKeyboard,
-		})
+		}
+		if opts.formatInMarkdown {
+			editMessageParams.ParseMode = markdownFormat
+		}
+
+		_, err := t.api.EditMessageText(editMessageParams)
 		if err != nil {
 			return fmt.Errorf("edit message text: %w", err)
 		}
