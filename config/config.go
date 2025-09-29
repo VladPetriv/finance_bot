@@ -53,7 +53,7 @@ type CurrencyBeacon struct {
 // Gemini represents a config for Gemini API.
 type Gemini struct {
 	APIKey string `env:"FB_GEMINI_API_KEY"`
-	Model  string `env:"FB_GEMINI_MODEL" env-default:"gemini-1.5-flash"`
+	Model  string `env:"FB_GEMINI_MODEL" env-default:"gemini-2.5-flash"`
 }
 
 // Logger represents a logger configuration.
