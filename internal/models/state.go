@@ -58,6 +58,17 @@ func (s *State) IsFlowFinished() bool {
 // IsCommandAllowedDuringFlow checks if the command is allowed during the current flow
 func (s *State) IsCommandAllowedDuringFlow(command string) bool {
 	switch s.Flow {
+	case StartFlow:
+		switch s.GetCurrentStep() {
+		case EnterBalanceCurrencyFlowStep:
+			return slices.Contains(
+				[]string{BotPreviousCommand, BotNextCommand},
+				command,
+			)
+		}
+
+		return false
+
 	case CreateOperationFlow:
 		if s.GetCurrentStep() == ProcessOperationTypeFlowStep {
 			return slices.Contains(
