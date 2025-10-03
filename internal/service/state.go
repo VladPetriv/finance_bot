@@ -75,7 +75,11 @@ func (s stateService) HandleState(ctx context.Context, message Message) (*Handle
 	}
 
 	// Handle unfinished flows
-	if !state.IsFlowFinished() && isBotCommand(message.GetText()) && !state.IsCommandAllowedDuringFlow(message.GetText()) {
+	flowActive := !state.IsFlowFinished()
+	isCommand := isBotCommand(message.GetText())
+	commandBlocked := !state.IsCommandAllowedDuringFlow(message.GetText())
+
+	if flowActive && isCommand && commandBlocked {
 		return s.handleUnfinishedFlow(message, state)
 	}
 
@@ -187,6 +191,7 @@ func (s stateService) handleOngoingFlow(ctx context.Context, message Message, st
 			Event: state.GetEvent(),
 		}, nil
 	}
+
 	if event == models.CreateOperationsThroughOneTimeInputEvent && !state.IsFlowFinished() {
 		return &HandleStateOutput{
 			State: state,
