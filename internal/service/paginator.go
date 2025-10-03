@@ -5,21 +5,21 @@ import (
 	"math"
 	"slices"
 
-	"github.com/VladPetriv/finance_bot/internal/models"
+	"github.com/VladPetriv/finance_bot/internal/model"
 )
 
 const firstPage = 1
 
 func isPaginationNeeded(text string) bool {
-	return slices.Contains([]string{models.BotPreviousCommand, models.BotNextCommand}, text)
+	return slices.Contains([]string{model.BotPreviousCommand, model.BotNextCommand}, text)
 }
 
 func calculateNextPage(text string, metadata map[string]any) int {
 	currentPage := metadata[pageMetadataKey].(float64)
 	switch {
-	case text == models.BotPreviousCommand && currentPage > firstPage:
+	case text == model.BotPreviousCommand && currentPage > firstPage:
 		currentPage--
-	case text == models.BotNextCommand:
+	case text == model.BotNextCommand:
 		currentPage++
 	}
 
@@ -95,7 +95,7 @@ func handlePaginationInlineKeyboardButtons(keyboard []InlineKeyboardRow, current
 		keyboard = append(keyboard, InlineKeyboardRow{
 			Buttons: []InlineKeyboardButton{
 				{
-					Text: models.BotPreviousCommand,
+					Text: model.BotPreviousCommand,
 				},
 			},
 		})
@@ -103,10 +103,10 @@ func handlePaginationInlineKeyboardButtons(keyboard []InlineKeyboardRow, current
 		keyboard = append(keyboard, InlineKeyboardRow{
 			Buttons: []InlineKeyboardButton{
 				{
-					Text: models.BotPreviousCommand,
+					Text: model.BotPreviousCommand,
 				},
 				{
-					Text: models.BotNextCommand,
+					Text: model.BotNextCommand,
 				},
 			},
 		})
@@ -114,7 +114,7 @@ func handlePaginationInlineKeyboardButtons(keyboard []InlineKeyboardRow, current
 		keyboard = append(keyboard, InlineKeyboardRow{
 			Buttons: []InlineKeyboardButton{
 				{
-					Text: models.BotNextCommand,
+					Text: model.BotNextCommand,
 				},
 			},
 		})

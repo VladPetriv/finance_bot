@@ -6,7 +6,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/VladPetriv/finance_bot/internal/models"
+	"github.com/VladPetriv/finance_bot/internal/model"
 	"github.com/VladPetriv/finance_bot/internal/service"
 	"github.com/VladPetriv/finance_bot/internal/store"
 	"github.com/google/uuid"
@@ -30,7 +30,7 @@ func TestOperation_Create(t *testing.T) {
 	balanceID := uuid.NewString()
 	categoryID := uuid.NewString()
 	operationID1, operationID2 := uuid.NewString(), uuid.NewString()
-	currency := &models.Currency{
+	currency := &model.Currency{
 		ID:   uuid.NewString(),
 		Code: "USD",
 	}
@@ -38,20 +38,20 @@ func TestOperation_Create(t *testing.T) {
 	err := currencyStore.CreateIfNotExists(ctx, currency)
 	require.NoError(t, err)
 
-	err = userStore.Create(ctx, &models.User{
+	err = userStore.Create(ctx, &model.User{
 		ID:       userID,
 		Username: "test" + userID,
 	})
 	require.NoError(t, err)
 
-	err = balanceStore.Create(ctx, &models.Balance{
+	err = balanceStore.Create(ctx, &model.Balance{
 		ID:         balanceID,
 		UserID:     userID,
 		CurrencyID: currency.ID,
 	})
 	assert.NoError(t, err)
 
-	err = categoryStore.Create(ctx, &models.Category{
+	err = categoryStore.Create(ctx, &model.Category{
 		ID:     categoryID,
 		UserID: userID,
 		Title:  "test_category",
@@ -71,36 +71,36 @@ func TestOperation_Create(t *testing.T) {
 
 	testCases := [...]struct {
 		desc                 string
-		preconditions        *models.Operation
-		args                 *models.Operation
+		preconditions        *model.Operation
+		args                 *model.Operation
 		expectDuplicateError bool
 	}{
 		{
 			desc: "operation created",
-			args: &models.Operation{
+			args: &model.Operation{
 				ID:          operationID1,
 				CategoryID:  categoryID,
 				BalanceID:   balanceID,
-				Type:        models.OperationTypeIncoming,
+				Type:        model.OperationTypeIncoming,
 				Amount:      "100",
 				Description: "test_create_1",
 			},
 		},
 		{
 			desc: "operation not created because already exist",
-			preconditions: &models.Operation{
+			preconditions: &model.Operation{
 				ID:          operationID2,
 				CategoryID:  categoryID,
 				BalanceID:   balanceID,
-				Type:        models.OperationTypeIncoming,
+				Type:        model.OperationTypeIncoming,
 				Amount:      "100",
 				Description: "test_create_2",
 			},
-			args: &models.Operation{
+			args: &model.Operation{
 				ID:          operationID2,
 				CategoryID:  categoryID,
 				BalanceID:   balanceID,
-				Type:        models.OperationTypeIncoming,
+				Type:        model.OperationTypeIncoming,
 				Amount:      "100",
 				Description: "test_create_2",
 			},
@@ -168,7 +168,7 @@ func TestOperation_Get(t *testing.T) {
 		operationID3,
 		operationID4,
 		operationID5 := uuid.NewString(), uuid.NewString(), uuid.NewString(), uuid.NewString(), uuid.NewString()
-	currency := &models.Currency{
+	currency := &model.Currency{
 		ID:   uuid.NewString(),
 		Code: "USD",
 	}
@@ -176,14 +176,14 @@ func TestOperation_Get(t *testing.T) {
 	err := currencyStore.CreateIfNotExists(ctx, currency)
 	require.NoError(t, err)
 
-	err = userStore.Create(ctx, &models.User{
+	err = userStore.Create(ctx, &model.User{
 		ID:       userID,
 		Username: "test" + userID,
 	})
 	require.NoError(t, err)
 
 	for _, balanceID := range [...]string{balanceID1, balanceID2} {
-		err = balanceStore.Create(ctx, &models.Balance{
+		err = balanceStore.Create(ctx, &model.Balance{
 			ID:         balanceID,
 			UserID:     userID,
 			CurrencyID: currency.ID,
@@ -191,7 +191,7 @@ func TestOperation_Get(t *testing.T) {
 		require.NoError(t, err)
 	}
 
-	err = categoryStore.Create(ctx, &models.Category{
+	err = categoryStore.Create(ctx, &model.Category{
 		ID:     categoryID,
 		UserID: userID,
 		Title:  "test_category",
@@ -215,61 +215,61 @@ func TestOperation_Get(t *testing.T) {
 
 	testCases := [...]struct {
 		desc          string
-		preconditions *models.Operation
+		preconditions *model.Operation
 		args          service.GetOperationFilter
-		expected      *models.Operation
+		expected      *model.Operation
 	}{
 		{
 			desc: "found operation by id",
-			preconditions: &models.Operation{
+			preconditions: &model.Operation{
 				ID:          operationID1,
 				CategoryID:  categoryID,
 				BalanceID:   balanceID1,
-				Type:        models.OperationTypeIncoming,
+				Type:        model.OperationTypeIncoming,
 				Amount:      "100",
 				Description: "test_get_1",
 			},
 			args: service.GetOperationFilter{
 				ID: operationID1,
 			},
-			expected: &models.Operation{
+			expected: &model.Operation{
 				ID:          operationID1,
 				CategoryID:  categoryID,
 				BalanceID:   balanceID1,
-				Type:        models.OperationTypeIncoming,
+				Type:        model.OperationTypeIncoming,
 				Amount:      "100",
 				Description: "test_get_1",
 			},
 		},
 		{
 			desc: "found operation by type",
-			preconditions: &models.Operation{
+			preconditions: &model.Operation{
 				ID:          operationID2,
 				CategoryID:  categoryID,
 				BalanceID:   balanceID1,
-				Type:        models.OperationTypeSpending,
+				Type:        model.OperationTypeSpending,
 				Amount:      "100",
 				Description: "test_get_2",
 			},
 			args: service.GetOperationFilter{
-				Type: models.OperationTypeSpending,
+				Type: model.OperationTypeSpending,
 			},
-			expected: &models.Operation{
+			expected: &model.Operation{
 				ID:          operationID2,
 				CategoryID:  categoryID,
 				BalanceID:   balanceID1,
-				Type:        models.OperationTypeSpending,
+				Type:        model.OperationTypeSpending,
 				Amount:      "100",
 				Description: "test_get_2",
 			},
 		},
 		{
 			desc: "found operation by createdAtFrom and createdAtTo",
-			preconditions: &models.Operation{
+			preconditions: &model.Operation{
 				ID:          operationID3,
 				CategoryID:  categoryID,
 				BalanceID:   balanceID1,
-				Type:        models.OperationTypeTransfer,
+				Type:        model.OperationTypeTransfer,
 				Amount:      "100",
 				Description: "test_get_3",
 				CreatedAt:   now.Add(-3 * time.Hour),
@@ -278,11 +278,11 @@ func TestOperation_Get(t *testing.T) {
 				CreateAtFrom: now.Add(-4 * time.Hour),
 				CreateAtTo:   now.Add(-1 * time.Hour),
 			},
-			expected: &models.Operation{
+			expected: &model.Operation{
 				ID:          operationID3,
 				CategoryID:  categoryID,
 				BalanceID:   balanceID1,
-				Type:        models.OperationTypeTransfer,
+				Type:        model.OperationTypeTransfer,
 				Amount:      "100",
 				Description: "test_get_3",
 				CreatedAt:   now.Add(-3 * time.Hour),
@@ -290,44 +290,44 @@ func TestOperation_Get(t *testing.T) {
 		},
 		{
 			desc: "found operation by balances ids filter",
-			preconditions: &models.Operation{
+			preconditions: &model.Operation{
 				ID:          operationID4,
 				CategoryID:  categoryID,
 				BalanceID:   balanceID2,
-				Type:        models.OperationTypeTransfer,
+				Type:        model.OperationTypeTransfer,
 				Amount:      "100",
 				Description: "test_get_4",
 			},
 			args: service.GetOperationFilter{
 				BalanceIDs: []string{balanceID2},
 			},
-			expected: &models.Operation{
+			expected: &model.Operation{
 				ID:          operationID4,
 				CategoryID:  categoryID,
 				BalanceID:   balanceID2,
-				Type:        models.OperationTypeTransfer,
+				Type:        model.OperationTypeTransfer,
 				Amount:      "100",
 				Description: "test_get_4",
 			},
 		},
 		{
 			desc: "found operation by amount filter",
-			preconditions: &models.Operation{
+			preconditions: &model.Operation{
 				ID:          operationID5,
 				CategoryID:  categoryID,
 				BalanceID:   balanceID1,
-				Type:        models.OperationTypeTransfer,
+				Type:        model.OperationTypeTransfer,
 				Amount:      "50",
 				Description: "test_get_5",
 			},
 			args: service.GetOperationFilter{
 				Amount: "50",
 			},
-			expected: &models.Operation{
+			expected: &model.Operation{
 				ID:          operationID5,
 				CategoryID:  categoryID,
 				BalanceID:   balanceID1,
-				Type:        models.OperationTypeTransfer,
+				Type:        model.OperationTypeTransfer,
 				Amount:      "50",
 				Description: "test_get_5",
 			},
@@ -409,7 +409,7 @@ func TestOperation_List(t *testing.T) {
 		uuid.NewString(), uuid.NewString(), uuid.NewString(), uuid.NewString(),
 		uuid.NewString(), uuid.NewString(), uuid.NewString(), uuid.NewString()
 
-	currency := &models.Currency{
+	currency := &model.Currency{
 		ID:   uuid.NewString(),
 		Code: "USD",
 	}
@@ -417,7 +417,7 @@ func TestOperation_List(t *testing.T) {
 	err := currencyStore.CreateIfNotExists(ctx, currency)
 	require.NoError(t, err)
 
-	err = userStore.Create(ctx, &models.User{
+	err = userStore.Create(ctx, &model.User{
 		ID:       userID,
 		Username: "test" + userID,
 	})
@@ -428,7 +428,7 @@ func TestOperation_List(t *testing.T) {
 		balanceID4, balanceID5, balanceID6,
 		balanceID7, balanceID8,
 	} {
-		err = balanceStore.Create(ctx, &models.Balance{
+		err = balanceStore.Create(ctx, &model.Balance{
 			ID:         balanceID,
 			UserID:     userID,
 			CurrencyID: currency.ID,
@@ -436,7 +436,7 @@ func TestOperation_List(t *testing.T) {
 		require.NoError(t, err)
 	}
 
-	err = categoryStore.Create(ctx, &models.Category{
+	err = categoryStore.Create(ctx, &model.Category{
 		ID:     categoryID,
 		UserID: userID,
 		Title:  "test_category",
@@ -462,268 +462,268 @@ func TestOperation_List(t *testing.T) {
 
 	testCases := [...]struct {
 		desc          string
-		preconditions []models.Operation
+		preconditions []model.Operation
 		args          service.ListOperationsFilter
-		expected      []models.Operation
+		expected      []model.Operation
 	}{
 		{
 			desc: "received all operations by only balance id",
-			preconditions: []models.Operation{
+			preconditions: []model.Operation{
 				{
 					ID:         operationID1,
 					CategoryID: categoryID,
 					BalanceID:  balanceID1,
-					Type:       models.OperationTypeIncoming,
+					Type:       model.OperationTypeIncoming,
 				},
 				{
 					ID:         operationID2,
 					CategoryID: categoryID,
 					BalanceID:  balanceID1,
-					Type:       models.OperationTypeIncoming,
+					Type:       model.OperationTypeIncoming,
 				},
 			},
 			args: service.ListOperationsFilter{
 				BalanceID: balanceID1,
 			},
-			expected: []models.Operation{
+			expected: []model.Operation{
 				{
 					ID:         operationID1,
 					CategoryID: categoryID,
 					BalanceID:  balanceID1,
-					Type:       models.OperationTypeIncoming,
+					Type:       model.OperationTypeIncoming,
 				},
 				{
 					ID:         operationID2,
 					CategoryID: categoryID,
 					BalanceID:  balanceID1,
-					Type:       models.OperationTypeIncoming,
+					Type:       model.OperationTypeIncoming,
 				},
 			},
 		},
 		{
 			desc: "received all operations by day as a creation period",
-			preconditions: []models.Operation{
+			preconditions: []model.Operation{
 				{
 					ID:         operationID3,
 					CategoryID: categoryID,
 					BalanceID:  balanceID2,
-					Type:       models.OperationTypeIncoming,
+					Type:       model.OperationTypeIncoming,
 					CreatedAt:  time.Now().Add(-23 * time.Hour),
 				},
 				{
 					ID:         operationID4,
 					CategoryID: categoryID,
 					BalanceID:  balanceID2,
-					Type:       models.OperationTypeIncoming,
+					Type:       model.OperationTypeIncoming,
 					CreatedAt:  time.Now(),
 				},
 				{
 					ID:         operationID5,
 					CategoryID: categoryID,
 					BalanceID:  balanceID2,
-					Type:       models.OperationTypeIncoming,
+					Type:       model.OperationTypeIncoming,
 					CreatedAt:  time.Now().Add(-48 * time.Hour),
 				},
 			},
 			args: service.ListOperationsFilter{
 				BalanceID:      balanceID2,
-				CreationPeriod: models.CreationPeriodDay,
+				CreationPeriod: model.CreationPeriodDay,
 			},
-			expected: []models.Operation{
+			expected: []model.Operation{
 				{
 					ID:         operationID4,
 					CategoryID: categoryID,
 					BalanceID:  balanceID2,
-					Type:       models.OperationTypeIncoming,
+					Type:       model.OperationTypeIncoming,
 					CreatedAt:  time.Now(),
 				},
 				{
 					ID:         operationID3,
 					CategoryID: categoryID,
 					BalanceID:  balanceID2,
-					Type:       models.OperationTypeIncoming,
+					Type:       model.OperationTypeIncoming,
 					CreatedAt:  time.Now().Add(-23 * time.Hour),
 				},
 			},
 		},
 		{
 			desc: "received all operations by week as a creation period",
-			preconditions: []models.Operation{
+			preconditions: []model.Operation{
 				{
 					ID:         operationID6,
 					CategoryID: categoryID,
 					BalanceID:  balanceID3,
-					Type:       models.OperationTypeIncoming,
+					Type:       model.OperationTypeIncoming,
 					CreatedAt:  time.Now().Add(-168 * time.Hour),
 				},
 				{
 					ID:         operationID7,
 					CategoryID: categoryID,
 					BalanceID:  balanceID3,
-					Type:       models.OperationTypeIncoming,
+					Type:       model.OperationTypeIncoming,
 					CreatedAt:  time.Now().Add(-100 * time.Hour),
 				},
 				{
 					ID:         operationID8,
 					CategoryID: categoryID,
 					BalanceID:  balanceID3,
-					Type:       models.OperationTypeIncoming,
+					Type:       model.OperationTypeIncoming,
 					CreatedAt:  time.Now().Add(-48 * time.Hour),
 				},
 			},
 			args: service.ListOperationsFilter{
 				BalanceID:      balanceID3,
-				CreationPeriod: models.CreationPeriodWeek,
+				CreationPeriod: model.CreationPeriodWeek,
 			},
-			expected: []models.Operation{
+			expected: []model.Operation{
 				{
 					ID:         operationID7,
 					CategoryID: categoryID,
 					BalanceID:  balanceID3,
-					Type:       models.OperationTypeIncoming,
+					Type:       model.OperationTypeIncoming,
 					CreatedAt:  time.Now().Add(-100 * time.Hour),
 				},
 				{
 					ID:         operationID8,
 					CategoryID: categoryID,
 					BalanceID:  balanceID3,
-					Type:       models.OperationTypeIncoming,
+					Type:       model.OperationTypeIncoming,
 					CreatedAt:  time.Now().Add(-48 * time.Hour),
 				},
 			},
 		},
 		{
 			desc: "received all operations by month as a creation period",
-			preconditions: []models.Operation{
+			preconditions: []model.Operation{
 				{
 					ID:         operationID9,
 					CategoryID: categoryID,
 					BalanceID:  balanceID4,
-					Type:       models.OperationTypeIncoming,
+					Type:       model.OperationTypeIncoming,
 					CreatedAt:  time.Now().Add(-730 * time.Hour),
 				},
 				{
 					ID:         operationID10,
 					CategoryID: categoryID,
 					BalanceID:  balanceID4,
-					Type:       models.OperationTypeIncoming,
+					Type:       model.OperationTypeIncoming,
 					CreatedAt:  time.Now().Add(-200 * time.Hour),
 				},
 				{
 					ID:         operationID11,
 					CategoryID: categoryID,
 					BalanceID:  balanceID4,
-					Type:       models.OperationTypeIncoming,
+					Type:       model.OperationTypeIncoming,
 					CreatedAt:  time.Now().Add(-300 * time.Hour),
 				},
 				{
 					ID:         operationID12,
 					CategoryID: categoryID,
 					BalanceID:  balanceID4,
-					Type:       models.OperationTypeIncoming,
+					Type:       model.OperationTypeIncoming,
 					CreatedAt:  time.Now(),
 				},
 			},
 			args: service.ListOperationsFilter{
 				BalanceID:      balanceID4,
-				CreationPeriod: models.CreationPeriodMonth,
+				CreationPeriod: model.CreationPeriodMonth,
 			},
-			expected: []models.Operation{
+			expected: []model.Operation{
 				{
 					ID:         operationID10,
 					CategoryID: categoryID,
 					BalanceID:  balanceID4,
-					Type:       models.OperationTypeIncoming,
+					Type:       model.OperationTypeIncoming,
 					CreatedAt:  time.Now().Add(-200 * time.Hour),
 				},
 				{
 					ID:         operationID11,
 					CategoryID: categoryID,
 					BalanceID:  balanceID4,
-					Type:       models.OperationTypeIncoming,
+					Type:       model.OperationTypeIncoming,
 					CreatedAt:  time.Now().Add(-300 * time.Hour),
 				},
 			},
 		},
 		{
 			desc: "received all operations by year as a creation period",
-			preconditions: []models.Operation{
+			preconditions: []model.Operation{
 				{
 					ID:         operationID13,
 					CategoryID: categoryID,
 					BalanceID:  balanceID5,
-					Type:       models.OperationTypeIncoming,
+					Type:       model.OperationTypeIncoming,
 					CreatedAt:  time.Now().Add(-8760 * time.Hour),
 				},
 				{
 					ID:         operationID14,
 					CategoryID: categoryID,
 					BalanceID:  balanceID5,
-					Type:       models.OperationTypeIncoming,
+					Type:       model.OperationTypeIncoming,
 					CreatedAt:  time.Now().Add(-3500 * time.Hour),
 				},
 				{
 					ID:         operationID15,
 					CategoryID: categoryID,
 					BalanceID:  balanceID5,
-					Type:       models.OperationTypeIncoming,
+					Type:       model.OperationTypeIncoming,
 					CreatedAt:  time.Now().Add(-1000 * time.Hour),
 				},
 				{
 					ID:         operationID16,
 					CategoryID: categoryID,
 					BalanceID:  balanceID5,
-					Type:       models.OperationTypeIncoming,
+					Type:       model.OperationTypeIncoming,
 					CreatedAt:  time.Now(),
 				},
 			},
 			args: service.ListOperationsFilter{
 				BalanceID:      balanceID5,
-				CreationPeriod: models.CreationPeriodYear,
+				CreationPeriod: model.CreationPeriodYear,
 			},
-			expected: []models.Operation{
+			expected: []model.Operation{
 				{
 					ID:         operationID14,
 					CategoryID: categoryID,
 					BalanceID:  balanceID5,
-					Type:       models.OperationTypeIncoming,
+					Type:       model.OperationTypeIncoming,
 					CreatedAt:  time.Now().Add(-3500 * time.Hour),
 				},
 				{
 					ID:         operationID15,
 					CategoryID: categoryID,
 					BalanceID:  balanceID5,
-					Type:       models.OperationTypeIncoming,
+					Type:       model.OperationTypeIncoming,
 					CreatedAt:  time.Now().Add(-1000 * time.Hour),
 				},
 			},
 		},
 		{
 			desc: "received all operations on page 1 with limit of 2, total amount 4",
-			preconditions: []models.Operation{
+			preconditions: []model.Operation{
 				{
 					ID:         operationID17,
 					CategoryID: categoryID,
 					BalanceID:  balanceID7,
-					Type:       models.OperationTypeIncoming,
+					Type:       model.OperationTypeIncoming,
 				},
 				{
 					ID:         operationID18,
 					CategoryID: categoryID,
 					BalanceID:  balanceID7,
-					Type:       models.OperationTypeIncoming,
+					Type:       model.OperationTypeIncoming,
 				},
 				{
 					ID:         operationID19,
 					CategoryID: categoryID,
 					BalanceID:  balanceID7,
-					Type:       models.OperationTypeIncoming,
+					Type:       model.OperationTypeIncoming,
 				},
 				{
 					ID:         operationID20,
 					CategoryID: categoryID,
 					BalanceID:  balanceID7,
-					Type:       models.OperationTypeIncoming,
+					Type:       model.OperationTypeIncoming,
 				},
 			},
 			args: service.ListOperationsFilter{
@@ -733,47 +733,47 @@ func TestOperation_List(t *testing.T) {
 					Limit: 2,
 				},
 			},
-			expected: []models.Operation{
+			expected: []model.Operation{
 				{
 					ID:         operationID17,
 					CategoryID: categoryID,
 					BalanceID:  balanceID7,
-					Type:       models.OperationTypeIncoming,
+					Type:       model.OperationTypeIncoming,
 				},
 				{
 					ID:         operationID18,
 					CategoryID: categoryID,
 					BalanceID:  balanceID7,
-					Type:       models.OperationTypeIncoming,
+					Type:       model.OperationTypeIncoming,
 				},
 			},
 		},
 		{
 			desc: "received all operations on page 2 with limit of 2, total amount 4",
-			preconditions: []models.Operation{
+			preconditions: []model.Operation{
 				{
 					ID:         operationID21,
 					CategoryID: categoryID,
 					BalanceID:  balanceID8,
-					Type:       models.OperationTypeIncoming,
+					Type:       model.OperationTypeIncoming,
 				},
 				{
 					ID:         operationID22,
 					CategoryID: categoryID,
 					BalanceID:  balanceID8,
-					Type:       models.OperationTypeIncoming,
+					Type:       model.OperationTypeIncoming,
 				},
 				{
 					ID:         operationID23,
 					CategoryID: categoryID,
 					BalanceID:  balanceID8,
-					Type:       models.OperationTypeIncoming,
+					Type:       model.OperationTypeIncoming,
 				},
 				{
 					ID:         operationID24,
 					CategoryID: categoryID,
 					BalanceID:  balanceID8,
-					Type:       models.OperationTypeIncoming,
+					Type:       model.OperationTypeIncoming,
 				},
 			},
 			args: service.ListOperationsFilter{
@@ -783,18 +783,18 @@ func TestOperation_List(t *testing.T) {
 					Limit: 2,
 				},
 			},
-			expected: []models.Operation{
+			expected: []model.Operation{
 				{
 					ID:         operationID23,
 					CategoryID: categoryID,
 					BalanceID:  balanceID8,
-					Type:       models.OperationTypeIncoming,
+					Type:       model.OperationTypeIncoming,
 				},
 				{
 					ID:         operationID24,
 					CategoryID: categoryID,
 					BalanceID:  balanceID8,
-					Type:       models.OperationTypeIncoming,
+					Type:       model.OperationTypeIncoming,
 				},
 			},
 		},
@@ -802,7 +802,7 @@ func TestOperation_List(t *testing.T) {
 			desc: "negative: operations not found",
 			args: service.ListOperationsFilter{
 				BalanceID:      uuid.NewString(),
-				CreationPeriod: models.CreationPeriodYear,
+				CreationPeriod: model.CreationPeriodYear,
 			},
 			expected: nil,
 		},
@@ -870,7 +870,7 @@ func TestOperation_Count(t *testing.T) {
 		uuid.NewString(), uuid.NewString(), uuid.NewString(), uuid.NewString(),
 		uuid.NewString(), uuid.NewString(), uuid.NewString(), uuid.NewString()
 
-	currency := &models.Currency{
+	currency := &model.Currency{
 		ID:   uuid.NewString(),
 		Code: "USD",
 	}
@@ -878,14 +878,14 @@ func TestOperation_Count(t *testing.T) {
 	err := currencyStore.CreateIfNotExists(ctx, currency)
 	require.NoError(t, err)
 
-	err = userStore.Create(ctx, &models.User{
+	err = userStore.Create(ctx, &model.User{
 		ID:       userID,
 		Username: "test" + userID,
 	})
 	require.NoError(t, err)
 
 	for _, balanceID := range [...]string{balanceID1, balanceID2, balanceID3, balanceID4, balanceID5, balanceID6} {
-		err = balanceStore.Create(ctx, &models.Balance{
+		err = balanceStore.Create(ctx, &model.Balance{
 			ID:         balanceID,
 			UserID:     userID,
 			CurrencyID: currency.ID,
@@ -893,7 +893,7 @@ func TestOperation_Count(t *testing.T) {
 		require.NoError(t, err)
 	}
 
-	err = categoryStore.Create(ctx, &models.Category{
+	err = categoryStore.Create(ctx, &model.Category{
 		ID:     categoryID,
 		UserID: userID,
 		Title:  "test_category",
@@ -915,24 +915,24 @@ func TestOperation_Count(t *testing.T) {
 
 	testCases := [...]struct {
 		desc          string
-		preconditions []models.Operation
+		preconditions []model.Operation
 		args          service.ListOperationsFilter
 		expected      int
 	}{
 		{
 			desc: "received all operations by only balance id",
-			preconditions: []models.Operation{
+			preconditions: []model.Operation{
 				{
 					ID:         operationID1,
 					CategoryID: categoryID,
 					BalanceID:  balanceID1,
-					Type:       models.OperationTypeIncoming,
+					Type:       model.OperationTypeIncoming,
 				},
 				{
 					ID:         operationID2,
 					CategoryID: categoryID,
 					BalanceID:  balanceID1,
-					Type:       models.OperationTypeIncoming,
+					Type:       model.OperationTypeIncoming,
 				},
 			},
 			args: service.ListOperationsFilter{
@@ -942,139 +942,139 @@ func TestOperation_Count(t *testing.T) {
 		},
 		{
 			desc: "received all operations by day as a creation period",
-			preconditions: []models.Operation{
+			preconditions: []model.Operation{
 				{
 					ID:         operationID3,
 					CategoryID: categoryID,
 					BalanceID:  balanceID2,
-					Type:       models.OperationTypeIncoming,
+					Type:       model.OperationTypeIncoming,
 					CreatedAt:  time.Now().Add(-23 * time.Hour),
 				},
 				{
 					ID:         operationID4,
 					CategoryID: categoryID,
 					BalanceID:  balanceID2,
-					Type:       models.OperationTypeIncoming,
+					Type:       model.OperationTypeIncoming,
 					CreatedAt:  time.Now(),
 				},
 				{
 					ID:         operationID5,
 					CategoryID: categoryID,
 					BalanceID:  balanceID2,
-					Type:       models.OperationTypeIncoming,
+					Type:       model.OperationTypeIncoming,
 					CreatedAt:  time.Now().Add(-48 * time.Hour),
 				},
 			},
 			args: service.ListOperationsFilter{
 				BalanceID:      balanceID2,
-				CreationPeriod: models.CreationPeriodDay,
+				CreationPeriod: model.CreationPeriodDay,
 			},
 			expected: 2,
 		},
 		{
 			desc: "received all operations by week as a creation period",
-			preconditions: []models.Operation{
+			preconditions: []model.Operation{
 				{
 					ID:         operationID6,
 					CategoryID: categoryID,
 					BalanceID:  balanceID3,
-					Type:       models.OperationTypeIncoming,
+					Type:       model.OperationTypeIncoming,
 					CreatedAt:  time.Now().Add(-168 * time.Hour),
 				},
 				{
 					ID:         operationID7,
 					CategoryID: categoryID,
 					BalanceID:  balanceID3,
-					Type:       models.OperationTypeIncoming,
+					Type:       model.OperationTypeIncoming,
 					CreatedAt:  time.Now().Add(-100 * time.Hour),
 				},
 				{
 					ID:         operationID8,
 					CategoryID: categoryID,
 					BalanceID:  balanceID3,
-					Type:       models.OperationTypeIncoming,
+					Type:       model.OperationTypeIncoming,
 					CreatedAt:  time.Now().Add(-48 * time.Hour),
 				},
 			},
 			args: service.ListOperationsFilter{
 				BalanceID:      balanceID3,
-				CreationPeriod: models.CreationPeriodWeek,
+				CreationPeriod: model.CreationPeriodWeek,
 			},
 			expected: 2,
 		},
 		{
 			desc: "received all operations by month as a creation period",
-			preconditions: []models.Operation{
+			preconditions: []model.Operation{
 				{
 					ID:         operationID9,
 					CategoryID: categoryID,
 					BalanceID:  balanceID4,
-					Type:       models.OperationTypeIncoming,
+					Type:       model.OperationTypeIncoming,
 					CreatedAt:  time.Now().Add(-730 * time.Hour),
 				},
 				{
 					ID:         operationID10,
 					CategoryID: categoryID,
 					BalanceID:  balanceID4,
-					Type:       models.OperationTypeIncoming,
+					Type:       model.OperationTypeIncoming,
 					CreatedAt:  time.Now().Add(-200 * time.Hour),
 				},
 				{
 					ID:         operationID11,
 					CategoryID: categoryID,
 					BalanceID:  balanceID4,
-					Type:       models.OperationTypeIncoming,
+					Type:       model.OperationTypeIncoming,
 					CreatedAt:  time.Now().Add(-300 * time.Hour),
 				},
 				{
 					ID:         operationID12,
 					CategoryID: categoryID,
 					BalanceID:  balanceID4,
-					Type:       models.OperationTypeIncoming,
+					Type:       model.OperationTypeIncoming,
 					CreatedAt:  time.Now().Add(1 * time.Second),
 				},
 			},
 			args: service.ListOperationsFilter{
 				BalanceID:      balanceID4,
-				CreationPeriod: models.CreationPeriodMonth,
+				CreationPeriod: model.CreationPeriodMonth,
 			},
 			expected: 2,
 		},
 		{
 			desc: "received all operations by year as a creation period",
-			preconditions: []models.Operation{
+			preconditions: []model.Operation{
 				{
 					ID:         operationID13,
 					CategoryID: categoryID,
 					BalanceID:  balanceID5,
-					Type:       models.OperationTypeIncoming,
+					Type:       model.OperationTypeIncoming,
 					CreatedAt:  time.Now().Add(-8760 * time.Hour),
 				},
 				{
 					ID:         operationID14,
 					CategoryID: categoryID,
 					BalanceID:  balanceID5,
-					Type:       models.OperationTypeIncoming,
+					Type:       model.OperationTypeIncoming,
 					CreatedAt:  time.Now().Add(-3500 * time.Hour),
 				},
 				{
 					ID:         operationID15,
 					CategoryID: categoryID,
 					BalanceID:  balanceID5,
-					Type:       models.OperationTypeIncoming,
+					Type:       model.OperationTypeIncoming,
 					CreatedAt:  time.Now().Add(-1000 * time.Hour),
 				},
 				{
 					ID:         operationID16,
 					CategoryID: categoryID,
 					BalanceID:  balanceID5,
-					Type:       models.OperationTypeIncoming,
+					Type:       model.OperationTypeIncoming,
 					CreatedAt:  time.Now(),
 				},
 			},
 			args: service.ListOperationsFilter{
 				BalanceID:      balanceID5,
-				CreationPeriod: models.CreationPeriodYear,
+				CreationPeriod: model.CreationPeriodYear,
 			},
 			expected: 3,
 		},
@@ -1082,7 +1082,7 @@ func TestOperation_Count(t *testing.T) {
 			desc: "negative: operations not found",
 			args: service.ListOperationsFilter{
 				BalanceID:      uuid.NewString(),
-				CreationPeriod: models.CreationPeriodYear,
+				CreationPeriod: model.CreationPeriodYear,
 			},
 			expected: 0,
 		},
@@ -1127,7 +1127,7 @@ func TestOperation_Delete(t *testing.T) {
 	balanceID := uuid.NewString()
 	categoryID := uuid.NewString()
 	operationID := uuid.NewString()
-	currency := &models.Currency{
+	currency := &model.Currency{
 		ID:   uuid.NewString(),
 		Code: "USD",
 	}
@@ -1135,20 +1135,20 @@ func TestOperation_Delete(t *testing.T) {
 	err := currencyStore.CreateIfNotExists(ctx, currency)
 	require.NoError(t, err)
 
-	err = userStore.Create(ctx, &models.User{
+	err = userStore.Create(ctx, &model.User{
 		ID:       userID,
 		Username: "test" + userID,
 	})
 	require.NoError(t, err)
 
-	err = balanceStore.Create(ctx, &models.Balance{
+	err = balanceStore.Create(ctx, &model.Balance{
 		ID:         balanceID,
 		UserID:     userID,
 		CurrencyID: currency.ID,
 	})
 	assert.NoError(t, err)
 
-	err = categoryStore.Create(ctx, &models.Category{
+	err = categoryStore.Create(ctx, &model.Category{
 		ID:     categoryID,
 		UserID: userID,
 		Title:  "test_category",
@@ -1167,26 +1167,26 @@ func TestOperation_Delete(t *testing.T) {
 	})
 	testCases := []struct {
 		desc          string
-		preconditions *models.Operation
+		preconditions *model.Operation
 		args          string
 	}{
 		{
 			desc: "operation deleted",
-			preconditions: &models.Operation{
+			preconditions: &model.Operation{
 				ID:         operationID,
 				CategoryID: categoryID,
 				BalanceID:  balanceID,
-				Type:       models.OperationTypeIncoming,
+				Type:       model.OperationTypeIncoming,
 			},
 			args: operationID,
 		},
 		{
 			desc: "negatie: operation not deleted because of not existed id",
-			preconditions: &models.Operation{
+			preconditions: &model.Operation{
 				ID:         uuid.NewString(),
 				CategoryID: categoryID,
 				BalanceID:  balanceID,
-				Type:       models.OperationTypeIncoming,
+				Type:       model.OperationTypeIncoming,
 			},
 			args: uuid.NewString(),
 		},

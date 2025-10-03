@@ -4,7 +4,7 @@ import (
 	"context"
 	"testing"
 
-	"github.com/VladPetriv/finance_bot/internal/models"
+	"github.com/VladPetriv/finance_bot/internal/model"
 	"github.com/VladPetriv/finance_bot/internal/service"
 	"github.com/VladPetriv/finance_bot/internal/store"
 	"github.com/google/uuid"
@@ -25,7 +25,7 @@ func TestState_Create(t *testing.T) {
 	stateID := uuid.NewString()
 
 	for _, userID := range [...]string{userID1, userID2} {
-		err := userStore.Create(ctx, &models.User{
+		err := userStore.Create(ctx, &model.User{
 			ID:       userID,
 			Username: "test_state_create" + userID,
 		})
@@ -41,17 +41,17 @@ func TestState_Create(t *testing.T) {
 
 	testCases := [...]struct {
 		desc                 string
-		preconditions        *models.State
-		args                 *models.State
+		preconditions        *model.State
+		args                 *model.State
 		expectDuplicateError bool
 	}{
 		{
 			desc: "state created",
-			args: &models.State{
+			args: &model.State{
 				ID:     uuid.NewString(),
 				UserID: "test_state_create" + userID1,
-				Flow:   models.StartFlow,
-				Steps:  []models.FlowStep{models.StartFlowStep, models.CreateInitialBalanceFlowStep},
+				Flow:   model.StartFlow,
+				Steps:  []model.FlowStep{model.StartFlowStep, model.CreateInitialBalanceFlowStep},
 				Metedata: map[string]any{
 					"string": "test",
 					"bool":   true,
@@ -60,11 +60,11 @@ func TestState_Create(t *testing.T) {
 		},
 		{
 			desc: "state not created because already exists",
-			preconditions: &models.State{
+			preconditions: &model.State{
 				ID:     stateID,
 				UserID: "test_state_create" + userID2,
 			},
-			args: &models.State{
+			args: &model.State{
 				ID:     stateID,
 				UserID: "test_state_create" + userID2,
 			},
@@ -127,7 +127,7 @@ func TestState_Get(t *testing.T) {
 
 	userID := uuid.NewString()
 	stateID := uuid.NewString()
-	err := userStore.Create(ctx, &models.User{
+	err := userStore.Create(ctx, &model.User{
 		ID:       userID,
 		Username: "test_state_get" + userID,
 	})
@@ -140,26 +140,26 @@ func TestState_Get(t *testing.T) {
 
 	testCases := [...]struct {
 		desc          string
-		preconditions *models.State
+		preconditions *model.State
 		args          service.GetStateFilter
-		expected      *models.State
+		expected      *model.State
 	}{
 		{
 			desc: "state found by user ID",
-			preconditions: &models.State{
+			preconditions: &model.State{
 				ID:     stateID,
 				UserID: "test_state_get" + userID,
-				Flow:   models.StartFlow,
-				Steps:  []models.FlowStep{models.StartFlowStep, models.CreateInitialBalanceFlowStep},
+				Flow:   model.StartFlow,
+				Steps:  []model.FlowStep{model.StartFlowStep, model.CreateInitialBalanceFlowStep},
 			},
 			args: service.GetStateFilter{
 				UserID: "test_state_get" + userID,
 			},
-			expected: &models.State{
+			expected: &model.State{
 				ID:     stateID,
 				UserID: "test_state_get" + userID,
-				Flow:   models.StartFlow,
-				Steps:  []models.FlowStep{models.StartFlowStep, models.CreateInitialBalanceFlowStep},
+				Flow:   model.StartFlow,
+				Steps:  []model.FlowStep{model.StartFlowStep, model.CreateInitialBalanceFlowStep},
 			},
 		},
 		{
@@ -215,7 +215,7 @@ func TestState_Update(t *testing.T) {
 
 	userID := uuid.NewString()
 	stateID := uuid.NewString()
-	err := userStore.Create(ctx, &models.User{
+	err := userStore.Create(ctx, &model.User{
 		ID:       userID,
 		Username: "test_state_update" + userID,
 	})
@@ -228,32 +228,32 @@ func TestState_Update(t *testing.T) {
 
 	testCases := [...]struct {
 		desc          string
-		preconditions *models.State
-		args          *models.State
-		expected      *models.State
+		preconditions *model.State
+		args          *model.State
+		expected      *model.State
 	}{
 		{
 			desc: "state updated successfully",
-			preconditions: &models.State{
+			preconditions: &model.State{
 				ID:     stateID,
 				UserID: "test_state_update" + userID,
-				Flow:   models.StartFlow,
-				Steps:  []models.FlowStep{models.StartFlowStep},
+				Flow:   model.StartFlow,
+				Steps:  []model.FlowStep{model.StartFlowStep},
 			},
-			args: &models.State{
+			args: &model.State{
 				ID:     stateID,
 				UserID: "test_state_update" + userID,
-				Flow:   models.StartFlow,
-				Steps:  []models.FlowStep{models.StartFlowStep, models.CreateInitialBalanceFlowStep},
+				Flow:   model.StartFlow,
+				Steps:  []model.FlowStep{model.StartFlowStep, model.CreateInitialBalanceFlowStep},
 				Metedata: map[string]any{
 					"updated_flow_blabla": "test",
 				},
 			},
-			expected: &models.State{
+			expected: &model.State{
 				ID:     stateID,
 				UserID: "test_state_update" + userID,
-				Flow:   models.StartFlow,
-				Steps:  []models.FlowStep{models.StartFlowStep, models.CreateInitialBalanceFlowStep},
+				Flow:   model.StartFlow,
+				Steps:  []model.FlowStep{model.StartFlowStep, model.CreateInitialBalanceFlowStep},
 				Metedata: map[string]any{
 					"updated_flow_blabla": "test",
 				},
@@ -301,7 +301,7 @@ func TestState_Delete(t *testing.T) {
 	stateID := uuid.NewString()
 
 	for _, userID := range [...]string{userID1, userID2} {
-		err := userStore.Create(ctx, &models.User{
+		err := userStore.Create(ctx, &model.User{
 			ID:       userID,
 			Username: "test_state_delete" + userID,
 		})
@@ -316,24 +316,24 @@ func TestState_Delete(t *testing.T) {
 
 	testCases := [...]struct {
 		desc          string
-		preconditions *models.State
+		preconditions *model.State
 		args          string
 	}{
 		{
 			desc: "state deleted",
-			preconditions: &models.State{
+			preconditions: &model.State{
 				ID:     stateID,
 				UserID: "test_state_delete" + userID1,
-				Flow:   models.StartFlow,
+				Flow:   model.StartFlow,
 			},
 			args: stateID,
 		},
 		{
 			desc: "state not deleted because of not existed id",
-			preconditions: &models.State{
+			preconditions: &model.State{
 				ID:     uuid.NewString(),
 				UserID: "test_state_delete" + userID2,
-				Flow:   models.CancelFlow,
+				Flow:   model.CancelFlow,
 			},
 			args: uuid.NewString(),
 		},

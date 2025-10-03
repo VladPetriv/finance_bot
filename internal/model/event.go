@@ -1,4 +1,4 @@
-package models
+package model
 
 // Event represents the type of event that occurs during bot interaction
 type Event string

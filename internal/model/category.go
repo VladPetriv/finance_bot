@@ -1,4 +1,4 @@
-package models
+package model
 
 // Category represents a category model.
 type Category struct {

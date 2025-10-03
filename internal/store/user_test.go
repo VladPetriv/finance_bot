@@ -4,7 +4,7 @@ import (
 	"context"
 	"testing"
 
-	"github.com/VladPetriv/finance_bot/internal/models"
+	"github.com/VladPetriv/finance_bot/internal/model"
 	"github.com/VladPetriv/finance_bot/internal/service"
 	"github.com/VladPetriv/finance_bot/internal/store"
 	"github.com/google/uuid"
@@ -25,13 +25,13 @@ func TestUser_Create(t *testing.T) {
 
 	testCases := [...]struct {
 		desc                 string
-		preconditions        *models.User
-		args                 *models.User
+		preconditions        *model.User
+		args                 *model.User
 		expectDuplicateError bool
 	}{
 		{
 			desc: "user created",
-			args: &models.User{
+			args: &model.User{
 				ID:       uuid.NewString(),
 				ChatID:   1,
 				Username: "test",
@@ -39,12 +39,12 @@ func TestUser_Create(t *testing.T) {
 		},
 		{
 			desc: "user not created because already exist",
-			preconditions: &models.User{
+			preconditions: &model.User{
 				ID:       userID,
 				ChatID:   2,
 				Username: "test_create_2",
 			},
-			args: &models.User{
+			args: &model.User{
 				ID: userID,
 			},
 			expectDuplicateError: true,
@@ -79,7 +79,7 @@ func TestUser_Create(t *testing.T) {
 
 			assert.NoError(t, err)
 
-			var createdUser models.User
+			var createdUser model.User
 			err = testCaseDB.DB.Get(&createdUser, "SELECT * FROM users WHERE id=$1;", tc.args.ID)
 			assert.NoError(t, err)
 			assert.Equal(t, tc.args.ID, createdUser.ID)
@@ -98,7 +98,7 @@ func TestUser_CreateSettings(t *testing.T) {
 	userStore := store.NewUser(testCaseDB)
 
 	userSettingsID := uuid.NewString()
-	user := &models.User{
+	user := &model.User{
 		ID:       uuid.NewString(),
 		Username: "test",
 	}
@@ -113,13 +113,13 @@ func TestUser_CreateSettings(t *testing.T) {
 
 	testCases := [...]struct {
 		desc                 string
-		preconditions        *models.UserSettings
-		args                 *models.UserSettings
+		preconditions        *model.UserSettings
+		args                 *model.UserSettings
 		expectDuplicateError bool
 	}{
 		{
 			desc: "user settings created",
-			args: &models.UserSettings{
+			args: &model.UserSettings{
 				ID:                              uuid.NewString(),
 				UserID:                          user.ID,
 				AIParserEnabled:                 true,
@@ -128,13 +128,13 @@ func TestUser_CreateSettings(t *testing.T) {
 		},
 		{
 			desc: "user settings not created because already exist",
-			preconditions: &models.UserSettings{
+			preconditions: &model.UserSettings{
 				ID:                              userSettingsID,
 				UserID:                          user.ID,
 				AIParserEnabled:                 false,
 				NotifyAboutSubscriptionPayments: false,
 			},
-			args: &models.UserSettings{
+			args: &model.UserSettings{
 				ID:                              userSettingsID,
 				UserID:                          user.ID,
 				AIParserEnabled:                 false,
@@ -172,7 +172,7 @@ func TestUser_CreateSettings(t *testing.T) {
 
 			assert.NoError(t, err)
 
-			var createdUserSettings models.UserSettings
+			var createdUserSettings model.UserSettings
 			err = testCaseDB.DB.Get(&createdUserSettings, "SELECT * FROM user_settings WHERE id=$1;", tc.args.ID)
 			assert.NoError(t, err)
 			assert.Equal(t, tc.args.ID, createdUserSettings.ID)
@@ -196,7 +196,7 @@ func TestUser_Get(t *testing.T) {
 	userID, userID2, userID3 := uuid.NewString(), uuid.NewString(), uuid.NewString()
 	balanceID, currencyID, userSettingsID := uuid.NewString(), uuid.NewString(), uuid.NewString()
 
-	err := currencyStore.CreateIfNotExists(ctx, &models.Currency{
+	err := currencyStore.CreateIfNotExists(ctx, &model.Currency{
 		ID:   currencyID,
 		Code: "USD",
 	})
@@ -204,13 +204,13 @@ func TestUser_Get(t *testing.T) {
 
 	testCases := [...]struct {
 		desc          string
-		preconditions *models.User
+		preconditions *model.User
 		args          service.GetUserFilter
-		expected      *models.User
+		expected      *model.User
 	}{
 		{
 			desc: "found user by username",
-			preconditions: &models.User{
+			preconditions: &model.User{
 				ID:       userID,
 				ChatID:   1,
 				Username: "test",
@@ -218,7 +218,7 @@ func TestUser_Get(t *testing.T) {
 			args: service.GetUserFilter{
 				Username: "test",
 			},
-			expected: &models.User{
+			expected: &model.User{
 				ID:       userID,
 				ChatID:   1,
 				Username: "test",
@@ -226,11 +226,11 @@ func TestUser_Get(t *testing.T) {
 		},
 		{
 			desc: "user with balance preload by username found",
-			preconditions: &models.User{
+			preconditions: &model.User{
 				ID:       userID2,
 				ChatID:   2,
 				Username: "test2",
-				Balances: []models.Balance{
+				Balances: []model.Balance{
 					{
 						ID:         balanceID,
 						UserID:     userID2,
@@ -243,11 +243,11 @@ func TestUser_Get(t *testing.T) {
 				Username:        "test2",
 				PreloadBalances: true,
 			},
-			expected: &models.User{
+			expected: &model.User{
 				ID:       userID2,
 				ChatID:   2,
 				Username: "test2",
-				Balances: []models.Balance{
+				Balances: []model.Balance{
 					{
 						ID:         balanceID,
 						UserID:     userID2,
@@ -259,11 +259,11 @@ func TestUser_Get(t *testing.T) {
 		},
 		{
 			desc: "user with settings preload by username found",
-			preconditions: &models.User{
+			preconditions: &model.User{
 				ID:       userID3,
 				ChatID:   3,
 				Username: "test3",
-				Settings: &models.UserSettings{
+				Settings: &model.UserSettings{
 					ID:              userSettingsID,
 					UserID:          userID3,
 					AIParserEnabled: false,
@@ -273,11 +273,11 @@ func TestUser_Get(t *testing.T) {
 				Username:        "test3",
 				PreloadSettings: true,
 			},
-			expected: &models.User{
+			expected: &model.User{
 				ID:       userID3,
 				ChatID:   3,
 				Username: "test3",
-				Settings: &models.UserSettings{
+				Settings: &model.UserSettings{
 					ID:              userSettingsID,
 					UserID:          userID3,
 					AIParserEnabled: false,

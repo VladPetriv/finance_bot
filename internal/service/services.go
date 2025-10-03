@@ -3,7 +3,7 @@ package service
 import (
 	"context"
 
-	"github.com/VladPetriv/finance_bot/internal/models"
+	"github.com/VladPetriv/finance_bot/internal/model"
 	"github.com/VladPetriv/finance_bot/pkg/errs"
 	"github.com/VladPetriv/finance_bot/pkg/money"
 )
@@ -35,16 +35,16 @@ type HandlerService interface {
 	HandleBack(ctx context.Context, msg Message) error
 	// HandleWrappers processes main keyboard selections, where each button (Balance/Operations/Categories)
 	// maps to corresponding model wrapper to handle its specific actions.
-	HandleWrappers(ctx context.Context, event models.Event, msg Message) error
+	HandleWrappers(ctx context.Context, event model.Event, msg Message) error
 
 	// HandleAction process user actions with app entities (balance, category, operation).
 	HandleAction(ctx context.Context, msg Message) error
 }
 
 type flowProcessingOptions struct {
-	user          *models.User
+	user          *model.User
 	message       Message
-	state         *models.State
+	state         *model.State
 	stateMetaData map[string]any
 }
 
@@ -60,7 +60,7 @@ type EventService interface {
 	// Listen is used to receive all updates from bot.
 	Listen(ctx context.Context)
 	// ReactOnEven is used to react on event by his name.
-	ReactOnEvent(ctx context.Context, eventName models.Event, msg Message) error
+	ReactOnEvent(ctx context.Context, eventName model.Event, msg Message) error
 }
 
 type contextFieldName string
@@ -70,64 +70,64 @@ const contextFieldNameState contextFieldName = "state"
 var (
 	defaultKeyboardRows = []KeyboardRow{
 		{
-			Buttons: []string{models.BotBalanceCommand, models.BotCategoryCommand},
+			Buttons: []string{model.BotBalanceCommand, model.BotCategoryCommand},
 		},
 		{
-			Buttons: []string{models.BotOperationCommand, models.BotBalanceSubscriptionsCommand},
+			Buttons: []string{model.BotOperationCommand, model.BotBalanceSubscriptionsCommand},
 		},
 	}
 
 	rowKeyboardWithCancelButtonOnly = []KeyboardRow{
 		{
-			Buttons: []string{models.BotCancelCommand},
+			Buttons: []string{model.BotCancelCommand},
 		},
 	}
 
 	balanceKeyboardRows = []KeyboardRow{
 		{
-			Buttons: []string{models.BotCreateBalanceCommand, models.BotGetBalanceCommand},
+			Buttons: []string{model.BotCreateBalanceCommand, model.BotGetBalanceCommand},
 		},
 		{
-			Buttons: []string{models.BotUpdateBalanceCommand, models.BotDeleteBalanceCommand},
+			Buttons: []string{model.BotUpdateBalanceCommand, model.BotDeleteBalanceCommand},
 		},
 		{
-			Buttons: []string{models.BotBackCommand},
+			Buttons: []string{model.BotBackCommand},
 		},
 	}
 
 	categoryKeyboardRows = []KeyboardRow{
 		{
-			Buttons: []string{models.BotCreateCategoryCommand, models.BotListCategoriesCommand},
+			Buttons: []string{model.BotCreateCategoryCommand, model.BotListCategoriesCommand},
 		},
 		{
-			Buttons: []string{models.BotUpdateCategoryCommand, models.BotDeleteCategoryCommand},
+			Buttons: []string{model.BotUpdateCategoryCommand, model.BotDeleteCategoryCommand},
 		},
 		{
-			Buttons: []string{models.BotBackCommand},
+			Buttons: []string{model.BotBackCommand},
 		},
 	}
 
 	operationKeyboardRows = []KeyboardRow{
 		{
-			Buttons: []string{models.BotCreateOperationCommand, models.BotGetOperationsHistory},
+			Buttons: []string{model.BotCreateOperationCommand, model.BotGetOperationsHistory},
 		},
 		{
-			Buttons: []string{models.BotUpdateOperationCommand, models.BotDeleteOperationCommand},
+			Buttons: []string{model.BotUpdateOperationCommand, model.BotDeleteOperationCommand},
 		},
 		{
-			Buttons: []string{models.BotBackCommand},
+			Buttons: []string{model.BotBackCommand},
 		},
 	}
 
 	balanceSubscriptionKeyboardRows = []KeyboardRow{
 		{
-			Buttons: []string{models.BotCreateBalanceSubscriptionCommand, models.BotListBalanceSubscriptionsCommand},
+			Buttons: []string{model.BotCreateBalanceSubscriptionCommand, model.BotListBalanceSubscriptionsCommand},
 		},
 		{
-			Buttons: []string{models.BotUpdateBalanceSubscriptionCommand, models.BotDeleteBalanceSubscriptionCommand},
+			Buttons: []string{model.BotUpdateBalanceSubscriptionCommand, model.BotDeleteBalanceSubscriptionCommand},
 		},
 		{
-			Buttons: []string{models.BotBackCommand},
+			Buttons: []string{model.BotBackCommand},
 		},
 	}
 
@@ -135,28 +135,28 @@ var (
 		{
 			Buttons: []InlineKeyboardButton{
 				{
-					Text: models.BotUpdateOperationAmountCommand,
+					Text: model.BotUpdateOperationAmountCommand,
 				},
 			},
 		},
 		{
 			Buttons: []InlineKeyboardButton{
 				{
-					Text: models.BotUpdateOperationDescriptionCommand,
+					Text: model.BotUpdateOperationDescriptionCommand,
 				},
 			},
 		},
 		{
 			Buttons: []InlineKeyboardButton{
 				{
-					Text: models.BotUpdateOperationCategoryCommand,
+					Text: model.BotUpdateOperationCategoryCommand,
 				},
 			},
 		},
 		{
 			Buttons: []InlineKeyboardButton{
 				{
-					Text: models.BotUpdateOperationDateCommand,
+					Text: model.BotUpdateOperationDateCommand,
 				},
 			},
 		},
@@ -166,14 +166,14 @@ var (
 		{
 			Buttons: []InlineKeyboardButton{
 				{
-					Text: models.BotUpdateOperationAmountCommand,
+					Text: model.BotUpdateOperationAmountCommand,
 				},
 			},
 		},
 		{
 			Buttons: []InlineKeyboardButton{
 				{
-					Text: models.BotUpdateOperationDateCommand,
+					Text: model.BotUpdateOperationDateCommand,
 				},
 			},
 		},
@@ -183,21 +183,21 @@ var (
 		{
 			Buttons: []InlineKeyboardButton{
 				{
-					Text: models.BotUpdateBalanceNameCommand,
+					Text: model.BotUpdateBalanceNameCommand,
 				},
 			},
 		},
 		{
 			Buttons: []InlineKeyboardButton{
 				{
-					Text: models.BotUpdateBalanceAmountCommand,
+					Text: model.BotUpdateBalanceAmountCommand,
 				},
 			},
 		},
 		{
 			Buttons: []InlineKeyboardButton{
 				{
-					Text: models.BotUpdateBalanceCurrencyCommand,
+					Text: model.BotUpdateBalanceCurrencyCommand,
 				},
 			},
 		},
@@ -207,28 +207,28 @@ var (
 		{
 			Buttons: []InlineKeyboardButton{
 				{
-					Text: models.BotUpdateBalanceSubscriptionNameCommand,
+					Text: model.BotUpdateBalanceSubscriptionNameCommand,
 				},
 			},
 		},
 		{
 			Buttons: []InlineKeyboardButton{
 				{
-					Text: models.BotUpdateBalanceSubscriptionAmountCommand,
+					Text: model.BotUpdateBalanceSubscriptionAmountCommand,
 				},
 			},
 		},
 		{
 			Buttons: []InlineKeyboardButton{
 				{
-					Text: models.BotUpdateBalanceSubscriptionCategoryCommand,
+					Text: model.BotUpdateBalanceSubscriptionCategoryCommand,
 				},
 			},
 		},
 		{
 			Buttons: []InlineKeyboardButton{
 				{
-					Text: models.BotUpdateBalanceSubscriptionPeriodCommand,
+					Text: model.BotUpdateBalanceSubscriptionPeriodCommand,
 				},
 			},
 		},
@@ -236,12 +236,12 @@ var (
 	balanceSubscriptionFrequencyKeyboard = []KeyboardRow{
 		{
 			Buttons: []string{
-				string(models.SubscriptionPeriodWeekly),
-				string(models.SubscriptionPeriodMonthly),
-				string(models.SubscriptionPeriodYearly),
+				string(model.SubscriptionPeriodWeekly),
+				string(model.SubscriptionPeriodMonthly),
+				string(model.SubscriptionPeriodYearly),
 			},
 		},
-		{Buttons: []string{models.BotCancelCommand}},
+		{Buttons: []string{model.BotCancelCommand}},
 	}
 )
 
@@ -331,8 +331,8 @@ type StateService interface {
 
 // HandleStateOutput represents an output structure for StateService.HandleState method.
 type HandleStateOutput struct {
-	State *models.State
-	Event models.Event
+	State *model.State
+	Event model.Event
 }
 
 // CurrencyService represents a service for managing and handling currencies.
@@ -356,7 +356,7 @@ type BalanceSubscriptionEngine interface {
 	// It generates future operation dates based on the subscription's frequency (period) and start date:
 	//   - For weekly/monthly frequencies: schedules operations for the next quarter (3 months)
 	//   - For yearly frequencies: schedules operations for the next two year
-	ScheduleOperationsCreation(ctx context.Context, balanceSubscription models.BalanceSubscription)
+	ScheduleOperationsCreation(ctx context.Context, balanceSubscription model.BalanceSubscription)
 	// ExtendScheduledOperations creates additional scheduled operations for an active balance subscription.
 	// When a subscription reaches its last scheduled operation date, this method extends the timeline by
 	// generating new scheduled operations for the upcoming billing period (quarter/year).

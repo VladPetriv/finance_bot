@@ -4,13 +4,13 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/VladPetriv/finance_bot/internal/models"
+	"github.com/VladPetriv/finance_bot/internal/model"
 	"github.com/VladPetriv/finance_bot/pkg/errs"
 	"github.com/VladPetriv/finance_bot/pkg/logger"
 	"github.com/google/uuid"
 )
 
-type flowStepHandlerFunc func(ctx context.Context, opts flowProcessingOptions) (models.FlowStep, error)
+type flowStepHandlerFunc func(ctx context.Context, opts flowProcessingOptions) (model.FlowStep, error)
 
 type handlerService struct {
 	logger   *logger.Logger
@@ -18,7 +18,7 @@ type handlerService struct {
 	apis     APIs
 	stores   Stores
 
-	flowWithFlowStepsHandlers map[models.Flow]map[models.FlowStep]flowStepHandlerFunc
+	flowWithFlowStepsHandlers map[model.Flow]map[model.FlowStep]flowStepHandlerFunc
 }
 
 var _ HandlerService = (*handlerService)(nil)
@@ -42,125 +42,125 @@ func NewHandler(opts *HandlerOptions) *handlerService {
 }
 
 func (h *handlerService) RegisterHandlers() {
-	h.flowWithFlowStepsHandlers = map[models.Flow]map[models.FlowStep]flowStepHandlerFunc{
+	h.flowWithFlowStepsHandlers = map[model.Flow]map[model.FlowStep]flowStepHandlerFunc{
 		// Flows with balances
-		models.StartFlow: {
-			models.CreateInitialBalanceFlowStep: h.handleCreateInitialBalanceFlowStep,
+		model.StartFlow: {
+			model.CreateInitialBalanceFlowStep: h.handleCreateInitialBalanceFlowStep,
 			// NOTE: We're using -ForUpdate methods, since the balance after first step is already created in the store.
-			models.EnterBalanceAmountFlowStep:   h.handleEnterBalanceAmountFlowStepForUpdate,
-			models.EnterBalanceCurrencyFlowStep: h.handleEnterBalanceCurrencyFlowStepForUpdate,
+			model.EnterBalanceAmountFlowStep:   h.handleEnterBalanceAmountFlowStepForUpdate,
+			model.EnterBalanceCurrencyFlowStep: h.handleEnterBalanceCurrencyFlowStepForUpdate,
 		},
-		models.CreateBalanceFlow: {
-			models.CreateBalanceFlowStep:        h.handleCreateBalanceFlowStep,
-			models.EnterBalanceNameFlowStep:     h.handleEnterBalanceNameFlowStepForCreate,
-			models.EnterBalanceAmountFlowStep:   h.handleEnterBalanceAmountFlowStepForCreate,
-			models.EnterBalanceCurrencyFlowStep: h.handleEnterBalanceCurrencyFlowStepForCreate,
+		model.CreateBalanceFlow: {
+			model.CreateBalanceFlowStep:        h.handleCreateBalanceFlowStep,
+			model.EnterBalanceNameFlowStep:     h.handleEnterBalanceNameFlowStepForCreate,
+			model.EnterBalanceAmountFlowStep:   h.handleEnterBalanceAmountFlowStepForCreate,
+			model.EnterBalanceCurrencyFlowStep: h.handleEnterBalanceCurrencyFlowStepForCreate,
 		},
-		models.GetBalanceFlow: {
-			models.GetBalanceFlowStep:                   h.handleGetBalanceFlowStep,
-			models.ChooseMonthBalanceStatisticsFlowStep: h.handleChooseMonthBalanceStatisticsFlowStep,
-			models.ChooseBalanceFlowStep:                h.handleChooseBalanceFlowStepForGetBalance,
+		model.GetBalanceFlow: {
+			model.GetBalanceFlowStep:                   h.handleGetBalanceFlowStep,
+			model.ChooseMonthBalanceStatisticsFlowStep: h.handleChooseMonthBalanceStatisticsFlowStep,
+			model.ChooseBalanceFlowStep:                h.handleChooseBalanceFlowStepForGetBalance,
 		},
-		models.UpdateBalanceFlow: {
-			models.UpdateBalanceFlowStep:             h.handleUpdateBalanceFlowStep,
-			models.ChooseBalanceFlowStep:             h.handleChooseBalanceFlowStepForUpdate,
-			models.ChooseUpdateBalanceOptionFlowStep: h.handleChooseUpdateBalanceOptionFlowStep,
-			models.EnterBalanceNameFlowStep:          h.handleEnterBalanceNameFlowStepForUpdate,
-			models.EnterBalanceAmountFlowStep:        h.handleEnterBalanceAmountFlowStepForUpdate,
-			models.EnterBalanceCurrencyFlowStep:      h.handleEnterBalanceCurrencyFlowStepForUpdate,
+		model.UpdateBalanceFlow: {
+			model.UpdateBalanceFlowStep:             h.handleUpdateBalanceFlowStep,
+			model.ChooseBalanceFlowStep:             h.handleChooseBalanceFlowStepForUpdate,
+			model.ChooseUpdateBalanceOptionFlowStep: h.handleChooseUpdateBalanceOptionFlowStep,
+			model.EnterBalanceNameFlowStep:          h.handleEnterBalanceNameFlowStepForUpdate,
+			model.EnterBalanceAmountFlowStep:        h.handleEnterBalanceAmountFlowStepForUpdate,
+			model.EnterBalanceCurrencyFlowStep:      h.handleEnterBalanceCurrencyFlowStepForUpdate,
 		},
-		models.DeleteBalanceFlow: {
-			models.DeleteBalanceFlowStep:          h.handleDeleteBalanceFlowStep,
-			models.ConfirmBalanceDeletionFlowStep: h.handleConfirmBalanceDeletionFlowStep,
-			models.ChooseBalanceFlowStep:          h.handleChooseBalanceFlowStepForDelete,
+		model.DeleteBalanceFlow: {
+			model.DeleteBalanceFlowStep:          h.handleDeleteBalanceFlowStep,
+			model.ConfirmBalanceDeletionFlowStep: h.handleConfirmBalanceDeletionFlowStep,
+			model.ChooseBalanceFlowStep:          h.handleChooseBalanceFlowStepForDelete,
 		},
 
 		// Flows with categories
-		models.CreateCategoryFlow: {
-			models.CreateCategoryFlowStep:    h.handleCreateCategoryFlowStep,
-			models.EnterCategoryNameFlowStep: h.handleEnterCategoryNameFlowStep,
+		model.CreateCategoryFlow: {
+			model.CreateCategoryFlowStep:    h.handleCreateCategoryFlowStep,
+			model.EnterCategoryNameFlowStep: h.handleEnterCategoryNameFlowStep,
 		},
-		models.ListCategoriesFlow: {
-			models.ListCategoriesFlowStep: h.handleListCategoriesFlowStep,
+		model.ListCategoriesFlow: {
+			model.ListCategoriesFlowStep: h.handleListCategoriesFlowStep,
 		},
-		models.UpdateCategoryFlow: {
-			models.UpdateCategoryFlowStep:           h.handleUpdateCategoryFlowStep,
-			models.ChooseCategoryFlowStep:           h.handleChooseCategoryFlowStepForUpdate,
-			models.EnterUpdatedCategoryNameFlowStep: h.handleEnterUpdatedCategoryNameFlowStep,
+		model.UpdateCategoryFlow: {
+			model.UpdateCategoryFlowStep:           h.handleUpdateCategoryFlowStep,
+			model.ChooseCategoryFlowStep:           h.handleChooseCategoryFlowStepForUpdate,
+			model.EnterUpdatedCategoryNameFlowStep: h.handleEnterUpdatedCategoryNameFlowStep,
 		},
-		models.DeleteCategoryFlow: {
-			models.DeleteCategoryFlowStep: h.handleDeleteCategoryFlowStep,
-			models.ChooseCategoryFlowStep: h.handleChooseCategoryFlowStepForDelete,
+		model.DeleteCategoryFlow: {
+			model.DeleteCategoryFlowStep: h.handleDeleteCategoryFlowStep,
+			model.ChooseCategoryFlowStep: h.handleChooseCategoryFlowStepForDelete,
 		},
 
 		// Flows with operations
-		models.CreateOperationFlow: {
-			models.CreateOperationFlowStep:           h.handleCreateOperationFlowStep,
-			models.ProcessOperationTypeFlowStep:      h.handleProcessOperationTypeFlowStep,
-			models.ChooseBalanceFlowStep:             h.handleChooseBalanceFlowStepForCreatingOperation,
-			models.ChooseBalanceFromFlowStep:         h.handleChooseBalanceFromFlowStep,
-			models.ChooseBalanceToFlowStep:           h.handleChooseBalanceToFlowStep,
-			models.EnterCurrencyExchangeRateFlowStep: h.handleEnterCurrencyExchangeRateFlowStep,
-			models.ChooseCategoryFlowStep:            h.handleChooseCategoryFlowStep,
-			models.EnterOperationDescriptionFlowStep: h.handleEnterOperationDescriptionFlowStep,
-			models.EnterOperationAmountFlowStep:      h.handleEnterOperationAmountFlowStep,
+		model.CreateOperationFlow: {
+			model.CreateOperationFlowStep:           h.handleCreateOperationFlowStep,
+			model.ProcessOperationTypeFlowStep:      h.handleProcessOperationTypeFlowStep,
+			model.ChooseBalanceFlowStep:             h.handleChooseBalanceFlowStepForCreatingOperation,
+			model.ChooseBalanceFromFlowStep:         h.handleChooseBalanceFromFlowStep,
+			model.ChooseBalanceToFlowStep:           h.handleChooseBalanceToFlowStep,
+			model.EnterCurrencyExchangeRateFlowStep: h.handleEnterCurrencyExchangeRateFlowStep,
+			model.ChooseCategoryFlowStep:            h.handleChooseCategoryFlowStep,
+			model.EnterOperationDescriptionFlowStep: h.handleEnterOperationDescriptionFlowStep,
+			model.EnterOperationAmountFlowStep:      h.handleEnterOperationAmountFlowStep,
 		},
-		models.GetOperationsHistoryFlow: {
-			models.GetOperationsHistoryFlowStep:                 h.handleGetOperationsHistoryFlowStep,
-			models.ChooseBalanceFlowStep:                        h.handleChooseBalanceFlowStepForGetOperationsHistory,
-			models.ChooseTimePeriodForOperationsHistoryFlowStep: h.handleChooseTimePeriodForOperationsHistoryFlowStep,
+		model.GetOperationsHistoryFlow: {
+			model.GetOperationsHistoryFlowStep:                 h.handleGetOperationsHistoryFlowStep,
+			model.ChooseBalanceFlowStep:                        h.handleChooseBalanceFlowStepForGetOperationsHistory,
+			model.ChooseTimePeriodForOperationsHistoryFlowStep: h.handleChooseTimePeriodForOperationsHistoryFlowStep,
 		},
-		models.UpdateOperationFlow: {
-			models.UpdateOperationFlowStep:             h.handleUpdateOperationFlowStep,
-			models.ChooseBalanceFlowStep:               h.handleChooseBalanceFlowStepForUpdateOperation,
-			models.ChooseOperationToUpdateFlowStep:     h.handleChooseOperationToUpdateFlowStep,
-			models.ChooseUpdateOperationOptionFlowStep: h.handleChooseUpdateOperationOptionFlowStep,
-			models.EnterOperationAmountFlowStep:        h.handleEnterOperationAmountFlowStepForUpdate,
-			models.EnterOperationDescriptionFlowStep:   h.handleEnterOperationDescriptionFlowStepForUpdate,
-			models.ChooseCategoryFlowStep:              h.handleChooseCategoryFlowStepForOperationUpdate,
-			models.EnterOperationDateFlowStep:          h.handleEnterOperationDateFlowStep,
+		model.UpdateOperationFlow: {
+			model.UpdateOperationFlowStep:             h.handleUpdateOperationFlowStep,
+			model.ChooseBalanceFlowStep:               h.handleChooseBalanceFlowStepForUpdateOperation,
+			model.ChooseOperationToUpdateFlowStep:     h.handleChooseOperationToUpdateFlowStep,
+			model.ChooseUpdateOperationOptionFlowStep: h.handleChooseUpdateOperationOptionFlowStep,
+			model.EnterOperationAmountFlowStep:        h.handleEnterOperationAmountFlowStepForUpdate,
+			model.EnterOperationDescriptionFlowStep:   h.handleEnterOperationDescriptionFlowStepForUpdate,
+			model.ChooseCategoryFlowStep:              h.handleChooseCategoryFlowStepForOperationUpdate,
+			model.EnterOperationDateFlowStep:          h.handleEnterOperationDateFlowStep,
 		},
-		models.DeleteOperationFlow: {
-			models.DeleteOperationFlowStep:          h.handleDeleteOperationFlowStep,
-			models.ChooseBalanceFlowStep:            h.handleChooseBalanceFlowStepForDeleteOperation,
-			models.ChooseOperationToDeleteFlowStep:  h.handleChooseOperationToDeleteFlowStep,
-			models.ConfirmOperationDeletionFlowStep: h.handleConfirmOperationDeletionFlowStep,
+		model.DeleteOperationFlow: {
+			model.DeleteOperationFlowStep:          h.handleDeleteOperationFlowStep,
+			model.ChooseBalanceFlowStep:            h.handleChooseBalanceFlowStepForDeleteOperation,
+			model.ChooseOperationToDeleteFlowStep:  h.handleChooseOperationToDeleteFlowStep,
+			model.ConfirmOperationDeletionFlowStep: h.handleConfirmOperationDeletionFlowStep,
 		},
-		models.CreateOperationsThroughOneTimeInputFlow: {
-			models.CreateOperationsThroughOneTimeInputFlowStep: h.handleCreateOperationsThroughOneTimeInputFlowStep,
-			models.ChooseBalanceFlowStep:                       h.handleChooseBalanceFlowStepForOneTimeInputOperationCreate,
-			models.ConfirmOperationDetailsFlowStep:             h.handleConfirmOperationDetailsFlowStepForOneTimeInputOperationCreate,
+		model.CreateOperationsThroughOneTimeInputFlow: {
+			model.CreateOperationsThroughOneTimeInputFlowStep: h.handleCreateOperationsThroughOneTimeInputFlowStep,
+			model.ChooseBalanceFlowStep:                       h.handleChooseBalanceFlowStepForOneTimeInputOperationCreate,
+			model.ConfirmOperationDetailsFlowStep:             h.handleConfirmOperationDetailsFlowStepForOneTimeInputOperationCreate,
 		},
 
 		// Flows with balance subscriptions
-		models.CreateBalanceSubscriptionFlow: {
-			models.CreateBalanceSubscriptionFlowStep:              h.handleCreateBalanceSubscriptionFlowStep,
-			models.ChooseBalanceFlowStep:                          h.handleChooseBalanceFlowStepForCreateBalanceSubscription,
-			models.ChooseCategoryFlowStep:                         h.handleChooseCategoryFlowStepForCreateBalanceSubscription,
-			models.EnterBalanceSubscriptionNameFlowStep:           h.handleEnterBalanceSubscriptionNameFlowStep,
-			models.EnterBalanceSubscriptionAmountFlowStep:         h.handleEnterBalanceSubscriptionAmountFlowStep,
-			models.ChooseBalanceSubscriptionFrequencyFlowStep:     h.handleChooseBalanceSubscriptionFrequencyFlowStep,
-			models.EnterStartAtDateForBalanceSubscriptionFlowStep: h.handleEnterStartAtDateForBalanceSubscriptionFlowStep,
+		model.CreateBalanceSubscriptionFlow: {
+			model.CreateBalanceSubscriptionFlowStep:              h.handleCreateBalanceSubscriptionFlowStep,
+			model.ChooseBalanceFlowStep:                          h.handleChooseBalanceFlowStepForCreateBalanceSubscription,
+			model.ChooseCategoryFlowStep:                         h.handleChooseCategoryFlowStepForCreateBalanceSubscription,
+			model.EnterBalanceSubscriptionNameFlowStep:           h.handleEnterBalanceSubscriptionNameFlowStep,
+			model.EnterBalanceSubscriptionAmountFlowStep:         h.handleEnterBalanceSubscriptionAmountFlowStep,
+			model.ChooseBalanceSubscriptionFrequencyFlowStep:     h.handleChooseBalanceSubscriptionFrequencyFlowStep,
+			model.EnterStartAtDateForBalanceSubscriptionFlowStep: h.handleEnterStartAtDateForBalanceSubscriptionFlowStep,
 		},
-		models.ListBalanceSubscriptionFlow: {
-			models.ListBalanceSubscriptionFlowStep: h.handleListBalanceSubscriptionFlowStep,
-			models.ChooseBalanceFlowStep:           h.handleChooseBalanceFlowStepForListBalanceSubscriptions,
+		model.ListBalanceSubscriptionFlow: {
+			model.ListBalanceSubscriptionFlowStep: h.handleListBalanceSubscriptionFlowStep,
+			model.ChooseBalanceFlowStep:           h.handleChooseBalanceFlowStepForListBalanceSubscriptions,
 		},
-		models.UpdateBalanceSubscriptionFlow: {
-			models.UpdateBalanceSubscriptionFlowStep:             h.handleUpdateBalanceSubscriptionFlowStep,
-			models.ChooseBalanceFlowStep:                         h.handleChooseBalanceFlowStepForUpdateBalanceSubscription,
-			models.ChooseBalanceSubscriptionToUpdateFlowStep:     h.handleChooseBalanceSubscriptionToUpdateFlowStep,
-			models.ChooseUpdateBalanceSubscriptionOptionFlowStep: h.handleChooseUpdateBalanceSubscriptionOptionFlowStep,
-			models.EnterBalanceSubscriptionNameFlowStep:          h.handleEnterBalanceSubscriptionNameFlowStepForUpdate,
-			models.EnterBalanceSubscriptionAmountFlowStep:        h.handleEnterBalanceSubscriptionAmountFlowStepForUpdate,
-			models.ChooseCategoryFlowStep:                        h.handleChooseCategoryFlowStepForBalanceSubscriptionUpdate,
-			models.ChooseBalanceSubscriptionFrequencyFlowStep:    h.handleChooseBalanceSubscriptionFrequencyFlowStepForUpdate,
+		model.UpdateBalanceSubscriptionFlow: {
+			model.UpdateBalanceSubscriptionFlowStep:             h.handleUpdateBalanceSubscriptionFlowStep,
+			model.ChooseBalanceFlowStep:                         h.handleChooseBalanceFlowStepForUpdateBalanceSubscription,
+			model.ChooseBalanceSubscriptionToUpdateFlowStep:     h.handleChooseBalanceSubscriptionToUpdateFlowStep,
+			model.ChooseUpdateBalanceSubscriptionOptionFlowStep: h.handleChooseUpdateBalanceSubscriptionOptionFlowStep,
+			model.EnterBalanceSubscriptionNameFlowStep:          h.handleEnterBalanceSubscriptionNameFlowStepForUpdate,
+			model.EnterBalanceSubscriptionAmountFlowStep:        h.handleEnterBalanceSubscriptionAmountFlowStepForUpdate,
+			model.ChooseCategoryFlowStep:                        h.handleChooseCategoryFlowStepForBalanceSubscriptionUpdate,
+			model.ChooseBalanceSubscriptionFrequencyFlowStep:    h.handleChooseBalanceSubscriptionFrequencyFlowStepForUpdate,
 		},
-		models.DeleteBalanceSubscriptionFlow: {
-			models.DeleteBalanceSubscriptionFlowStep:         h.handleDeleteBalanceSubscriptionFlowStep,
-			models.ChooseBalanceFlowStep:                     h.handleChooseBalanceFlowStepForBalanceSubscriptionDelete,
-			models.ChooseBalanceSubscriptionToDeleteFlowStep: h.handleChooseBalanceSubscriptionToDeleteFlowStep,
-			models.ConfirmDeleteBalanceSubscriptionFlowStep:  h.handleConfirmDeleteBalanceSubscriptionFlowStep,
+		model.DeleteBalanceSubscriptionFlow: {
+			model.DeleteBalanceSubscriptionFlowStep:         h.handleDeleteBalanceSubscriptionFlowStep,
+			model.ChooseBalanceFlowStep:                     h.handleChooseBalanceFlowStepForBalanceSubscriptionDelete,
+			model.ChooseBalanceSubscriptionToDeleteFlowStep: h.handleChooseBalanceSubscriptionToDeleteFlowStep,
+			model.ConfirmDeleteBalanceSubscriptionFlowStep:  h.handleConfirmDeleteBalanceSubscriptionFlowStep,
 		},
 	}
 }
@@ -189,7 +189,7 @@ func (h handlerService) HandleUnknown(msg Message) error {
 func (h handlerService) HandleStart(ctx context.Context, msg Message) error {
 	logger := h.logger.With().Str("name", "handlerService.HandleStart").Logger()
 
-	var nextStep models.FlowStep
+	var nextStep model.FlowStep
 	state, err := getStateFromContext(ctx)
 	if err != nil {
 		logger.Error().Err(err).Msg("get state from context")
@@ -215,12 +215,12 @@ func (h handlerService) HandleStart(ctx context.Context, msg Message) error {
 
 	// Handle case when user already exists
 	if user != nil {
-		nextStep = models.EndFlowStep
+		nextStep = model.EndFlowStep
 		return h.sendMessageWithDefaultKeyboard(chatID, fmt.Sprintf("Happy to see you again @%s!", username))
 	}
 
 	userID := uuid.NewString()
-	err = h.stores.User.Create(ctx, &models.User{
+	err = h.stores.User.Create(ctx, &model.User{
 		ID:       userID,
 		ChatID:   chatID,
 		Username: username,
@@ -230,7 +230,7 @@ func (h handlerService) HandleStart(ctx context.Context, msg Message) error {
 		return fmt.Errorf("create user in store: %w", err)
 	}
 
-	err = h.stores.User.CreateSettings(ctx, &models.UserSettings{
+	err = h.stores.User.CreateSettings(ctx, &model.UserSettings{
 		ID:                              uuid.NewString(),
 		UserID:                          userID,
 		AIParserEnabled:                 false,
@@ -253,7 +253,7 @@ func (h handlerService) HandleStart(ctx context.Context, msg Message) error {
 		}
 	}
 
-	nextStep = models.CreateInitialBalanceFlowStep
+	nextStep = model.CreateInitialBalanceFlowStep
 	return nil
 }
 
@@ -267,29 +267,29 @@ func (h handlerService) HandleCancel(ctx context.Context, msg Message) error {
 		return fmt.Errorf("get state from context: %w", err)
 	}
 
-	previousBaseFlow, ok := state.Metedata[baseFlowKey].(models.Flow)
+	previousBaseFlow, ok := state.Metedata[baseFlowKey].(model.Flow)
 	if !ok {
 		logger.Warn().Msg("no base flow found in metadata, showing default menu")
 		return h.sendMessageWithDefaultKeyboard(msg.GetChatID(), "Please choose command to execute:")
 	}
 
-	flowConfigs := map[models.Flow]struct {
+	flowConfigs := map[model.Flow]struct {
 		rows    []KeyboardRow
 		message string
 	}{
-		models.BalanceFlow: {
+		model.BalanceFlow: {
 			rows:    balanceKeyboardRows,
 			message: "Action cancelled!\nPlease choose balance command to execute:",
 		},
-		models.CategoryFlow: {
+		model.CategoryFlow: {
 			rows:    categoryKeyboardRows,
 			message: "Action cancelled!\nPlease choose category command to execute:",
 		},
-		models.OperationFlow: {
+		model.OperationFlow: {
 			rows:    operationKeyboardRows,
 			message: "Action cancelled!\nPlease choose operation command to execute:",
 		},
-		models.BalanceSubscriptionFlow: {
+		model.BalanceSubscriptionFlow: {
 			rows:    balanceSubscriptionKeyboardRows,
 			message: "Action cancelled!\nPlease choose balance subscription command to execute:",
 		},
@@ -312,7 +312,7 @@ func (h handlerService) HandleBack(ctx context.Context, msg Message) error {
 	return h.sendMessageWithDefaultKeyboard(msg.GetChatID(), "Please choose command to execute:")
 }
 
-func (h handlerService) HandleWrappers(ctx context.Context, event models.Event, msg Message) error {
+func (h handlerService) HandleWrappers(ctx context.Context, event model.Event, msg Message) error {
 	logger := h.logger.With().Str("name", "handlerService.HandleWrappers").Logger()
 	logger.Debug().Any("msg", msg).Any("event", event).Msg("got args")
 
@@ -322,16 +322,16 @@ func (h handlerService) HandleWrappers(ctx context.Context, event models.Event, 
 	)
 
 	switch event {
-	case models.BalanceEvent:
+	case model.BalanceEvent:
 		rows = balanceKeyboardRows
 		message = "Please choose balance command to execute:"
-	case models.CategoryEvent:
+	case model.CategoryEvent:
 		rows = categoryKeyboardRows
 		message = "Please choose category command to execute:"
-	case models.OperationEvent:
+	case model.OperationEvent:
 		rows = operationKeyboardRows
 		message = "Please choose operation command to execute:"
-	case models.BalanceSubscriptionEvent:
+	case model.BalanceSubscriptionEvent:
 		rows = balanceSubscriptionKeyboardRows
 		message = "Please choose balance subscription command to execute:"
 	default:
@@ -348,7 +348,7 @@ func (h handlerService) HandleWrappers(ctx context.Context, event models.Event, 
 func (h handlerService) HandleAction(ctx context.Context, msg Message) error {
 	logger := h.logger.With().Str("name", "handlerService.HandleAction").Logger()
 
-	var nextStep models.FlowStep
+	var nextStep model.FlowStep
 	state, err := getStateFromContext(ctx)
 	if err != nil {
 		logger.Error().Err(err).Msg("get state from context")
@@ -374,7 +374,7 @@ func (h handlerService) HandleAction(ctx context.Context, msg Message) error {
 	return nil
 }
 
-func (h handlerService) processHandler(ctx context.Context, state *models.State, message Message) (models.FlowStep, error) {
+func (h handlerService) processHandler(ctx context.Context, state *model.State, message Message) (model.FlowStep, error) {
 	logger := h.logger.With().Str("name", "handlerService.processHandler").Logger()
 
 	user, err := h.stores.User.Get(ctx, GetUserFilter{
@@ -426,8 +426,8 @@ func (h handlerService) processHandler(ctx context.Context, state *models.State,
 	return nextStep, nil
 }
 
-func getStateFromContext(ctx context.Context) (*models.State, error) {
-	state, ok := ctx.Value(contextFieldNameState).(*models.State)
+func getStateFromContext(ctx context.Context) (*model.State, error) {
+	state, ok := ctx.Value(contextFieldNameState).(*model.State)
 	if !ok {
 		return nil, fmt.Errorf("state not found in context")
 	}
@@ -436,9 +436,9 @@ func getStateFromContext(ctx context.Context) (*models.State, error) {
 }
 
 type updateStateOptions struct {
-	updatedStep     models.FlowStep
+	updatedStep     model.FlowStep
 	updatedMetadata map[string]any
-	initialState    *models.State
+	initialState    *model.State
 }
 
 func (h handlerService) updateState(ctx context.Context, opts updateStateOptions) {

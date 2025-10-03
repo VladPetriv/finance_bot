@@ -7,7 +7,7 @@ import (
 	"fmt"
 
 	sq "github.com/Masterminds/squirrel"
-	"github.com/VladPetriv/finance_bot/internal/models"
+	"github.com/VladPetriv/finance_bot/internal/model"
 	"github.com/VladPetriv/finance_bot/internal/service"
 	"github.com/VladPetriv/finance_bot/pkg/database"
 )
@@ -23,7 +23,7 @@ func NewState(db *database.PostgreSQL) *stateStore {
 	}
 }
 
-func (s *stateStore) Create(ctx context.Context, state *models.State) error {
+func (s *stateStore) Create(ctx context.Context, state *model.State) error {
 	_, err := s.DB.ExecContext(
 		ctx,
 		"INSERT INTO states (id, user_username, flow, steps, metadata) VALUES ($1, $2, $3, $4, $5);",
@@ -33,7 +33,7 @@ func (s *stateStore) Create(ctx context.Context, state *models.State) error {
 	return err
 }
 
-func (s *stateStore) Get(ctx context.Context, filter service.GetStateFilter) (*models.State, error) {
+func (s *stateStore) Get(ctx context.Context, filter service.GetStateFilter) (*model.State, error) {
 	stmt := sq.
 		StatementBuilder.
 		PlaceholderFormat(sq.Dollar).
@@ -49,7 +49,7 @@ func (s *stateStore) Get(ctx context.Context, filter service.GetStateFilter) (*m
 		return nil, fmt.Errorf("build get state query: %w", err)
 	}
 
-	var state models.State
+	var state model.State
 	err = s.DB.GetContext(ctx, &state, query, args...)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
@@ -61,8 +61,8 @@ func (s *stateStore) Get(ctx context.Context, filter service.GetStateFilter) (*m
 	return &state, nil
 }
 
-func (s *stateStore) Update(ctx context.Context, state *models.State) (*models.State, error) {
-	var updatedState models.State
+func (s *stateStore) Update(ctx context.Context, state *model.State) (*model.State, error) {
+	var updatedState model.State
 	err := s.DB.QueryRowContext(
 		ctx,
 		`UPDATE states

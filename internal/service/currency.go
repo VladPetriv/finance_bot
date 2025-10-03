@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/VladPetriv/finance_bot/internal/models"
+	"github.com/VladPetriv/finance_bot/internal/model"
 	"github.com/VladPetriv/finance_bot/pkg/errs"
 	"github.com/VladPetriv/finance_bot/pkg/logger"
 	"github.com/VladPetriv/finance_bot/pkg/money"
@@ -53,7 +53,7 @@ func (c *currencyService) InitCurrencies(ctx context.Context) error {
 	}
 
 	for _, currency := range currencies {
-		err := c.storages.Currency.CreateIfNotExists(ctx, &models.Currency{
+		err := c.storages.Currency.CreateIfNotExists(ctx, &model.Currency{
 			ID:     uuid.NewString(),
 			Name:   currency.Name,
 			Code:   currency.Code,

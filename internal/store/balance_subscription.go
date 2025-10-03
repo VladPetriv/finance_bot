@@ -7,7 +7,7 @@ import (
 	"fmt"
 
 	sq "github.com/Masterminds/squirrel"
-	"github.com/VladPetriv/finance_bot/internal/models"
+	"github.com/VladPetriv/finance_bot/internal/model"
 	"github.com/VladPetriv/finance_bot/internal/service"
 	"github.com/VladPetriv/finance_bot/pkg/database"
 )
@@ -23,7 +23,7 @@ func NewBalanceSubscription(db *database.PostgreSQL) *balanceSubscriptionStore {
 	}
 }
 
-func (b *balanceSubscriptionStore) Create(ctx context.Context, subscription models.BalanceSubscription) error {
+func (b *balanceSubscriptionStore) Create(ctx context.Context, subscription model.BalanceSubscription) error {
 	_, err := b.db.DB.ExecContext(
 		ctx,
 		`INSERT INTO
@@ -35,7 +35,7 @@ func (b *balanceSubscriptionStore) Create(ctx context.Context, subscription mode
 	return err
 }
 
-func (b *balanceSubscriptionStore) CreateScheduledOperation(ctx context.Context, operation models.ScheduledOperation) error {
+func (b *balanceSubscriptionStore) CreateScheduledOperation(ctx context.Context, operation model.ScheduledOperation) error {
 	_, err := b.db.DB.ExecContext(
 		ctx,
 		`INSERT INTO
@@ -47,7 +47,7 @@ func (b *balanceSubscriptionStore) CreateScheduledOperation(ctx context.Context,
 	return err
 }
 
-func (b *balanceSubscriptionStore) Get(ctx context.Context, filter service.GetBalanceSubscriptionFilter) (*models.BalanceSubscription, error) {
+func (b *balanceSubscriptionStore) Get(ctx context.Context, filter service.GetBalanceSubscriptionFilter) (*model.BalanceSubscription, error) {
 	stmt := sq.
 		StatementBuilder.
 		PlaceholderFormat(sq.Dollar).
@@ -66,7 +66,7 @@ func (b *balanceSubscriptionStore) Get(ctx context.Context, filter service.GetBa
 		return nil, fmt.Errorf("build get balance subscription query: %w", err)
 	}
 
-	var subscription models.BalanceSubscription
+	var subscription model.BalanceSubscription
 	err = b.db.DB.GetContext(ctx, &subscription, query, args...)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
@@ -98,7 +98,7 @@ func (b *balanceSubscriptionStore) Count(ctx context.Context, filter service.Lis
 	return int(count), nil
 }
 
-func (b *balanceSubscriptionStore) List(ctx context.Context, filter service.ListBalanceSubscriptionFilter) ([]models.BalanceSubscription, error) {
+func (b *balanceSubscriptionStore) List(ctx context.Context, filter service.ListBalanceSubscriptionFilter) ([]model.BalanceSubscription, error) {
 	stmt := applyListBalanceSubscriptionFilter(applyListBalanceSubscriptionOptions{listQuery: true}, filter)
 
 	query, args, err := stmt.ToSql()
@@ -106,7 +106,7 @@ func (b *balanceSubscriptionStore) List(ctx context.Context, filter service.List
 		return nil, fmt.Errorf("build list balance subscriptions query: %w", err)
 	}
 
-	var subscriptions []models.BalanceSubscription
+	var subscriptions []model.BalanceSubscription
 	err = b.db.DB.SelectContext(ctx, &subscriptions, query, args...)
 	if err != nil {
 		return nil, err
@@ -169,7 +169,7 @@ func applyListBalanceSubscriptionFilter(options applyListBalanceSubscriptionOpti
 	return &stmt
 }
 
-func (b *balanceSubscriptionStore) ListScheduledOperation(ctx context.Context, filter service.ListScheduledOperation) ([]models.ScheduledOperation, error) {
+func (b *balanceSubscriptionStore) ListScheduledOperation(ctx context.Context, filter service.ListScheduledOperation) ([]model.ScheduledOperation, error) {
 	stmt := sq.
 		StatementBuilder.
 		PlaceholderFormat(sq.Dollar).
@@ -194,7 +194,7 @@ func (b *balanceSubscriptionStore) ListScheduledOperation(ctx context.Context, f
 		return nil, fmt.Errorf("build list scheduled operation query: %w", err)
 	}
 
-	var scheduledOperations []models.ScheduledOperation
+	var scheduledOperations []model.ScheduledOperation
 	err = b.db.DB.SelectContext(ctx, &scheduledOperations, query, args...)
 	if err != nil {
 		return nil, err
@@ -203,7 +203,7 @@ func (b *balanceSubscriptionStore) ListScheduledOperation(ctx context.Context, f
 	return scheduledOperations, nil
 }
 
-func (b *balanceSubscriptionStore) Update(ctx context.Context, subscription *models.BalanceSubscription) error {
+func (b *balanceSubscriptionStore) Update(ctx context.Context, subscription *model.BalanceSubscription) error {
 	_, err := b.db.DB.ExecContext(
 		ctx,
 		`

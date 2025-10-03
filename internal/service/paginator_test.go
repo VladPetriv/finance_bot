@@ -3,7 +3,7 @@ package service
 import (
 	"testing"
 
-	"github.com/VladPetriv/finance_bot/internal/models"
+	"github.com/VladPetriv/finance_bot/internal/model"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -12,7 +12,7 @@ func Test_paginateInlineKeyboard(t *testing.T) {
 
 	type args struct {
 		opts      inlineKeyboardPaginatorOptions
-		getValues getValuesFunc[models.Currency]
+		getValues getValuesFunc[model.Currency]
 	}
 
 	testCases := [...]struct {
@@ -29,8 +29,8 @@ func Test_paginateInlineKeyboard(t *testing.T) {
 					maxPerRow:      1,
 					currentPage:    firstPage,
 				},
-				getValues: func() ([]models.Currency, error) {
-					return []models.Currency{
+				getValues: func() ([]model.Currency, error) {
+					return []model.Currency{
 						{
 							ID:     "1",
 							Name:   "USD",
@@ -60,8 +60,8 @@ func Test_paginateInlineKeyboard(t *testing.T) {
 					maxPerRow:      1,
 					currentPage:    2,
 				},
-				getValues: func() ([]models.Currency, error) {
-					return []models.Currency{
+				getValues: func() ([]model.Currency, error) {
+					return []model.Currency{
 						{
 							ID:     "1",
 							Name:   "USD",
@@ -97,7 +97,7 @@ func Test_paginateInlineKeyboard(t *testing.T) {
 				{
 					Buttons: []InlineKeyboardButton{
 						{
-							Text: models.BotPreviousCommand,
+							Text: model.BotPreviousCommand,
 						},
 					},
 				},
@@ -112,8 +112,8 @@ func Test_paginateInlineKeyboard(t *testing.T) {
 					maxPerRow:      1,
 					currentPage:    2,
 				},
-				getValues: func() ([]models.Currency, error) {
-					return []models.Currency{
+				getValues: func() ([]model.Currency, error) {
+					return []model.Currency{
 						{
 							ID:     "2",
 							Name:   "EUR",
@@ -135,10 +135,10 @@ func Test_paginateInlineKeyboard(t *testing.T) {
 				{
 					Buttons: []InlineKeyboardButton{
 						{
-							Text: models.BotPreviousCommand,
+							Text: model.BotPreviousCommand,
 						},
 						{
-							Text: models.BotNextCommand,
+							Text: model.BotNextCommand,
 						},
 					},
 				},
@@ -153,8 +153,8 @@ func Test_paginateInlineKeyboard(t *testing.T) {
 					maxPerRow:      2,
 					currentPage:    firstPage,
 				},
-				getValues: func() ([]models.Currency, error) {
-					return []models.Currency{
+				getValues: func() ([]model.Currency, error) {
+					return []model.Currency{
 						{
 							ID:     "2",
 							Name:   "EUR",
@@ -176,7 +176,7 @@ func Test_paginateInlineKeyboard(t *testing.T) {
 				{
 					Buttons: []InlineKeyboardButton{
 						{
-							Text: models.BotNextCommand,
+							Text: model.BotNextCommand,
 						},
 					},
 				},

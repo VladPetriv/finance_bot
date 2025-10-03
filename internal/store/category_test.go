@@ -4,7 +4,7 @@ import (
 	"context"
 	"testing"
 
-	"github.com/VladPetriv/finance_bot/internal/models"
+	"github.com/VladPetriv/finance_bot/internal/model"
 	"github.com/VladPetriv/finance_bot/internal/service"
 	"github.com/VladPetriv/finance_bot/internal/store"
 	"github.com/google/uuid"
@@ -23,7 +23,7 @@ func TestCategory_Create(t *testing.T) {
 
 	userID := uuid.NewString()
 	categoryID := uuid.NewString()
-	err := userStore.Create(ctx, &models.User{
+	err := userStore.Create(ctx, &model.User{
 		ID:       userID,
 		Username: "test" + uuid.NewString(),
 	})
@@ -36,13 +36,13 @@ func TestCategory_Create(t *testing.T) {
 
 	testCases := [...]struct {
 		desc                 string
-		preconditions        *models.Category
-		args                 *models.Category
+		preconditions        *model.Category
+		args                 *model.Category
 		expectDuplicateError bool
 	}{
 		{
 			desc: "created category",
-			args: &models.Category{
+			args: &model.Category{
 				ID:     uuid.NewString(),
 				UserID: userID,
 				Title:  "test_create_1",
@@ -50,12 +50,12 @@ func TestCategory_Create(t *testing.T) {
 		},
 		{
 			desc: "category not created because already exists",
-			preconditions: &models.Category{
+			preconditions: &model.Category{
 				ID:     categoryID,
 				UserID: userID,
 				Title:  "test_create_2",
 			},
-			args: &models.Category{
+			args: &model.Category{
 				ID:     categoryID,
 				UserID: userID,
 				Title:  "test_create_2",
@@ -114,7 +114,7 @@ func TestCategory_Get(t *testing.T) {
 	categoryID1, categoryID2, categoryID3 := uuid.NewString(), uuid.NewString(), uuid.NewString()
 	userID1, userID2 := uuid.NewString(), uuid.NewString()
 	for _, userID := range [...]string{userID1, userID2} {
-		err := userStore.Create(ctx, &models.User{
+		err := userStore.Create(ctx, &model.User{
 			ID:       userID,
 			Username: "test" + uuid.NewString(),
 		})
@@ -130,13 +130,13 @@ func TestCategory_Get(t *testing.T) {
 
 	testCases := [...]struct {
 		desc          string
-		preconditions *models.Category
+		preconditions *model.Category
 		args          service.GetCategoryFilter
-		expected      *models.Category
+		expected      *model.Category
 	}{
 		{
 			desc: "found category by title",
-			preconditions: &models.Category{
+			preconditions: &model.Category{
 				ID:     categoryID1,
 				UserID: userID1,
 				Title:  "title_get_1",
@@ -144,7 +144,7 @@ func TestCategory_Get(t *testing.T) {
 			args: service.GetCategoryFilter{
 				Title: "title_get_1",
 			},
-			expected: &models.Category{
+			expected: &model.Category{
 				ID:     categoryID1,
 				UserID: userID1,
 				Title:  "title_get_1",
@@ -152,7 +152,7 @@ func TestCategory_Get(t *testing.T) {
 		},
 		{
 			desc: "found category by id",
-			preconditions: &models.Category{
+			preconditions: &model.Category{
 				ID:     categoryID2,
 				UserID: userID1,
 				Title:  "test_get_2",
@@ -160,7 +160,7 @@ func TestCategory_Get(t *testing.T) {
 			args: service.GetCategoryFilter{
 				ID: categoryID2,
 			},
-			expected: &models.Category{
+			expected: &model.Category{
 				ID:     categoryID2,
 				UserID: userID1,
 				Title:  "test_get_2",
@@ -168,7 +168,7 @@ func TestCategory_Get(t *testing.T) {
 		},
 		{
 			desc: "found category by user id",
-			preconditions: &models.Category{
+			preconditions: &model.Category{
 				ID:     categoryID3,
 				UserID: userID2,
 				Title:  "test_get_user_id",
@@ -176,7 +176,7 @@ func TestCategory_Get(t *testing.T) {
 			args: service.GetCategoryFilter{
 				UserID: userID2,
 			},
-			expected: &models.Category{
+			expected: &model.Category{
 				ID:     categoryID3,
 				UserID: userID2,
 				Title:  "test_get_user_id",
@@ -225,7 +225,7 @@ func TestCategory_List(t *testing.T) {
 
 	categoryID1, categoryID2 := uuid.NewString(), uuid.NewString()
 	userID1, userID2 := uuid.NewString(), uuid.NewString()
-	err := userStore.Create(ctx, &models.User{
+	err := userStore.Create(ctx, &model.User{
 		ID:       userID1,
 		Username: "test" + uuid.NewString(),
 	})
@@ -238,13 +238,13 @@ func TestCategory_List(t *testing.T) {
 
 	testCases := [...]struct {
 		desc          string
-		preconditions []models.Category
+		preconditions []model.Category
 		args          *service.ListCategoriesFilter
-		expected      []models.Category
+		expected      []model.Category
 	}{
 		{
 			desc: "found categories by user id",
-			preconditions: []models.Category{
+			preconditions: []model.Category{
 				{
 					ID:     categoryID1,
 					UserID: userID1,
@@ -259,7 +259,7 @@ func TestCategory_List(t *testing.T) {
 			args: &service.ListCategoriesFilter{
 				UserID: userID1,
 			},
-			expected: []models.Category{
+			expected: []model.Category{
 				{
 					ID:     categoryID1,
 					UserID: userID1,
@@ -314,7 +314,7 @@ func TestCategory_Update(t *testing.T) {
 
 	userID := uuid.NewString()
 	categoryID1, categoryID2 := uuid.NewString(), uuid.NewString()
-	err := userStore.Create(ctx, &models.User{
+	err := userStore.Create(ctx, &model.User{
 		ID:       userID,
 		Username: "test" + uuid.NewString(),
 	})
@@ -322,23 +322,23 @@ func TestCategory_Update(t *testing.T) {
 
 	testCases := [...]struct {
 		desc          string
-		preconditions *models.Category
-		args          *models.Category
-		expected      *models.Category
+		preconditions *model.Category
+		args          *model.Category
+		expected      *model.Category
 	}{
 		{
 			desc: "category updated",
-			preconditions: &models.Category{
+			preconditions: &model.Category{
 				ID:     categoryID1,
 				UserID: userID,
 				Title:  "old_title",
 			},
-			args: &models.Category{
+			args: &model.Category{
 				ID:     categoryID1,
 				UserID: userID,
 				Title:  "new_title",
 			},
-			expected: &models.Category{
+			expected: &model.Category{
 				ID:     categoryID1,
 				UserID: userID,
 				Title:  "new_title",
@@ -346,17 +346,17 @@ func TestCategory_Update(t *testing.T) {
 		},
 		{
 			desc: "category not updated because of not existed id",
-			preconditions: &models.Category{
+			preconditions: &model.Category{
 				ID:     categoryID2,
 				UserID: userID,
 				Title:  "test_title",
 			},
-			args: &models.Category{
+			args: &model.Category{
 				ID:     uuid.NewString(),
 				UserID: userID,
 				Title:  "updated_title",
 			},
-			expected: &models.Category{
+			expected: &model.Category{
 				ID:     categoryID2,
 				UserID: userID,
 				Title:  "test_title",
@@ -400,7 +400,7 @@ func TestCategory_Delete(t *testing.T) {
 
 	userID := uuid.NewString()
 	categoryID := uuid.NewString()
-	err := userStore.Create(ctx, &models.User{
+	err := userStore.Create(ctx, &model.User{
 		ID:       userID,
 		Username: "test" + uuid.NewString(),
 	})
@@ -413,12 +413,12 @@ func TestCategory_Delete(t *testing.T) {
 
 	testCases := [...]struct {
 		desc          string
-		preconditions *models.Category
+		preconditions *model.Category
 		args          string
 	}{
 		{
 			desc: "category deleted",
-			preconditions: &models.Category{
+			preconditions: &model.Category{
 				ID:     categoryID,
 				UserID: userID,
 			},
@@ -426,7 +426,7 @@ func TestCategory_Delete(t *testing.T) {
 		},
 		{
 			desc: "category not deleted because of not existed id",
-			preconditions: &models.Category{
+			preconditions: &model.Category{
 				ID:     uuid.NewString(),
 				UserID: userID,
 			},

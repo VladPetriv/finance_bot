@@ -1,10 +1,10 @@
-package models_test
+package model_test
 
 import (
 	"testing"
 	"time"
 
-	"github.com/VladPetriv/finance_bot/internal/models"
+	"github.com/VladPetriv/finance_bot/internal/model"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -12,7 +12,7 @@ func TestCalculateScheduledOperationBillingDates(t *testing.T) {
 	t.Parallel()
 
 	type args struct {
-		period    models.SubscriptionPeriod
+		period    model.SubscriptionPeriod
 		startDate time.Time
 		maxDates  int
 	}
@@ -25,7 +25,7 @@ func TestCalculateScheduledOperationBillingDates(t *testing.T) {
 		{
 			desc: "Should receive 1 weekly billing dates",
 			args: args{
-				period:    models.SubscriptionPeriodWeekly,
+				period:    model.SubscriptionPeriodWeekly,
 				startDate: time.Date(2023, 1, 1, 0, 0, 0, 0, time.UTC),
 				maxDates:  1,
 			},
@@ -36,7 +36,7 @@ func TestCalculateScheduledOperationBillingDates(t *testing.T) {
 		{
 			desc: "Should receive 2 weekly billing dates",
 			args: args{
-				period:    models.SubscriptionPeriodWeekly,
+				period:    model.SubscriptionPeriodWeekly,
 				startDate: time.Date(2023, 1, 1, 0, 0, 0, 0, time.UTC),
 				maxDates:  2,
 			},
@@ -48,7 +48,7 @@ func TestCalculateScheduledOperationBillingDates(t *testing.T) {
 		{
 			desc: "Should receive 1 monthly billing dates",
 			args: args{
-				period:    models.SubscriptionPeriodMonthly,
+				period:    model.SubscriptionPeriodMonthly,
 				startDate: time.Date(2023, 1, 1, 0, 0, 0, 0, time.UTC),
 				maxDates:  1,
 			},
@@ -59,7 +59,7 @@ func TestCalculateScheduledOperationBillingDates(t *testing.T) {
 		{
 			desc: "Should receive 2 monthly billing dates",
 			args: args{
-				period:    models.SubscriptionPeriodMonthly,
+				period:    model.SubscriptionPeriodMonthly,
 				startDate: time.Date(2023, 1, 15, 0, 0, 0, 0, time.UTC),
 				maxDates:  2,
 			},
@@ -71,7 +71,7 @@ func TestCalculateScheduledOperationBillingDates(t *testing.T) {
 		{
 			desc: "Should receive 1 yearly billing date",
 			args: args{
-				period:    models.SubscriptionPeriodYearly,
+				period:    model.SubscriptionPeriodYearly,
 				startDate: time.Date(2023, 1, 15, 0, 0, 0, 0, time.UTC),
 				maxDates:  1,
 			},
@@ -82,7 +82,7 @@ func TestCalculateScheduledOperationBillingDates(t *testing.T) {
 		{
 			desc: "Should receive 2 yearly billing date",
 			args: args{
-				period:    models.SubscriptionPeriodYearly,
+				period:    model.SubscriptionPeriodYearly,
 				startDate: time.Date(2023, 1, 15, 0, 0, 0, 0, time.UTC),
 				maxDates:  2,
 			},
@@ -97,7 +97,7 @@ func TestCalculateScheduledOperationBillingDates(t *testing.T) {
 		t.Run(tc.desc, func(t *testing.T) {
 			t.Parallel()
 
-			actual := models.CalculateScheduledOperationBillingDates(tc.args.period, tc.args.startDate, tc.args.maxDates)
+			actual := model.CalculateScheduledOperationBillingDates(tc.args.period, tc.args.startDate, tc.args.maxDates)
 			assert.Equal(t, tc.expected, actual)
 		})
 	}

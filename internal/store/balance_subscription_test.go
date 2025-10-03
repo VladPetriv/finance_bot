@@ -5,7 +5,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/VladPetriv/finance_bot/internal/models"
+	"github.com/VladPetriv/finance_bot/internal/model"
 	"github.com/VladPetriv/finance_bot/internal/service"
 	"github.com/VladPetriv/finance_bot/internal/store"
 	"github.com/google/uuid"
@@ -37,27 +37,27 @@ func TestBalanceSubscription_Create(t *testing.T) {
 	categoryID := uuid.NewString()
 	balanceSubscriptionID := uuid.NewString()
 
-	err := currencyStore.CreateIfNotExists(ctx, &models.Currency{
+	err := currencyStore.CreateIfNotExists(ctx, &model.Currency{
 		ID:   currencyID,
 		Code: "USD",
 	})
 
 	require.NoError(t, err)
 
-	err = userStore.Create(ctx, &models.User{
+	err = userStore.Create(ctx, &model.User{
 		ID:       userID,
 		Username: "test" + userID,
 	})
 	require.NoError(t, err)
 
-	err = balanceStore.Create(ctx, &models.Balance{
+	err = balanceStore.Create(ctx, &model.Balance{
 		ID:         balanceID,
 		UserID:     userID,
 		CurrencyID: currencyID,
 	})
 	assert.NoError(t, err)
 
-	err = categoryStore.Create(ctx, &models.Category{
+	err = categoryStore.Create(ctx, &model.Category{
 		ID:     categoryID,
 		UserID: userID,
 		Title:  "test_category",
@@ -77,37 +77,37 @@ func TestBalanceSubscription_Create(t *testing.T) {
 
 	testCases := [...]struct {
 		desc                 string
-		preconditions        *models.BalanceSubscription
-		args                 *models.BalanceSubscription
+		preconditions        *model.BalanceSubscription
+		args                 *model.BalanceSubscription
 		expectDuplicateError bool
 	}{
 		{
 			desc: "balance subscription created",
-			args: &models.BalanceSubscription{
+			args: &model.BalanceSubscription{
 				ID:         uuid.NewString(),
 				BalanceID:  balanceID,
 				CategoryID: categoryID,
 				Name:       "test",
 				Amount:     amount100,
-				Period:     models.SubscriptionPeriodMonthly,
+				Period:     model.SubscriptionPeriodMonthly,
 			},
 		},
 		{
 			desc: "duplicate key error because balance already exists",
-			preconditions: &models.BalanceSubscription{
+			preconditions: &model.BalanceSubscription{
 				ID:         balanceSubscriptionID,
 				BalanceID:  balanceID,
 				CategoryID: categoryID,
 				Name:       "test2",
-				Period:     models.SubscriptionPeriodMonthly,
+				Period:     model.SubscriptionPeriodMonthly,
 				Amount:     amount100,
 			},
-			args: &models.BalanceSubscription{
+			args: &model.BalanceSubscription{
 				ID:         balanceSubscriptionID,
 				BalanceID:  balanceID,
 				CategoryID: categoryID,
 				Name:       "test2",
-				Period:     models.SubscriptionPeriodMonthly,
+				Period:     model.SubscriptionPeriodMonthly,
 				Amount:     amount100,
 			},
 			expectDuplicateError: true,
@@ -136,7 +136,7 @@ func TestBalanceSubscription_Create(t *testing.T) {
 
 			assert.NoError(t, err)
 
-			var actual models.BalanceSubscription
+			var actual model.BalanceSubscription
 			err = testCaseDB.DB.GetContext(ctx, &actual, "SELECT * FROM balance_subscriptions WHERE id = $1;", tc.args.ID)
 			assert.NoError(t, err)
 			assert.Equal(t, tc.args.ID, actual.ID)
@@ -167,27 +167,27 @@ func TestBalanceSubscription_Get(t *testing.T) {
 	categoryID := uuid.NewString()
 	balanceSubscriptionID := uuid.NewString()
 
-	err := currencyStore.CreateIfNotExists(ctx, &models.Currency{
+	err := currencyStore.CreateIfNotExists(ctx, &model.Currency{
 		ID:   currencyID,
 		Code: "USD",
 	})
 
 	require.NoError(t, err)
 
-	err = userStore.Create(ctx, &models.User{
+	err = userStore.Create(ctx, &model.User{
 		ID:       userID,
 		Username: "test" + userID,
 	})
 	require.NoError(t, err)
 
-	err = balanceStore.Create(ctx, &models.Balance{
+	err = balanceStore.Create(ctx, &model.Balance{
 		ID:         balanceID,
 		UserID:     userID,
 		CurrencyID: currencyID,
 	})
 	assert.NoError(t, err)
 
-	err = categoryStore.Create(ctx, &models.Category{
+	err = categoryStore.Create(ctx, &model.Category{
 		ID:     categoryID,
 		UserID: userID,
 		Title:  "test_category",
@@ -207,30 +207,30 @@ func TestBalanceSubscription_Get(t *testing.T) {
 
 	testCases := [...]struct {
 		desc          string
-		preconditions *models.BalanceSubscription
+		preconditions *model.BalanceSubscription
 		args          service.GetBalanceSubscriptionFilter
-		expected      *models.BalanceSubscription
+		expected      *model.BalanceSubscription
 	}{
 		{
 			desc: "balance subscriptions received by id",
-			preconditions: &models.BalanceSubscription{
+			preconditions: &model.BalanceSubscription{
 				ID:         balanceSubscriptionID,
 				BalanceID:  balanceID,
 				CategoryID: categoryID,
 				Name:       "test",
 				Amount:     amount100,
-				Period:     models.SubscriptionPeriodMonthly,
+				Period:     model.SubscriptionPeriodMonthly,
 			},
 			args: service.GetBalanceSubscriptionFilter{
 				ID: balanceSubscriptionID,
 			},
-			expected: &models.BalanceSubscription{
+			expected: &model.BalanceSubscription{
 				ID:         balanceSubscriptionID,
 				BalanceID:  balanceID,
 				CategoryID: categoryID,
 				Name:       "test",
 				Amount:     amount100,
-				Period:     models.SubscriptionPeriodMonthly,
+				Period:     model.SubscriptionPeriodMonthly,
 			},
 		},
 		{
@@ -294,21 +294,21 @@ func TestBalanceSubscription_Count(t *testing.T) {
 	categoryID := uuid.NewString()
 	balanceSubscriptionID1, balanceSubscriptionID2, balanceSubscriptionID3 := uuid.NewString(), uuid.NewString(), uuid.NewString()
 
-	err := currencyStore.CreateIfNotExists(ctx, &models.Currency{
+	err := currencyStore.CreateIfNotExists(ctx, &model.Currency{
 		ID:   currencyID,
 		Code: "USD",
 	})
 
 	require.NoError(t, err)
 
-	err = userStore.Create(ctx, &models.User{
+	err = userStore.Create(ctx, &model.User{
 		ID:       userID,
 		Username: "test" + userID,
 	})
 	require.NoError(t, err)
 
 	for _, balanceID := range []string{balanceID1, balanceID2} {
-		err = balanceStore.Create(ctx, &models.Balance{
+		err = balanceStore.Create(ctx, &model.Balance{
 			ID:         balanceID,
 			UserID:     userID,
 			CurrencyID: currencyID,
@@ -316,7 +316,7 @@ func TestBalanceSubscription_Count(t *testing.T) {
 		assert.NoError(t, err)
 	}
 
-	err = categoryStore.Create(ctx, &models.Category{
+	err = categoryStore.Create(ctx, &model.Category{
 		ID:     categoryID,
 		UserID: userID,
 		Title:  "test_category",
@@ -339,20 +339,20 @@ func TestBalanceSubscription_Count(t *testing.T) {
 
 	testCases := [...]struct {
 		desc          string
-		preconditions []models.BalanceSubscription
+		preconditions []model.BalanceSubscription
 		args          service.ListBalanceSubscriptionFilter
 		expected      int
 	}{
 		{
 			desc: "received a count of balance subscriptions by user id filter",
-			preconditions: []models.BalanceSubscription{
+			preconditions: []model.BalanceSubscription{
 				{
 					ID:         balanceSubscriptionID1,
 					BalanceID:  balanceID1,
 					CategoryID: categoryID,
 					Name:       "test1",
 					Amount:     amount100,
-					Period:     models.SubscriptionPeriodWeekly,
+					Period:     model.SubscriptionPeriodWeekly,
 				},
 				{
 					ID:         balanceSubscriptionID2,
@@ -360,7 +360,7 @@ func TestBalanceSubscription_Count(t *testing.T) {
 					CategoryID: categoryID,
 					Name:       "test2",
 					Amount:     amount100,
-					Period:     models.SubscriptionPeriodYearly,
+					Period:     model.SubscriptionPeriodYearly,
 				},
 				{
 					ID:         balanceSubscriptionID3,
@@ -368,7 +368,7 @@ func TestBalanceSubscription_Count(t *testing.T) {
 					CategoryID: categoryID,
 					Name:       "test3",
 					Amount:     amount100,
-					Period:     models.SubscriptionPeriodWeekly,
+					Period:     model.SubscriptionPeriodWeekly,
 				},
 			},
 			args: service.ListBalanceSubscriptionFilter{
@@ -433,21 +433,21 @@ func TestBalanceSubscription_List(t *testing.T) {
 		uuid.NewString(), uuid.NewString(), uuid.NewString(),
 		uuid.NewString(), uuid.NewString(), uuid.NewString()
 
-	err := currencyStore.CreateIfNotExists(ctx, &models.Currency{
+	err := currencyStore.CreateIfNotExists(ctx, &model.Currency{
 		ID:   currencyID,
 		Code: "USD",
 	})
 
 	require.NoError(t, err)
 
-	err = userStore.Create(ctx, &models.User{
+	err = userStore.Create(ctx, &model.User{
 		ID:       userID,
 		Username: "test" + userID,
 	})
 	require.NoError(t, err)
 
 	for _, balanceID := range []string{balanceID1, balanceID2, balanceID3, balanceID4} {
-		err = balanceStore.Create(ctx, &models.Balance{
+		err = balanceStore.Create(ctx, &model.Balance{
 			ID:         balanceID,
 			UserID:     userID,
 			CurrencyID: currencyID,
@@ -455,7 +455,7 @@ func TestBalanceSubscription_List(t *testing.T) {
 		assert.NoError(t, err)
 	}
 
-	err = categoryStore.Create(ctx, &models.Category{
+	err = categoryStore.Create(ctx, &model.Category{
 		ID:     categoryID,
 		UserID: userID,
 		Title:  "test_category",
@@ -478,20 +478,20 @@ func TestBalanceSubscription_List(t *testing.T) {
 
 	testCases := [...]struct {
 		desc          string
-		preconditions []models.BalanceSubscription
+		preconditions []model.BalanceSubscription
 		args          service.ListBalanceSubscriptionFilter
-		expected      []models.BalanceSubscription
+		expected      []model.BalanceSubscription
 	}{
 		{
 			desc: "received a list of balance subscriptions by user id filter",
-			preconditions: []models.BalanceSubscription{
+			preconditions: []model.BalanceSubscription{
 				{
 					ID:         balanceSubscriptionID1,
 					BalanceID:  balanceID1,
 					CategoryID: categoryID,
 					Name:       "test1",
 					Amount:     amount100,
-					Period:     models.SubscriptionPeriodWeekly,
+					Period:     model.SubscriptionPeriodWeekly,
 				},
 				{
 					ID:         balanceSubscriptionID2,
@@ -499,7 +499,7 @@ func TestBalanceSubscription_List(t *testing.T) {
 					CategoryID: categoryID,
 					Name:       "test2",
 					Amount:     amount100,
-					Period:     models.SubscriptionPeriodYearly,
+					Period:     model.SubscriptionPeriodYearly,
 				},
 				{
 					ID:         balanceSubscriptionID3,
@@ -507,20 +507,20 @@ func TestBalanceSubscription_List(t *testing.T) {
 					CategoryID: categoryID,
 					Name:       "test3",
 					Amount:     amount100,
-					Period:     models.SubscriptionPeriodWeekly,
+					Period:     model.SubscriptionPeriodWeekly,
 				},
 			},
 			args: service.ListBalanceSubscriptionFilter{
 				BalanceID: balanceID1,
 			},
-			expected: []models.BalanceSubscription{
+			expected: []model.BalanceSubscription{
 				{
 					ID:         balanceSubscriptionID3,
 					BalanceID:  balanceID1,
 					CategoryID: categoryID,
 					Name:       "test3",
 					Amount:     amount100,
-					Period:     models.SubscriptionPeriodWeekly,
+					Period:     model.SubscriptionPeriodWeekly,
 				},
 				{
 					ID:         balanceSubscriptionID1,
@@ -528,20 +528,20 @@ func TestBalanceSubscription_List(t *testing.T) {
 					CategoryID: categoryID,
 					Name:       "test1",
 					Amount:     amount100,
-					Period:     models.SubscriptionPeriodWeekly,
+					Period:     model.SubscriptionPeriodWeekly,
 				},
 			},
 		},
 		{
 			desc: "received a list of balance subscriptions with pagination: page: 1, limit: 2, total: 4",
-			preconditions: []models.BalanceSubscription{
+			preconditions: []model.BalanceSubscription{
 				{
 					ID:         balanceSubscriptionID4,
 					BalanceID:  balanceID3,
 					CategoryID: categoryID,
 					Name:       "test1",
 					Amount:     amount100,
-					Period:     models.SubscriptionPeriodWeekly,
+					Period:     model.SubscriptionPeriodWeekly,
 				},
 				{
 					ID:         balanceSubscriptionID5,
@@ -549,7 +549,7 @@ func TestBalanceSubscription_List(t *testing.T) {
 					CategoryID: categoryID,
 					Name:       "test2",
 					Amount:     amount100,
-					Period:     models.SubscriptionPeriodYearly,
+					Period:     model.SubscriptionPeriodYearly,
 				},
 				{
 					ID:         balanceSubscriptionID6,
@@ -557,7 +557,7 @@ func TestBalanceSubscription_List(t *testing.T) {
 					CategoryID: categoryID,
 					Name:       "test3",
 					Amount:     amount100,
-					Period:     models.SubscriptionPeriodWeekly,
+					Period:     model.SubscriptionPeriodWeekly,
 				},
 				{
 					ID:         balanceSubscriptionID7,
@@ -565,7 +565,7 @@ func TestBalanceSubscription_List(t *testing.T) {
 					CategoryID: categoryID,
 					Name:       "test4",
 					Amount:     amount100,
-					Period:     models.SubscriptionPeriodWeekly,
+					Period:     model.SubscriptionPeriodWeekly,
 				},
 			},
 			args: service.ListBalanceSubscriptionFilter{
@@ -575,14 +575,14 @@ func TestBalanceSubscription_List(t *testing.T) {
 					Limit: 2,
 				},
 			},
-			expected: []models.BalanceSubscription{
+			expected: []model.BalanceSubscription{
 				{
 					ID:         balanceSubscriptionID7,
 					BalanceID:  balanceID3,
 					CategoryID: categoryID,
 					Name:       "test4",
 					Amount:     amount100,
-					Period:     models.SubscriptionPeriodWeekly,
+					Period:     model.SubscriptionPeriodWeekly,
 				},
 				{
 					ID:         balanceSubscriptionID6,
@@ -590,20 +590,20 @@ func TestBalanceSubscription_List(t *testing.T) {
 					CategoryID: categoryID,
 					Name:       "test3",
 					Amount:     amount100,
-					Period:     models.SubscriptionPeriodWeekly,
+					Period:     model.SubscriptionPeriodWeekly,
 				},
 			},
 		},
 		{
 			desc: "received a list of balance subscriptions with pagination: page: 2, limit: 2, total: 4",
-			preconditions: []models.BalanceSubscription{
+			preconditions: []model.BalanceSubscription{
 				{
 					ID:         balanceSubscriptionID8,
 					BalanceID:  balanceID4,
 					CategoryID: categoryID,
 					Name:       "test1",
 					Amount:     amount100,
-					Period:     models.SubscriptionPeriodWeekly,
+					Period:     model.SubscriptionPeriodWeekly,
 				},
 				{
 					ID:         balanceSubscriptionID9,
@@ -611,7 +611,7 @@ func TestBalanceSubscription_List(t *testing.T) {
 					CategoryID: categoryID,
 					Name:       "test2",
 					Amount:     amount100,
-					Period:     models.SubscriptionPeriodYearly,
+					Period:     model.SubscriptionPeriodYearly,
 				},
 				{
 					ID:         balanceSubscriptionID10,
@@ -619,7 +619,7 @@ func TestBalanceSubscription_List(t *testing.T) {
 					CategoryID: categoryID,
 					Name:       "test3",
 					Amount:     amount100,
-					Period:     models.SubscriptionPeriodWeekly,
+					Period:     model.SubscriptionPeriodWeekly,
 				},
 				{
 					ID:         balanceSubscriptionID11,
@@ -627,7 +627,7 @@ func TestBalanceSubscription_List(t *testing.T) {
 					CategoryID: categoryID,
 					Name:       "test4",
 					Amount:     amount100,
-					Period:     models.SubscriptionPeriodWeekly,
+					Period:     model.SubscriptionPeriodWeekly,
 				},
 			},
 			args: service.ListBalanceSubscriptionFilter{
@@ -637,14 +637,14 @@ func TestBalanceSubscription_List(t *testing.T) {
 					Limit: 2,
 				},
 			},
-			expected: []models.BalanceSubscription{
+			expected: []model.BalanceSubscription{
 				{
 					ID:         balanceSubscriptionID9,
 					BalanceID:  balanceID4,
 					CategoryID: categoryID,
 					Name:       "test2",
 					Amount:     amount100,
-					Period:     models.SubscriptionPeriodYearly,
+					Period:     model.SubscriptionPeriodYearly,
 				},
 				{
 					ID:         balanceSubscriptionID8,
@@ -652,7 +652,7 @@ func TestBalanceSubscription_List(t *testing.T) {
 					CategoryID: categoryID,
 					Name:       "test1",
 					Amount:     amount100,
-					Period:     models.SubscriptionPeriodWeekly,
+					Period:     model.SubscriptionPeriodWeekly,
 				},
 			},
 		},
@@ -720,27 +720,27 @@ func TestBalanceSubscription_Update(t *testing.T) {
 	categoryID := uuid.NewString()
 	balanceSubscriptionID1, balanceSubscriptionID2 := uuid.NewString(), uuid.NewString()
 
-	err := currencyStore.CreateIfNotExists(ctx, &models.Currency{
+	err := currencyStore.CreateIfNotExists(ctx, &model.Currency{
 		ID:   currencyID,
 		Code: "USD",
 	})
 
 	require.NoError(t, err)
 
-	err = userStore.Create(ctx, &models.User{
+	err = userStore.Create(ctx, &model.User{
 		ID:       userID,
 		Username: "test" + userID,
 	})
 	require.NoError(t, err)
 
-	err = balanceStore.Create(ctx, &models.Balance{
+	err = balanceStore.Create(ctx, &model.Balance{
 		ID:         balanceID,
 		UserID:     userID,
 		CurrencyID: currencyID,
 	})
 	assert.NoError(t, err)
 
-	err = categoryStore.Create(ctx, &models.Category{
+	err = categoryStore.Create(ctx, &model.Category{
 		ID:     categoryID,
 		UserID: userID,
 		Title:  "test_category",
@@ -760,62 +760,62 @@ func TestBalanceSubscription_Update(t *testing.T) {
 
 	testCases := [...]struct {
 		desc          string
-		preconditions *models.BalanceSubscription
-		args          *models.BalanceSubscription
-		expected      *models.BalanceSubscription
+		preconditions *model.BalanceSubscription
+		args          *model.BalanceSubscription
+		expected      *model.BalanceSubscription
 	}{
 		{
 			desc: "balance subscription updated",
-			preconditions: &models.BalanceSubscription{
+			preconditions: &model.BalanceSubscription{
 				ID:         balanceSubscriptionID1,
 				BalanceID:  balanceID,
 				CategoryID: categoryID,
 				Name:       "test1",
 				Amount:     amount100,
-				Period:     models.SubscriptionPeriodMonthly,
+				Period:     model.SubscriptionPeriodMonthly,
 			},
-			args: &models.BalanceSubscription{
+			args: &model.BalanceSubscription{
 				ID:         balanceSubscriptionID1,
 				BalanceID:  balanceID,
 				CategoryID: categoryID,
 				Name:       "test1",
 				Amount:     amount200,
-				Period:     models.SubscriptionPeriodWeekly,
+				Period:     model.SubscriptionPeriodWeekly,
 			},
-			expected: &models.BalanceSubscription{
+			expected: &model.BalanceSubscription{
 				ID:         balanceSubscriptionID1,
 				BalanceID:  balanceID,
 				CategoryID: categoryID,
 				Name:       "test1",
 				Amount:     amount200,
-				Period:     models.SubscriptionPeriodWeekly,
+				Period:     model.SubscriptionPeriodWeekly,
 			},
 		},
 		{
 			desc: "balance subscription not updated because of not existed id",
-			preconditions: &models.BalanceSubscription{
+			preconditions: &model.BalanceSubscription{
 				ID:         balanceSubscriptionID2,
 				BalanceID:  balanceID,
 				CategoryID: categoryID,
 				Name:       "test2",
 				Amount:     amount100,
-				Period:     models.SubscriptionPeriodMonthly,
+				Period:     model.SubscriptionPeriodMonthly,
 			},
-			args: &models.BalanceSubscription{
+			args: &model.BalanceSubscription{
 				ID:         uuid.NewString(),
 				BalanceID:  balanceID,
 				CategoryID: categoryID,
 				Name:       "test2",
 				Amount:     amount200,
-				Period:     models.SubscriptionPeriodYearly,
+				Period:     model.SubscriptionPeriodYearly,
 			},
-			expected: &models.BalanceSubscription{
+			expected: &model.BalanceSubscription{
 				ID:         balanceSubscriptionID2,
 				BalanceID:  balanceID,
 				CategoryID: categoryID,
 				Name:       "test2",
 				Amount:     amount100,
-				Period:     models.SubscriptionPeriodMonthly,
+				Period:     model.SubscriptionPeriodMonthly,
 			},
 		},
 	}
@@ -870,27 +870,27 @@ func TestBalanceSubscription_Delete(t *testing.T) {
 	categoryID := uuid.NewString()
 	balanceSubscriptionID := uuid.NewString()
 
-	err := currencyStore.CreateIfNotExists(ctx, &models.Currency{
+	err := currencyStore.CreateIfNotExists(ctx, &model.Currency{
 		ID:   currencyID,
 		Code: "USD",
 	})
 
 	require.NoError(t, err)
 
-	err = userStore.Create(ctx, &models.User{
+	err = userStore.Create(ctx, &model.User{
 		ID:       userID,
 		Username: "test" + userID,
 	})
 	require.NoError(t, err)
 
-	err = balanceStore.Create(ctx, &models.Balance{
+	err = balanceStore.Create(ctx, &model.Balance{
 		ID:         balanceID,
 		UserID:     userID,
 		CurrencyID: currencyID,
 	})
 	assert.NoError(t, err)
 
-	err = categoryStore.Create(ctx, &models.Category{
+	err = categoryStore.Create(ctx, &model.Category{
 		ID:     categoryID,
 		UserID: userID,
 		Title:  "test_category",
@@ -910,31 +910,31 @@ func TestBalanceSubscription_Delete(t *testing.T) {
 
 	testCases := [...]struct {
 		desc          string
-		preconditions *models.BalanceSubscription
+		preconditions *model.BalanceSubscription
 		args          string
 	}{
 		{
 			desc: "balance subscription deleted",
-			preconditions: &models.BalanceSubscription{
+			preconditions: &model.BalanceSubscription{
 				ID:         balanceSubscriptionID,
 				BalanceID:  balanceID,
 				CategoryID: categoryID,
 				Name:       "test_delete",
 				Amount:     amount100,
-				Period:     models.SubscriptionPeriodMonthly,
+				Period:     model.SubscriptionPeriodMonthly,
 				StartAt:    time.Now().Add(1 * time.Hour),
 			},
 			args: balanceSubscriptionID,
 		},
 		{
 			desc: "balance not deleted because of not existed id",
-			preconditions: &models.BalanceSubscription{
+			preconditions: &model.BalanceSubscription{
 				ID:         uuid.NewString(),
 				BalanceID:  balanceID,
 				CategoryID: categoryID,
 				Name:       "test_delete",
 				Amount:     amount100,
-				Period:     models.SubscriptionPeriodMonthly,
+				Period:     model.SubscriptionPeriodMonthly,
 				StartAt:    time.Now().Add(1 * time.Hour),
 			},
 			args: uuid.NewString(),
@@ -995,40 +995,40 @@ func TestBalanceSubscription_CreateScheduledOperation(t *testing.T) {
 	balanceSubscriptionID := uuid.NewString()
 	scheduledOperationID := uuid.NewString()
 
-	err := currencyStore.CreateIfNotExists(ctx, &models.Currency{
+	err := currencyStore.CreateIfNotExists(ctx, &model.Currency{
 		ID:   currencyID,
 		Code: "USD",
 	})
 
 	require.NoError(t, err)
 
-	err = userStore.Create(ctx, &models.User{
+	err = userStore.Create(ctx, &model.User{
 		ID:       userID,
 		Username: "test" + userID,
 	})
 	require.NoError(t, err)
 
-	err = balanceStore.Create(ctx, &models.Balance{
+	err = balanceStore.Create(ctx, &model.Balance{
 		ID:         balanceID,
 		UserID:     userID,
 		CurrencyID: currencyID,
 	})
 	assert.NoError(t, err)
 
-	err = categoryStore.Create(ctx, &models.Category{
+	err = categoryStore.Create(ctx, &model.Category{
 		ID:     categoryID,
 		UserID: userID,
 		Title:  "test_category",
 	})
 	require.NoError(t, err)
 
-	err = balanceSubscriptionStore.Create(ctx, models.BalanceSubscription{
+	err = balanceSubscriptionStore.Create(ctx, model.BalanceSubscription{
 		ID:         balanceSubscriptionID,
 		BalanceID:  balanceID,
 		CategoryID: categoryID,
 		Name:       "test",
 		Amount:     amount100,
-		Period:     models.SubscriptionPeriodMonthly,
+		Period:     model.SubscriptionPeriodMonthly,
 	})
 	require.NoError(t, err)
 
@@ -1049,13 +1049,13 @@ func TestBalanceSubscription_CreateScheduledOperation(t *testing.T) {
 
 	testCases := [...]struct {
 		desc                 string
-		preconditions        *models.ScheduledOperation
-		args                 *models.ScheduledOperation
+		preconditions        *model.ScheduledOperation
+		args                 *model.ScheduledOperation
 		expectDuplicateError bool
 	}{
 		{
 			desc: "scheduled operation created",
-			args: &models.ScheduledOperation{
+			args: &model.ScheduledOperation{
 				ID:             uuid.NewString(),
 				SubscriptionID: balanceSubscriptionID,
 				CreationDate:   time.Date(2025, time.May, 2, 13, 12, 0, 0, time.UTC),
@@ -1063,12 +1063,12 @@ func TestBalanceSubscription_CreateScheduledOperation(t *testing.T) {
 		},
 		{
 			desc: "duplicate key error because scheduled operation already exists",
-			preconditions: &models.ScheduledOperation{
+			preconditions: &model.ScheduledOperation{
 				ID:             scheduledOperationID,
 				SubscriptionID: balanceSubscriptionID,
 				CreationDate:   time.Date(2025, time.May, 1, 12, 12, 0, 0, time.UTC),
 			},
-			args: &models.ScheduledOperation{
+			args: &model.ScheduledOperation{
 				ID:             scheduledOperationID,
 				SubscriptionID: balanceSubscriptionID,
 				CreationDate:   time.Date(2025, time.May, 1, 12, 12, 0, 0, time.UTC),
@@ -1099,7 +1099,7 @@ func TestBalanceSubscription_CreateScheduledOperation(t *testing.T) {
 
 			assert.NoError(t, err)
 
-			var actual models.ScheduledOperation
+			var actual model.ScheduledOperation
 			err = testCaseDB.DB.GetContext(ctx, &actual, "SELECT * FROM scheduled_operations WHERE id = $1;", tc.args.ID)
 			assert.NoError(t, err)
 			assert.Equal(t, tc.args.ID, actual.ID)
@@ -1129,40 +1129,40 @@ func TestBalanceSubscription_ListScheduledOperation(t *testing.T) {
 	scheduledOperationID1, scheduledOperationID2,
 		scheduledOperationID3, scheduledOperationID4 := uuid.NewString(), uuid.NewString(), uuid.NewString(), uuid.NewString()
 
-	err := currencyStore.CreateIfNotExists(ctx, &models.Currency{
+	err := currencyStore.CreateIfNotExists(ctx, &model.Currency{
 		ID:   currencyID,
 		Code: "USD",
 	})
 
 	require.NoError(t, err)
 
-	err = userStore.Create(ctx, &models.User{
+	err = userStore.Create(ctx, &model.User{
 		ID:       userID,
 		Username: "test" + userID,
 	})
 	require.NoError(t, err)
 
-	err = balanceStore.Create(ctx, &models.Balance{
+	err = balanceStore.Create(ctx, &model.Balance{
 		ID:         balanceID,
 		UserID:     userID,
 		CurrencyID: currencyID,
 	})
 	assert.NoError(t, err)
 
-	err = categoryStore.Create(ctx, &models.Category{
+	err = categoryStore.Create(ctx, &model.Category{
 		ID:     categoryID,
 		UserID: userID,
 		Title:  "test_category",
 	})
 	require.NoError(t, err)
 
-	err = balanceSubscriptionStore.Create(ctx, models.BalanceSubscription{
+	err = balanceSubscriptionStore.Create(ctx, model.BalanceSubscription{
 		ID:         balanceSubscriptionID,
 		BalanceID:  balanceID,
 		CategoryID: categoryID,
 		Name:       "test",
 		Amount:     amount100,
-		Period:     models.SubscriptionPeriodMonthly,
+		Period:     model.SubscriptionPeriodMonthly,
 	})
 	require.NoError(t, err)
 
@@ -1183,13 +1183,13 @@ func TestBalanceSubscription_ListScheduledOperation(t *testing.T) {
 
 	testCases := [...]struct {
 		desc          string
-		preconditions []models.ScheduledOperation
+		preconditions []model.ScheduledOperation
 		args          service.ListScheduledOperation
-		expected      []models.ScheduledOperation
+		expected      []model.ScheduledOperation
 	}{
 		{
 			desc: "received scheduled operation with date greater than filter",
-			preconditions: []models.ScheduledOperation{
+			preconditions: []model.ScheduledOperation{
 				{
 					ID:             scheduledOperationID1,
 					SubscriptionID: balanceSubscriptionID,
@@ -1217,7 +1217,7 @@ func TestBalanceSubscription_ListScheduledOperation(t *testing.T) {
 					To:   time.Date(2025, time.March, 11, 13, 0, 0, 0, time.UTC),
 				},
 			},
-			expected: []models.ScheduledOperation{
+			expected: []model.ScheduledOperation{
 				{
 					ID:             scheduledOperationID2,
 					SubscriptionID: balanceSubscriptionID,
@@ -1279,39 +1279,39 @@ func TestBalanceSubscription_DeleteScheduledOperation(t *testing.T) {
 	balanceSubscriptionID := uuid.NewString()
 	scheduledOperationID := uuid.NewString()
 
-	err := currencyStore.CreateIfNotExists(ctx, &models.Currency{
+	err := currencyStore.CreateIfNotExists(ctx, &model.Currency{
 		ID:   currencyID,
 		Code: "USD",
 	})
 	require.NoError(t, err)
 
-	err = userStore.Create(ctx, &models.User{
+	err = userStore.Create(ctx, &model.User{
 		ID:       userID,
 		Username: "test" + userID,
 	})
 	require.NoError(t, err)
 
-	err = balanceStore.Create(ctx, &models.Balance{
+	err = balanceStore.Create(ctx, &model.Balance{
 		ID:         balanceID,
 		UserID:     userID,
 		CurrencyID: currencyID,
 	})
 	require.NoError(t, err)
 
-	err = categoryStore.Create(ctx, &models.Category{
+	err = categoryStore.Create(ctx, &model.Category{
 		ID:     categoryID,
 		UserID: userID,
 		Title:  "test_category",
 	})
 	require.NoError(t, err)
 
-	err = balanceSubscriptionStore.Create(ctx, models.BalanceSubscription{
+	err = balanceSubscriptionStore.Create(ctx, model.BalanceSubscription{
 		ID:         balanceSubscriptionID,
 		BalanceID:  balanceID,
 		CategoryID: categoryID,
 		Name:       "test",
 		Amount:     amount100,
-		Period:     models.SubscriptionPeriodMonthly,
+		Period:     model.SubscriptionPeriodMonthly,
 	})
 	require.NoError(t, err)
 
@@ -1332,12 +1332,12 @@ func TestBalanceSubscription_DeleteScheduledOperation(t *testing.T) {
 
 	testCases := [...]struct {
 		desc          string
-		preconditions *models.ScheduledOperation
+		preconditions *model.ScheduledOperation
 		args          string
 	}{
 		{
 			desc: "scheduled operation deleted",
-			preconditions: &models.ScheduledOperation{
+			preconditions: &model.ScheduledOperation{
 				ID:             scheduledOperationID,
 				SubscriptionID: balanceSubscriptionID,
 			},
@@ -1345,7 +1345,7 @@ func TestBalanceSubscription_DeleteScheduledOperation(t *testing.T) {
 		},
 		{
 			desc: "scheduled operation not deleted because of not existed id",
-			preconditions: &models.ScheduledOperation{
+			preconditions: &model.ScheduledOperation{
 				ID:             uuid.NewString(),
 				SubscriptionID: balanceSubscriptionID,
 			},
@@ -1386,8 +1386,8 @@ func TestBalanceSubscription_DeleteScheduledOperation(t *testing.T) {
 	}
 }
 
-func getScheledOperationByID(db *sqlx.DB, id string) (*models.ScheduledOperation, error) {
-	var scheduleOperation models.ScheduledOperation
+func getScheledOperationByID(db *sqlx.DB, id string) (*model.ScheduledOperation, error) {
+	var scheduleOperation model.ScheduledOperation
 	err := db.Get(&scheduleOperation, "SELECT * FROM scheduled_operations WHERE id = $1;", id)
 	return &scheduleOperation, err
 }
