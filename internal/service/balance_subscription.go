@@ -156,7 +156,11 @@ func (h *handlerService) handleEnterStartAtDateForBalanceSubscriptionFlowStep(ct
 
 	go h.services.BalanceSubscriptionEngine.ScheduleOperationsCreation(ctx, balanceSubscription)
 
-	return models.EndFlowStep, h.sendMessageWithDefaultKeyboard(opts.message.GetChatID(), "Balance subscription successfully created!")
+	return models.EndFlowStep, h.apis.Messenger.SendWithKeyboard(SendWithKeyboardOptions{
+		ChatID:   opts.message.GetChatID(),
+		Message:  "Balance subscription successfully created!",
+		Keyboard: balanceSubscriptionKeyboardRows,
+	})
 }
 
 // List Balance Subscriptions
@@ -218,7 +222,11 @@ func (h *handlerService) handleChooseBalanceFlowStepForListBalanceSubscriptions(
 		)
 	}
 
-	return models.EndFlowStep, h.sendMessageWithDefaultKeyboard(opts.message.GetChatID(), outputMessage)
+	return models.EndFlowStep, h.apis.Messenger.SendWithKeyboard(SendWithKeyboardOptions{
+		ChatID:   opts.message.GetChatID(),
+		Message:  outputMessage,
+		Keyboard: balanceSubscriptionKeyboardRows,
+	})
 }
 
 // Update Balance Subscriptions
@@ -660,5 +668,9 @@ func (h *handlerService) handleConfirmDeleteBalanceSubscriptionFlowStep(ctx cont
 		return "", fmt.Errorf("delete balance subscription: %w", err)
 	}
 
-	return models.EndFlowStep, h.sendMessageWithDefaultKeyboard(opts.message.GetChatID(), "Balance subscription successfully deleted!")
+	return models.EndFlowStep, h.apis.Messenger.SendWithKeyboard(SendWithKeyboardOptions{
+		ChatID:   opts.message.GetChatID(),
+		Message:  "Balance subscription successfully deleted!",
+		Keyboard: balanceSubscriptionKeyboardRows,
+	})
 }

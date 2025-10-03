@@ -49,7 +49,11 @@ func (h handlerService) handleEnterCategoryNameFlowStep(ctx context.Context, opt
 		return "", fmt.Errorf("create category in store: %w", err)
 	}
 
-	return models.EndFlowStep, h.sendMessageWithDefaultKeyboard(opts.message.GetChatID(), "Category created!")
+	return models.EndFlowStep, h.apis.Messenger.SendWithKeyboard(SendWithKeyboardOptions{
+		ChatID:   opts.message.GetChatID(),
+		Message:  "Category created!",
+		Keyboard: categoryKeyboardRows,
+	})
 }
 
 func (h handlerService) handleListCategoriesFlowStep(ctx context.Context, opts flowProcessingOptions) (models.FlowStep, error) {
@@ -74,7 +78,11 @@ func (h handlerService) handleListCategoriesFlowStep(ctx context.Context, opts f
 	}
 	logger.Debug().Any("outputMessage", outputMessage).Msg("built output message")
 
-	return models.EndFlowStep, h.sendMessageWithDefaultKeyboard(opts.message.GetChatID(), outputMessage)
+	return models.EndFlowStep, h.apis.Messenger.SendWithKeyboard(SendWithKeyboardOptions{
+		ChatID:   opts.message.GetChatID(),
+		Message:  outputMessage,
+		Keyboard: categoryKeyboardRows,
+	})
 }
 
 func (h handlerService) handleUpdateCategoryFlowStep(ctx context.Context, opts flowProcessingOptions) (models.FlowStep, error) {
@@ -132,7 +140,11 @@ func (h handlerService) handleEnterUpdatedCategoryNameFlowStep(ctx context.Conte
 		return "", fmt.Errorf("update category in store: %w", err)
 	}
 
-	return models.EndFlowStep, h.sendMessageWithDefaultKeyboard(opts.message.GetChatID(), "Category updated!")
+	return models.EndFlowStep, h.apis.Messenger.SendWithKeyboard(SendWithKeyboardOptions{
+		ChatID:   opts.message.GetChatID(),
+		Message:  "Category updated!",
+		Keyboard: categoryKeyboardRows,
+	})
 }
 
 func (h handlerService) handleDeleteCategoryFlowStep(ctx context.Context, opts flowProcessingOptions) (models.FlowStep, error) {
@@ -181,7 +193,11 @@ func (h handlerService) handleChooseCategoryFlowStepForDelete(ctx context.Contex
 		return "", fmt.Errorf("delete category in store: %w", err)
 	}
 
-	return models.EndFlowStep, h.sendMessageWithDefaultKeyboard(opts.message.GetChatID(), "Category deleted!")
+	return models.EndFlowStep, h.apis.Messenger.SendWithKeyboard(SendWithKeyboardOptions{
+		ChatID:   opts.message.GetChatID(),
+		Message:  "Category deleted!",
+		Keyboard: categoryKeyboardRows,
+	})
 }
 
 func (h handlerService) listCategories(ctx context.Context, userID string) ([]models.Category, error) {

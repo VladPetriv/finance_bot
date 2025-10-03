@@ -148,7 +148,12 @@ func (h handlerService) handleEnterBalanceCurrencyFlowStepForCreate(ctx context.
 		"Balance Created!\nBalance Info:\n - Name: %s\n - Amount: %s",
 		balance.Name, balance.Amount,
 	)
-	return models.EndFlowStep, h.sendMessageWithDefaultKeyboard(opts.message.GetChatID(), outputMessage)
+
+	return models.EndFlowStep, h.apis.Messenger.SendWithKeyboard(SendWithKeyboardOptions{
+		ChatID:   opts.message.GetChatID(),
+		Message:  outputMessage,
+		Keyboard: balanceKeyboardRows,
+	})
 }
 
 const maxMonthsPerRow = 3
@@ -227,7 +232,7 @@ func (h handlerService) handleChooseBalanceFlowStepForGetBalance(ctx context.Con
 		ChatID:                  opts.message.GetChatID(),
 		Message:                 outputMessage,
 		FormatMessageInMarkDown: true,
-		Keyboard:                defaultKeyboardRows,
+		Keyboard:                balanceKeyboardRows,
 	})
 }
 
@@ -505,7 +510,11 @@ func (h handlerService) handleDeleteBalanceFlowStep(_ context.Context, opts flow
 	logger.Debug().Any("opts", opts).Msg("got args")
 
 	if len(opts.user.Balances) == 1 {
-		return models.EndFlowStep, h.sendMessageWithDefaultKeyboard(opts.message.GetChatID(), "You're not allowed to delete last balance!")
+		return models.EndFlowStep, h.apis.Messenger.SendWithKeyboard(SendWithKeyboardOptions{
+			ChatID:   opts.message.GetChatID(),
+			Message:  "You're not allowed to delete last balance!",
+			Keyboard: balanceKeyboardRows,
+		})
 	}
 
 	return models.ConfirmBalanceDeletionFlowStep, h.apis.Messenger.SendWithKeyboard(SendWithKeyboardOptions{
@@ -584,5 +593,9 @@ func (h handlerService) handleChooseBalanceFlowStepForDelete(ctx context.Context
 		}
 	}()
 
-	return models.EndFlowStep, h.sendMessageWithDefaultKeyboard(opts.message.GetChatID(), "Balance and all its operations have been deleted!")
+	return models.EndFlowStep, h.apis.Messenger.SendWithKeyboard(SendWithKeyboardOptions{
+		ChatID:   opts.message.GetChatID(),
+		Message:  "Balance and all its operations have been deleted!",
+		Keyboard: balanceKeyboardRows,
+	})
 }

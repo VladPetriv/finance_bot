@@ -405,7 +405,11 @@ func (h handlerService) handleEnterOperationAmountFlowStep(ctx context.Context, 
 		return "", fmt.Errorf("received unknown operation type: %s", operationType)
 	}
 
-	return models.EndFlowStep, h.sendMessageWithDefaultKeyboard(opts.message.GetChatID(), "Operation created!")
+	return models.EndFlowStep, h.apis.Messenger.SendWithKeyboard(SendWithKeyboardOptions{
+		ChatID:   opts.message.GetChatID(),
+		Message:  "Operation created!",
+		Keyboard: operationKeyboardRows,
+	})
 }
 
 type createSpendingOrIncomingOperationOptions struct {
@@ -1451,7 +1455,7 @@ func (h handlerService) handleEnterOperationDateFlowStep(ctx context.Context, op
 
 	return models.ChooseUpdateOperationOptionFlowStep, h.apis.Messenger.SendWithKeyboard(SendWithKeyboardOptions{
 		ChatID:         opts.message.GetChatID(),
-		Message:        "Operation category successfully updated!\nPlease choose other update operation option or finish action by canceling it!",
+		Message:        "Operation date successfully updated!\nPlease choose other update operation option or finish action by canceling it!",
 		InlineKeyboard: outputKeyboard,
 	})
 }
