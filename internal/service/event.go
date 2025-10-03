@@ -6,7 +6,7 @@ import (
 	"runtime/debug"
 	"strings"
 
-	"github.com/VladPetriv/finance_bot/internal/models"
+	"github.com/VladPetriv/finance_bot/internal/model"
 	"github.com/VladPetriv/finance_bot/pkg/errs"
 	"github.com/VladPetriv/finance_bot/pkg/logger"
 )
@@ -117,30 +117,30 @@ func (e eventService) handlePanic(ctx context.Context, msg Message, r any) {
 	}
 }
 
-func getEventFromMsg(user *models.User, msg Message) models.Event {
+func getEventFromMsg(user *model.User, msg Message) model.Event {
 	aiParserEnabled := user != nil && user.Settings != nil && user.Settings.AIParserEnabled
-	inputIsNotACommand := !strings.Contains(strings.Join(models.AvailableCommands, " "), msg.GetText())
+	inputIsNotACommand := !strings.Contains(strings.Join(model.AvailableCommands, " "), msg.GetText())
 
 	if aiParserEnabled && inputIsNotACommand {
-		return models.CreateOperationsThroughOneTimeInputEvent
+		return model.CreateOperationsThroughOneTimeInputEvent
 	}
 
-	for _, command := range models.AvailableCommands {
+	for _, command := range model.AvailableCommands {
 		if command == msg.GetText() {
-			if eventFromCommand, ok := models.CommandToEvent[command]; ok {
+			if eventFromCommand, ok := model.CommandToEvent[command]; ok {
 				return eventFromCommand
 			}
 		}
 	}
 
-	return models.UnknownEvent
+	return model.UnknownEvent
 }
 
-func (e eventService) ReactOnEvent(ctx context.Context, event models.Event, msg Message) error {
+func (e eventService) ReactOnEvent(ctx context.Context, event model.Event, msg Message) error {
 	logger := e.logger.With().Str("name", "eventService.ReactOnEvent").Logger()
 
 	switch event {
-	case models.StartEvent:
+	case model.StartEvent:
 		err := e.services.Handler.HandleStart(ctx, msg)
 		if err != nil {
 			if errs.IsExpected(err) {
@@ -152,7 +152,7 @@ func (e eventService) ReactOnEvent(ctx context.Context, event models.Event, msg 
 			return fmt.Errorf("handle event start: %w", err)
 		}
 
-	case models.UnknownEvent:
+	case model.UnknownEvent:
 		err := e.services.Handler.HandleUnknown(msg)
 		if err != nil {
 			if errs.IsExpected(err) {
@@ -164,32 +164,32 @@ func (e eventService) ReactOnEvent(ctx context.Context, event models.Event, msg 
 			return fmt.Errorf("handle event event unknown: %w", err)
 		}
 
-	case models.CancelEvent:
+	case model.CancelEvent:
 		err := e.services.Handler.HandleCancel(ctx, msg)
 		if err != nil {
 			logger.Error().Err(err).Msg("handle event cancel")
 			return fmt.Errorf("handle event cancel: %w", err)
 		}
 
-	case models.BackEvent:
+	case model.BackEvent:
 		err := e.services.Handler.HandleBack(ctx, msg)
 		if err != nil {
 			logger.Error().Err(err).Msg("handle event back")
 			return fmt.Errorf("handle event back: %w", err)
 		}
 
-	case models.BalanceEvent, models.CategoryEvent, models.OperationEvent, models.BalanceSubscriptionEvent:
+	case model.BalanceEvent, model.CategoryEvent, model.OperationEvent, model.BalanceSubscriptionEvent:
 		err := e.services.Handler.HandleWrappers(ctx, event, msg)
 		if err != nil {
 			logger.Error().Err(err).Msg("handle wrappers")
 			return fmt.Errorf("handle wrappers: %w", err)
 		}
 
-	case models.CreateBalanceEvent, models.GetBalanceEvent, models.UpdateBalanceEvent, models.DeleteBalanceEvent,
-		models.CreateCategoryEvent, models.ListCategoriesEvent, models.UpdateCategoryEvent, models.DeleteCategoryEvent,
-		models.CreateOperationEvent, models.GetOperationsHistoryEvent, models.DeleteOperationEvent, models.UpdateOperationEvent,
-		models.CreateBalanceSubscriptionEvent, models.ListBalanceSubscriptionEvent, models.UpdateBalanceSubscriptionEvent, models.DeleteBalanceSubscriptionEvent,
-		models.CreateOperationsThroughOneTimeInputEvent:
+	case model.CreateBalanceEvent, model.GetBalanceEvent, model.UpdateBalanceEvent, model.DeleteBalanceEvent,
+		model.CreateCategoryEvent, model.ListCategoriesEvent, model.UpdateCategoryEvent, model.DeleteCategoryEvent,
+		model.CreateOperationEvent, model.GetOperationsHistoryEvent, model.DeleteOperationEvent, model.UpdateOperationEvent,
+		model.CreateBalanceSubscriptionEvent, model.ListBalanceSubscriptionEvent, model.UpdateBalanceSubscriptionEvent, model.DeleteBalanceSubscriptionEvent,
+		model.CreateOperationsThroughOneTimeInputEvent:
 		err := e.services.Handler.HandleAction(ctx, msg)
 		if err != nil {
 			if errs.IsExpected(err) {

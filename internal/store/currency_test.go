@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/VladPetriv/finance_bot/internal/models"
+	"github.com/VladPetriv/finance_bot/internal/model"
 	"github.com/VladPetriv/finance_bot/internal/service"
 	"github.com/VladPetriv/finance_bot/internal/store"
 	"github.com/google/uuid"
@@ -23,13 +23,13 @@ func TestCurrency_Create(t *testing.T) {
 
 	testCases := [...]struct {
 		desc                string
-		preconditions       *models.Currency
-		args                *models.Currency
+		preconditions       *model.Currency
+		args                *model.Currency
 		createIsNotExpected bool
 	}{
 		{
 			desc: "created currency",
-			args: &models.Currency{
+			args: &model.Currency{
 				ID:     uuid.NewString(),
 				Name:   "US Dollar",
 				Code:   "US_test_create_1",
@@ -38,13 +38,13 @@ func TestCurrency_Create(t *testing.T) {
 		},
 		{
 			desc: "currency with args symbol already exists, new currency won't be created",
-			preconditions: &models.Currency{
+			preconditions: &model.Currency{
 				ID:     uuid.NewString(),
 				Name:   "US Dollar",
 				Code:   "US_test_create_2",
 				Symbol: "$",
 			},
-			args: &models.Currency{
+			args: &model.Currency{
 				ID:     uuid.NewString(),
 				Name:   "CAD Dollar",
 				Code:   "US_test_create_2",
@@ -78,7 +78,7 @@ func TestCurrency_Create(t *testing.T) {
 
 			var (
 				currencyToCompareID string
-				currencyToCompare   models.Currency
+				currencyToCompare   model.Currency
 			)
 			switch tc.createIsNotExpected {
 			case true:
@@ -89,7 +89,7 @@ func TestCurrency_Create(t *testing.T) {
 				currencyToCompare = *tc.args
 			}
 
-			var createdCurrency models.Currency
+			var createdCurrency model.Currency
 			err = testCaseDB.DB.Get(&createdCurrency, "SELECT * FROM currencies WHERE id=$1;", currencyToCompareID)
 			assert.NoError(t, err)
 			assert.Equal(t, currencyToCompare, createdCurrency)
@@ -107,12 +107,12 @@ func TestCurrency_Count(t *testing.T) {
 
 	testCases := [...]struct {
 		desc          string
-		preconditions []models.Currency
+		preconditions []model.Currency
 		expected      int
 	}{
 		{
 			desc: "count currencies when table has 2 items",
-			preconditions: []models.Currency{
+			preconditions: []model.Currency{
 				{
 					ID:     uuid.NewString(),
 					Name:   "US Dollar",
@@ -165,14 +165,14 @@ func TestCurrency_List(t *testing.T) {
 
 	testCases := [...]struct {
 		desc          string
-		preconditions func() []models.Currency
+		preconditions func() []model.Currency
 		args          service.ListCurrenciesFilter
-		expected      []models.Currency
+		expected      []model.Currency
 	}{
 		{
 			desc: "list all currencies",
-			preconditions: func() []models.Currency {
-				return []models.Currency{
+			preconditions: func() []model.Currency {
+				return []model.Currency{
 					{
 						ID:     uuid.NewString(),
 						Name:   "US Dollar",
@@ -187,7 +187,7 @@ func TestCurrency_List(t *testing.T) {
 					},
 				}
 			},
-			expected: []models.Currency{
+			expected: []model.Currency{
 				{
 					ID:     uuid.NewString(),
 					Name:   "US Dollar",
@@ -204,10 +204,10 @@ func TestCurrency_List(t *testing.T) {
 		},
 		{
 			desc: "list currencies with pagination: total:10, page:1, limit:5",
-			preconditions: func() []models.Currency {
-				currencies := make([]models.Currency, 0, 10)
+			preconditions: func() []model.Currency {
+				currencies := make([]model.Currency, 0, 10)
 				for i := range 10 {
-					currencies = append(currencies, models.Currency{
+					currencies = append(currencies, model.Currency{
 						ID:     uuid.NewString(),
 						Name:   fmt.Sprintf("Currency %d", i),
 						Symbol: fmt.Sprintf("$%d", i),
@@ -222,7 +222,7 @@ func TestCurrency_List(t *testing.T) {
 					Limit: 5,
 				},
 			},
-			expected: []models.Currency{
+			expected: []model.Currency{
 				{
 					Name:   "Currency 0",
 					Symbol: "$0",
@@ -252,10 +252,10 @@ func TestCurrency_List(t *testing.T) {
 		},
 		{
 			desc: "list currencies with pagination: total:10, page 2, limit 5",
-			preconditions: func() []models.Currency {
-				currencies := make([]models.Currency, 0, 10)
+			preconditions: func() []model.Currency {
+				currencies := make([]model.Currency, 0, 10)
 				for i := range 10 {
-					currencies = append(currencies, models.Currency{
+					currencies = append(currencies, model.Currency{
 						ID:     uuid.NewString(),
 						Name:   fmt.Sprintf("tc2_Currency %d", i),
 						Symbol: fmt.Sprintf("tc2_$%d", i),
@@ -270,7 +270,7 @@ func TestCurrency_List(t *testing.T) {
 					Limit: 5,
 				},
 			},
-			expected: []models.Currency{
+			expected: []model.Currency{
 				{
 					Name:   "tc2_Currency 5",
 					Symbol: "tc2_$5",
@@ -300,10 +300,10 @@ func TestCurrency_List(t *testing.T) {
 		},
 		{
 			desc: "positive: empty list when no currencies",
-			preconditions: func() []models.Currency {
-				return []models.Currency{}
+			preconditions: func() []model.Currency {
+				return []model.Currency{}
 			},
-			expected: []models.Currency{},
+			expected: []model.Currency{},
 		},
 	}
 	for _, tc := range testCases {
@@ -352,13 +352,13 @@ func TestCurrency_Exists(t *testing.T) {
 
 	testCases := [...]struct {
 		desc          string
-		preconditions *models.Currency
+		preconditions *model.Currency
 		args          service.ExistsCurrencyFilter
 		expected      bool
 	}{
 		{
 			desc: "currency by id exists",
-			preconditions: &models.Currency{
+			preconditions: &model.Currency{
 				ID:     currencyID,
 				Name:   "US Dollar",
 				Symbol: "$",

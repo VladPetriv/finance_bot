@@ -8,7 +8,7 @@ import (
 	"time"
 
 	sq "github.com/Masterminds/squirrel"
-	"github.com/VladPetriv/finance_bot/internal/models"
+	"github.com/VladPetriv/finance_bot/internal/model"
 	"github.com/VladPetriv/finance_bot/internal/service"
 	"github.com/VladPetriv/finance_bot/pkg/database"
 )
@@ -24,7 +24,7 @@ func NewOperation(db *database.PostgreSQL) *operationStore {
 	}
 }
 
-func (o *operationStore) Create(ctx context.Context, operation *models.Operation) error {
+func (o *operationStore) Create(ctx context.Context, operation *model.Operation) error {
 	var createdAt time.Time
 	switch operation.CreatedAt.IsZero() {
 	case true:
@@ -46,7 +46,7 @@ func (o *operationStore) Create(ctx context.Context, operation *models.Operation
 	return err
 }
 
-func (o *operationStore) Get(ctx context.Context, filter service.GetOperationFilter) (*models.Operation, error) {
+func (o *operationStore) Get(ctx context.Context, filter service.GetOperationFilter) (*model.Operation, error) {
 	stmt := sq.
 		StatementBuilder.
 		PlaceholderFormat(sq.Dollar).
@@ -77,7 +77,7 @@ func (o *operationStore) Get(ctx context.Context, filter service.GetOperationFil
 		return nil, fmt.Errorf("build get operation query: %w", err)
 	}
 
-	var operation models.Operation
+	var operation model.Operation
 	err = o.DB.GetContext(ctx, &operation, query, args...)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
@@ -90,7 +90,7 @@ func (o *operationStore) Get(ctx context.Context, filter service.GetOperationFil
 	return &operation, nil
 }
 
-func (o *operationStore) List(ctx context.Context, filter service.ListOperationsFilter) ([]models.Operation, error) {
+func (o *operationStore) List(ctx context.Context, filter service.ListOperationsFilter) ([]model.Operation, error) {
 	stmt := applyListOperationsFilter(applyListOperationsOptions{listQuery: true}, filter)
 
 	query, args, err := stmt.ToSql()
@@ -98,7 +98,7 @@ func (o *operationStore) List(ctx context.Context, filter service.ListOperations
 		return nil, fmt.Errorf("build list operation query: %w", err)
 	}
 
-	var operations []models.Operation
+	var operations []model.Operation
 	err = o.DB.SelectContext(ctx, &operations, query, args...)
 	if err != nil {
 		return nil, err
@@ -174,7 +174,7 @@ func applyListOperationsFilter(options applyListOperationsOptions, filter servic
 	return &stmt
 }
 
-func (o *operationStore) Update(ctx context.Context, operationID string, operation *models.Operation) error {
+func (o *operationStore) Update(ctx context.Context, operationID string, operation *model.Operation) error {
 	_, err := o.DB.ExecContext(
 		ctx,
 		`UPDATE operations

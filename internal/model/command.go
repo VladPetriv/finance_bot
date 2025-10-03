@@ -1,4 +1,4 @@
-package models
+package model
 
 // Commands that we can received from bot.
 const (

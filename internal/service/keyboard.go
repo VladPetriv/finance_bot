@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/VladPetriv/finance_bot/internal/models"
+	"github.com/VladPetriv/finance_bot/internal/model"
 )
 
 type identifiable interface {
@@ -29,7 +29,7 @@ func getRowKeyboardRows[T identifiable](data []T, elementLimitPerRow int, includ
 
 	if includeRowWithCancelButton {
 		keyboardRows = append(keyboardRows, KeyboardRow{
-			Buttons: []string{models.BotCancelCommand},
+			Buttons: []string{model.BotCancelCommand},
 		})
 	}
 
@@ -69,7 +69,7 @@ func (h handlerService) getOperationsKeyboard(ctx context.Context, opts getOpera
 			maxPerRow:      operationsPerKeyboardRow,
 			currentPage:    opts.page,
 		},
-		func() ([]models.Operation, error) {
+		func() ([]model.Operation, error) {
 			operations, err := h.stores.Operation.List(ctx, ListOperationsFilter{
 				BalanceID:            opts.balanceID,
 				OrderByCreatedAtDesc: true,
@@ -99,8 +99,8 @@ func (h handlerService) getOperationsKeyboard(ctx context.Context, opts getOpera
 }
 
 type getOperationsHistoryKeyboardOptions struct {
-	balance        *models.Balance
-	creationPeriod models.CreationPeriod
+	balance        *model.Balance
+	creationPeriod model.CreationPeriod
 	page           int
 }
 
@@ -193,17 +193,17 @@ func (h handlerService) getOperationsHistoryKeyboard(ctx context.Context, opts g
 	return message, keyboard, nil
 }
 
-func getOperationTypeLabel(t models.OperationType) (string, string) {
+func getOperationTypeLabel(t model.OperationType) (string, string) {
 	switch t {
-	case models.OperationTypeIncoming:
+	case model.OperationTypeIncoming:
 		return "🔼", "Income (incoming)"
-	case models.OperationTypeSpending:
+	case model.OperationTypeSpending:
 		return "🔻", "Expense (spending)"
-	case models.OperationTypeTransfer:
+	case model.OperationTypeTransfer:
 		return "🔄", "Transfer"
-	case models.OperationTypeTransferIn:
+	case model.OperationTypeTransferIn:
 		return "⬅️", "Transfer In"
-	case models.OperationTypeTransferOut:
+	case model.OperationTypeTransferOut:
 		return "➡️", "Transfer Out"
 	default:
 		return "❓", string(t)
@@ -243,7 +243,7 @@ func (h handlerService) getBalanceSubscriptionsKeyboard(ctx context.Context, opt
 			maxPerRow:      balanceSubscriptionsPerKeyboardRow,
 			currentPage:    opts.page,
 		},
-		func() ([]models.BalanceSubscription, error) {
+		func() ([]model.BalanceSubscription, error) {
 			balanceSubscriptions, err := h.stores.BalanceSubscription.List(ctx, ListBalanceSubscriptionFilter{
 				BalanceID:            opts.balanceID,
 				OrderByCreatedAtDesc: true,
@@ -286,7 +286,7 @@ func (h handlerService) getCurrenciesKeyboard(ctx context.Context, page int) ([]
 			maxPerRow:      currenciesPerKeyboardRow,
 			currentPage:    page,
 		},
-		func() ([]models.Currency, error) {
+		func() ([]model.Currency, error) {
 			currencies, err := h.stores.Currency.List(ctx, ListCurrenciesFilter{
 				Pagination: &Pagination{
 					Limit: currenciesPerKeyboard,

@@ -6,7 +6,7 @@ import (
 	"errors"
 
 	sq "github.com/Masterminds/squirrel"
-	"github.com/VladPetriv/finance_bot/internal/models"
+	"github.com/VladPetriv/finance_bot/internal/model"
 	"github.com/VladPetriv/finance_bot/internal/service"
 	"github.com/VladPetriv/finance_bot/pkg/database"
 )
@@ -22,7 +22,7 @@ func NewUser(db *database.PostgreSQL) *userStore {
 	}
 }
 
-func (u *userStore) Create(ctx context.Context, user *models.User) error {
+func (u *userStore) Create(ctx context.Context, user *model.User) error {
 	_, err := u.DB.ExecContext(
 		ctx,
 		"INSERT INTO users (id, chat_id, username) VALUES ($1, $2, $3);",
@@ -32,7 +32,7 @@ func (u *userStore) Create(ctx context.Context, user *models.User) error {
 	return err
 }
 
-func (u *userStore) CreateSettings(ctx context.Context, settings *models.UserSettings) error {
+func (u *userStore) CreateSettings(ctx context.Context, settings *model.UserSettings) error {
 	_, err := u.DB.ExecContext(
 		ctx,
 		"INSERT INTO user_settings (id, user_id, ai_parser_enabled, notify_about_subscription_payments) VALUES ($1, $2, $3, $4);",
@@ -42,7 +42,7 @@ func (u *userStore) CreateSettings(ctx context.Context, settings *models.UserSet
 	return err
 }
 
-func (u userStore) Get(ctx context.Context, filter service.GetUserFilter) (*models.User, error) {
+func (u userStore) Get(ctx context.Context, filter service.GetUserFilter) (*model.User, error) {
 	stmt := sq.
 		StatementBuilder.
 		PlaceholderFormat(sq.Dollar).
@@ -61,7 +61,7 @@ func (u userStore) Get(ctx context.Context, filter service.GetUserFilter) (*mode
 		return nil, err
 	}
 
-	var user models.User
+	var user model.User
 	err = u.DB.GetContext(ctx, &user, query, args...)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
@@ -85,7 +85,7 @@ func (u userStore) Get(ctx context.Context, filter service.GetUserFilter) (*mode
 			return nil, err
 		}
 
-		var balances []models.Balance
+		var balances []model.Balance
 		err = u.DB.SelectContext(ctx, &balances, query, args...)
 		if err != nil {
 			return nil, err
@@ -106,7 +106,7 @@ func (u userStore) Get(ctx context.Context, filter service.GetUserFilter) (*mode
 			return nil, err
 		}
 
-		var userSettings models.UserSettings
+		var userSettings model.UserSettings
 		err = u.DB.GetContext(ctx, &userSettings, query, args...)
 		if err != nil {
 			return nil, err

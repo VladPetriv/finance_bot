@@ -6,7 +6,7 @@ import (
 	"slices"
 	"time"
 
-	"github.com/VladPetriv/finance_bot/internal/models"
+	"github.com/VladPetriv/finance_bot/internal/model"
 	"github.com/VladPetriv/finance_bot/pkg/logger"
 	"github.com/google/uuid"
 	"github.com/rs/zerolog"
@@ -83,30 +83,30 @@ func (s stateService) HandleState(ctx context.Context, message Message) (*Handle
 	return s.handleOngoingFlow(ctx, message, state, event)
 }
 
-func (s stateService) handleNewState(ctx context.Context, message Message, event models.Event, logger zerolog.Logger) (*HandleStateOutput, error) {
-	newState := &models.State{
+func (s stateService) handleNewState(ctx context.Context, message Message, event model.Event, logger zerolog.Logger) (*HandleStateOutput, error) {
+	newState := &model.State{
 		ID:        uuid.NewString(),
 		UserID:    message.GetSenderName(),
-		Flow:      models.EventToFlow[event],
-		Steps:     []models.FlowStep{models.StartFlowStep},
+		Flow:      model.EventToFlow[event],
+		Steps:     []model.FlowStep{model.StartFlowStep},
 		Metedata:  make(map[string]any),
 		CreatedAt: time.Now(),
 		UpdatedAt: time.Now(),
 	}
 
 	if s.isSimpleEvent(event) {
-		newState.Steps = append(newState.Steps, models.EndFlowStep)
+		newState.Steps = append(newState.Steps, model.EndFlowStep)
 	}
 
 	if isBotCommand(message.GetText()) {
-		firstStep, ok := models.CommandToFistFlowStep[message.GetText()]
+		firstStep, ok := model.CommandToFistFlowStep[message.GetText()]
 		if ok {
 			newState.Steps = append(newState.Steps, firstStep)
 		}
 	}
 
-	if event == models.CreateOperationsThroughOneTimeInputEvent {
-		newState.Steps = append(newState.Steps, models.CreateOperationsThroughOneTimeInputFlowStep)
+	if event == model.CreateOperationsThroughOneTimeInputEvent {
+		newState.Steps = append(newState.Steps, model.CreateOperationsThroughOneTimeInputFlowStep)
 	}
 
 	err := s.stores.State.Create(ctx, newState)
@@ -119,18 +119,18 @@ func (s stateService) handleNewState(ctx context.Context, message Message, event
 	return &HandleStateOutput{State: newState, Event: event}, nil
 }
 
-func (s stateService) isSimpleEvent(event models.Event) bool {
-	return slices.Contains([]models.Event{
-		models.CancelEvent,
-		models.BackEvent,
-		models.BalanceEvent,
-		models.CategoryEvent,
-		models.OperationEvent,
-		models.BalanceSubscriptionEvent,
+func (s stateService) isSimpleEvent(event model.Event) bool {
+	return slices.Contains([]model.Event{
+		model.CancelEvent,
+		model.BackEvent,
+		model.BalanceEvent,
+		model.CategoryEvent,
+		model.OperationEvent,
+		model.BalanceSubscriptionEvent,
 	}, event)
 }
 
-func (s stateService) handleSimpleEvent(ctx context.Context, message Message, state *models.State, event models.Event) (*HandleStateOutput, error) {
+func (s stateService) handleSimpleEvent(ctx context.Context, message Message, state *model.State, event model.Event) (*HandleStateOutput, error) {
 	logger := s.logger.With().Str("name", "stateService.handleSimpleEvent").Logger()
 
 	err := s.stores.State.Delete(ctx, state.ID)
@@ -139,20 +139,20 @@ func (s stateService) handleSimpleEvent(ctx context.Context, message Message, st
 		return nil, fmt.Errorf("delete state from store: %w", err)
 	}
 
-	completedState := &models.State{
+	completedState := &model.State{
 		ID:        uuid.NewString(),
 		UserID:    message.GetSenderName(),
-		Flow:      models.EventToFlow[event],
-		Steps:     []models.FlowStep{models.StartFlowStep, models.EndFlowStep},
+		Flow:      model.EventToFlow[event],
+		Steps:     []model.FlowStep{model.StartFlowStep, model.EndFlowStep},
 		Metedata:  make(map[string]any),
 		CreatedAt: time.Now(),
 		UpdatedAt: time.Now(),
 	}
 	// Store the base flow in metadata when canceling to preserve the user's context.
 	// This allows returning to the previous keyboard layout instead of the default one.
-	if event == models.CancelEvent {
+	if event == model.CancelEvent {
 		completedState.Metedata = map[string]any{
-			baseFlowKey: models.GetBaseFlowFromCurrentFlow(state.Flow),
+			baseFlowKey: model.GetBaseFlowFromCurrentFlow(state.Flow),
 		}
 	}
 
@@ -165,7 +165,7 @@ func (s stateService) handleSimpleEvent(ctx context.Context, message Message, st
 	return &HandleStateOutput{State: completedState, Event: event}, nil
 }
 
-func (s stateService) handleUnfinishedFlow(message Message, state *models.State) (*HandleStateOutput, error) {
+func (s stateService) handleUnfinishedFlow(message Message, state *model.State) (*HandleStateOutput, error) {
 	logger := s.logger.With().Str("name", "stateService.handleUnfinishedFlow").Logger()
 
 	err := s.apis.Messenger.SendMessage(
@@ -180,31 +180,31 @@ func (s stateService) handleUnfinishedFlow(message Message, state *models.State)
 	return nil, nil
 }
 
-func (s stateService) handleOngoingFlow(ctx context.Context, message Message, state *models.State, event models.Event) (*HandleStateOutput, error) {
-	if event == models.UnknownEvent && !state.IsFlowFinished() {
+func (s stateService) handleOngoingFlow(ctx context.Context, message Message, state *model.State, event model.Event) (*HandleStateOutput, error) {
+	if event == model.UnknownEvent && !state.IsFlowFinished() {
 		return &HandleStateOutput{
 			State: state,
 			Event: state.GetEvent(),
 		}, nil
 	}
-	if event == models.CreateOperationsThroughOneTimeInputEvent && !state.IsFlowFinished() {
+	if event == model.CreateOperationsThroughOneTimeInputEvent && !state.IsFlowFinished() {
 		return &HandleStateOutput{
 			State: state,
 			Event: state.GetEvent(),
 		}, nil
 	}
 
-	if event != models.UnknownEvent && state.IsFlowFinished() {
+	if event != model.UnknownEvent && state.IsFlowFinished() {
 		return s.createNewFlow(ctx, message, state, event)
 	}
 
 	return &HandleStateOutput{
 		State: nil,
-		Event: models.UnknownEvent,
+		Event: model.UnknownEvent,
 	}, nil
 }
 
-func (s stateService) createNewFlow(ctx context.Context, message Message, state *models.State, event models.Event) (*HandleStateOutput, error) {
+func (s stateService) createNewFlow(ctx context.Context, message Message, state *model.State, event model.Event) (*HandleStateOutput, error) {
 	logger := s.logger.With().Str("name", "stateService.createNewFlow").Logger()
 
 	err := s.stores.State.Delete(ctx, state.ID)
@@ -217,7 +217,7 @@ func (s stateService) createNewFlow(ctx context.Context, message Message, state 
 }
 
 func isBotCommand(value string) bool {
-	return slices.Contains(models.AvailableCommands, value)
+	return slices.Contains(model.AvailableCommands, value)
 }
 
 func (s stateService) DeleteState(ctx context.Context, message Message) error {

@@ -5,7 +5,7 @@ import (
 	"fmt"
 
 	sq "github.com/Masterminds/squirrel"
-	"github.com/VladPetriv/finance_bot/internal/models"
+	"github.com/VladPetriv/finance_bot/internal/model"
 	"github.com/VladPetriv/finance_bot/internal/service"
 	"github.com/VladPetriv/finance_bot/pkg/database"
 )
@@ -21,7 +21,7 @@ func NewCurrency(db *database.PostgreSQL) *currencyStore {
 	}
 }
 
-func (c *currencyStore) CreateIfNotExists(ctx context.Context, currency *models.Currency) error {
+func (c *currencyStore) CreateIfNotExists(ctx context.Context, currency *model.Currency) error {
 	_, err := c.DB.ExecContext(
 		ctx,
 		"INSERT INTO currencies (id, name, code, symbol) VALUES ($1, $2, $3, $4) ON CONFLICT (code) DO NOTHING;",
@@ -41,7 +41,7 @@ func (c *currencyStore) Count(ctx context.Context) (int, error) {
 	return count, nil
 }
 
-func (c *currencyStore) List(ctx context.Context, filter service.ListCurrenciesFilter) ([]models.Currency, error) {
+func (c *currencyStore) List(ctx context.Context, filter service.ListCurrenciesFilter) ([]model.Currency, error) {
 	stmt := sq.
 		StatementBuilder.
 		PlaceholderFormat(sq.Dollar).
@@ -57,7 +57,7 @@ func (c *currencyStore) List(ctx context.Context, filter service.ListCurrenciesF
 		return nil, err
 	}
 
-	var currencies []models.Currency
+	var currencies []model.Currency
 	err = c.DB.SelectContext(ctx, &currencies, query, args...)
 	if err != nil {
 		return nil, err

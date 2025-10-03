@@ -7,7 +7,7 @@ import (
 	"time"
 
 	"github.com/VladPetriv/finance_bot/config"
-	"github.com/VladPetriv/finance_bot/internal/models"
+	"github.com/VladPetriv/finance_bot/internal/model"
 	"github.com/VladPetriv/finance_bot/pkg/logger"
 	"github.com/VladPetriv/finance_bot/pkg/money"
 	"github.com/VladPetriv/finance_bot/pkg/worker"
@@ -36,12 +36,12 @@ func NewBalanceSubscriptionEngine(config *config.Config, logger *logger.Logger, 
 	}
 }
 
-func (b *balanceSubscriptionEngine) ScheduleOperationsCreation(ctx context.Context, balanceSubscription models.BalanceSubscription) {
+func (b *balanceSubscriptionEngine) ScheduleOperationsCreation(ctx context.Context, balanceSubscription model.BalanceSubscription) {
 	logger := b.logger.With().Str("name", "balanceSubscriptionEngine.ScheduleOperationsCreation").Logger()
 	logger.Debug().Any("balanceSubscription", balanceSubscription).Msg("got args")
 
 	maxBillingDates := getMaxBillingDatesFromSubscriptionPeriod(balanceSubscription.Period)
-	billingDates := models.CalculateScheduledOperationBillingDates(balanceSubscription.Period, balanceSubscription.StartAt, maxBillingDates)
+	billingDates := model.CalculateScheduledOperationBillingDates(balanceSubscription.Period, balanceSubscription.StartAt, maxBillingDates)
 
 	err := b.createScheduledOperations(ctx, billingDates, balanceSubscription)
 	if err != nil {
@@ -70,7 +70,7 @@ func (b *balanceSubscriptionEngine) ExtendScheduledOperations(ctx context.Contex
 			}
 
 			scheduledOperations, err := b.stores.BalanceSubscription.ListScheduledOperation(ctx, ListScheduledOperation{
-				BalanceSubscriptionIDs: extractIDs(balanceSubscriptions, func(bs models.BalanceSubscription) string {
+				BalanceSubscriptionIDs: extractIDs(balanceSubscriptions, func(bs model.BalanceSubscription) string {
 					return bs.ID
 				}),
 			})
@@ -79,7 +79,7 @@ func (b *balanceSubscriptionEngine) ExtendScheduledOperations(ctx context.Contex
 				continue
 			}
 
-			balanceSubscriptionToScheduledOperation := make(map[string]models.ScheduledOperation)
+			balanceSubscriptionToScheduledOperation := make(map[string]model.ScheduledOperation)
 			for _, operation := range scheduledOperations {
 				balanceSubscriptionToScheduledOperation[operation.SubscriptionID] = operation
 			}
@@ -92,7 +92,7 @@ func (b *balanceSubscriptionEngine) ExtendScheduledOperations(ctx context.Contex
 				}
 
 				maxBillingDates := getMaxBillingDatesFromSubscriptionPeriod(balanceSubscription.Period) + 1
-				billingDates := models.CalculateScheduledOperationBillingDates(balanceSubscription.Period, scheduledOperation.CreationDate, maxBillingDates)
+				billingDates := model.CalculateScheduledOperationBillingDates(balanceSubscription.Period, scheduledOperation.CreationDate, maxBillingDates)
 
 				err := b.createScheduledOperations(ctx, billingDates[1:], balanceSubscription)
 				if err != nil {
@@ -103,12 +103,12 @@ func (b *balanceSubscriptionEngine) ExtendScheduledOperations(ctx context.Contex
 	}
 }
 
-func (b *balanceSubscriptionEngine) createScheduledOperations(ctx context.Context, billingDates []time.Time, balanceSubscription models.BalanceSubscription) error {
+func (b *balanceSubscriptionEngine) createScheduledOperations(ctx context.Context, billingDates []time.Time, balanceSubscription model.BalanceSubscription) error {
 	logger := b.logger.With().Str("name", "balanceSubscriptionEngine.createScheduledOperations").Logger()
 	logger.Debug().Any("billingDates", billingDates).Any("balanceSubscription", balanceSubscription).Msg("got args")
 
 	for _, billingDate := range billingDates {
-		err := b.stores.BalanceSubscription.CreateScheduledOperation(ctx, models.ScheduledOperation{
+		err := b.stores.BalanceSubscription.CreateScheduledOperation(ctx, model.ScheduledOperation{
 			ID:             uuid.NewString(),
 			SubscriptionID: balanceSubscription.ID,
 			CreationDate:   billingDate,
@@ -128,14 +128,14 @@ const (
 	maxBillingDatesForYearlySubscription  = 2  // Represents two year.
 )
 
-func getMaxBillingDatesFromSubscriptionPeriod(period models.SubscriptionPeriod) int {
+func getMaxBillingDatesFromSubscriptionPeriod(period model.SubscriptionPeriod) int {
 	var maxBillingDates int
 	switch period {
-	case models.SubscriptionPeriodWeekly:
+	case model.SubscriptionPeriodWeekly:
 		maxBillingDates = maxBillingDatesForWeeklySubscription
-	case models.SubscriptionPeriodMonthly:
+	case model.SubscriptionPeriodMonthly:
 		maxBillingDates = maxBillingDatesForMonthlySubscription
-	case models.SubscriptionPeriodYearly:
+	case model.SubscriptionPeriodYearly:
 		maxBillingDates = maxBillingDatesForYearlySubscription
 	}
 
@@ -178,7 +178,7 @@ func (b *balanceSubscriptionEngine) CreateOperations(ctx context.Context) {
 	}
 }
 
-func (b *balanceSubscriptionEngine) createOperation(ctx context.Context, id string, scheduledOperation models.ScheduledOperation) error {
+func (b *balanceSubscriptionEngine) createOperation(ctx context.Context, id string, scheduledOperation model.ScheduledOperation) error {
 	logger := b.logger.With().Str("name", "balanceSubscriptionEngine.createOperation").Logger()
 	logger.Debug().Any("scheduledOperation", scheduledOperation).Msg("got args")
 
@@ -218,12 +218,12 @@ func (b *balanceSubscriptionEngine) createOperation(ctx context.Context, id stri
 		return ErrCategoryNotFound
 	}
 
-	err = b.stores.Operation.Create(ctx, &models.Operation{
+	err = b.stores.Operation.Create(ctx, &model.Operation{
 		ID:                    uuid.NewString(),
 		BalanceID:             balance.ID,
 		CategoryID:            category.ID,
 		BalanceSubscriptionID: balanceSubscription.ID,
-		Type:                  models.OperationTypeSpending,
+		Type:                  model.OperationTypeSpending,
 		Amount:                balanceSubscription.Amount,
 		Description:           fmt.Sprintf("Subscprition payment for: %s", balanceSubscription.Name),
 		CreatedAt:             time.Now(),
@@ -301,7 +301,7 @@ func (b *balanceSubscriptionEngine) NotifyAboutSubscriptionPayment(ctx context.C
 					From: time.Date(now.Year(), now.Month(), nextDay, 0, 0, 0, 0, time.UTC),
 					To:   time.Date(now.Year(), now.Month(), nextDay, 23, 59, 59, 999999999, time.UTC),
 				},
-				BalanceSubscriptionIDs: extractIDs(balanceSubscriptions, func(bs models.BalanceSubscription) string {
+				BalanceSubscriptionIDs: extractIDs(balanceSubscriptions, func(bs model.BalanceSubscription) string {
 					return bs.ID
 				}),
 				NotNotified: true,
@@ -313,7 +313,7 @@ func (b *balanceSubscriptionEngine) NotifyAboutSubscriptionPayment(ctx context.C
 			logger.Debug().Any("scheduledOperations", scheduledOperations).Msg("got scheduled operations")
 
 			for _, scheduledOperation := range scheduledOperations {
-				balanceSubscriptionIndex := slices.IndexFunc(balanceSubscriptions, func(bs models.BalanceSubscription) bool {
+				balanceSubscriptionIndex := slices.IndexFunc(balanceSubscriptions, func(bs model.BalanceSubscription) bool {
 					return bs.ID == scheduledOperation.SubscriptionID
 				})
 				if balanceSubscriptionIndex == -1 {
@@ -339,8 +339,8 @@ func extractIDs[T any](items []T, getID func(T) string) []string {
 }
 
 type notifyUserAboutSubscriptionPaymentOptions struct {
-	scheduledOperation  models.ScheduledOperation
-	balanceSubscription models.BalanceSubscription
+	scheduledOperation  model.ScheduledOperation
+	balanceSubscription model.BalanceSubscription
 }
 
 func (b *balanceSubscriptionEngine) notifyUserAboutSubscriptionPayment(ctx context.Context, id string, opts notifyUserAboutSubscriptionPaymentOptions) error {
@@ -389,7 +389,7 @@ func (b *balanceSubscriptionEngine) notifyUserAboutSubscriptionPayment(ctx conte
 	return nil
 }
 
-func buildSubscriptionNotificationMessage(subscription models.BalanceSubscription, balance *models.Balance) string {
+func buildSubscriptionNotificationMessage(subscription model.BalanceSubscription, balance *model.Balance) string {
 	subscriptionAmount, _ := money.NewFromString(subscription.Amount)
 	balanceAmount, _ := money.NewFromString(balance.Amount)
 

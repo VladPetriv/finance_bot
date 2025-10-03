@@ -7,7 +7,7 @@ import (
 	"fmt"
 
 	sq "github.com/Masterminds/squirrel"
-	"github.com/VladPetriv/finance_bot/internal/models"
+	"github.com/VladPetriv/finance_bot/internal/model"
 	"github.com/VladPetriv/finance_bot/internal/service"
 	"github.com/VladPetriv/finance_bot/pkg/database"
 )
@@ -23,7 +23,7 @@ func NewCategory(db *database.PostgreSQL) *categoryStore {
 	}
 }
 
-func (c *categoryStore) Create(ctx context.Context, category *models.Category) error {
+func (c *categoryStore) Create(ctx context.Context, category *model.Category) error {
 	_, err := c.DB.ExecContext(ctx,
 		"INSERT INTO categories (id, user_id, title) VALUES ($1, $2, $3);",
 		category.ID, category.UserID, category.Title,
@@ -32,7 +32,7 @@ func (c *categoryStore) Create(ctx context.Context, category *models.Category) e
 	return err
 }
 
-func (c *categoryStore) Get(ctx context.Context, filter service.GetCategoryFilter) (*models.Category, error) {
+func (c *categoryStore) Get(ctx context.Context, filter service.GetCategoryFilter) (*model.Category, error) {
 	stmt := sq.
 		StatementBuilder.
 		PlaceholderFormat(sq.Dollar).
@@ -54,7 +54,7 @@ func (c *categoryStore) Get(ctx context.Context, filter service.GetCategoryFilte
 		return nil, fmt.Errorf("build get category query: %w", err)
 	}
 
-	var category models.Category
+	var category model.Category
 	err = c.DB.GetContext(ctx, &category, query, args...)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
@@ -66,7 +66,7 @@ func (c *categoryStore) Get(ctx context.Context, filter service.GetCategoryFilte
 	return &category, nil
 }
 
-func (c *categoryStore) List(ctx context.Context, filter *service.ListCategoriesFilter) ([]models.Category, error) {
+func (c *categoryStore) List(ctx context.Context, filter *service.ListCategoriesFilter) ([]model.Category, error) {
 	stmt := sq.
 		StatementBuilder.
 		PlaceholderFormat(sq.Dollar).
@@ -82,7 +82,7 @@ func (c *categoryStore) List(ctx context.Context, filter *service.ListCategories
 		return nil, fmt.Errorf("build list categories query: %w", err)
 	}
 
-	var categories []models.Category
+	var categories []model.Category
 	err = c.DB.SelectContext(ctx, &categories, query, args...)
 	if err != nil {
 		return nil, err
@@ -91,7 +91,7 @@ func (c *categoryStore) List(ctx context.Context, filter *service.ListCategories
 	return categories, nil
 }
 
-func (c *categoryStore) Update(ctx context.Context, category *models.Category) error {
+func (c *categoryStore) Update(ctx context.Context, category *model.Category) error {
 	_, err := c.DB.ExecContext(
 		ctx,
 		"UPDATE categories SET user_id = $2, title = $3 WHERE id = $1;",

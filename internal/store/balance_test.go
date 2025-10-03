@@ -4,7 +4,7 @@ import (
 	"context"
 	"testing"
 
-	"github.com/VladPetriv/finance_bot/internal/models"
+	"github.com/VladPetriv/finance_bot/internal/model"
 	"github.com/VladPetriv/finance_bot/internal/service"
 	"github.com/VladPetriv/finance_bot/internal/store"
 	"github.com/google/uuid"
@@ -29,7 +29,7 @@ func TestBalance_Create(t *testing.T) {
 	currencyStore := store.NewCurrency(testCaseDB)
 
 	balanceID, userID := uuid.NewString(), uuid.NewString()
-	currency := &models.Currency{
+	currency := &model.Currency{
 		ID:   uuid.NewString(),
 		Code: "USD",
 	}
@@ -37,7 +37,7 @@ func TestBalance_Create(t *testing.T) {
 	err := currencyStore.CreateIfNotExists(ctx, currency)
 	require.NoError(t, err)
 
-	err = userStore.Create(ctx, &models.User{
+	err = userStore.Create(ctx, &model.User{
 		ID:       userID,
 		Username: "test" + userID,
 	})
@@ -52,13 +52,13 @@ func TestBalance_Create(t *testing.T) {
 
 	testCases := [...]struct {
 		desc                 string
-		preconditions        *models.Balance
-		args                 *models.Balance
+		preconditions        *model.Balance
+		args                 *model.Balance
 		expectDuplicateError bool
 	}{
 		{
 			desc: "balance created",
-			args: &models.Balance{
+			args: &model.Balance{
 				ID:         uuid.NewString(),
 				UserID:     userID,
 				CurrencyID: currency.ID,
@@ -67,13 +67,13 @@ func TestBalance_Create(t *testing.T) {
 		},
 		{
 			desc: "duplicate key error because balance already exists",
-			preconditions: &models.Balance{
+			preconditions: &model.Balance{
 				ID:         balanceID,
 				UserID:     userID,
 				CurrencyID: currency.ID,
 				Amount:     amount300,
 			},
-			args: &models.Balance{
+			args: &model.Balance{
 				ID:         balanceID,
 				UserID:     userID,
 				CurrencyID: currency.ID,
@@ -128,7 +128,7 @@ func TestBalance_Get(t *testing.T) {
 
 	balanceID1, balanceID2, balanceID3 := uuid.NewString(), uuid.NewString(), uuid.NewString()
 	userID1, userID2, userID3 := uuid.NewString(), uuid.NewString(), uuid.NewString()
-	currency := &models.Currency{
+	currency := &model.Currency{
 		ID:   uuid.NewString(),
 		Code: "USD",
 	}
@@ -137,7 +137,7 @@ func TestBalance_Get(t *testing.T) {
 	require.NoError(t, err)
 
 	for _, userID := range [...]string{userID1, userID2, userID3} {
-		err := userStore.Create(ctx, &models.User{
+		err := userStore.Create(ctx, &model.User{
 			ID:       userID,
 			Username: "test" + userID,
 		})
@@ -155,13 +155,13 @@ func TestBalance_Get(t *testing.T) {
 
 	testCases := [...]struct {
 		desc          string
-		preconditions *models.Balance
+		preconditions *model.Balance
 		args          service.GetBalanceFilter
-		expected      *models.Balance
+		expected      *model.Balance
 	}{
 		{
 			desc: "balance received by user id",
-			preconditions: &models.Balance{
+			preconditions: &model.Balance{
 				ID:         balanceID1,
 				UserID:     userID1,
 				CurrencyID: currency.ID,
@@ -170,7 +170,7 @@ func TestBalance_Get(t *testing.T) {
 			args: service.GetBalanceFilter{
 				UserID: userID1,
 			},
-			expected: &models.Balance{
+			expected: &model.Balance{
 				ID:         balanceID1,
 				UserID:     userID1,
 				CurrencyID: currency.ID,
@@ -179,7 +179,7 @@ func TestBalance_Get(t *testing.T) {
 		},
 		{
 			desc: "balance received by id with currency preload",
-			preconditions: &models.Balance{
+			preconditions: &model.Balance{
 				ID:         balanceID2,
 				UserID:     userID2,
 				CurrencyID: currency.ID,
@@ -189,7 +189,7 @@ func TestBalance_Get(t *testing.T) {
 				BalanceID:       balanceID2,
 				PreloadCurrency: true,
 			},
-			expected: &models.Balance{
+			expected: &model.Balance{
 				ID:         balanceID2,
 				UserID:     userID2,
 				CurrencyID: currency.ID,
@@ -199,7 +199,7 @@ func TestBalance_Get(t *testing.T) {
 		},
 		{
 			desc: "balance received by name",
-			preconditions: &models.Balance{
+			preconditions: &model.Balance{
 				ID:         balanceID3,
 				Name:       "test_x3",
 				UserID:     userID3,
@@ -209,7 +209,7 @@ func TestBalance_Get(t *testing.T) {
 			args: service.GetBalanceFilter{
 				Name: "test_x3",
 			},
-			expected: &models.Balance{
+			expected: &model.Balance{
 				ID:         balanceID3,
 				Name:       "test_x3",
 				CurrencyID: currency.ID,
@@ -277,7 +277,7 @@ func TestBalance_Update(t *testing.T) {
 
 	userID1, userID2 := uuid.NewString(), uuid.NewString()
 	balanceID1, balanceID2 := uuid.NewString(), uuid.NewString()
-	currency := &models.Currency{
+	currency := &model.Currency{
 		ID:   uuid.NewString(),
 		Code: "USD",
 	}
@@ -286,7 +286,7 @@ func TestBalance_Update(t *testing.T) {
 	require.NoError(t, err)
 
 	for _, userID := range [...]string{userID1, userID2} {
-		err := userStore.Create(ctx, &models.User{
+		err := userStore.Create(ctx, &model.User{
 			ID:       userID,
 			Username: "test" + userID,
 		})
@@ -304,25 +304,25 @@ func TestBalance_Update(t *testing.T) {
 
 	testCases := [...]struct {
 		desc          string
-		preconditions *models.Balance
-		args          *models.Balance
-		expected      *models.Balance
+		preconditions *model.Balance
+		args          *model.Balance
+		expected      *model.Balance
 	}{
 		{
 			desc: "balance updated",
-			preconditions: &models.Balance{
+			preconditions: &model.Balance{
 				ID:         balanceID1,
 				UserID:     userID1,
 				CurrencyID: currency.ID,
 				Amount:     amount300,
 			},
-			args: &models.Balance{
+			args: &model.Balance{
 				ID:         balanceID1,
 				UserID:     userID1,
 				CurrencyID: currency.ID,
 				Amount:     amount400,
 			},
-			expected: &models.Balance{
+			expected: &model.Balance{
 				ID:         balanceID1,
 				UserID:     userID1,
 				CurrencyID: currency.ID,
@@ -331,19 +331,19 @@ func TestBalance_Update(t *testing.T) {
 		},
 		{
 			desc: "balance not updated because of not existed id",
-			preconditions: &models.Balance{
+			preconditions: &model.Balance{
 				ID:         balanceID2,
 				UserID:     userID2,
 				CurrencyID: currency.ID,
 				Amount:     amount300,
 			},
-			args: &models.Balance{
+			args: &model.Balance{
 				ID:         uuid.NewString(),
 				UserID:     userID2,
 				CurrencyID: currency.ID,
 				Amount:     amount400,
 			},
-			expected: &models.Balance{
+			expected: &model.Balance{
 				ID:         balanceID2,
 				UserID:     userID2,
 				CurrencyID: currency.ID,
@@ -390,7 +390,7 @@ func TestBalance_Delete(t *testing.T) {
 	currencyStore := store.NewCurrency(testCaseDB)
 
 	balanceID, userID := uuid.NewString(), uuid.NewString()
-	currency := &models.Currency{
+	currency := &model.Currency{
 		ID:   uuid.NewString(),
 		Code: "USD",
 	}
@@ -398,7 +398,7 @@ func TestBalance_Delete(t *testing.T) {
 	err := currencyStore.CreateIfNotExists(ctx, currency)
 	require.NoError(t, err)
 
-	err = userStore.Create(ctx, &models.User{
+	err = userStore.Create(ctx, &model.User{
 		ID:       userID,
 		Username: "test" + userID,
 	})
@@ -413,12 +413,12 @@ func TestBalance_Delete(t *testing.T) {
 
 	testCases := [...]struct {
 		desc          string
-		preconditions *models.Balance
+		preconditions *model.Balance
 		args          string
 	}{
 		{
 			desc: "balance deleted",
-			preconditions: &models.Balance{
+			preconditions: &model.Balance{
 				ID:         balanceID,
 				UserID:     userID,
 				CurrencyID: currency.ID,
@@ -427,7 +427,7 @@ func TestBalance_Delete(t *testing.T) {
 		},
 		{
 			desc: "balance not deleted because of not existed id",
-			preconditions: &models.Balance{
+			preconditions: &model.Balance{
 				ID:         uuid.NewString(),
 				UserID:     userID,
 				CurrencyID: currency.ID,

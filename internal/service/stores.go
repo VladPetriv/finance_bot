@@ -4,7 +4,7 @@ import (
 	"context"
 	"time"
 
-	"github.com/VladPetriv/finance_bot/internal/models"
+	"github.com/VladPetriv/finance_bot/internal/model"
 )
 
 // Stores represents all stores.
@@ -23,11 +23,11 @@ type Stores struct {
 //go:generate mockery --dir . --name UserStore --output ./mocks
 type UserStore interface {
 	// Create creates a new user in store.
-	Create(ctx context.Context, user *models.User) error
+	Create(ctx context.Context, user *model.User) error
 	// GetByUsername returns a user from store by username.
-	Get(ctx context.Context, filters GetUserFilter) (*models.User, error)
+	Get(ctx context.Context, filters GetUserFilter) (*model.User, error)
 	// CreateSettings creates a new user settings in store.
-	CreateSettings(ctx context.Context, settings *models.UserSettings) error
+	CreateSettings(ctx context.Context, settings *model.UserSettings) error
 }
 
 // GetUserFilter represents a filters for GetUser method.
@@ -43,11 +43,11 @@ type GetUserFilter struct {
 //go:generate mockery --dir . --name BalanceStore --output ./mocks
 type BalanceStore interface {
 	// Create creates a new balance in store.
-	Create(ctx context.Context, balance *models.Balance) error
+	Create(ctx context.Context, balance *model.Balance) error
 	// Get returns a balance from store by user id.
-	Get(ctx context.Context, filter GetBalanceFilter) (*models.Balance, error)
+	Get(ctx context.Context, filter GetBalanceFilter) (*model.Balance, error)
 	// Update updates balance model in store.
-	Update(ctx context.Context, balance *models.Balance) error
+	Update(ctx context.Context, balance *model.Balance) error
 	// Delete deletes balance from store.
 	Delete(ctx context.Context, balanceID string) error
 }
@@ -65,15 +65,15 @@ type GetBalanceFilter struct {
 //go:generate mockery --dir . --name OperationStore --output ./mocks
 type OperationStore interface {
 	// Create creates a new operation.
-	Create(ctx context.Context, operation *models.Operation) error
+	Create(ctx context.Context, operation *model.Operation) error
 	// Get returns a operation from store by filter.
-	Get(ctx context.Context, filter GetOperationFilter) (*models.Operation, error)
+	Get(ctx context.Context, filter GetOperationFilter) (*model.Operation, error)
 	// Count returns a count of operations from store by filter.
 	Count(ctx context.Context, filter ListOperationsFilter) (int, error)
 	// GetAll returns all operations from store by balance id.
-	List(ctx context.Context, filter ListOperationsFilter) ([]models.Operation, error)
+	List(ctx context.Context, filter ListOperationsFilter) ([]model.Operation, error)
 	// Update updates an operation in store.
-	Update(ctx context.Context, operationID string, operation *models.Operation) error
+	Update(ctx context.Context, operationID string, operation *model.Operation) error
 	// Delete delete operation by his id.
 	Delete(ctx context.Context, operationID string) error
 }
@@ -82,7 +82,7 @@ type OperationStore interface {
 type GetOperationFilter struct {
 	ID           string
 	Amount       string
-	Type         models.OperationType
+	Type         model.OperationType
 	CreateAtFrom time.Time
 	CreateAtTo   time.Time
 	BalanceIDs   []string
@@ -91,8 +91,8 @@ type GetOperationFilter struct {
 // ListOperationsFilter represents filters for list operations from store.
 type ListOperationsFilter struct {
 	BalanceID            string
-	CreationPeriod       models.CreationPeriod
-	Month                models.Month
+	CreationPeriod       model.CreationPeriod
+	Month                model.Month
 	OrderByCreatedAtDesc bool
 	Pagination           *Pagination
 }
@@ -102,13 +102,13 @@ type ListOperationsFilter struct {
 //go:generate mockery --dir . --name CategoryStore --output ./mocks
 type CategoryStore interface {
 	// List returns a list of all categories from store.
-	List(ctx context.Context, filters *ListCategoriesFilter) ([]models.Category, error)
+	List(ctx context.Context, filters *ListCategoriesFilter) ([]model.Category, error)
 	// Get returns a category by fileers.
-	Get(ctx context.Context, filter GetCategoryFilter) (*models.Category, error)
+	Get(ctx context.Context, filter GetCategoryFilter) (*model.Category, error)
 	// Create creates new category in store.
-	Create(ctx context.Context, category *models.Category) error
+	Create(ctx context.Context, category *model.Category) error
 	// Update  updates category in store.
-	Update(ctx context.Context, category *models.Category) error
+	Update(ctx context.Context, category *model.Category) error
 	// Delete delete category from store.
 	Delete(ctx context.Context, categoryID string) error
 }
@@ -128,11 +128,11 @@ type GetCategoryFilter struct {
 // StateStore represents a store for user states.
 type StateStore interface {
 	// Create creates a new state in store.
-	Create(ctx context.Context, state *models.State) error
+	Create(ctx context.Context, state *model.State) error
 	// Get returns a state from store by user id.
-	Get(ctx context.Context, filter GetStateFilter) (*models.State, error)
+	Get(ctx context.Context, filter GetStateFilter) (*model.State, error)
 	// Update updates state model in store.
-	Update(ctx context.Context, state *models.State) (*models.State, error)
+	Update(ctx context.Context, state *model.State) (*model.State, error)
 	// Delete deletes state from store.
 	Delete(ctx context.Context, ID string) error
 }
@@ -145,12 +145,12 @@ type GetStateFilter struct {
 // CurrencyStore represents a store for currencies.
 type CurrencyStore interface {
 	// Create creates a new currency in store(only in case if currency not exists).
-	// The check for existence is based on currency code(models.Currency.Code).
-	CreateIfNotExists(ctx context.Context, currency *models.Currency) error
+	// The check for existence is based on currency code(model.Currency.Code).
+	CreateIfNotExists(ctx context.Context, currency *model.Currency) error
 	// Count returns a count of all currencies from store.
 	Count(ctx context.Context) (int, error)
 	// List returns a list of all currencies from store.
-	List(ctx context.Context, filter ListCurrenciesFilter) ([]models.Currency, error)
+	List(ctx context.Context, filter ListCurrenciesFilter) ([]model.Currency, error)
 	// Exists checks if currency exists in store based on input filter.
 	Exists(ctx context.Context, opts ExistsCurrencyFilter) (bool, error)
 }
@@ -168,19 +168,19 @@ type ExistsCurrencyFilter struct {
 // BalanceSubscriptionStore represents a store for balance subscriptions.
 type BalanceSubscriptionStore interface {
 	// Create creates a new balance subscription in store.
-	Create(ctx context.Context, subscription models.BalanceSubscription) error
+	Create(ctx context.Context, subscription model.BalanceSubscription) error
 	// CreateScheduledOperation creates a new scheduled operation in store.
-	CreateScheduledOperation(ctx context.Context, operation models.ScheduledOperation) error
+	CreateScheduledOperation(ctx context.Context, operation model.ScheduledOperation) error
 	// Get retrieves balance subscription from store based on input filter.
-	Get(ctx context.Context, filter GetBalanceSubscriptionFilter) (*models.BalanceSubscription, error)
+	Get(ctx context.Context, filter GetBalanceSubscriptionFilter) (*model.BalanceSubscription, error)
 	// Count returns a count of all balance subscriptions from store based on filter.
 	Count(ctx context.Context, filter ListBalanceSubscriptionFilter) (int, error)
 	// List returns a list of all balance subscriptions from store based on filter.
-	List(ctx context.Context, filter ListBalanceSubscriptionFilter) ([]models.BalanceSubscription, error)
+	List(ctx context.Context, filter ListBalanceSubscriptionFilter) ([]model.BalanceSubscription, error)
 	// ListScheduledOperation returns a list of all scheduled operation based on input filters.
-	ListScheduledOperation(ctx context.Context, filter ListScheduledOperation) ([]models.ScheduledOperation, error)
+	ListScheduledOperation(ctx context.Context, filter ListScheduledOperation) ([]model.ScheduledOperation, error)
 	// Update updates balance subscription model in store.
-	Update(ctx context.Context, subscription *models.BalanceSubscription) error
+	Update(ctx context.Context, subscription *model.BalanceSubscription) error
 	// MarkScheduledOperationAsNotified marks a scheduled operation as notified in store.
 	MarkScheduledOperationAsNotified(ctx context.Context, scheduledOperationID string) error
 	// Delete deletes balance subscription from store.

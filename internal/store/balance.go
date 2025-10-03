@@ -7,7 +7,7 @@ import (
 	"fmt"
 
 	sq "github.com/Masterminds/squirrel"
-	"github.com/VladPetriv/finance_bot/internal/models"
+	"github.com/VladPetriv/finance_bot/internal/model"
 	"github.com/VladPetriv/finance_bot/internal/service"
 	"github.com/VladPetriv/finance_bot/pkg/database"
 )
@@ -23,7 +23,7 @@ func NewBalance(db *database.PostgreSQL) *balanceStore {
 	}
 }
 
-func (b *balanceStore) Create(ctx context.Context, balance *models.Balance) error {
+func (b *balanceStore) Create(ctx context.Context, balance *model.Balance) error {
 	_, err := b.DB.ExecContext(
 		ctx,
 		"INSERT INTO balances (id, user_id, currency_id, name, amount, created_at, updated_at) VALUES ($1, $2, $3, $4, $5, NOW(), NOW());",
@@ -33,7 +33,7 @@ func (b *balanceStore) Create(ctx context.Context, balance *models.Balance) erro
 	return err
 }
 
-func (b *balanceStore) Get(ctx context.Context, filter service.GetBalanceFilter) (*models.Balance, error) {
+func (b *balanceStore) Get(ctx context.Context, filter service.GetBalanceFilter) (*model.Balance, error) {
 	stmt := sq.
 		StatementBuilder.
 		PlaceholderFormat(sq.Dollar).
@@ -55,7 +55,7 @@ func (b *balanceStore) Get(ctx context.Context, filter service.GetBalanceFilter)
 		return nil, fmt.Errorf("build get balance query: %w", err)
 	}
 
-	var balance models.Balance
+	var balance model.Balance
 	err = b.DB.GetContext(ctx, &balance, query, args...)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
@@ -65,7 +65,7 @@ func (b *balanceStore) Get(ctx context.Context, filter service.GetBalanceFilter)
 	}
 
 	if filter.PreloadCurrency && balance.CurrencyID != "" {
-		var currency models.Currency
+		var currency model.Currency
 		err = b.DB.GetContext(ctx, &currency, "SELECT id, name, code, symbol FROM currencies WHERE id = $1;", balance.CurrencyID)
 		if err != nil {
 			return nil, err
@@ -77,7 +77,7 @@ func (b *balanceStore) Get(ctx context.Context, filter service.GetBalanceFilter)
 	return &balance, nil
 }
 
-func (b *balanceStore) Update(ctx context.Context, balance *models.Balance) error {
+func (b *balanceStore) Update(ctx context.Context, balance *model.Balance) error {
 	_, err := b.DB.ExecContext(
 		ctx,
 		"UPDATE balances SET user_id = $2, currency_id = $3, name = $4, amount = $5, updated_at = NOW() WHERE id = $1;",
