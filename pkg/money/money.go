@@ -71,6 +71,11 @@ func (m *Money) GreaterThan(right Money) bool {
 	return m.decimal.GreaterThan(right.decimal)
 }
 
+// LessThan returns true if current value is less than input one.
+func (m *Money) LessThan(right Money) bool {
+	return m.decimal.LessThan(right.decimal)
+}
+
 // StringFixed returns string representation of float with 2 places after digit.
 // Resulting string will be rounded to nearest.
 func (m Money) StringFixed() string {
