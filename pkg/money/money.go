@@ -39,15 +39,16 @@ func NewFromFloat(i float64) Money {
 	return Money{d}
 }
 
-// Sub returns left - right amounts.
-func (m Money) Sub(right Money) Money {
-	return Money{m.decimal.Sub(right.decimal)}
-}
-
 // Inc increments left amount by right.
 // Same as left = left + right; left+=right
 func (m *Money) Inc(right Money) {
 	m.decimal = m.decimal.Add(right.decimal)
+}
+
+// Sub decrements left - right amounts.
+// Same as left = left - right; left-=right
+func (m *Money) Sub(right Money) {
+	m.decimal = m.decimal.Sub(right.decimal)
 }
 
 // Mul multiplies this Money value with another and updates the result in place
@@ -58,6 +59,11 @@ func (m *Money) Mul(right Money) {
 // Div divides this Money value by another and updates the result in place
 func (m *Money) Div(right Money) {
 	m.decimal = m.decimal.Div(right.decimal)
+}
+
+// Equal returns true if current value is equal to input one.
+func (m *Money) Equal(right Money) bool {
+	return m.decimal.Equal(right.decimal)
 }
 
 // GreaterThan returns true if current value is greater than input one.

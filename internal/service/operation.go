@@ -568,6 +568,15 @@ func (h handlerService) createTransferOperation(ctx context.Context, opts create
 		}
 	}
 
+	balanceFromAmount, _ := money.NewFromString(balanceFrom.Amount)
+
+	calculatedBalanceFromAmount := balanceFromAmount.Sub(operationAmountOut)
+	balanceFrom.Amount = calculatedBalanceFromAmount.StringFixed()
+
+	balanceToAmount, _ := money.NewFromString(balanceTo.Amount)
+	balanceToAmount.Inc(operationAmountIn)
+	balanceTo.Amount = balanceToAmount.StringFixed()
+
 	for _, balance := range []*model.Balance{balanceFrom, balanceTo} {
 		err = h.stores.Balance.Update(ctx, balance)
 		if err != nil {
