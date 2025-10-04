@@ -124,6 +124,42 @@ func TestMoney_GreaterThan(t *testing.T) {
 	}
 }
 
+func TestMoney_LessThan(t *testing.T) {
+	t.Parallel()
+
+	testCases := [...]struct {
+		desc        string
+		left, right Money
+		expected    bool
+	}{
+		{
+			desc:     "Should return false for greater values",
+			left:     NewFromInt(20),
+			right:    NewFromInt(10),
+			expected: false,
+		},
+		{
+			desc:     "Should return false for equal values",
+			left:     NewFromInt(10),
+			right:    NewFromInt(10),
+			expected: false,
+		},
+		{
+			desc:     "Should return true for smaller values",
+			left:     NewFromInt(10),
+			right:    NewFromInt(20),
+			expected: true,
+		},
+	}
+	for _, tc := range testCases {
+		t.Run(tc.desc, func(t *testing.T) {
+			t.Parallel()
+
+			assert.Equal(t, tc.expected, tc.left.LessThan(tc.right))
+		})
+	}
+}
+
 func TestMoney_StringFixed(t *testing.T) {
 	t.Parallel()
 
