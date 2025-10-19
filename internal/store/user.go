@@ -50,7 +50,7 @@ func (u userStore) Get(ctx context.Context, filter service.GetUserFilter) (*mode
 		From("users")
 
 	if filter.Username != "" {
-		stmt = stmt.Where(sq.Eq{"username": filter.Username})
+		stmt = stmt.Where(sq.Eq{"users.username": filter.Username})
 	}
 	if filter.BalanceID != "" {
 		stmt = stmt.
