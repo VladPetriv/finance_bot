@@ -53,7 +53,9 @@ func (u userStore) Get(ctx context.Context, filter service.GetUserFilter) (*mode
 		stmt = stmt.Where(sq.Eq{"username": filter.Username})
 	}
 	if filter.BalanceID != "" {
-		stmt = stmt.InnerJoin("balances ON balances.user_id = users.id").Where("balances.id = $1", filter.BalanceID)
+		stmt = stmt.
+			InnerJoin("balances ON balances.user_id = users.id").
+			Where(sq.Eq{"balances.id": filter.BalanceID})
 	}
 
 	query, args, err := stmt.ToSql()
