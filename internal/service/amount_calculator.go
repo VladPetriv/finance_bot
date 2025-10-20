@@ -29,14 +29,13 @@ type calculateTransferOperationOptions struct {
 	balanceFrom *money.Money
 	balanceTo   *money.Money
 
+	operationAmount money.Money
+	exchangeRate    *money.Money
+
 	// Used for update action only
-	transferAmountIn  *money.Money
-	transferAmountOut *money.Money
-
-	operationAmount        money.Money
+	transferAmountIn       *money.Money
+	transferAmountOut      *money.Money
 	updatedOperationAmount money.Money
-
-	exchangeRate *money.Money
 }
 
 func calculateTransferOperation(opts calculateTransferOperationOptions) {
