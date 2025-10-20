@@ -60,4 +60,12 @@ var Migrations = []any{
 		Name: "Add created_at and updated_at column to balances table",
 		Func: addCreatedAtAndUpdatedAtColumnsToBalancesTable,
 	},
+	&migrator.Migration{
+		Name: "Add parent_operation_id column to operations table",
+		Func: addParentOperationIDToOperationsTable,
+	},
+	&migrator.Migration{
+		Name: "Add exchange_rate column to operations table",
+		Func: addExchangeRateToOperationsTable,
+	},
 }

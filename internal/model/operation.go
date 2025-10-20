@@ -13,10 +13,12 @@ type Operation struct {
 	CategoryID            string `db:"category_id"`
 	BalanceID             string `db:"balance_id"`
 	BalanceSubscriptionID string `db:"balance_subscription_id"`
+	ParentOperationID     string `db:"parent_operation_id"`
 
-	Type        OperationType `db:"type"`
-	Amount      string        `db:"amount"`
-	Description string        `db:"description"`
+	Type         OperationType `db:"type"`
+	Amount       string        `db:"amount"`
+	Description  string        `db:"description"`
+	ExchangeRate string        `db:"exchange_rate"`
 
 	CreatedAt time.Time `db:"created_at"`
 	UpdatedAt time.Time `db:"updated_at"`
