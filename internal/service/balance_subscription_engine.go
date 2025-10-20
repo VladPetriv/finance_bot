@@ -234,21 +234,13 @@ func (b *balanceSubscriptionEngine) createOperation(ctx context.Context, id stri
 		return fmt.Errorf("create operation: %w", err)
 	}
 
-	subscriptionAmount, err := money.NewFromString(balanceSubscription.Amount)
-	if err != nil {
-		logger.Error().Err(err).Msg("parse subscription amount")
-		return fmt.Errorf("parse subscription amount: %w", err)
-	}
+	subscriptionAmount, _ := money.NewFromString(balanceSubscription.Amount)
+	balanceAmount, _ := money.NewFromString(balance.Amount)
 
-	balanceAmount, err := money.NewFromString(balance.Amount)
-	if err != nil {
-		logger.Error().Err(err).Msg("parse balance amount")
-		return fmt.Errorf("parse balance amount: %w", err)
-	}
+	calculateSpendingOperation(&balanceAmount, subscriptionAmount)
 
-	calculatedBalanceAmount := balanceAmount.Sub(subscriptionAmount)
-	logger.Debug().Any("calculatedBalanceAmount", calculatedBalanceAmount).Msg("reduced balance amount with subscription amount")
-	balance.Amount = calculatedBalanceAmount.StringFixed()
+	balance.Amount = balanceAmount.StringFixed()
+	logger.Debug().Any("calculatedBalanceAmount", balance.Amount).Msg("reduced balance amount with subscription amount")
 
 	err = b.stores.Balance.Update(ctx, balance)
 	if err != nil {
@@ -391,26 +383,23 @@ func (b *balanceSubscriptionEngine) notifyUserAboutSubscriptionPayment(ctx conte
 
 func buildSubscriptionNotificationMessage(subscription model.BalanceSubscription, balance *model.Balance) string {
 	subscriptionAmount, _ := money.NewFromString(subscription.Amount)
-	balanceAmount, _ := money.NewFromString(balance.Amount)
+	currentBalanceAmount, _ := money.NewFromString(balance.Amount)
 
-	remaining := balanceAmount.Sub(subscriptionAmount)
+	remaningBalanceAmount, _ := money.NewFromString(balance.Amount)
+	remaningBalanceAmount.Sub(subscriptionAmount)
+
 	symbol := balance.Currency.Symbol
 
 	var balanceStatus string
-
-	if remaining.GreaterThan(money.Zero) {
-		balanceStatus = fmt.Sprintf("✅ Balance after payment: %s%s",
-			symbol, remaining.StringFixed())
-	}
-
-	if remaining.String() == "0" {
+	switch {
+	case remaningBalanceAmount.Equal(money.Zero):
 		balanceStatus = "⚠️ Balance will be exactly zero after payment"
-	}
-
-	if !remaining.GreaterThan(money.Zero) && remaining.String() != "0" {
-		deficit := subscriptionAmount.Sub(balanceAmount)
-		balanceStatus = fmt.Sprintf("❌ Insufficient funds! Need %s%s more",
-			symbol, deficit.StringFixed())
+	case remaningBalanceAmount.GreaterThan(money.Zero):
+		balanceStatus = fmt.Sprintf("✅ Balance after payment: %s%s", symbol, remaningBalanceAmount.StringFixed())
+	case remaningBalanceAmount.LessThan(money.Zero):
+		deficitAmount, _ := money.NewFromString(subscription.Amount)
+		deficitAmount.Sub(currentBalanceAmount)
+		balanceStatus = fmt.Sprintf("❌ Insufficient funds! Need %s%s more", symbol, deficitAmount.StringFixed())
 	}
 
 	return fmt.Sprintf(
@@ -418,7 +407,7 @@ func buildSubscriptionNotificationMessage(subscription model.BalanceSubscription
 		subscription.Name,
 		symbol, subscriptionAmount.StringFixed(),
 		subscription.Period,
-		symbol, balanceAmount.StringFixed(),
+		symbol, currentBalanceAmount.StringFixed(),
 		balanceStatus,
 	)
 }
