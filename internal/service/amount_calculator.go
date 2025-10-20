@@ -14,6 +14,14 @@ func calculateUpdatedIncomingOperation(balanceAmount *money.Money, initialAmount
 	balanceAmount.Inc(updateAmount)
 }
 
+func calculateDeletedIncomingOperation(balanceAmount *money.Money, initialAmount money.Money) {
+	balanceAmount.Sub(initialAmount)
+}
+
+func calculateDeletedSpendingOperation(balanceAmount *money.Money, initialAmount money.Money) {
+	balanceAmount.Inc(initialAmount)
+}
+
 func calculateSpendingOperation(balanceAmount *money.Money, spendingAmount money.Money) {
 	balanceAmount.Sub(spendingAmount)
 }
@@ -32,7 +40,7 @@ type calculateTransferOperationOptions struct {
 	operationAmount money.Money
 	exchangeRate    *money.Money
 
-	// Used for update action only
+	// Used for update/delete action only
 	transferAmountIn       *money.Money
 	transferAmountOut      *money.Money
 	updatedOperationAmount money.Money
@@ -90,4 +98,9 @@ func calculateUpdatedTranferOperation(opts calculateTransferOperationOptions) {
 			opts.transferAmountOut.Set(opts.updatedOperationAmount)
 		}
 	}
+}
+
+func calculateDeletedTransferOperation(opts calculateTransferOperationOptions) {
+	opts.balanceFrom.Inc(*opts.transferAmountOut)
+	opts.balanceTo.Sub(*opts.transferAmountIn)
 }
