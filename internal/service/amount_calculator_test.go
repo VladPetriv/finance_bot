@@ -32,6 +32,17 @@ func TestCalculateUpdatedIncomingOperation(t *testing.T) {
 	assert.Equal(t, "180.00", balance.StringFixed())
 }
 
+func TestCalculateDeletedIncomingOperation(t *testing.T) {
+	t.Parallel()
+
+	balance := money.NewFromInt(150) // balance after 50 was added to initial 100
+	initialAmount := money.NewFromInt(50)
+
+	calculateDeletedIncomingOperation(&balance, initialAmount)
+
+	assert.Equal(t, "100.00", balance.StringFixed())
+}
+
 func TestCalculateSpendingOperation(t *testing.T) {
 	t.Parallel()
 
@@ -53,6 +64,15 @@ func TestCalculateUpdatedSpendingOperation(t *testing.T) {
 	calculateUpdatedSpendingOperation(&balance, initialAmount, updateAmount)
 
 	assert.Equal(t, "55.00", balance.StringFixed())
+}
+
+func TestCalculateDeletedSpendingOperation(t *testing.T) {
+	t.Parallel()
+
+	balance := money.NewFromInt(70) // balance after 30 was subtracted from initial 100
+	initialAmount := money.NewFromInt(30)
+
+	calculateDeletedSpendingOperation(&balance, initialAmount)
 }
 
 func TestCalculateTransferOperation(t *testing.T) {
@@ -173,6 +193,51 @@ func TestCalculateUpdatedTransferOperation(t *testing.T) {
 			if tc.expectedTransferAmountOut != "" {
 				assert.Equal(t, tc.expectedTransferAmountOut, tc.opts.transferAmountOut.StringFixed())
 			}
+		})
+	}
+}
+
+func TestCalculateDeletedTransferOperation(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		desc         string
+		opts         calculateTransferOperationOptions
+		expectedFrom string
+		expectedTo   string
+	}{
+		{
+			desc: "delete simple transfer",
+			opts: calculateTransferOperationOptions{
+				balanceFrom:       typecast.ToPtr(money.NewFromInt(125)), // after 75 was transferred out
+				balanceTo:         typecast.ToPtr(money.NewFromInt(125)), // after 75 was transferred in
+				transferAmountOut: typecast.ToPtr(money.NewFromInt(75)),
+				transferAmountIn:  typecast.ToPtr(money.NewFromInt(75)),
+			},
+			expectedFrom: "200.00",
+			expectedTo:   "50.00",
+		},
+		{
+			desc: "delete transfer with exchange rate",
+			opts: calculateTransferOperationOptions{
+				balanceFrom:       typecast.ToPtr(money.NewFromInt(900)), // after 100 was transferred out
+				balanceTo:         typecast.ToPtr(money.NewFromInt(250)), // after 150 was transferred in (100 * 1.5)
+				transferAmountOut: typecast.ToPtr(money.NewFromInt(100)),
+				transferAmountIn:  typecast.ToPtr(money.NewFromInt(150)),
+			},
+			expectedFrom: "1000.00",
+			expectedTo:   "100.00",
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.desc, func(t *testing.T) {
+			t.Parallel()
+
+			calculateDeletedTransferOperation(tc.opts)
+
+			assert.Equal(t, tc.expectedFrom, tc.opts.balanceFrom.StringFixed())
+			assert.Equal(t, tc.expectedTo, tc.opts.balanceTo.StringFixed())
 		})
 	}
 }
