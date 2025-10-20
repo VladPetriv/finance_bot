@@ -87,3 +87,8 @@ func (m Money) StringFixed() string {
 func (m Money) String() string {
 	return m.decimal.String()
 }
+
+// Set sets the value of the Money instance to the provided value.
+func (m *Money) Set(value Money) {
+	m.decimal = value.decimal
+}
