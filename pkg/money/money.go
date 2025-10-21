@@ -39,15 +39,16 @@ func NewFromFloat(i float64) Money {
 	return Money{d}
 }
 
-// Sub returns left - right amounts.
-func (m Money) Sub(right Money) Money {
-	return Money{m.decimal.Sub(right.decimal)}
-}
-
 // Inc increments left amount by right.
 // Same as left = left + right; left+=right
 func (m *Money) Inc(right Money) {
 	m.decimal = m.decimal.Add(right.decimal)
+}
+
+// Sub decrements left - right amounts.
+// Same as left = left - right; left-=right
+func (m *Money) Sub(right Money) {
+	m.decimal = m.decimal.Sub(right.decimal)
 }
 
 // Mul multiplies this Money value with another and updates the result in place
@@ -60,9 +61,19 @@ func (m *Money) Div(right Money) {
 	m.decimal = m.decimal.Div(right.decimal)
 }
 
+// Equal returns true if current value is equal to input one.
+func (m *Money) Equal(right Money) bool {
+	return m.decimal.Equal(right.decimal)
+}
+
 // GreaterThan returns true if current value is greater than input one.
 func (m *Money) GreaterThan(right Money) bool {
 	return m.decimal.GreaterThan(right.decimal)
+}
+
+// LessThan returns true if current value is less than input one.
+func (m *Money) LessThan(right Money) bool {
+	return m.decimal.LessThan(right.decimal)
 }
 
 // StringFixed returns string representation of float with 2 places after digit.
@@ -75,4 +86,9 @@ func (m Money) StringFixed() string {
 // Resulting string will be rounded to nearest.
 func (m Money) String() string {
 	return m.decimal.String()
+}
+
+// Set sets the value of the Money instance to the provided value.
+func (m *Money) Set(value Money) {
+	m.decimal = value.decimal
 }

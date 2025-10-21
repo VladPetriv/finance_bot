@@ -36,12 +36,12 @@ func (o *operationStore) Create(ctx context.Context, operation *model.Operation)
 	_, err := o.DB.ExecContext(
 		ctx,
 		`INSERT INTO
-			operations (id, category_id, balance_id, type, amount, description, created_at)
+			operations (id, category_id, balance_id, parent_operation_id, type, amount, exchange_rate, description, created_at)
 		VALUES
-			($1, $2, $3, $4, $5, $6, $7);
+			($1, $2, $3, $4, $5, $6, $7, $8, $9);
 		`,
 
-		operation.ID, operation.CategoryID, operation.BalanceID, operation.Type, operation.Amount, operation.Description, createdAt,
+		operation.ID, operation.CategoryID, operation.BalanceID, operation.ParentOperationID, operation.Type, operation.Amount, operation.ExchangeRate, operation.Description, createdAt,
 	)
 	return err
 }
@@ -50,7 +50,7 @@ func (o *operationStore) Get(ctx context.Context, filter service.GetOperationFil
 	stmt := sq.
 		StatementBuilder.
 		PlaceholderFormat(sq.Dollar).
-		Select("id", "category_id", "balance_id", "type", "amount", "description", "created_at", "updated_at").
+		Select("id", "category_id", "balance_id", "parent_operation_id", "type", "amount", "exchange_rate", "description", "created_at", "updated_at").
 		From("operations")
 
 	if filter.ID != "" {
@@ -139,7 +139,7 @@ func applyListOperationsFilter(options applyListOperationsOptions, filter servic
 	}
 
 	if options.listQuery {
-		expectedColumns = []string{"id", "category_id", "balance_id", "type", "amount", "description", "created_at", "updated_at"}
+		expectedColumns = []string{"id", "category_id", "balance_id", "parent_operation_id", "type", "amount", "exchange_rate", "description", "created_at", "updated_at"}
 	}
 
 	stmt := sq.
@@ -167,7 +167,7 @@ func applyListOperationsFilter(options applyListOperationsOptions, filter servic
 	}
 
 	if filter.OrderByCreatedAtDesc {
-		stmt = stmt.GroupBy("id", "category_id", "balance_id", "type", "amount", "description", "created_at", "updated_at").
+		stmt = stmt.GroupBy("id", "category_id", "balance_id", "parent_operation_id", "type", "amount", "exchange_rate", "description", "created_at", "updated_at").
 			OrderBy("created_at DESC")
 	}
 

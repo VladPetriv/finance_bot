@@ -78,12 +78,14 @@ func TestOperation_Create(t *testing.T) {
 		{
 			desc: "operation created",
 			args: &model.Operation{
-				ID:          operationID1,
-				CategoryID:  categoryID,
-				BalanceID:   balanceID,
-				Type:        model.OperationTypeIncoming,
-				Amount:      "100",
-				Description: "test_create_1",
+				ID:                operationID1,
+				CategoryID:        categoryID,
+				BalanceID:         balanceID,
+				Type:              model.OperationTypeIncoming,
+				Amount:            "100",
+				ParentOperationID: "123",
+				ExchangeRate:      "10.00",
+				Description:       "test_create_1",
 			},
 		},
 		{
@@ -141,8 +143,10 @@ func TestOperation_Create(t *testing.T) {
 			assert.Equal(t, tc.args.ID, actual.ID)
 			assert.Equal(t, tc.args.CategoryID, actual.CategoryID)
 			assert.Equal(t, tc.args.BalanceID, actual.BalanceID)
+			assert.Equal(t, tc.args.ParentOperationID, actual.ParentOperationID)
 			assert.Equal(t, tc.args.Type, actual.Type)
 			assert.Equal(t, tc.args.Amount, actual.Amount)
+			assert.Equal(t, tc.args.ExchangeRate, actual.ExchangeRate)
 			assert.Equal(t, tc.args.Description, actual.Description)
 		})
 	}
@@ -222,23 +226,27 @@ func TestOperation_Get(t *testing.T) {
 		{
 			desc: "found operation by id",
 			preconditions: &model.Operation{
-				ID:          operationID1,
-				CategoryID:  categoryID,
-				BalanceID:   balanceID1,
-				Type:        model.OperationTypeIncoming,
-				Amount:      "100",
-				Description: "test_get_1",
+				ID:                operationID1,
+				CategoryID:        categoryID,
+				BalanceID:         balanceID1,
+				ParentOperationID: "123",
+				Type:              model.OperationTypeIncoming,
+				Amount:            "100",
+				ExchangeRate:      "1.0",
+				Description:       "test_get_1",
 			},
 			args: service.GetOperationFilter{
 				ID: operationID1,
 			},
 			expected: &model.Operation{
-				ID:          operationID1,
-				CategoryID:  categoryID,
-				BalanceID:   balanceID1,
-				Type:        model.OperationTypeIncoming,
-				Amount:      "100",
-				Description: "test_get_1",
+				ID:                operationID1,
+				CategoryID:        categoryID,
+				BalanceID:         balanceID1,
+				ParentOperationID: "123",
+				Type:              model.OperationTypeIncoming,
+				Amount:            "100",
+				ExchangeRate:      "1.0",
+				Description:       "test_get_1",
 			},
 		},
 		{
@@ -369,8 +377,10 @@ func TestOperation_Get(t *testing.T) {
 			assert.Equal(t, tc.expected.ID, actual.ID)
 			assert.Equal(t, tc.expected.BalanceID, actual.BalanceID)
 			assert.Equal(t, tc.expected.CategoryID, actual.CategoryID)
+			assert.Equal(t, tc.expected.ParentOperationID, actual.ParentOperationID)
 			assert.Equal(t, tc.expected.Type, actual.Type)
 			assert.Equal(t, tc.expected.Amount, actual.Amount)
+			assert.Equal(t, tc.expected.ExchangeRate, actual.ExchangeRate)
 			assert.Equal(t, tc.expected.Description, actual.Description)
 		})
 	}
