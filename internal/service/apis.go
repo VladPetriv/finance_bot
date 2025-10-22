@@ -22,6 +22,8 @@ type Messenger interface {
 	SendMessage(chatID int, text string) error
 	// SendWithKeyboard sends a message with an attached keyboard (inline or reply).
 	SendWithKeyboard(opts SendWithKeyboardOptions) error
+	// UpdateMessage updates a message with new text and keyboard.
+	UpdateMessage(opts UpdateMessageOptions) error
 
 	// Close closes the underlying connection to the messaging platform.
 	Close() error
@@ -34,10 +36,17 @@ type SendWithKeyboardOptions struct {
 	FormatMessageInMarkDown bool
 	Keyboard                []KeyboardRow
 	InlineKeyboard          []InlineKeyboardRow
+}
 
-	MessageID             int
-	InlineMessageID       string
+// UpdateMessageOptions represents options for updating a message with new text and keyboard.
+type UpdateMessageOptions struct {
+	ChatID                  int
+	FormatMessageInMarkDown bool
+	MessageID               int
+	InlineMessageID         string
+
 	UpdatedInlineKeyboard []InlineKeyboardRow
+	UpdatedKeyboard       []KeyboardRow
 	UpdatedMessage        string
 }
 
