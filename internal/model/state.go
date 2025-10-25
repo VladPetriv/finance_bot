@@ -120,6 +120,11 @@ func (s *State) IsCommandAllowedDuringFlow(command string) bool {
 
 	case UpdateBalanceFlow:
 		switch s.GetCurrentStep() {
+		case EnterBalanceCurrencyFlowStep:
+			return slices.Contains(
+				[]string{BotNextCommand, BotPreviousCommand},
+				command,
+			)
 		case ChooseUpdateBalanceOptionFlowStep:
 			return slices.Contains(
 				[]string{
