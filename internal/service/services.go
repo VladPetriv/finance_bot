@@ -83,6 +83,21 @@ var (
 		},
 	}
 
+	confirmationInlineKeyboardRows = []InlineKeyboardRow{
+		{
+			Buttons: []InlineKeyboardButton{
+				{
+					Text: "Yes",
+					Data: "true",
+				},
+				{
+					Text: "No",
+					Data: "false",
+				},
+			},
+		},
+	}
+
 	balanceKeyboardRows = []KeyboardRow{
 		{
 			Buttons: []string{model.BotCreateBalanceCommand, model.BotGetBalanceCommand},
@@ -233,6 +248,7 @@ var (
 			},
 		},
 	}
+
 	balanceSubscriptionFrequencyKeyboard = []KeyboardRow{
 		{
 			Buttons: []string{
