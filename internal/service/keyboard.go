@@ -36,6 +36,25 @@ func getRowKeyboardRows[T identifiable](data []T, elementLimitPerRow int, includ
 	return keyboardRows
 }
 
+func getInlineKeyboardRows[T identifiable](data []T, elementLimitPerRow int) []InlineKeyboardRow {
+	inlineKeyboardRows := make([]InlineKeyboardRow, 0)
+
+	var currentRow InlineKeyboardRow
+	for i, entry := range data {
+		currentRow.Buttons = append(currentRow.Buttons, InlineKeyboardButton{
+			Text: entry.GetName(),
+		})
+
+		// When row is full or we're at the last data item, append row
+		if len(currentRow.Buttons) == elementLimitPerRow || i == len(data)-1 {
+			inlineKeyboardRows = append(inlineKeyboardRows, currentRow)
+			currentRow = InlineKeyboardRow{} // Reset current row
+		}
+	}
+
+	return inlineKeyboardRows
+}
+
 const (
 	operationsPerKeyboard    = 5
 	operationsPerKeyboardRow = 1
