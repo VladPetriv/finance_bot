@@ -513,7 +513,12 @@ func (h handlerService) showCancelButton(chatID int, message string) error {
 }
 
 // sendMessageWithDefaultKeyboard sends a message to the specified chat with the default keyboard interface.
+// If message is empty, it sends an empty message.
 func (h handlerService) sendMessageWithDefaultKeyboard(chatID int, message string) error {
+	if message == "" {
+		message = emptyMessage
+	}
+
 	return h.apis.Messenger.SendWithKeyboard(SendWithKeyboardOptions{
 		ChatID:   chatID,
 		Message:  message,
