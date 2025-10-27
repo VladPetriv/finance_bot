@@ -340,12 +340,12 @@ func TestCurrency_List(t *testing.T) {
 	}
 }
 
-func TestCurrency_Exists(t *testing.T) {
+func TestCurrency_Get(t *testing.T) {
 	t.Parallel()
 
 	ctx := context.Background() //nolint: forbidigo
 
-	testCaseDB := createTestDB(t, "currency_exists")
+	testCaseDB := createTestDB(t, "currency_get")
 	currencyStore := store.NewCurrency(testCaseDB)
 
 	currencyID := uuid.NewString()
@@ -353,32 +353,36 @@ func TestCurrency_Exists(t *testing.T) {
 	testCases := [...]struct {
 		desc          string
 		preconditions *model.Currency
-		args          service.ExistsCurrencyFilter
-		expected      bool
+		args          service.GetCurrencyFilter
+		expected      *model.Currency
 	}{
 		{
-			desc: "currency by id exists",
+			desc: "should found currency by id",
 			preconditions: &model.Currency{
 				ID:     currencyID,
 				Name:   "US Dollar",
 				Symbol: "$",
 				Code:   "USD_test_exists_1",
 			},
-			args: service.ExistsCurrencyFilter{
+			args: service.GetCurrencyFilter{
 				ID: currencyID,
 			},
-			expected: true,
+			expected: &model.Currency{
+				ID:     currencyID,
+				Name:   "US Dollar",
+				Symbol: "$",
+				Code:   "USD_test_exists_1",
+			},
 		},
 		{
 			desc: "currency by id doesn't exists",
-			args: service.ExistsCurrencyFilter{
+			args: service.GetCurrencyFilter{
 				ID: uuid.NewString(),
 			},
-			expected: false,
+			expected: nil,
 		},
 	}
 	for _, tc := range testCases {
-		tc := tc
 		t.Run(tc.desc, func(t *testing.T) {
 			t.Parallel()
 
@@ -394,7 +398,7 @@ func TestCurrency_Exists(t *testing.T) {
 				}
 			})
 
-			actual, err := currencyStore.Exists(ctx, tc.args)
+			actual, err := currencyStore.Get(ctx, tc.args)
 			assert.NoError(t, err)
 			assert.Equal(t, tc.expected, actual)
 		})
