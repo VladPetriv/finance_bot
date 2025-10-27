@@ -309,15 +309,13 @@ const (
 	pageMetadataKey = "page"
 
 	// Balance related keys
-	balanceIDMetadataKey              = "balance_id"
-	balanceNameMetadataKey            = "balance_name"
-	balanceAmountMetadataKey          = "balance_amount"
-	balanceFromMetadataKey            = "balance_from"
-	balanceToMetadataKey              = "balance_to"
-	currentBalanceNameMetadataKey     = "current_balance_name"
-	currentBalanceCurrencyMetadataKey = "current_balance_currency"
-	currentBalanceAmountMetadataKey   = "current_balance_amount"
-	monthForBalanceStatisticsKey      = "month_for_balance_statistics"
+	balanceIDMetadataKey          = "balance_id"
+	balanceNameMetadataKey        = "balance_name"
+	balanceAmountMetadataKey      = "balance_amount"
+	balanceFromMetadataKey        = "balance_from"
+	balanceToMetadataKey          = "balance_to"
+	currentBalanceNameMetadataKey = "current_balance_name"
+	monthForBalanceStatisticsKey  = "month_for_balance_statistics"
 
 	// Category related keys
 	previousCategoryTitleMetadataKey = "previous_category_title"
