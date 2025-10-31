@@ -249,6 +249,25 @@ var (
 		},
 	}
 
+	operationHistoryPeriodKeyboard = []InlineKeyboardRow{
+		{
+			Buttons: []InlineKeyboardButton{
+				{
+					Text: string(model.CreationPeriodDay),
+				},
+				{
+					Text: string(model.CreationPeriodWeek),
+				},
+				{
+					Text: string(model.CreationPeriodMonth),
+				},
+				{
+					Text: string(model.CreationPeriodYear),
+				},
+			},
+		},
+	}
+
 	balanceSubscriptionFrequencyKeyboard = []KeyboardRow{
 		{
 			Buttons: []string{
@@ -257,7 +276,11 @@ var (
 				string(model.SubscriptionPeriodYearly),
 			},
 		},
-		{Buttons: []string{model.BotCancelCommand}},
+		{
+			Buttons: []string{
+				model.BotCancelCommand,
+			},
+		},
 	}
 )
 
