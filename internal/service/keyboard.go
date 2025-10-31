@@ -101,7 +101,6 @@ func (h handlerService) getOperationsKeyboard(ctx context.Context, opts getOpera
 				logger.Error().Err(err).Msg("list operations from store")
 				return nil, fmt.Errorf("list operations from store: %w", err)
 			}
-
 			if len(operations) == 0 {
 				logger.Info().Msg("operations not found")
 				return nil, ErrOperationsNotFound
@@ -186,9 +185,12 @@ func (h handlerService) getOperationsHistoryKeyboard(ctx context.Context, opts g
 				}
 
 				emoji, typeLabel := getOperationTypeLabel(o.Type)
-
 				outputMessage += fmt.Sprintf(
-					"%s\n📌 *Operation Type:* %s %s\n📝 Description: %s\n📂 Category: %s\n💵 Amount: %v%s\n🕒 Date: %v\n",
+					"%s\n"+
+						"📌 *Operation:* %s %s\n"+
+						"📝 *Description:* %s\n"+
+						"📂 *Category:* %s\n"+
+						"💰 *Amount:* %s%s\n",
 					separator,
 					emoji,
 					typeLabel,
@@ -196,8 +198,14 @@ func (h handlerService) getOperationsHistoryKeyboard(ctx context.Context, opts g
 					category.Title,
 					o.Amount,
 					opts.balance.GetCurrency().Symbol,
-					o.CreatedAt.Format(time.ANSIC),
 				)
+
+				if o.ExchangeRate != "" {
+					outputMessage += fmt.Sprintf("💱 *Exchange Rate:* %s\n", o.ExchangeRate)
+				}
+
+				outputMessage += fmt.Sprintf("🕐 *Date:* %s\n", o.CreatedAt.Format(time.ANSIC))
+
 			}
 			outputMessage += separator
 
