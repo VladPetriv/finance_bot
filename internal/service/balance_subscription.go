@@ -283,8 +283,8 @@ func (h *handlerService) handleChooseBalanceSubscriptionToUpdateFlowStep(ctx con
 			return "", fmt.Errorf("get balance subscriptions keyboard: %w", err)
 		}
 
-		return model.ChooseBalanceSubscriptionToUpdateFlowStep, h.apis.Messenger.SendWithKeyboard(SendWithKeyboardOptions{
-			Message:               "Choose balance subscription to update:",
+		return model.ChooseBalanceSubscriptionToUpdateFlowStep, h.apis.Messenger.UpdateMessage(UpdateMessageOptions{
+			UpdatedMessage:        "Choose balance subscription to update:",
 			ChatID:                opts.message.GetChatID(),
 			MessageID:             opts.message.GetMessageID(),
 			InlineMessageID:       opts.message.GetInlineMessageID(),
@@ -610,8 +610,8 @@ func (h *handlerService) handleChooseBalanceSubscriptionToDeleteFlowStep(ctx con
 			return "", fmt.Errorf("get balance subscriptions keyboard: %w", err)
 		}
 
-		return model.ChooseBalanceSubscriptionToDeleteFlowStep, h.apis.Messenger.SendWithKeyboard(SendWithKeyboardOptions{
-			Message:               "Choose balance subscription to delete:",
+		return model.ChooseBalanceSubscriptionToDeleteFlowStep, h.apis.Messenger.UpdateMessage(UpdateMessageOptions{
+			UpdatedMessage:        "Choose balance subscription to delete:",
 			ChatID:                opts.message.GetChatID(),
 			MessageID:             opts.message.GetMessageID(),
 			InlineMessageID:       opts.message.GetInlineMessageID(),
@@ -651,7 +651,7 @@ func (h *handlerService) handleConfirmDeleteBalanceSubscriptionFlowStep(ctx cont
 
 	if !confirmDeletion {
 		logger.Info().Msg("user did not confirm balance subscription deletion")
-		return model.EndFlowStep, h.notifyCancellationAndShowMenu(opts.message.GetChatID())
+		return model.EndFlowStep, h.notifyCancellationAndShowKeyboard(opts.message, balanceSubscriptionKeyboardRows)
 	}
 
 	err = h.stores.BalanceSubscription.Delete(ctx, opts.stateMetaData[balanceSubscriptionIDMetadataKey].(string))

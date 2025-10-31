@@ -484,14 +484,14 @@ func (h handlerService) sendMessageWithConfirmationInlineKeyboard(chatID int, me
 	})
 }
 
-// notifyCancellationAndShowMenu sends a cancellation message and displays the main menu.
+// notifyCancellationAndShowKeyboard sends a cancellation message and displays the provided menu.
 // It informs the user that their current action was cancelled and presents available commands
-// through the default keyboard interface.
-func (h handlerService) notifyCancellationAndShowMenu(chatID int) error {
-	return h.apis.Messenger.SendWithKeyboard(SendWithKeyboardOptions{
-		ChatID:   chatID,
-		Message:  "Action cancelled!\nPlease choose new command to execute:",
-		Keyboard: defaultKeyboardRows,
+func (h handlerService) notifyCancellationAndShowKeyboard(message Message, keyboardRows []KeyboardRow) error {
+	return h.apis.Messenger.UpdateMessage(UpdateMessageOptions{
+		ChatID:          message.GetChatID(),
+		MessageID:       message.GetMessageID(),
+		UpdatedMessage:  "Action cancelled!\nPlease choose new command to execute:",
+		UpdatedKeyboard: keyboardRows,
 	})
 }
 

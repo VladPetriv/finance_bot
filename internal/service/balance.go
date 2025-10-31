@@ -631,7 +631,7 @@ func (h handlerService) handleChooseBalanceFlowStepForDelete(ctx context.Context
 
 	if !confirmBalanceDeletion {
 		logger.Info().Msg("user did not confirm balance deletion")
-		return model.EndFlowStep, h.notifyCancellationAndShowMenu(opts.message.GetChatID())
+		return model.EndFlowStep, h.notifyCancellationAndShowKeyboard(opts.message, balanceKeyboardRows)
 	}
 
 	balance := opts.user.GetBalance(opts.stateMetaData[balanceNameMetadataKey].(string))
