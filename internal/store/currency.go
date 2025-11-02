@@ -2,7 +2,8 @@ package store
 
 import (
 	"context"
-	"fmt"
+	"database/sql"
+	"errors"
 
 	sq "github.com/Masterminds/squirrel"
 	"github.com/VladPetriv/finance_bot/internal/model"
@@ -66,27 +67,31 @@ func (c *currencyStore) List(ctx context.Context, filter service.ListCurrenciesF
 	return currencies, nil
 }
 
-func (c *currencyStore) Exists(ctx context.Context, filter service.ExistsCurrencyFilter) (bool, error) {
+func (c *currencyStore) Get(ctx context.Context, filter service.GetCurrencyFilter) (*model.Currency, error) {
 	stmt := sq.
 		StatementBuilder.
 		PlaceholderFormat(sq.Dollar).
-		Select("1").
+		Select("currencies.id", "currencies.name", "currencies.code", "currencies.symbol").
 		From("currencies")
 
 	if filter.ID != "" {
-		stmt = stmt.Where(sq.Eq{"id": filter.ID})
+		stmt = stmt.Where(sq.Eq{"currencies.id": filter.ID})
 	}
 
 	query, args, err := stmt.ToSql()
 	if err != nil {
-		return false, err
+		return nil, err
 	}
 
-	var exists bool
-	err = c.DB.GetContext(ctx, &exists, fmt.Sprintf("SELECT EXISTS (%s);", query), args...)
+	var currency model.Currency
+	err = c.DB.GetContext(ctx, &currency, query, args...)
 	if err != nil {
-		return false, err
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, nil
+		}
+
+		return nil, err
 	}
 
-	return exists, nil
+	return &currency, nil
 }

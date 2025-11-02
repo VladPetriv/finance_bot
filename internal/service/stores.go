@@ -151,8 +151,8 @@ type CurrencyStore interface {
 	Count(ctx context.Context) (int, error)
 	// List returns a list of all currencies from store.
 	List(ctx context.Context, filter ListCurrenciesFilter) ([]model.Currency, error)
-	// Exists checks if currency exists in store based on input filter.
-	Exists(ctx context.Context, opts ExistsCurrencyFilter) (bool, error)
+	// Get returns a currency from store by id.
+	Get(ctx context.Context, filter GetCurrencyFilter) (*model.Currency, error)
 }
 
 // ListCurrenciesFilter represents a filter for CurrencyStore.List method.
@@ -160,8 +160,8 @@ type ListCurrenciesFilter struct {
 	Pagination *Pagination
 }
 
-// ExistsCurrencyFilter represents a filter for CurrencyStore.Exists method.
-type ExistsCurrencyFilter struct {
+// GetCurrencyFilter represents a filter for CurrencyStore.Get method.
+type GetCurrencyFilter struct {
 	ID string
 }
 

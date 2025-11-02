@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"strings"
 	"time"
+
+	"github.com/VladPetriv/finance_bot/pkg/money"
 )
 
 // Operation represent a financial operation.
@@ -59,37 +61,63 @@ func (o *Operation) GetDeletionMessage() string {
 	var balanceImpactMsg string
 	switch o.Type {
 	case OperationTypeTransferIn, OperationTypeTransferOut:
+		increaseAmount, _ := money.NewFromString(o.Amount)
+		decreaseAmount, _ := money.NewFromString(o.Amount)
+		exhangeRate, _ := money.NewFromString(o.ExchangeRate)
+
+		if !exhangeRate.Equal(money.Zero) {
+			switch o.Type {
+			case OperationTypeTransferIn:
+				increaseAmount.Div(exhangeRate)
+			case OperationTypeTransferOut:
+				decreaseAmount.Mul(exhangeRate)
+			}
+		}
+
 		balanceImpactMsg = fmt.Sprintf(
 			"⚠️ Warning: Deleting this transfer operation will:\n"+
 				"• Increase balance of source account by %s\n"+
 				"• Decrease balance of destination account by %s",
-			o.Amount,
-			o.Amount)
+			increaseAmount.StringFixed(),
+			decreaseAmount.StringFixed())
 	case OperationTypeSpending, OperationTypeIncoming:
-		var effect string
-		if o.Type == "income" {
-			effect = "decrease"
-		} else {
+		effect := "decrease"
+
+		if o.Type == OperationTypeSpending {
 			effect = "increase"
 		}
+
 		balanceImpactMsg = fmt.Sprintf(
 			"⚠️ Warning: Deleting this %s operation will %s your balance by %s",
 			o.Type,
 			effect,
-			o.Amount)
+			o.Amount,
+		)
 	}
 
-	return fmt.Sprintf(
+	outputMessage := fmt.Sprintf(
 		"Are you sure you want to proceed with the selected operation?\n\n"+
 			"Operation Details:\n"+
 			"Type: %s\n"+
 			"Amount: %s\n"+
-			"Description: %s\n\n"+
-			"%s\n\n"+
-			"This action cannot be undone.",
+			"Description: %s\n",
 		o.Type, o.Amount, o.Description,
+	)
+
+	if o.ExchangeRate != "" {
+		outputMessage += fmt.Sprintf(
+			"Exchange Rate: %s\n",
+			o.ExchangeRate,
+		)
+	}
+
+	outputMessage += fmt.Sprintf(
+		"\n%s\n"+
+			"This action cannot be undone.",
 		balanceImpactMsg,
 	)
+
+	return outputMessage
 }
 
 // GetDetails returns the operation details in string format.
@@ -98,6 +126,24 @@ func (o *Operation) GetDetails() string {
 		"Operation Details:\nType: %s\nAmount: %s\nDescription: %s",
 		o.Type, o.Amount, o.Description,
 	)
+}
+
+// GetOperationTypeLabel returns the label for the given operation type.
+func GetOperationTypeLabel(t OperationType) (string, string) {
+	switch t {
+	case OperationTypeIncoming:
+		return "🔼", "Income (incoming)"
+	case OperationTypeSpending:
+		return "🔻", "Expense (spending)"
+	case OperationTypeTransfer:
+		return "🔄", "Transfer"
+	case OperationTypeTransferIn:
+		return "⬅️", "Transfer In"
+	case OperationTypeTransferOut:
+		return "➡️", "Transfer Out"
+	default:
+		return "❓", string(t)
+	}
 }
 
 // OperationType represents the type of an operation, which can be either incoming, spending or transfer.

@@ -125,49 +125,91 @@ func (t *telegramMessenger) SendMessage(chatID int, text string) error {
 
 func (t *telegramMessenger) SendWithKeyboard(opts service.SendWithKeyboardOptions) error {
 	message := opts.Message
-	updatedMessage := opts.UpdatedMessage
 	if opts.FormatMessageInMarkDown {
-		// Unescape markdown symbols.
-		message = strings.ReplaceAll(message, "(", `\(`)
-		message = strings.ReplaceAll(message, ")", `\)`)
-		message = strings.ReplaceAll(message, "!", `\!`)
-		message = strings.ReplaceAll(message, "-", `\-`)
-		message = strings.ReplaceAll(message, "+", `\+`)
-		message = strings.ReplaceAll(message, ".", `\.`)
-
-		updatedMessage = strings.ReplaceAll(updatedMessage, "(", `\(`)
-		updatedMessage = strings.ReplaceAll(updatedMessage, ")", `\)`)
-		updatedMessage = strings.ReplaceAll(updatedMessage, "!", `\!`)
-		updatedMessage = strings.ReplaceAll(updatedMessage, "-", `\-`)
-		updatedMessage = strings.ReplaceAll(updatedMessage, "+", `\+`)
-		updatedMessage = strings.ReplaceAll(updatedMessage, ".", `\.`)
+		message = unescapeMarkdownSymbols(message)
 	}
 
 	return t.send(&sendOptions{
-		chatID:                int64(opts.ChatID),
-		messageID:             opts.MessageID,
-		inlineMessageID:       opts.InlineMessageID,
-		message:               message,
-		formatInMarkdown:      opts.FormatMessageInMarkDown,
-		keyboard:              opts.Keyboard,
-		inlineKeyboard:        opts.InlineKeyboard,
-		updatedInlineKeyboard: opts.UpdatedInlineKeyboard,
-		updatedMessage:        updatedMessage,
+		chatID:           int64(opts.ChatID),
+		message:          message,
+		formatInMarkdown: opts.FormatMessageInMarkDown,
+		keyboard:         opts.Keyboard,
+		inlineKeyboard:   opts.InlineKeyboard,
 	})
 }
 
+func (t *telegramMessenger) UpdateMessage(opts service.UpdateMessageOptions) error {
+	// NOTE: Telegram does not support direct editing of messages with row keyboards.
+	// Instead delete the entire message and send a new one with the updated message and keyboard
+	if len(opts.UpdatedKeyboard) != 0 {
+		err := t.api.DeleteMessage(&telego.DeleteMessageParams{
+			ChatID: telego.ChatID{
+				ID: int64(opts.ChatID),
+			},
+			MessageID: opts.MessageID,
+		})
+		if err != nil {
+			return fmt.Errorf("delete message: %w", err)
+		}
+
+		if opts.FormatMessageInMarkDown {
+			opts.UpdatedMessage = unescapeMarkdownSymbols(opts.UpdatedMessage)
+		}
+
+		return t.send(&sendOptions{
+			chatID:           int64(opts.ChatID),
+			message:          opts.UpdatedMessage,
+			formatInMarkdown: opts.FormatMessageInMarkDown,
+			keyboard:         opts.UpdatedKeyboard,
+		})
+	}
+
+	editMessageParams := &telego.EditMessageTextParams{
+		ChatID: telego.ChatID{
+			ID: int64(opts.ChatID),
+		},
+		MessageID:       opts.MessageID,
+		InlineMessageID: opts.InlineMessageID,
+		Text:            opts.UpdatedMessage,
+	}
+
+	if len(opts.UpdatedInlineKeyboard) > 0 {
+		inlineKeyboards := t.createInlineKeyboard(opts.UpdatedInlineKeyboard)
+		editMessageParams.ReplyMarkup = inlineKeyboards[0]
+	}
+
+	if opts.FormatMessageInMarkDown {
+		editMessageParams.ParseMode = markdownFormat
+		editMessageParams.Text = unescapeMarkdownSymbols(editMessageParams.Text)
+		editMessageParams = editMessageParams.WithParseMode(markdownFormat)
+	}
+
+	_, err := t.api.EditMessageText(editMessageParams)
+	if err != nil {
+		return fmt.Errorf("edit message text: %w", err)
+	}
+
+	return nil
+}
+
+func unescapeMarkdownSymbols(message string) string {
+	message = strings.ReplaceAll(message, "(", `\(`)
+	message = strings.ReplaceAll(message, ")", `\)`)
+	message = strings.ReplaceAll(message, "!", `\!`)
+	message = strings.ReplaceAll(message, "-", `\-`)
+	message = strings.ReplaceAll(message, "+", `\+`)
+	message = strings.ReplaceAll(message, ".", `\.`)
+	return message
+}
+
 type sendOptions struct {
-	chatID          int64
-	messageID       int
-	inlineMessageID string
+	chatID int64
 
 	message          string
 	formatInMarkdown bool
 
-	keyboard              []service.KeyboardRow
-	inlineKeyboard        []service.InlineKeyboardRow
-	updatedInlineKeyboard []service.InlineKeyboardRow
-	updatedMessage        string
+	keyboard       []service.KeyboardRow
+	inlineKeyboard []service.InlineKeyboardRow
 }
 
 const (
@@ -214,146 +256,10 @@ func (t *telegramMessenger) send(opts *sendOptions) error {
 		message = message.WithReplyMarkup(inlineKeyboards[0])
 	}
 
-	if len(opts.updatedMessage) > 0 {
-		var inlineKeyboard *telego.InlineKeyboardMarkup
-
-		if len(opts.updatedInlineKeyboard) > 0 {
-			inlineKeyboards := t.createInlineKeyboard(opts.updatedInlineKeyboard)
-			inlineKeyboard = inlineKeyboards[0]
-		}
-
-		editMessageParams := &telego.EditMessageTextParams{
-			ChatID: telego.ChatID{
-				ID: opts.chatID,
-			},
-			MessageID:       opts.messageID,
-			InlineMessageID: opts.inlineMessageID,
-			Text:            opts.updatedMessage,
-			ReplyMarkup:     inlineKeyboard,
-		}
-		if opts.formatInMarkdown {
-			editMessageParams.ParseMode = markdownFormat
-		}
-
-		_, err := t.api.EditMessageText(editMessageParams)
-		if err != nil {
-			return fmt.Errorf("edit message text: %w", err)
-		}
-
-		return nil
-	}
-
-	if len(opts.updatedInlineKeyboard) > 0 {
-		inlineKeyboard := t.createInlineKeyboard(opts.updatedInlineKeyboard)
-
-		_, err := t.api.EditMessageReplyMarkup(&telego.EditMessageReplyMarkupParams{
-			ChatID: telego.ChatID{
-				ID: opts.chatID,
-			},
-			MessageID:       opts.messageID,
-			InlineMessageID: opts.inlineMessageID,
-			ReplyMarkup:     inlineKeyboard[0],
-		})
-		if err != nil {
-			return fmt.Errorf("edit message reply markup: %w", err)
-		}
-
-		return nil
-	}
-
 	_, err := t.api.SendMessage(message)
 	if err != nil {
 		return fmt.Errorf("send telegram message: %w", err)
 	}
 
 	return nil
-}
-
-func (t *telegramMessenger) createKeyboard(rows []service.KeyboardRow) *telego.ReplyKeyboardMarkup {
-	var convertedRows [][]telego.KeyboardButton
-
-	for _, r := range rows {
-		var buttons []telego.KeyboardButton
-
-		for _, b := range r.Buttons {
-			buttons = append(buttons, telegoutil.KeyboardButton(b))
-		}
-
-		convertedRows = append(convertedRows, buttons)
-	}
-
-	keyboard := telegoutil.Keyboard(convertedRows...).WithResizeKeyboard()
-
-	return keyboard
-}
-
-const maxButtonsPerMessage = 100
-
-func (t *telegramMessenger) createInlineKeyboard(rows []service.InlineKeyboardRow) []*telego.InlineKeyboardMarkup {
-	convertedRows := make([][]telego.InlineKeyboardButton, 0)
-
-	var totalButtonsCount int
-
-	for _, r := range rows {
-		var buttons []telego.InlineKeyboardButton
-
-		for _, b := range r.Buttons {
-			totalButtonsCount++
-
-			inlineKeyboardButton := telegoutil.
-				InlineKeyboardButton(b.Text).
-				WithCallbackData(b.Text)
-
-			if b.Data != "" {
-				inlineKeyboardButton = inlineKeyboardButton.WithCallbackData(b.Data)
-			}
-
-			buttons = append(buttons, inlineKeyboardButton)
-		}
-
-		convertedRows = append(convertedRows, buttons)
-	}
-
-	if totalButtonsCount <= maxButtonsPerMessage {
-		return []*telego.InlineKeyboardMarkup{telegoutil.InlineKeyboard(convertedRows...)}
-	}
-
-	return splitInlineKeyboardRows(convertedRows, maxButtonsPerMessage)
-}
-
-func splitInlineKeyboardRows(convertedRows [][]telego.InlineKeyboardButton, maxButtonsPerMessage int) []*telego.InlineKeyboardMarkup {
-	var (
-		buttonsCount        int
-		lastProcessedRowIdx int
-	)
-
-	result := make([]*telego.InlineKeyboardMarkup, 0, 2)
-
-	for rowIdx, row := range convertedRows {
-		for btnIdx := range row {
-			if buttonsCount == maxButtonsPerMessage {
-				splitIndex := rowIdx
-
-				// Ensure the split doesn't occur in the middle of a row
-				if btnIdx > 0 {
-					splitIndex--
-				}
-
-				result = append(result, telegoutil.InlineKeyboard(convertedRows[lastProcessedRowIdx:splitIndex]...))
-
-				// Reset counters
-				buttonsCount = 0
-				lastProcessedRowIdx = splitIndex
-			}
-
-			buttonsCount++
-		}
-	}
-
-	// Append the remaining buttons
-	if lastProcessedRowIdx < len(convertedRows) {
-		result = append(result, telegoutil.InlineKeyboard(convertedRows[lastProcessedRowIdx:]...))
-	}
-
-	return result
 }

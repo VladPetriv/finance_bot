@@ -91,6 +91,7 @@ func calculateMaxPage(totalCount, maxPerKeyboard int) int {
 
 func handlePaginationInlineKeyboardButtons(keyboard []InlineKeyboardRow, currentPage, maxPage int) []InlineKeyboardRow {
 	switch {
+	case currentPage == firstPage && currentPage == maxPage: // Only one page, do not display any buttons
 	case currentPage == maxPage: // Max page do not display Next button
 		keyboard = append(keyboard, InlineKeyboardRow{
 			Buttons: []InlineKeyboardButton{

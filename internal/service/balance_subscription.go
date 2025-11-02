@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/VladPetriv/finance_bot/internal/model"
+	"github.com/VladPetriv/finance_bot/pkg/errs"
 	"github.com/VladPetriv/finance_bot/pkg/money"
 	"github.com/google/uuid"
 )
@@ -17,10 +18,16 @@ func (h *handlerService) handleCreateBalanceSubscriptionFlowStep(ctx context.Con
 	logger := h.logger.With().Str("name", "handlerService.handleCreateInitialBalanceFlowStep").Logger()
 	logger.Debug().Any("opts", opts).Msg("got args")
 
+	err := h.showCancelButton(opts.message.GetChatID(), "")
+	if err != nil {
+		logger.Error().Err(err).Msg("show cancel button")
+		return "", fmt.Errorf("show cancel button: %w", err)
+	}
+
 	return model.ChooseBalanceFlowStep, h.apis.Messenger.SendWithKeyboard(SendWithKeyboardOptions{
-		ChatID:   opts.message.GetChatID(),
-		Message:  "Select source balance for subscription:",
-		Keyboard: getRowKeyboardRows(opts.user.Balances, 3, true),
+		ChatID:         opts.message.GetChatID(),
+		Message:        "Select source balance for subscription:",
+		InlineKeyboard: getInlineKeyboardRows(opts.user.Balances, 3),
 	})
 }
 
@@ -46,10 +53,12 @@ func (h *handlerService) handleChooseBalanceFlowStepForCreateBalanceSubscription
 		return model.EndFlowStep, ErrCategoriesNotFound
 	}
 
-	return model.ChooseCategoryFlowStep, h.apis.Messenger.SendWithKeyboard(SendWithKeyboardOptions{
-		ChatID:   opts.message.GetChatID(),
-		Message:  "Choose category for your subscription:",
-		Keyboard: getRowKeyboardRows(categories, 3, true),
+	return model.ChooseCategoryFlowStep, h.apis.Messenger.UpdateMessage(UpdateMessageOptions{
+		ChatID:                opts.message.GetChatID(),
+		MessageID:             opts.message.GetMessageID(),
+		InlineMessageID:       opts.message.GetInlineMessageID(),
+		UpdatedMessage:        "Choose category for your subscription:",
+		UpdatedInlineKeyboard: getInlineKeyboardRows(categories, 3),
 	})
 }
 
@@ -70,7 +79,12 @@ func (h *handlerService) handleChooseCategoryFlowStepForCreateBalanceSubscriptio
 
 	opts.stateMetaData[categoryIDMetadataKey] = category.ID
 
-	return model.EnterBalanceSubscriptionNameFlowStep, h.showCancelButton(opts.message.GetChatID(), "Enter balance subscription name:")
+	return model.EnterBalanceSubscriptionNameFlowStep, h.apis.Messenger.UpdateMessage(UpdateMessageOptions{
+		ChatID:          opts.message.GetChatID(),
+		MessageID:       opts.message.GetMessageID(),
+		InlineMessageID: opts.message.GetInlineMessageID(),
+		UpdatedMessage:  "Enter balance subscription name:",
+	})
 }
 
 func (h *handlerService) handleEnterBalanceSubscriptionNameFlowStep(ctx context.Context, opts flowProcessingOptions) (model.FlowStep, error) {
@@ -94,9 +108,9 @@ func (h *handlerService) handleEnterBalanceSubscriptionAmountFlowStep(ctx contex
 	opts.stateMetaData[balanceSubscriptionAmountMetadataKey] = parsedAmount.String()
 
 	return model.ChooseBalanceSubscriptionFrequencyFlowStep, h.apis.Messenger.SendWithKeyboard(SendWithKeyboardOptions{
-		ChatID:   opts.message.GetChatID(),
-		Message:  "Choose subscription frequency:",
-		Keyboard: balanceSubscriptionFrequencyKeyboard,
+		ChatID:         opts.message.GetChatID(),
+		Message:        "Choose subscription frequency:",
+		InlineKeyboard: balanceSubscriptionFrequencyKeyboard,
 	})
 }
 
@@ -107,17 +121,21 @@ func (h *handlerService) handleChooseBalanceSubscriptionFrequencyFlowStep(_ cont
 	period, err := model.ParseSubscriptionPeriod(opts.message.GetText())
 	if err != nil {
 		return model.ChooseBalanceSubscriptionFrequencyFlowStep, h.apis.Messenger.SendWithKeyboard(SendWithKeyboardOptions{
-			ChatID:   opts.message.GetChatID(),
-			Message:  "Invalid subscription frequency. Please choose from the options below:",
-			Keyboard: balanceSubscriptionFrequencyKeyboard,
+			ChatID:         opts.message.GetChatID(),
+			Message:        "Invalid subscription frequency. Please choose from the options below:",
+			InlineKeyboard: balanceSubscriptionFrequencyKeyboard,
 		})
 	}
 
 	opts.stateMetaData[balanceSubscriptionPeriodMetadataKey] = period
 
-	return model.EnterStartAtDateForBalanceSubscriptionFlowStep, h.showCancelButton(
-		opts.message.GetChatID(),
-		"Enter subscription start date and time:\nUse format: DD/MM/YYYY\nExample: 01/01/2025:",
+	return model.EnterStartAtDateForBalanceSubscriptionFlowStep, h.apis.Messenger.UpdateMessage(
+		UpdateMessageOptions{
+			ChatID:          opts.message.GetChatID(),
+			MessageID:       opts.message.GetMessageID(),
+			InlineMessageID: opts.message.GetInlineMessageID(),
+			UpdatedMessage:  "Enter subscription start date and time:\nUse format: DD/MM/YYYY\nExample: 01/01/2025:",
+		},
 	)
 }
 
@@ -156,7 +174,11 @@ func (h *handlerService) handleEnterStartAtDateForBalanceSubscriptionFlowStep(ct
 
 	go h.services.BalanceSubscriptionEngine.ScheduleOperationsCreation(ctx, balanceSubscription)
 
-	return model.EndFlowStep, h.sendMessageWithDefaultKeyboard(opts.message.GetChatID(), "Balance subscription successfully created!")
+	return model.EndFlowStep, h.apis.Messenger.SendWithKeyboard(SendWithKeyboardOptions{
+		ChatID:   opts.message.GetChatID(),
+		Message:  fmt.Sprintf("Balance subscription successfully created!\n\n%s", balanceSubscription.GetDetails()),
+		Keyboard: balanceSubscriptionKeyboardRows,
+	})
 }
 
 // List Balance Subscriptions
@@ -164,10 +186,18 @@ func (h *handlerService) handleListBalanceSubscriptionFlowStep(_ context.Context
 	logger := h.logger.With().Str("name", "handlerService.handleListBalanceSubscriptionFlowStep").Logger()
 	logger.Debug().Any("opts", opts).Msg("got args")
 
+	err := h.showCancelButton(opts.message.GetChatID(), "")
+	if err != nil {
+		logger.Error().Err(err).Msg("show cancel button")
+		return "", fmt.Errorf("show cancel button: %w", err)
+	}
+
+	opts.stateMetaData[pageMetadataKey] = firstPage
+
 	return model.ChooseBalanceFlowStep, h.apis.Messenger.SendWithKeyboard(SendWithKeyboardOptions{
-		ChatID:   opts.message.GetChatID(),
-		Message:  "Select balance:",
-		Keyboard: getRowKeyboardRows(opts.user.Balances, 3, true),
+		ChatID:         opts.message.GetChatID(),
+		Message:        "Select balance:",
+		InlineKeyboard: getInlineKeyboardRows(opts.user.Balances, 3),
 	})
 }
 
@@ -175,50 +205,62 @@ func (h *handlerService) handleChooseBalanceFlowStepForListBalanceSubscriptions(
 	logger := h.logger.With().Str("name", "handlerService.handleChooseBalanceFlowStepForListBalanceSubscriptions").Logger()
 	logger.Debug().Any("opts", opts).Msg("got args")
 
-	balance := opts.user.GetBalance(opts.message.GetText())
+	messageText := opts.message.GetText()
+
+	balanceName, ok := opts.stateMetaData[balanceNameMetadataKey].(string)
+	if !ok {
+		opts.stateMetaData[balanceNameMetadataKey] = messageText
+		opts.stateMetaData[pageMetadataKey] = firstPage
+
+		balanceName = messageText
+	}
+
+	balance := opts.user.GetBalance(balanceName)
 	if balance == nil {
 		return model.EndFlowStep, ErrBalanceNotFound
 	}
 
-	balanceSubscriptions, err := h.stores.BalanceSubscription.List(ctx, ListBalanceSubscriptionFilter{
-		BalanceID: balance.ID,
-	})
-	if err != nil {
-		logger.Error().Err(err).Msg("list balance subscriptions")
-		return "", fmt.Errorf("list balance subscriptions: %w", err)
-	}
-	if len(balanceSubscriptions) == 0 {
-		return model.EndFlowStep, ErrNoBalanceSubscriptionsFound
-	}
+	if isPaginationNeeded(messageText) {
+		nextPage := calculateNextPage(messageText, opts.stateMetaData)
+		opts.stateMetaData[pageMetadataKey] = nextPage
 
-	categories, err := h.stores.Category.List(ctx, &ListCategoriesFilter{
-		UserID: opts.user.ID,
-	})
-	if err != nil {
-		logger.Error().Err(err).Msg("list categories")
-		return "", fmt.Errorf("list categories: %w", err)
-	}
-	if len(categories) == 0 {
-		return model.EndFlowStep, ErrCategoriesNotFound
-	}
-
-	var outputMessage string
-	for _, subscription := range balanceSubscriptions {
-		var categoryTitle string
-		categoryIndex := slices.IndexFunc(categories, func(category model.Category) bool {
-			return category.ID == subscription.CategoryID
+		message, keyboard, err := h.getListBalanceSubscriptionsKeyboard(ctx, getBalanceSubscriptionsKeyboardOptions{
+			userID:    opts.user.ID,
+			balanceID: balance.ID,
+			page:      nextPage,
 		})
-		if categoryIndex != -1 {
-			categoryTitle = categories[categoryIndex].Title
+		if err != nil {
+			logger.Error().Err(err).Msg("get list balance subscriptions keyboard")
+			return "", fmt.Errorf("get list balance subscriptions keyboard: %w", err)
 		}
 
-		outputMessage += fmt.Sprintf(
-			"Title: %s\nAmount: %s\nFrequency: %s\nCategory Title: %s\n--------\n",
-			subscription.Name, subscription.Amount, subscription.Period, categoryTitle,
-		)
+		return model.ChooseBalanceFlowStep, h.apis.Messenger.UpdateMessage(UpdateMessageOptions{
+			ChatID:                  opts.message.GetChatID(),
+			MessageID:               opts.message.GetMessageID(),
+			InlineMessageID:         opts.message.GetInlineMessageID(),
+			FormatMessageInMarkDown: true,
+			UpdatedInlineKeyboard:   keyboard,
+			UpdatedMessage:          message,
+		})
 	}
 
-	return model.EndFlowStep, h.sendMessageWithDefaultKeyboard(opts.message.GetChatID(), outputMessage)
+	message, keyboard, err := h.getListBalanceSubscriptionsKeyboard(ctx, getBalanceSubscriptionsKeyboardOptions{
+		balanceID: balance.ID,
+		page:      firstPage,
+	})
+	if err != nil {
+		logger.Error().Err(err).Msg("get list balance subscriptions keyboard")
+		return "", fmt.Errorf("get list balance subscriptions keyboard: %w", err)
+	}
+
+	return model.ChooseBalanceFlowStep, h.apis.Messenger.UpdateMessage(UpdateMessageOptions{
+		ChatID:                  opts.message.GetChatID(),
+		MessageID:               opts.message.GetMessageID(),
+		InlineMessageID:         opts.message.GetInlineMessageID(),
+		FormatMessageInMarkDown: true,
+		UpdatedInlineKeyboard:   keyboard,
+		UpdatedMessage:          message,
+	})
 }
 
 // Update Balance Subscriptions
@@ -226,10 +268,16 @@ func (h *handlerService) handleUpdateBalanceSubscriptionFlowStep(_ context.Conte
 	logger := h.logger.With().Str("name", "handlerService.handleUpdateBalanceSubscriptionFlowStep").Logger()
 	logger.Debug().Any("opts", opts).Msg("got args")
 
+	err := h.showCancelButton(opts.message.GetChatID(), "")
+	if err != nil {
+		logger.Error().Err(err).Msg("show cancel button")
+		return "", fmt.Errorf("show cancel button: %w", err)
+	}
+
 	return model.ChooseBalanceFlowStep, h.apis.Messenger.SendWithKeyboard(SendWithKeyboardOptions{
-		ChatID:   opts.message.GetChatID(),
-		Message:  "Select balance:",
-		Keyboard: getRowKeyboardRows(opts.user.Balances, 3, true),
+		ChatID:         opts.message.GetChatID(),
+		Message:        "Select balance:",
+		InlineKeyboard: getInlineKeyboardRows(opts.user.Balances, 3),
 	})
 }
 
@@ -245,24 +293,24 @@ func (h *handlerService) handleChooseBalanceFlowStepForUpdateBalanceSubscription
 	opts.stateMetaData[balanceIDMetadataKey] = balance.ID
 	opts.stateMetaData[pageMetadataKey] = firstPage
 
-	err := h.showCancelButton(opts.message.GetChatID(), "")
-	if err != nil {
-		logger.Error().Err(err).Msg("show cancel button")
-		return "", fmt.Errorf("show cancel button: %w", err)
-	}
-
 	keyboard, err := h.getBalanceSubscriptionsKeyboard(ctx, getBalanceSubscriptionsKeyboardOptions{
 		balanceID: balance.ID,
 		page:      firstPage,
 	})
 	if err != nil {
+		if errs.IsExpected(err) {
+			return "", err
+		}
+		logger.Error().Err(err).Msg("get balance subscriptions keyboard")
 		return "", fmt.Errorf("get balance subscriptions keyboard: %w", err)
 	}
 
-	return model.ChooseBalanceSubscriptionToUpdateFlowStep, h.apis.Messenger.SendWithKeyboard(SendWithKeyboardOptions{
-		ChatID:         opts.message.GetChatID(),
-		Message:        "Choose balance subscription to update:",
-		InlineKeyboard: keyboard,
+	return model.ChooseBalanceSubscriptionToUpdateFlowStep, h.apis.Messenger.UpdateMessage(UpdateMessageOptions{
+		ChatID:                opts.message.GetChatID(),
+		MessageID:             opts.message.GetMessageID(),
+		InlineMessageID:       opts.message.GetInlineMessageID(),
+		UpdatedMessage:        "Choose balance subscription to update:",
+		UpdatedInlineKeyboard: keyboard,
 	})
 }
 
@@ -280,14 +328,15 @@ func (h *handlerService) handleChooseBalanceSubscriptionToUpdateFlowStep(ctx con
 			page:      nextPage,
 		})
 		if err != nil {
+			logger.Error().Err(err).Msg("get balance subscriptions keyboard")
 			return "", fmt.Errorf("get balance subscriptions keyboard: %w", err)
 		}
 
-		return model.ChooseBalanceSubscriptionToUpdateFlowStep, h.apis.Messenger.SendWithKeyboard(SendWithKeyboardOptions{
-			Message:               "Choose balance subscription to update:",
+		return model.ChooseBalanceSubscriptionToUpdateFlowStep, h.apis.Messenger.UpdateMessage(UpdateMessageOptions{
 			ChatID:                opts.message.GetChatID(),
 			MessageID:             opts.message.GetMessageID(),
 			InlineMessageID:       opts.message.GetInlineMessageID(),
+			UpdatedMessage:        "Choose balance subscription to update:",
 			UpdatedInlineKeyboard: keyboard,
 		})
 	}
@@ -306,16 +355,12 @@ func (h *handlerService) handleChooseBalanceSubscriptionToUpdateFlowStep(ctx con
 
 	opts.stateMetaData[balanceSubscriptionIDMetadataKey] = balanceSubscription.ID
 
-	err = h.showCancelButton(opts.message.GetChatID(), balanceSubscription.GetDetails())
-	if err != nil {
-		logger.Error().Err(err).Msg("show cancel button")
-		return "", fmt.Errorf("show cancel button: %w", err)
-	}
-
-	return model.ChooseUpdateBalanceSubscriptionOptionFlowStep, h.apis.Messenger.SendWithKeyboard(SendWithKeyboardOptions{
-		ChatID:         opts.message.GetChatID(),
-		Message:        "Choose update balance subscription option:",
-		InlineKeyboard: updateBalanceSubscriptionOptionsKeyboard,
+	return model.ChooseUpdateBalanceSubscriptionOptionFlowStep, h.apis.Messenger.UpdateMessage(UpdateMessageOptions{
+		ChatID:                opts.message.GetChatID(),
+		MessageID:             opts.message.GetMessageID(),
+		InlineMessageID:       opts.message.GetInlineMessageID(),
+		UpdatedMessage:        "Choose update balance subscription option:",
+		UpdatedInlineKeyboard: updateBalanceSubscriptionOptionsKeyboard,
 	})
 }
 
@@ -323,11 +368,35 @@ func (h *handlerService) handleChooseUpdateBalanceSubscriptionOptionFlowStep(ctx
 	logger := h.logger.With().Str("name", "handlerService.handleChooseUpdateBalanceSubscriptionOptionFlowStep").Logger()
 	logger.Debug().Any("opts", opts).Msg("got message")
 
+	balanceSubscription, err := h.stores.BalanceSubscription.Get(ctx, GetBalanceSubscriptionFilter{
+		ID: opts.stateMetaData[balanceSubscriptionIDMetadataKey].(string),
+	})
+	if err != nil {
+		logger.Error().Err(err).Msg("get balance subscription from store")
+		return "", fmt.Errorf("get balance subscription from store: %w", err)
+	}
+	if balanceSubscription == nil {
+		logger.Info().Msg("balance subscription not found")
+		return "", ErrBalanceSubscriptionNotFound
+	}
+
 	switch opts.message.GetText() {
 	case model.BotUpdateBalanceSubscriptionNameCommand:
-		return model.EnterBalanceSubscriptionNameFlowStep, h.apis.Messenger.SendMessage(opts.message.GetChatID(), "Enter updated balance subscription name:")
+		return model.EnterBalanceSubscriptionNameFlowStep, h.apis.Messenger.UpdateMessage(UpdateMessageOptions{
+			ChatID:                  opts.message.GetChatID(),
+			MessageID:               opts.message.GetMessageID(),
+			InlineMessageID:         opts.message.GetInlineMessageID(),
+			FormatMessageInMarkDown: true,
+			UpdatedMessage:          fmt.Sprintf("Enter updated balance subscription name(Current: `%s`):", balanceSubscription.Name),
+		})
 	case model.BotUpdateBalanceSubscriptionAmountCommand:
-		return model.EnterBalanceSubscriptionAmountFlowStep, h.apis.Messenger.SendMessage(opts.message.GetChatID(), "Enter updated balance subscription amount:")
+		return model.EnterBalanceSubscriptionAmountFlowStep, h.apis.Messenger.UpdateMessage(UpdateMessageOptions{
+			ChatID:                  opts.message.GetChatID(),
+			MessageID:               opts.message.GetMessageID(),
+			InlineMessageID:         opts.message.GetInlineMessageID(),
+			FormatMessageInMarkDown: true,
+			UpdatedMessage:          fmt.Sprintf("Enter updated balance subscription amount(Current: `%s`):", balanceSubscription.Amount),
+		})
 	case model.BotUpdateBalanceSubscriptionCategoryCommand:
 		categories, err := h.stores.Category.List(ctx, &ListCategoriesFilter{
 			UserID: opts.user.ID,
@@ -341,39 +410,53 @@ func (h *handlerService) handleChooseUpdateBalanceSubscriptionOptionFlowStep(ctx
 			return "", ErrCategoriesNotFound
 		}
 
-		balanceSubscription, err := h.stores.BalanceSubscription.Get(ctx, GetBalanceSubscriptionFilter{
-			ID: opts.stateMetaData[balanceSubscriptionIDMetadataKey].(string),
-		})
-		if err != nil {
-			logger.Error().Err(err).Msg("get balance subscription from store")
-			return "", fmt.Errorf("get balance subscription from store: %w", err)
-		}
-		if balanceSubscription == nil {
-			logger.Info().Msg("balance subscription not found")
-			return "", ErrBalanceSubscriptionNotFound
-		}
-
+		var currentCategory string
 		categoriesWithoutAlreadyUsedCategory := slices.DeleteFunc(categories, func(category model.Category) bool {
+			currentCategory = category.Title
 			return category.ID == balanceSubscription.CategoryID
 		})
+
+		// User does not have enough categories to choose from
 		if len(categoriesWithoutAlreadyUsedCategory) == 0 {
-			return "", ErrNotEnoughCategories
+			err := h.apis.Messenger.UpdateMessage(UpdateMessageOptions{
+				ChatID:          opts.message.GetChatID(),
+				MessageID:       opts.message.GetMessageID(),
+				InlineMessageID: opts.message.GetInlineMessageID(),
+				UpdatedMessage:  ErrNotEnoughCategories.Message,
+			})
+			if err != nil {
+				logger.Error().Err(err).Msg("update message")
+				return "", fmt.Errorf("update message: %w", err)
+			}
+
+			return model.ChooseUpdateBalanceSubscriptionOptionFlowStep, h.apis.Messenger.SendWithKeyboard(SendWithKeyboardOptions{
+				ChatID:         opts.message.GetChatID(),
+				Message:        "Please choose other update balance subscription option or finish action by canceling it!",
+				InlineKeyboard: updateBalanceSubscriptionOptionsKeyboard,
+			})
 		}
 
-		return model.ChooseCategoryFlowStep, h.apis.Messenger.SendWithKeyboard(SendWithKeyboardOptions{
-			ChatID:   opts.message.GetChatID(),
-			Message:  "Choose updated operation category:",
-			Keyboard: getRowKeyboardRows(categoriesWithoutAlreadyUsedCategory, 3, true),
+		return model.ChooseCategoryFlowStep, h.apis.Messenger.UpdateMessage(UpdateMessageOptions{
+			ChatID:                  opts.message.GetChatID(),
+			MessageID:               opts.message.GetMessageID(),
+			InlineMessageID:         opts.message.GetInlineMessageID(),
+			FormatMessageInMarkDown: true,
+			UpdatedMessage:          fmt.Sprintf("Choose updated operation category(Current: `%s`):", currentCategory),
+			UpdatedInlineKeyboard:   getInlineKeyboardRows(categoriesWithoutAlreadyUsedCategory, 3),
 		})
 	case model.BotUpdateBalanceSubscriptionPeriodCommand:
-		return model.ChooseBalanceSubscriptionFrequencyFlowStep, h.apis.Messenger.SendWithKeyboard(SendWithKeyboardOptions{
-			ChatID:   opts.message.GetChatID(),
-			Message:  "Select updated balance subscription frequency:",
-			Keyboard: balanceSubscriptionFrequencyKeyboard,
+		return model.ChooseBalanceSubscriptionFrequencyFlowStep, h.apis.Messenger.UpdateMessage(UpdateMessageOptions{
+			ChatID:                  opts.message.GetChatID(),
+			MessageID:               opts.message.GetMessageID(),
+			InlineMessageID:         opts.message.GetInlineMessageID(),
+			FormatMessageInMarkDown: true,
+			UpdatedMessage:          fmt.Sprintf("Select updated balance subscription frequency(Current: `%s`):", balanceSubscription.Period),
+			UpdatedInlineKeyboard:   balanceSubscriptionFrequencyKeyboard,
 		})
-	}
 
-	return "", nil
+	default:
+		return "", fmt.Errorf("received unknown update balance subscription option: %s", opts.message.GetText())
+	}
 }
 
 func (h *handlerService) handleEnterBalanceSubscriptionNameFlowStepForUpdate(ctx context.Context, opts flowProcessingOptions) (model.FlowStep, error) {
@@ -400,15 +483,13 @@ func (h *handlerService) handleEnterBalanceSubscriptionNameFlowStepForUpdate(ctx
 		return "", fmt.Errorf("update balance subscription: %w", err)
 	}
 
-	err = h.apis.Messenger.SendMessage(opts.message.GetChatID(), balanceSubscription.GetDetails())
-	if err != nil {
-		logger.Error().Err(err).Msg("send message with balance subscription details")
-		return "", fmt.Errorf("send message with balance subscription details: %w", err)
-	}
-
 	return model.ChooseUpdateBalanceSubscriptionOptionFlowStep, h.apis.Messenger.SendWithKeyboard(SendWithKeyboardOptions{
-		ChatID:         opts.message.GetChatID(),
-		Message:        "Balance subscription name successfully updated!\nPlease choose other update operation option or finish action by canceling it!",
+		ChatID:                  opts.message.GetChatID(),
+		FormatMessageInMarkDown: true,
+		Message: fmt.Sprintf(
+			"Balance subscription name successfully updated!\nNew name: `%s`\nPlease choose other update operation option or finish action by canceling it!",
+			opts.message.GetText(),
+		),
 		InlineKeyboard: updateBalanceSubscriptionOptionsKeyboard,
 	})
 }
@@ -443,15 +524,13 @@ func (h *handlerService) handleEnterBalanceSubscriptionAmountFlowStepForUpdate(c
 		return "", fmt.Errorf("update balance subscription: %w", err)
 	}
 
-	err = h.apis.Messenger.SendMessage(opts.message.GetChatID(), balanceSubscription.GetDetails())
-	if err != nil {
-		logger.Error().Err(err).Msg("send message with balance subscription details")
-		return "", fmt.Errorf("send message with balance subscription details: %w", err)
-	}
-
 	return model.ChooseUpdateBalanceSubscriptionOptionFlowStep, h.apis.Messenger.SendWithKeyboard(SendWithKeyboardOptions{
-		ChatID:         opts.message.GetChatID(),
-		Message:        "Balance subscription amount successfully updated!\nPlease choose other update operation option or finish action by canceling it!",
+		ChatID:                  opts.message.GetChatID(),
+		FormatMessageInMarkDown: true,
+		Message: fmt.Sprintf(
+			"Balance subscription amount successfully updated!\nNew amount: `%s`\nPlease choose other update operation option or finish action by canceling it!",
+			parsedAmount.StringFixed(),
+		),
 		InlineKeyboard: updateBalanceSubscriptionOptionsKeyboard,
 	})
 }
@@ -492,16 +571,16 @@ func (h *handlerService) handleChooseCategoryFlowStepForBalanceSubscriptionUpdat
 		return "", fmt.Errorf("update balance subscription: %w", err)
 	}
 
-	err = h.showCancelButton(opts.message.GetChatID(), balanceSubscription.GetDetails())
-	if err != nil {
-		logger.Error().Err(err).Msg("show cancel button")
-		return "", fmt.Errorf("show cancel button: %w", err)
-	}
-
-	return model.ChooseUpdateBalanceSubscriptionOptionFlowStep, h.apis.Messenger.SendWithKeyboard(SendWithKeyboardOptions{
-		ChatID:         opts.message.GetChatID(),
-		Message:        "Balance subscription category successfully updated!\nPlease choose other update operation option or finish action by canceling it!",
-		InlineKeyboard: updateBalanceSubscriptionOptionsKeyboard,
+	return model.ChooseUpdateBalanceSubscriptionOptionFlowStep, h.apis.Messenger.UpdateMessage(UpdateMessageOptions{
+		ChatID:                  opts.message.GetChatID(),
+		MessageID:               opts.message.GetMessageID(),
+		InlineMessageID:         opts.message.GetInlineMessageID(),
+		FormatMessageInMarkDown: true,
+		UpdatedMessage: fmt.Sprintf(
+			"Balance subscription category successfully updated!\nNew category: `%s`\nPlease choose other update operation option or finish action by canceling it!",
+			category.Title,
+		),
+		UpdatedInlineKeyboard: updateBalanceSubscriptionOptionsKeyboard,
 	})
 }
 
@@ -535,16 +614,16 @@ func (h *handlerService) handleChooseBalanceSubscriptionFrequencyFlowStepForUpda
 		return "", fmt.Errorf("update balance subscription: %w", err)
 	}
 
-	err = h.showCancelButton(opts.message.GetChatID(), balanceSubscription.GetDetails())
-	if err != nil {
-		logger.Error().Err(err).Msg("show cancel button")
-		return "", fmt.Errorf("show cancel button: %w", err)
-	}
-
-	return model.ChooseUpdateBalanceSubscriptionOptionFlowStep, h.apis.Messenger.SendWithKeyboard(SendWithKeyboardOptions{
-		ChatID:         opts.message.GetChatID(),
-		Message:        "Balance subscription period successfully updated!\nPlease choose other update operation option or finish action by canceling it!",
-		InlineKeyboard: updateBalanceSubscriptionOptionsKeyboard,
+	return model.ChooseUpdateBalanceSubscriptionOptionFlowStep, h.apis.Messenger.UpdateMessage(UpdateMessageOptions{
+		ChatID:                  opts.message.GetChatID(),
+		MessageID:               opts.message.GetMessageID(),
+		InlineMessageID:         opts.message.GetInlineMessageID(),
+		FormatMessageInMarkDown: true,
+		UpdatedMessage: fmt.Sprintf(
+			"Balance subscription period successfully updated!\nNew period: `%s`\nPlease choose other update operation option or finish action by canceling it!",
+			balanceSubscription.Period,
+		),
+		UpdatedInlineKeyboard: updateBalanceSubscriptionOptionsKeyboard,
 	})
 }
 
@@ -553,10 +632,16 @@ func (h *handlerService) handleDeleteBalanceSubscriptionFlowStep(ctx context.Con
 	logger := h.logger.With().Str("name", "handlerService.handleDeleteBalanceSubscriptionFlowStep").Logger()
 	logger.Debug().Any("opts", opts).Msg("got args")
 
+	err := h.showCancelButton(opts.message.GetChatID(), "")
+	if err != nil {
+		logger.Error().Err(err).Msg("show cancel button")
+		return "", fmt.Errorf("show cancel button: %w", err)
+	}
+
 	return model.ChooseBalanceFlowStep, h.apis.Messenger.SendWithKeyboard(SendWithKeyboardOptions{
-		ChatID:   opts.message.GetChatID(),
-		Message:  "Select balance:",
-		Keyboard: getRowKeyboardRows(opts.user.Balances, 3, true),
+		ChatID:         opts.message.GetChatID(),
+		Message:        "Select balance:",
+		InlineKeyboard: getInlineKeyboardRows(opts.user.Balances, 3),
 	})
 }
 
@@ -572,24 +657,21 @@ func (h *handlerService) handleChooseBalanceFlowStepForBalanceSubscriptionDelete
 	opts.stateMetaData[balanceIDMetadataKey] = balance.ID
 	opts.stateMetaData[pageMetadataKey] = firstPage
 
-	err := h.showCancelButton(opts.message.GetChatID(), "")
-	if err != nil {
-		logger.Error().Err(err).Msg("show cancel button")
-		return "", fmt.Errorf("show cancel button: %w", err)
-	}
-
 	keyboard, err := h.getBalanceSubscriptionsKeyboard(ctx, getBalanceSubscriptionsKeyboardOptions{
 		balanceID: balance.ID,
 		page:      firstPage,
 	})
 	if err != nil {
-		return "", fmt.Errorf("get operations keyboard: %w", err)
+		logger.Error().Err(err).Msg("get balance subscriptions keyboard")
+		return "", fmt.Errorf("get balance subscriptions keyboard: %w", err)
 	}
 
-	return model.ChooseBalanceSubscriptionToDeleteFlowStep, h.apis.Messenger.SendWithKeyboard(SendWithKeyboardOptions{
-		ChatID:         opts.message.GetChatID(),
-		Message:        "Choose balance subscription to delete:",
-		InlineKeyboard: keyboard,
+	return model.ChooseBalanceSubscriptionToDeleteFlowStep, h.apis.Messenger.UpdateMessage(UpdateMessageOptions{
+		ChatID:                opts.message.GetChatID(),
+		MessageID:             opts.message.GetMessageID(),
+		InlineMessageID:       opts.message.GetInlineMessageID(),
+		UpdatedMessage:        "Choose balance subscription to delete:",
+		UpdatedInlineKeyboard: keyboard,
 	})
 }
 
@@ -607,14 +689,15 @@ func (h *handlerService) handleChooseBalanceSubscriptionToDeleteFlowStep(ctx con
 			page:      nextPage,
 		})
 		if err != nil {
+			logger.Error().Err(err).Msg("get balance subscriptions keyboard")
 			return "", fmt.Errorf("get balance subscriptions keyboard: %w", err)
 		}
 
-		return model.ChooseBalanceSubscriptionToDeleteFlowStep, h.apis.Messenger.SendWithKeyboard(SendWithKeyboardOptions{
-			Message:               "Choose balance subscription to delete:",
+		return model.ChooseBalanceSubscriptionToDeleteFlowStep, h.apis.Messenger.UpdateMessage(UpdateMessageOptions{
 			ChatID:                opts.message.GetChatID(),
 			MessageID:             opts.message.GetMessageID(),
 			InlineMessageID:       opts.message.GetInlineMessageID(),
+			UpdatedMessage:        "Choose balance subscription to delete:",
 			UpdatedInlineKeyboard: keyboard,
 		})
 	}
@@ -633,10 +716,13 @@ func (h *handlerService) handleChooseBalanceSubscriptionToDeleteFlowStep(ctx con
 
 	opts.stateMetaData[balanceSubscriptionIDMetadataKey] = balanceSubscription.ID
 
-	return model.ConfirmDeleteBalanceSubscriptionFlowStep, h.sendMessageWithConfirmationInlineKeyboard(
-		opts.message.GetChatID(),
-		balanceSubscription.GetDeletionMessage(),
-	)
+	return model.ConfirmDeleteBalanceSubscriptionFlowStep, h.apis.Messenger.UpdateMessage(UpdateMessageOptions{
+		ChatID:                opts.message.GetChatID(),
+		MessageID:             opts.message.GetMessageID(),
+		InlineMessageID:       opts.message.GetInlineMessageID(),
+		UpdatedInlineKeyboard: confirmationInlineKeyboardRows,
+		UpdatedMessage:        balanceSubscription.GetDeletionMessage(),
+	})
 }
 
 func (h *handlerService) handleConfirmDeleteBalanceSubscriptionFlowStep(ctx context.Context, opts flowProcessingOptions) (model.FlowStep, error) {
@@ -651,7 +737,7 @@ func (h *handlerService) handleConfirmDeleteBalanceSubscriptionFlowStep(ctx cont
 
 	if !confirmDeletion {
 		logger.Info().Msg("user did not confirm balance subscription deletion")
-		return model.EndFlowStep, h.notifyCancellationAndShowMenu(opts.message.GetChatID())
+		return model.EndFlowStep, h.notifyCancellationAndShowKeyboard(opts.message, balanceSubscriptionKeyboardRows)
 	}
 
 	err = h.stores.BalanceSubscription.Delete(ctx, opts.stateMetaData[balanceSubscriptionIDMetadataKey].(string))
@@ -660,5 +746,10 @@ func (h *handlerService) handleConfirmDeleteBalanceSubscriptionFlowStep(ctx cont
 		return "", fmt.Errorf("delete balance subscription: %w", err)
 	}
 
-	return model.EndFlowStep, h.sendMessageWithDefaultKeyboard(opts.message.GetChatID(), "Balance subscription successfully deleted!")
+	return model.EndFlowStep, h.apis.Messenger.UpdateMessage(UpdateMessageOptions{
+		ChatID:          opts.message.GetChatID(),
+		MessageID:       opts.message.GetMessageID(),
+		UpdatedKeyboard: balanceSubscriptionKeyboardRows,
+		UpdatedMessage:  "Balance subscription successfully deleted!",
+	})
 }

@@ -62,21 +62,21 @@ const (
 	BotUpdateOperationCategoryCommand string = "Update Category 🏷️"
 
 	// BotCreateBalanceSubscriptionCommand represents the command to create a balance subscription
-	BotCreateBalanceSubscriptionCommand string = "Create 📈"
+	BotCreateBalanceSubscriptionCommand string = "Create Balance Subscription 📈"
 	// BotListBalanceSubscriptionsCommand represents the command to list balance subscriptions
-	BotListBalanceSubscriptionsCommand string = "List 📋"
+	BotListBalanceSubscriptionsCommand string = "List Balance Subscriptions 📋"
 	// BotUpdateBalanceSubscriptionCommand represents the command to update a balance subscription
-	BotUpdateBalanceSubscriptionCommand string = "Update 📝"
+	BotUpdateBalanceSubscriptionCommand string = "Update Balance Subscription 📝"
 	// BotUpdateBalanceSubscriptionNameCommand represents the command to update balance subscription name
-	BotUpdateBalanceSubscriptionNameCommand string = "Update Name 📝"
+	BotUpdateBalanceSubscriptionNameCommand string = "Update Balance Subscription Name 📝"
 	// BotUpdateBalanceSubscriptionAmountCommand represents the command to update balance subscription amount
-	BotUpdateBalanceSubscriptionAmountCommand string = "Update Amount 📝"
+	BotUpdateBalanceSubscriptionAmountCommand string = "Update Balance Subscription Amount 📝"
 	// BotUpdateBalanceSubscriptionCategoryCommand represents the command to update balance subscription category
-	BotUpdateBalanceSubscriptionCategoryCommand string = "Update Category 🏷️"
+	BotUpdateBalanceSubscriptionCategoryCommand string = "Update Balance Subscription Category 🏷️"
 	// BotUpdateBalanceSubscriptionPeriodCommand represents the command to update balance subscription period
-	BotUpdateBalanceSubscriptionPeriodCommand string = "Update Period 📅"
+	BotUpdateBalanceSubscriptionPeriodCommand string = "Update Balance Subscription Period 📅"
 	// BotDeleteBalanceSubscriptionCommand represents the command to delete a balance subscription
-	BotDeleteBalanceSubscriptionCommand string = "Delete 🗑️"
+	BotDeleteBalanceSubscriptionCommand string = "Delete Balance Subscription 🗑️"
 
 	// BotPreviousCommand represents the command to go back to the previous page
 	BotPreviousCommand string = "Previous ⬅️"

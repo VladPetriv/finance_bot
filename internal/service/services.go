@@ -83,6 +83,21 @@ var (
 		},
 	}
 
+	confirmationInlineKeyboardRows = []InlineKeyboardRow{
+		{
+			Buttons: []InlineKeyboardButton{
+				{
+					Text: "Yes",
+					Data: "true",
+				},
+				{
+					Text: "No",
+					Data: "false",
+				},
+			},
+		},
+	}
+
 	balanceKeyboardRows = []KeyboardRow{
 		{
 			Buttons: []string{model.BotCreateBalanceCommand, model.BotGetBalanceCommand},
@@ -233,15 +248,40 @@ var (
 			},
 		},
 	}
-	balanceSubscriptionFrequencyKeyboard = []KeyboardRow{
+
+	operationHistoryPeriodKeyboard = []InlineKeyboardRow{
 		{
-			Buttons: []string{
-				string(model.SubscriptionPeriodWeekly),
-				string(model.SubscriptionPeriodMonthly),
-				string(model.SubscriptionPeriodYearly),
+			Buttons: []InlineKeyboardButton{
+				{
+					Text: string(model.CreationPeriodDay),
+				},
+				{
+					Text: string(model.CreationPeriodWeek),
+				},
+				{
+					Text: string(model.CreationPeriodMonth),
+				},
+				{
+					Text: string(model.CreationPeriodYear),
+				},
 			},
 		},
-		{Buttons: []string{model.BotCancelCommand}},
+	}
+
+	balanceSubscriptionFrequencyKeyboard = []InlineKeyboardRow{
+		{
+			Buttons: []InlineKeyboardButton{
+				{
+					Text: string(model.SubscriptionPeriodWeekly),
+				},
+				{
+					Text: string(model.SubscriptionPeriodMonthly),
+				},
+				{
+					Text: string(model.SubscriptionPeriodYearly),
+				},
+			},
+		},
 	}
 )
 
@@ -293,20 +333,18 @@ const (
 	pageMetadataKey = "page"
 
 	// Balance related keys
-	balanceIDMetadataKey              = "balance_id"
-	balanceNameMetadataKey            = "balance_name"
-	balanceAmountMetadataKey          = "balance_amount"
-	balanceFromMetadataKey            = "balance_from"
-	balanceToMetadataKey              = "balance_to"
-	currentBalanceNameMetadataKey     = "current_balance_name"
-	currentBalanceCurrencyMetadataKey = "current_balance_currency"
-	currentBalanceAmountMetadataKey   = "current_balance_amount"
-	monthForBalanceStatisticsKey      = "month_for_balance_statistics"
+	balanceIDMetadataKey          = "balance_id"
+	balanceNameMetadataKey        = "balance_name"
+	balanceAmountMetadataKey      = "balance_amount"
+	balanceFromMetadataKey        = "balance_from"
+	balanceToMetadataKey          = "balance_to"
+	currentBalanceNameMetadataKey = "current_balance_name"
+	monthForBalanceStatisticsKey  = "month_for_balance_statistics"
 
 	// Category related keys
-	previousCategoryTitleMetadataKey = "previous_category_title"
-	categoryTitleMetadataKey         = "category_title"
-	categoryIDMetadataKey            = "category_id"
+	previousCategoryIDMetadataKey = "previous_category_id"
+	categoryTitleMetadataKey      = "category_title"
+	categoryIDMetadataKey         = "category_id"
 
 	// Operation related keys
 	exchangeRateMetadataKey            = "exchange_rate"
