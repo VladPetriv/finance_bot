@@ -1426,20 +1426,16 @@ func (h handlerService) handleChooseCategoryFlowStepForOperationUpdate(ctx conte
 		return "", fmt.Errorf("update operation in store: %w", err)
 	}
 
-	err = h.showCancelButton(opts.message.GetChatID(), "")
-	if err != nil {
-		logger.Error().Err(err).Msg("show cancel button")
-		return "", fmt.Errorf("show cancel button: %w", err)
-	}
-
-	return model.ChooseUpdateOperationOptionFlowStep, h.apis.Messenger.SendWithKeyboard(SendWithKeyboardOptions{
+	return model.ChooseUpdateOperationOptionFlowStep, h.apis.Messenger.UpdateMessage(UpdateMessageOptions{
 		ChatID:                  opts.message.GetChatID(),
+		MessageID:               opts.message.GetMessageID(),
+		InlineMessageID:         opts.message.GetInlineMessageID(),
 		FormatMessageInMarkDown: true,
-		Message: fmt.Sprintf(
+		UpdatedMessage: fmt.Sprintf(
 			"Operation category successfully updated!\nNew category: `%s`\nPlease choose other update operation option or finish action by canceling it!",
 			category.Title,
 		),
-		InlineKeyboard: h.getUpdateOptionKeyboardByOperationType(operation.Type),
+		UpdatedInlineKeyboard: h.getUpdateOptionKeyboardByOperationType(operation.Type),
 	})
 }
 
