@@ -14,29 +14,6 @@ type identifiable interface {
 	GetName() string
 }
 
-func getRowKeyboardRows[T identifiable](data []T, elementLimitPerRow int, includeRowWithCancelButton bool) []KeyboardRow {
-	keyboardRows := make([]KeyboardRow, 0)
-
-	var currentRow KeyboardRow
-	for i, entry := range data {
-		currentRow.Buttons = append(currentRow.Buttons, entry.GetName())
-
-		// When row is full or we're at the last data item, append row
-		if len(currentRow.Buttons) == elementLimitPerRow || i == len(data)-1 {
-			keyboardRows = append(keyboardRows, currentRow)
-			currentRow = KeyboardRow{} // Reset current row
-		}
-	}
-
-	if includeRowWithCancelButton {
-		keyboardRows = append(keyboardRows, KeyboardRow{
-			Buttons: []string{model.BotCancelCommand},
-		})
-	}
-
-	return keyboardRows
-}
-
 func getInlineKeyboardRows[T identifiable](data []T, elementLimitPerRow int) []InlineKeyboardRow {
 	inlineKeyboardRows := make([]InlineKeyboardRow, 0)
 
