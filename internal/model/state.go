@@ -147,6 +147,17 @@ func (s *State) IsCommandAllowedDuringFlow(command string) bool {
 
 		return false
 
+	case ListBalanceSubscriptionFlow:
+		switch s.GetCurrentStep() {
+		case ChooseBalanceFlowStep:
+			return slices.Contains(
+				[]string{BotNextCommand, BotPreviousCommand},
+				command,
+			)
+		}
+
+		return false
+
 	case UpdateBalanceSubscriptionFlow:
 		switch s.GetCurrentStep() {
 		case ChooseBalanceSubscriptionToUpdateFlowStep:
