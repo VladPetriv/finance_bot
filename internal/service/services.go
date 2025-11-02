@@ -268,17 +268,18 @@ var (
 		},
 	}
 
-	balanceSubscriptionFrequencyKeyboard = []KeyboardRow{
+	balanceSubscriptionFrequencyKeyboard = []InlineKeyboardRow{
 		{
-			Buttons: []string{
-				string(model.SubscriptionPeriodWeekly),
-				string(model.SubscriptionPeriodMonthly),
-				string(model.SubscriptionPeriodYearly),
-			},
-		},
-		{
-			Buttons: []string{
-				model.BotCancelCommand,
+			Buttons: []InlineKeyboardButton{
+				{
+					Text: string(model.SubscriptionPeriodWeekly),
+				},
+				{
+					Text: string(model.SubscriptionPeriodMonthly),
+				},
+				{
+					Text: string(model.SubscriptionPeriodYearly),
+				},
 			},
 		},
 	}
