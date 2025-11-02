@@ -342,9 +342,9 @@ const (
 	monthForBalanceStatisticsKey  = "month_for_balance_statistics"
 
 	// Category related keys
-	previousCategoryTitleMetadataKey = "previous_category_title"
-	categoryTitleMetadataKey         = "category_title"
-	categoryIDMetadataKey            = "category_id"
+	previousCategoryIDMetadataKey = "previous_category_id"
+	categoryTitleMetadataKey      = "category_title"
+	categoryIDMetadataKey         = "category_id"
 
 	// Operation related keys
 	exchangeRateMetadataKey            = "exchange_rate"
