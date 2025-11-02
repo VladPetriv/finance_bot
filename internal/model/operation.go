@@ -128,6 +128,24 @@ func (o *Operation) GetDetails() string {
 	)
 }
 
+// GetOperationTypeLabel returns the label for the given operation type.
+func GetOperationTypeLabel(t OperationType) (string, string) {
+	switch t {
+	case OperationTypeIncoming:
+		return "🔼", "Income (incoming)"
+	case OperationTypeSpending:
+		return "🔻", "Expense (spending)"
+	case OperationTypeTransfer:
+		return "🔄", "Transfer"
+	case OperationTypeTransferIn:
+		return "⬅️", "Transfer In"
+	case OperationTypeTransferOut:
+		return "➡️", "Transfer Out"
+	default:
+		return "❓", string(t)
+	}
+}
+
 // OperationType represents the type of an operation, which can be either incoming, spending or transfer.
 type OperationType string
 

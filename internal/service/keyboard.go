@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 	"fmt"
+	"slices"
 	"time"
 
 	"github.com/VladPetriv/finance_bot/internal/model"
@@ -184,7 +185,7 @@ func (h handlerService) getOperationsHistoryKeyboard(ctx context.Context, opts g
 					continue
 				}
 
-				emoji, typeLabel := getOperationTypeLabel(o.Type)
+				emoji, typeLabel := model.GetOperationTypeLabel(o.Type)
 				outputMessage += fmt.Sprintf(
 					"%s\n"+
 						"📌 *Operation:* %s %s\n"+
@@ -220,29 +221,13 @@ func (h handlerService) getOperationsHistoryKeyboard(ctx context.Context, opts g
 	return message, keyboard, nil
 }
 
-func getOperationTypeLabel(t model.OperationType) (string, string) {
-	switch t {
-	case model.OperationTypeIncoming:
-		return "🔼", "Income (incoming)"
-	case model.OperationTypeSpending:
-		return "🔻", "Expense (spending)"
-	case model.OperationTypeTransfer:
-		return "🔄", "Transfer"
-	case model.OperationTypeTransferIn:
-		return "⬅️", "Transfer In"
-	case model.OperationTypeTransferOut:
-		return "➡️", "Transfer Out"
-	default:
-		return "❓", string(t)
-	}
-}
-
 const (
 	balanceSubscriptionsPerKeyboard    = 5
 	balanceSubscriptionsPerKeyboardRow = 1
 )
 
 type getBalanceSubscriptionsKeyboardOptions struct {
+	userID    string
 	balanceID string
 	page      int
 }
@@ -296,6 +281,99 @@ func (h handlerService) getBalanceSubscriptionsKeyboard(ctx context.Context, opt
 	}
 
 	return keyboard, nil
+}
+
+func (h handlerService) getListBalanceSubscriptionsKeyboard(ctx context.Context, opts getBalanceSubscriptionsKeyboardOptions) (string, []InlineKeyboardRow, error) {
+	logger := h.logger.With().Str("name", "handlerService.getOperationsHistoryKeyboard").Logger()
+	logger.Debug().Any("opts", opts).Msg("got args")
+
+	balanceSubscriptionsCount, err := h.stores.BalanceSubscription.Count(ctx, ListBalanceSubscriptionFilter{
+		BalanceID: opts.balanceID,
+	})
+	if err != nil {
+		logger.Error().Err(err).Msg("count balance subscriptions in store")
+		return "", nil, fmt.Errorf("count balance subscriptions in store: %w", err)
+	}
+	if balanceSubscriptionsCount == 0 {
+		logger.Info().Any("balanceID", opts.balanceID).Msg("balance subscriptions not found")
+		return "", nil, ErrNoBalanceSubscriptionsFound
+	}
+
+	categories, err := h.stores.Category.List(ctx, &ListCategoriesFilter{
+		UserID: opts.userID,
+	})
+	if err != nil {
+		logger.Error().Err(err).Msg("list categories")
+		return "", nil, fmt.Errorf("list categories: %w", err)
+	}
+	if len(categories) == 0 {
+		return "", nil, ErrCategoriesNotFound
+	}
+
+	message, keyboard, err := paginateTextUsingInlineKeybaord(
+		inlineKeyboardPaginatorOptions{
+			totalCount:     balanceSubscriptionsCount,
+			maxPerKeyboard: balanceSubscriptionsPerKeyboard,
+			maxPerRow:      balanceSubscriptionsPerKeyboardRow,
+			currentPage:    opts.page,
+		},
+		func() (string, error) {
+			balanceSubscriptions, err := h.stores.BalanceSubscription.List(ctx, ListBalanceSubscriptionFilter{
+				BalanceID:            opts.balanceID,
+				OrderByCreatedAtDesc: true,
+				Pagination: &Pagination{
+					Limit: balanceSubscriptionsPerKeyboard,
+					Page:  opts.page,
+				},
+			})
+			if err != nil {
+				logger.Error().Err(err).Msg("list balance subscriptions from store")
+				return "", fmt.Errorf("list balance subscriptions from store: %w", err)
+			}
+			if len(balanceSubscriptions) == 0 {
+				logger.Info().Msg("balance subscriptions not found")
+				return "", ErrNoBalanceSubscriptionsFound
+			}
+
+			var outputMessage string
+			for _, subscription := range balanceSubscriptions {
+				categoryTitle := "—"
+				categoryIndex := slices.IndexFunc(categories, func(category model.Category) bool {
+					return category.ID == subscription.CategoryID
+				})
+				if categoryIndex != -1 {
+					categoryTitle = categories[categoryIndex].Title
+				}
+
+				var startDate string
+				if !subscription.StartAt.IsZero() {
+					startDate = subscription.StartAt.Format("02 Jan 2006")
+				}
+
+				outputMessage += fmt.Sprintf(
+					"💰 *Title*: %s\n"+
+						"📦 *Amount*: %s\n"+
+						"⏰ *Frequency*: %s\n"+
+						"📅 *Start Date*: %s\n"+
+						"🏷️ Category: %s\n"+
+						"──────────────\n",
+					subscription.Name,
+					subscription.Amount,
+					subscription.Period,
+					startDate,
+					categoryTitle,
+				)
+			}
+
+			return outputMessage, nil
+		},
+	)
+	if err != nil {
+		logger.Error().Err(err).Msg("paginate operations")
+		return "", nil, fmt.Errorf("paginate operations: %w", err)
+	}
+
+	return message, keyboard, nil
 }
 
 const (
