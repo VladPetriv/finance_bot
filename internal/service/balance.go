@@ -595,7 +595,7 @@ func (h handlerService) handleDeleteBalanceFlowStep(_ context.Context, opts flow
 	return model.ConfirmBalanceDeletionFlowStep, h.apis.Messenger.SendWithKeyboard(SendWithKeyboardOptions{
 		ChatID:         opts.message.GetChatID(),
 		Message:        "Choose balance to delete:",
-		InlineKeyboard: getInlineKeyboardRows(opts.user.Balances, 3),
+		InlineKeyboard: getInlineKeyboardRows(opts.user.Balances, 2),
 	})
 }
 
