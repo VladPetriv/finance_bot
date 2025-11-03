@@ -27,7 +27,7 @@ func (h *handlerService) handleCreateBalanceSubscriptionFlowStep(ctx context.Con
 	return model.ChooseBalanceFlowStep, h.apis.Messenger.SendWithKeyboard(SendWithKeyboardOptions{
 		ChatID:         opts.message.GetChatID(),
 		Message:        "Select source balance for subscription:",
-		InlineKeyboard: getInlineKeyboardRows(opts.user.Balances, 3),
+		InlineKeyboard: getInlineKeyboardRows(opts.user.Balances, 2),
 	})
 }
 
@@ -197,7 +197,7 @@ func (h *handlerService) handleListBalanceSubscriptionFlowStep(_ context.Context
 	return model.ChooseBalanceFlowStep, h.apis.Messenger.SendWithKeyboard(SendWithKeyboardOptions{
 		ChatID:         opts.message.GetChatID(),
 		Message:        "Select balance:",
-		InlineKeyboard: getInlineKeyboardRows(opts.user.Balances, 3),
+		InlineKeyboard: getInlineKeyboardRows(opts.user.Balances, 2),
 	})
 }
 
@@ -277,7 +277,7 @@ func (h *handlerService) handleUpdateBalanceSubscriptionFlowStep(_ context.Conte
 	return model.ChooseBalanceFlowStep, h.apis.Messenger.SendWithKeyboard(SendWithKeyboardOptions{
 		ChatID:         opts.message.GetChatID(),
 		Message:        "Select balance:",
-		InlineKeyboard: getInlineKeyboardRows(opts.user.Balances, 3),
+		InlineKeyboard: getInlineKeyboardRows(opts.user.Balances, 2),
 	})
 }
 
@@ -641,7 +641,7 @@ func (h *handlerService) handleDeleteBalanceSubscriptionFlowStep(ctx context.Con
 	return model.ChooseBalanceFlowStep, h.apis.Messenger.SendWithKeyboard(SendWithKeyboardOptions{
 		ChatID:         opts.message.GetChatID(),
 		Message:        "Select balance:",
-		InlineKeyboard: getInlineKeyboardRows(opts.user.Balances, 3),
+		InlineKeyboard: getInlineKeyboardRows(opts.user.Balances, 2),
 	})
 }
 

@@ -99,7 +99,7 @@ func (h *handlerService) handleConfirmOperationDetailsFlowStepForOneTimeInputOpe
 		MessageID:             opts.message.GetMessageID(),
 		InlineMessageID:       opts.message.GetInlineMessageID(),
 		UpdatedMessage:        "Choose balance:",
-		UpdatedInlineKeyboard: getInlineKeyboardRows(opts.user.Balances, 3),
+		UpdatedInlineKeyboard: getInlineKeyboardRows(opts.user.Balances, 2),
 	})
 }
 
@@ -203,7 +203,7 @@ func (h handlerService) handleProcessOperationTypeFlowStep(_ context.Context, op
 		InlineMessageID:         opts.message.GetInlineMessageID(),
 		FormatMessageInMarkDown: true,
 		UpdatedMessage:          message,
-		UpdatedInlineKeyboard:   getInlineKeyboardRows(opts.user.Balances, 3),
+		UpdatedInlineKeyboard:   getInlineKeyboardRows(opts.user.Balances, 2),
 	})
 }
 
@@ -595,7 +595,7 @@ func (h handlerService) handleGetOperationsHistoryFlowStep(_ context.Context, op
 	return model.ChooseBalanceFlowStep, h.apis.Messenger.SendWithKeyboard(SendWithKeyboardOptions{
 		ChatID:         opts.message.GetChatID(),
 		Message:        "Choose balance to view operations history for:",
-		InlineKeyboard: getInlineKeyboardRows(opts.user.Balances, 3),
+		InlineKeyboard: getInlineKeyboardRows(opts.user.Balances, 2),
 	})
 }
 
@@ -700,7 +700,7 @@ func (h handlerService) handleDeleteOperationFlowStep(_ context.Context, opts fl
 	return model.ChooseBalanceFlowStep, h.apis.Messenger.SendWithKeyboard(SendWithKeyboardOptions{
 		ChatID:         opts.message.GetChatID(),
 		Message:        "Choose balance to delete operation from:",
-		InlineKeyboard: getInlineKeyboardRows(opts.user.Balances, 3),
+		InlineKeyboard: getInlineKeyboardRows(opts.user.Balances, 2),
 	})
 }
 
@@ -976,7 +976,7 @@ func (h handlerService) handleUpdateOperationFlowStep(ctx context.Context, opts 
 	return model.ChooseBalanceFlowStep, h.apis.Messenger.SendWithKeyboard(SendWithKeyboardOptions{
 		ChatID:         opts.message.GetChatID(),
 		Message:        "Choose balance to update operation from:",
-		InlineKeyboard: getInlineKeyboardRows(opts.user.Balances, 3),
+		InlineKeyboard: getInlineKeyboardRows(opts.user.Balances, 2),
 	})
 }
 
