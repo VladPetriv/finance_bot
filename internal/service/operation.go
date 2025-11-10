@@ -251,7 +251,7 @@ func (h handlerService) handleChooseBalanceFromFlowStep(_ context.Context, opts 
 		InlineMessageID:         opts.message.GetInlineMessageID(),
 		FormatMessageInMarkDown: true,
 		UpdatedMessage:          "Choose balance *to which* transfer operation should be performed:",
-		UpdatedInlineKeyboard:   getInlineKeyboardRows(userBalancesWithoutBalanceFrom, 3),
+		UpdatedInlineKeyboard:   getInlineKeyboardRows(userBalancesWithoutBalanceFrom, 2),
 	})
 }
 
