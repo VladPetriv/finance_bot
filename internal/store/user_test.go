@@ -183,6 +183,110 @@ func TestUser_CreateSettings(t *testing.T) {
 	}
 }
 
+func TestUser_UpdateSettings(t *testing.T) {
+	t.Parallel()
+
+	ctx := context.Background() //nolint: forbidigo
+
+	testCaseDB := createTestDB(t, "user_settings_update")
+	userStore := store.NewUser(testCaseDB)
+
+	userSettingsID1, userSettingsID2 := uuid.NewString(), uuid.NewString()
+	userID1, userID2 := uuid.NewString(), uuid.NewString()
+	for _, userID := range [...]string{userID1, userID2} {
+		err := userStore.Create(ctx, &model.User{
+			ID:       userID,
+			Username: "test" + userID,
+		})
+		require.NoError(t, err)
+	}
+
+	t.Cleanup(func() {
+		for _, userID := range [...]string{userID1, userID2} {
+			err := deleteUserByID(testCaseDB.DB, userID)
+			require.NoError(t, err)
+		}
+	})
+
+	testCases := [...]struct {
+		desc          string
+		preconditions *model.UserSettings
+		args          *model.UserSettings
+		expected      *model.UserSettings
+	}{
+		{
+			desc: "user setting AI parser successfully updated",
+			args: &model.UserSettings{
+				ID:                              userSettingsID1,
+				UserID:                          userID1,
+				AIParserEnabled:                 true,
+				NotifyAboutSubscriptionPayments: true,
+			},
+			preconditions: &model.UserSettings{
+				ID:                              userSettingsID1,
+				UserID:                          userID1,
+				AIParserEnabled:                 false,
+				NotifyAboutSubscriptionPayments: false,
+			},
+			expected: &model.UserSettings{
+				ID:                              userSettingsID1,
+				UserID:                          userID1,
+				AIParserEnabled:                 true,
+				NotifyAboutSubscriptionPayments: true,
+			},
+		},
+		{
+			desc: "user setting subscription notification successfully updated",
+			args: &model.UserSettings{
+				ID:                              userSettingsID2,
+				UserID:                          userID2,
+				AIParserEnabled:                 true,
+				NotifyAboutSubscriptionPayments: true,
+			},
+			preconditions: &model.UserSettings{
+				ID:                              userSettingsID2,
+				UserID:                          userID2,
+				AIParserEnabled:                 false,
+				NotifyAboutSubscriptionPayments: false,
+			},
+			expected: &model.UserSettings{
+				ID:                              userSettingsID2,
+				UserID:                          userID2,
+				AIParserEnabled:                 true,
+				NotifyAboutSubscriptionPayments: true,
+			},
+		},
+	}
+	for _, tc := range testCases {
+		t.Run(tc.desc, func(t *testing.T) {
+			t.Parallel()
+
+			if tc.preconditions != nil {
+				err := userStore.CreateSettings(ctx, tc.preconditions)
+				assert.NoError(t, err)
+			}
+
+			t.Cleanup(func() {
+				if tc.preconditions != nil {
+					err := deleteUserSettingsByID(testCaseDB.DB, tc.preconditions.ID)
+					assert.NoError(t, err)
+				}
+			})
+
+			err := userStore.UpdateSettings(ctx, tc.args)
+			assert.NoError(t, err)
+
+			var updatedUserSettings model.UserSettings
+			err = testCaseDB.DB.Get(&updatedUserSettings, "SELECT * FROM user_settings WHERE id=$1;", tc.args.ID)
+			assert.NoError(t, err)
+			assert.Equal(t, tc.expected.ID, updatedUserSettings.ID)
+			assert.Equal(t, tc.expected.UserID, updatedUserSettings.UserID)
+			assert.Equal(t, tc.expected.AIParserEnabled, updatedUserSettings.AIParserEnabled)
+			assert.Equal(t, tc.expected.NotifyAboutSubscriptionPayments, updatedUserSettings.NotifyAboutSubscriptionPayments)
+		})
+	}
+}
+
 func TestUser_Get(t *testing.T) {
 	t.Parallel()
 

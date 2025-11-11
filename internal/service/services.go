@@ -75,6 +75,9 @@ var (
 		{
 			Buttons: []string{model.BotOperationCommand, model.BotBalanceSubscriptionsCommand},
 		},
+		{
+			Buttons: []string{model.BotUserSettingsCommand},
+		},
 	}
 
 	rowKeyboardWithCancelButtonOnly = []KeyboardRow{
@@ -95,6 +98,15 @@ var (
 					Data: "false",
 				},
 			},
+		},
+	}
+
+	userSettingsKeyboardRows = []KeyboardRow{
+		{
+			Buttons: []string{model.BotGetUserSettingsCommand, model.BotUpdateUserSettingsCommand},
+		},
+		{
+			Buttons: []string{model.BotBackCommand},
 		},
 	}
 
@@ -143,6 +155,23 @@ var (
 		},
 		{
 			Buttons: []string{model.BotBackCommand},
+		},
+	}
+
+	updateUserSettingsOptionsKeyboard = []InlineKeyboardRow{
+		{
+			Buttons: []InlineKeyboardButton{
+				{
+					Text: model.BotUpdateUserAIParserCommand,
+				},
+			},
+		},
+		{
+			Buttons: []InlineKeyboardButton{
+				{
+					Text: model.BotUpdateUserSubscriptionNotificationsCommand,
+				},
+			},
 		},
 	}
 

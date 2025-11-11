@@ -10,7 +10,7 @@ import (
 	"github.com/google/uuid"
 )
 
-type flowStepHandlerFunc func(ctx context.Context, opts flowProcessingOptions) (model.FlowStep, error)
+type flowStepHandlerFunc func(ctx context.Context, opts flowProcessingOptions) (nextStep model.FlowStep, err error)
 
 type handlerService struct {
 	logger   *logger.Logger
@@ -43,6 +43,17 @@ func NewHandler(opts *HandlerOptions) *handlerService {
 
 func (h *handlerService) RegisterHandlers() {
 	h.flowWithFlowStepsHandlers = map[model.Flow]map[model.FlowStep]flowStepHandlerFunc{
+		// Flows with user settings
+		model.GetUserSettingsFlow: {
+			model.GetUserSettingsFlowStep: h.handleGetUserSettingsFlowStep,
+		},
+		model.UpdateUserSettingsFlow: {
+			model.UpdateUserSettingsFlowStep:                        h.handleUpdateUserSettingsFlowStep,
+			model.ChooseUpdateUserSettingsOptionFlowStep:            h.handleChooseUpdateUserSettingsOptionFlowStep,
+			model.UpdateAIParserEnabledUserSettingFlowStep:          h.handleUpdateAIParserEnabledUserSettingFlowStep,
+			model.UpdateSubscriptionNotificationUserSettingFlowStep: h.handleUpdateSubscriptionNotificationUserSettingFlowStep,
+		},
+
 		// Flows with balances
 		model.StartFlow: {
 			model.CreateInitialBalanceFlowStep: h.handleCreateInitialBalanceFlowStep,
@@ -277,6 +288,10 @@ func (h handlerService) HandleCancel(ctx context.Context, msg Message) error {
 		rows    []KeyboardRow
 		message string
 	}{
+		model.UserSettingsFlow: {
+			rows:    userSettingsKeyboardRows,
+			message: "Action cancelled!\nPlease choose user settings command to execute:",
+		},
 		model.BalanceFlow: {
 			rows:    balanceKeyboardRows,
 			message: "Action cancelled!\nPlease choose balance command to execute:",
@@ -322,6 +337,9 @@ func (h handlerService) HandleWrappers(ctx context.Context, event model.Event, m
 	)
 
 	switch event {
+	case model.UserSettingsEvent:
+		rows = userSettingsKeyboardRows
+		message = "Please choose user settings command to execute:"
 	case model.BalanceEvent:
 		rows = balanceKeyboardRows
 		message = "Please choose balance command to execute:"
@@ -524,4 +542,58 @@ func (h handlerService) sendMessageWithDefaultKeyboard(chatID int, message strin
 		Message:  message,
 		Keyboard: defaultKeyboardRows,
 	})
+}
+
+type toggleSettingResult struct {
+	KeyboardRow   InlineKeyboardRow
+	OutputMessage string
+}
+
+type toggleSettingConfig struct {
+	Title       string
+	Icon        string
+	Description string
+	IsEnabled   bool
+}
+
+// generateToggleSetting creates a toggle setting interface with status message and enable/disable button.
+// Returns formatted message and keyboard row based on the current setting state.
+func generateToggleSetting(config toggleSettingConfig) toggleSettingResult {
+	statusEmoji := "❌ Disabled"
+	conditionText := "*enable*"
+	keyboardRow := InlineKeyboardRow{
+		Buttons: []InlineKeyboardButton{
+			{
+				Text: model.BotEnableCommand,
+			},
+		},
+	}
+
+	if config.IsEnabled {
+		statusEmoji = "✅ Enabled"
+		conditionText = "*disable*"
+		keyboardRow = InlineKeyboardRow{
+			Buttons: []InlineKeyboardButton{
+				{
+					Text: model.BotDisableCommand,
+				},
+			},
+		}
+	}
+
+	outputMessage := fmt.Sprintf(
+		"%s *%s*\n"+
+			"Current Status: %s\n"+
+			"Select the button below to %s %s.",
+		config.Icon,
+		config.Title,
+		statusEmoji,
+		conditionText,
+		config.Description,
+	)
+
+	return toggleSettingResult{
+		KeyboardRow:   keyboardRow,
+		OutputMessage: outputMessage,
+	}
 }

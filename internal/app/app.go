@@ -74,15 +74,13 @@ func Run(ctx context.Context, cfg *config.Config, logger *logger.Logger) {
 		Currency:            store.NewCurrency(postgres),
 	}
 
-	currencyService := service.NewCurrency(logger, apis, stores)
-
 	services := service.Services{
 		State: service.NewState(&service.StateOptions{
 			Logger: logger,
 			Stores: stores,
 			APIs:   apis,
 		}),
-		Currency:                  currencyService,
+		Currency:                  service.NewCurrency(logger, apis, stores),
 		BalanceSubscriptionEngine: service.NewBalanceSubscriptionEngine(cfg, logger, stores, apis),
 	}
 
@@ -101,7 +99,7 @@ func Run(ctx context.Context, cfg *config.Config, logger *logger.Logger) {
 		Services: services,
 	})
 
-	err = currencyService.InitCurrencies(ctx)
+	err = services.Currency.InitCurrencies(ctx)
 	if err != nil {
 		logger.Fatal().Err(err).Msg("init currencies")
 	}

@@ -69,6 +69,23 @@ func (s *State) IsCommandAllowedDuringFlow(command string) bool {
 
 		return false
 
+	case UpdateUserSettingsFlow:
+		if s.GetCurrentStep() == ChooseUpdateUserSettingsOptionFlowStep {
+			return slices.Contains(
+				[]string{BotUpdateUserAIParserCommand, BotUpdateUserSubscriptionNotificationsCommand},
+				command,
+			)
+		}
+
+		if s.GetCurrentStep() == UpdateAIParserEnabledUserSettingFlowStep || s.GetCurrentStep() == UpdateSubscriptionNotificationUserSettingFlowStep {
+			return slices.Contains(
+				[]string{BotEnableCommand, BotDisableCommand},
+				command,
+			)
+		}
+
+		return false
+
 	case CreateOperationFlow:
 		if s.GetCurrentStep() == ProcessOperationTypeFlowStep {
 			return slices.Contains(
@@ -210,6 +227,13 @@ func (s *State) GetEvent() Event {
 	}
 
 	switch s.Steps[indexOfInitialFlowStep] {
+	// User settings
+	case GetUserSettingsFlowStep:
+		return GetUserSettingsEvent
+	case UpdateUserSettingsFlowStep:
+		return UpdateUserSettingsEvent
+
+	// Balance
 	case CreateInitialBalanceFlowStep, CreateBalanceFlowStep:
 		return CreateBalanceEvent
 	case UpdateBalanceFlowStep:
@@ -218,6 +242,8 @@ func (s *State) GetEvent() Event {
 		return GetBalanceEvent
 	case DeleteBalanceFlowStep:
 		return DeleteBalanceEvent
+
+	// Category
 	case CreateCategoryFlowStep:
 		return CreateCategoryEvent
 	case ListCategoriesFlowStep:
@@ -226,6 +252,8 @@ func (s *State) GetEvent() Event {
 		return UpdateCategoryEvent
 	case DeleteCategoryFlowStep:
 		return DeleteCategoryEvent
+
+	// Operation
 	case CreateOperationFlowStep:
 		return CreateOperationEvent
 	case DeleteOperationFlowStep:
@@ -236,6 +264,8 @@ func (s *State) GetEvent() Event {
 		return UpdateOperationEvent
 	case CreateOperationsThroughOneTimeInputFlowStep:
 		return CreateOperationsThroughOneTimeInputEvent
+
+	// Balance Subscription
 	case CreateBalanceSubscriptionFlowStep:
 		return CreateBalanceSubscriptionEvent
 	case ListBalanceSubscriptionFlowStep:
@@ -268,6 +298,13 @@ const (
 	OperationFlow Flow = "operation"
 	// BalanceSubscriptionFlow represents the flow for getting balance subscriptions actions
 	BalanceSubscriptionFlow Flow = "balance_subscriptions"
+	// UserSettingsFlow represents the flow for getting user settings actions
+	UserSettingsFlow Flow = "user_settings"
+
+	// GetUserSettingsFlow represents the flow for getting all user settings
+	GetUserSettingsFlow Flow = "get_user_settings"
+	// UpdateUserSettingsFlow represents the flow for updating user settings
+	UpdateUserSettingsFlow Flow = "update_user_settings"
 
 	// CreateBalanceFlow represents the flow for creating a new balance
 	CreateBalanceFlow Flow = "create_balance"
@@ -332,6 +369,12 @@ func GetBaseFlowFromCurrentFlow(flow Flow) Flow {
 		CreateBalanceSubscriptionFlow, ListBalanceSubscriptionFlow, UpdateBalanceSubscriptionFlow, DeleteBalanceSubscriptionFlow,
 	}, flow) {
 		return BalanceSubscriptionFlow
+	}
+
+	if slices.Contains([]Flow{
+		GetUserSettingsFlow, UpdateUserSettingsFlow,
+	}, flow) {
+		return UserSettingsFlow
 	}
 
 	return ""
@@ -399,6 +442,19 @@ const (
 	StartFlowStep FlowStep = "start"
 	// EndFlowStep represents the final step of any flow
 	EndFlowStep FlowStep = "end"
+
+	// Steps that are related for user settings
+
+	// GetUserSettingsFlowStep represents the step on which user settings are retrieved
+	GetUserSettingsFlowStep FlowStep = "get_user_settings"
+	// UpdateUserSettingsFlowStep represents the step on which options for updating user settings are presented
+	UpdateUserSettingsFlowStep FlowStep = "update_user_settings"
+	// ChooseUpdateUserSettingsOptionFlowStep represents the step for choosing update user settings option
+	ChooseUpdateUserSettingsOptionFlowStep FlowStep = "choose_update_user_settings_option"
+	// UpdateAIParserEnabledUserSettingFlowStep represents the step for updating AI parser enabled user setting
+	UpdateAIParserEnabledUserSettingFlowStep FlowStep = "update_ai_parser_enabled_user_setting"
+	// UpdateSubscriptionNotificationUserSettingFlowStep represents the step for updating subscription notification user setting
+	UpdateSubscriptionNotificationUserSettingFlowStep FlowStep = "update_subscription_notification_user_setting"
 
 	// Steps that are related for balance
 

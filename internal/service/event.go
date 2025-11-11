@@ -178,18 +178,19 @@ func (e eventService) ReactOnEvent(ctx context.Context, event model.Event, msg M
 			return fmt.Errorf("handle event back: %w", err)
 		}
 
-	case model.BalanceEvent, model.CategoryEvent, model.OperationEvent, model.BalanceSubscriptionEvent:
+	case model.UserSettingsEvent, model.BalanceEvent, model.CategoryEvent, model.OperationEvent,
+		model.BalanceSubscriptionEvent:
 		err := e.services.Handler.HandleWrappers(ctx, event, msg)
 		if err != nil {
 			logger.Error().Err(err).Msg("handle wrappers")
 			return fmt.Errorf("handle wrappers: %w", err)
 		}
 
-	case model.CreateBalanceEvent, model.GetBalanceEvent, model.UpdateBalanceEvent, model.DeleteBalanceEvent,
-		model.CreateCategoryEvent, model.ListCategoriesEvent, model.UpdateCategoryEvent, model.DeleteCategoryEvent,
-		model.CreateOperationEvent, model.GetOperationsHistoryEvent, model.DeleteOperationEvent, model.UpdateOperationEvent,
-		model.CreateBalanceSubscriptionEvent, model.ListBalanceSubscriptionEvent, model.UpdateBalanceSubscriptionEvent, model.DeleteBalanceSubscriptionEvent,
-		model.CreateOperationsThroughOneTimeInputEvent:
+	case model.GetUserSettingsEvent, model.UpdateUserSettingsEvent, model.CreateBalanceEvent, model.GetBalanceEvent,
+		model.UpdateBalanceEvent, model.DeleteBalanceEvent, model.CreateCategoryEvent, model.ListCategoriesEvent,
+		model.UpdateCategoryEvent, model.DeleteCategoryEvent, model.CreateOperationEvent, model.GetOperationsHistoryEvent,
+		model.DeleteOperationEvent, model.UpdateOperationEvent, model.CreateBalanceSubscriptionEvent, model.ListBalanceSubscriptionEvent,
+		model.UpdateBalanceSubscriptionEvent, model.DeleteBalanceSubscriptionEvent, model.CreateOperationsThroughOneTimeInputEvent:
 		err := e.services.Handler.HandleAction(ctx, msg)
 		if err != nil {
 			if errs.IsExpected(err) {

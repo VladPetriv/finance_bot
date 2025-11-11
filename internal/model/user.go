@@ -1,6 +1,9 @@
 package model
 
-import "time"
+import (
+	"fmt"
+	"time"
+)
 
 // User represents an user model.
 type User struct {
@@ -43,4 +46,29 @@ type UserSettings struct {
 
 	CreatedAt time.Time `db:"created_at"`
 	UpdatedAt time.Time `db:"updated_at"`
+}
+
+// GetDetails returns brief and formatted information about user settings
+func (u *UserSettings) GetDetails() string {
+	aiParserIcon := "❌"
+	aiParserStatus := "Disabled"
+	if u.AIParserEnabled {
+		aiParserIcon = "✅"
+		aiParserStatus = "Enabled"
+	}
+
+	notifyIcon := "❌"
+	notifyStatus := "Disabled"
+	if u.NotifyAboutSubscriptionPayments {
+		notifyIcon = "✅"
+		notifyStatus = "Enabled"
+	}
+
+	return fmt.Sprintf(`⚙️ *User Settings*
+
+🤖 AI Parser: %s %s
+🔔 Subscription Notifications: %s %s`,
+		aiParserIcon, aiParserStatus,
+		notifyIcon, notifyStatus,
+	)
 }
