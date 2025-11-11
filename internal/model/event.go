@@ -21,6 +21,13 @@ const (
 	OperationEvent Event = "operation/actions"
 	// BalanceSubscriptionEvent represents the event for receiving balance subscriptions actions
 	BalanceSubscriptionEvent Event = "balance/subscriptions/actions"
+	// UserSettingsEvent represents the event for receiving user settings actions
+	UserSettingsEvent Event = "user_settings/actions"
+
+	// GetUserSettingsEvent represents the event for receiving user settings
+	GetUserSettingsEvent Event = "user_settings/get"
+	// UpdateUserSettingsEvent represents the event for updating user settings
+	UpdateUserSettingsEvent Event = "user_settings/update"
 
 	// CreateBalanceEvent represents the event for creating a new balance
 	CreateBalanceEvent Event = "balance/create"
@@ -73,6 +80,11 @@ var EventToFlow = map[Event]Flow{
 	CategoryEvent:            CategoryFlow,
 	OperationEvent:           OperationFlow,
 	BalanceSubscriptionEvent: BalanceSubscriptionFlow,
+	UserSettingsEvent:        UserSettingsFlow,
+
+	// User settings
+	GetUserSettingsEvent:    GetUserSettingsFlow,
+	UpdateUserSettingsEvent: UpdateUserSettingsFlow,
 
 	// Balance
 	CreateBalanceEvent: CreateBalanceFlow,

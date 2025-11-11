@@ -5,6 +5,8 @@ const (
 	// BotStartCommand represents the command to start the bot
 	BotStartCommand string = "/start"
 
+	// BotUserSettingsCommand represents the command to manage user settings
+	BotUserSettingsCommand string = "⚙️ User Settings"
 	// BotBalanceCommand represents the wrapper command for balances action
 	BotBalanceCommand string = "💰 Balance"
 	// BotCategoryCommand represents the wrapper command for categories action
@@ -13,6 +15,15 @@ const (
 	BotOperationCommand string = "💸 Operation"
 	// BotBalanceSubscriptionsCommand represents the wrapper command for managing balance subscription actions
 	BotBalanceSubscriptionsCommand string = "🔄 Balance Subscriptions"
+
+	// BotGetUserSettingsCommand represents the command to get user settings
+	BotGetUserSettingsCommand string = "Get User Settings ⚙️"
+	// BotUpdateUserSettingsCommand represents the command to update user settings
+	BotUpdateUserSettingsCommand string = "Update User Settings 🔧"
+	// BotUpdateUserAICommand represents the command to update AI parser settings
+	BotUpdateUserAIParserCommand string = "Update AI Parser 🤖"
+	// BotUpdateUserSubscriptionNotificationsCommand represents the command to update subscription notification settings
+	BotUpdateUserSubscriptionNotificationsCommand string = "Update Subscription Notifications 💳"
 
 	// BotCreateBalanceCommand represents the command to create a new balance
 	BotCreateBalanceCommand string = "Create Balance 💰"
@@ -86,21 +97,25 @@ const (
 	BotCancelCommand string = "Cancel action ⬅️"
 	// BotBackCommand represents the command to go back to the previous menu
 	BotBackCommand string = "Back ⬅️"
+	// BotEnableCommand represents the command to enable any state
+	BotEnableCommand string = "Enable ✅"
+	// BotDisableCommand represents the command to disable any state
+	BotDisableCommand string = "Disable ❌"
 )
 
 // AvailableCommands is a list of all available bot commands.
 var AvailableCommands = []string{
-	BotStartCommand,
+	BotEnableCommand, BotDisableCommand, BotStartCommand, BotCancelCommand,
+	BotBackCommand, BotNextCommand, BotPreviousCommand, BotUserSettingsCommand,
 	BotBalanceCommand, BotCategoryCommand, BotOperationCommand, BotBalanceSubscriptionsCommand,
-	BotGetBalanceCommand, BotCreateBalanceCommand, BotUpdateBalanceCommand, BotDeleteBalanceCommand,
-	BotUpdateBalanceNameCommand, BotUpdateBalanceAmountCommand, BotUpdateBalanceCurrencyCommand,
-	BotCreateCategoryCommand, BotListCategoriesCommand, BotUpdateCategoryCommand, BotDeleteCategoryCommand,
-	BotCreateOperationCommand, BotCreateIncomingOperationCommand, BotCreateSpendingOperationCommand, BotGetOperationsHistory, BotCreateTransferOperationCommand,
-	BotDeleteOperationCommand, BotUpdateOperationCommand, BotUpdateOperationAmountCommand, BotUpdateOperationDescriptionCommand,
-	BotUpdateOperationDateCommand, BotUpdateOperationCategoryCommand,
+	BotGetUserSettingsCommand, BotUpdateUserSettingsCommand, BotGetBalanceCommand, BotCreateBalanceCommand,
+	BotUpdateBalanceCommand, BotDeleteBalanceCommand, BotUpdateBalanceNameCommand, BotUpdateBalanceAmountCommand,
+	BotUpdateBalanceCurrencyCommand, BotCreateCategoryCommand, BotListCategoriesCommand, BotUpdateCategoryCommand,
+	BotDeleteCategoryCommand, BotCreateOperationCommand, BotCreateIncomingOperationCommand, BotCreateSpendingOperationCommand,
+	BotGetOperationsHistory, BotCreateTransferOperationCommand, BotDeleteOperationCommand, BotUpdateOperationCommand,
+	BotUpdateOperationAmountCommand, BotUpdateOperationDescriptionCommand, BotUpdateOperationDateCommand, BotUpdateOperationCategoryCommand,
 	BotCreateBalanceSubscriptionCommand, BotListBalanceSubscriptionsCommand, BotDeleteBalanceSubscriptionCommand, BotUpdateBalanceSubscriptionCommand,
 	BotUpdateBalanceSubscriptionNameCommand, BotUpdateBalanceSubscriptionCategoryCommand, BotUpdateBalanceSubscriptionAmountCommand, BotUpdateBalanceSubscriptionPeriodCommand,
-	BotCancelCommand, BotBackCommand, BotNextCommand, BotPreviousCommand,
 }
 
 // CommandToEvent maps bot commands to their corresponding events
@@ -111,10 +126,15 @@ var CommandToEvent = map[string]Event{
 	BotBackCommand:   BackEvent,
 
 	// Wrappers
+	BotUserSettingsCommand:         UserSettingsEvent,
 	BotBalanceCommand:              BalanceEvent,
 	BotCategoryCommand:             CategoryEvent,
 	BotOperationCommand:            OperationEvent,
 	BotBalanceSubscriptionsCommand: BalanceSubscriptionEvent,
+
+	// User Settings
+	BotGetUserSettingsCommand:    GetUserSettingsEvent,
+	BotUpdateUserSettingsCommand: UpdateUserSettingsEvent,
 
 	// Balance
 	BotCreateBalanceCommand: CreateBalanceEvent,
@@ -143,6 +163,10 @@ var CommandToEvent = map[string]Event{
 
 // CommandToFistFlowStep maps commands to their initial flow steps
 var CommandToFistFlowStep = map[string]FlowStep{
+	// User
+	BotGetUserSettingsCommand:    GetUserSettingsFlowStep,
+	BotUpdateUserSettingsCommand: UpdateUserSettingsFlowStep,
+
 	// Balance
 	BotCreateBalanceCommand: CreateBalanceFlowStep,
 	BotUpdateBalanceCommand: UpdateBalanceFlowStep,
