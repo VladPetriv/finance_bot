@@ -123,6 +123,7 @@ func (s stateService) isSimpleEvent(event model.Event) bool {
 	return slices.Contains([]model.Event{
 		model.CancelEvent,
 		model.BackEvent,
+		model.UserSettingsEvent,
 		model.BalanceEvent,
 		model.CategoryEvent,
 		model.OperationEvent,
