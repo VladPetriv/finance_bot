@@ -525,3 +525,57 @@ func (h handlerService) sendMessageWithDefaultKeyboard(chatID int, message strin
 		Keyboard: defaultKeyboardRows,
 	})
 }
+
+type toggleSettingResult struct {
+	KeyboardRow   InlineKeyboardRow
+	OutputMessage string
+}
+
+type toggleSettingConfig struct {
+	Title       string
+	Icon        string
+	Description string
+	IsEnabled   bool
+}
+
+// generateToggleSetting creates a toggle setting interface with status message and enable/disable button.
+// Returns formatted message and keyboard row based on the current setting state.
+func generateToggleSetting(config toggleSettingConfig) toggleSettingResult {
+	statusEmoji := "❌ Disabled"
+	conditionText := "*enable*"
+	keyboardRow := InlineKeyboardRow{
+		Buttons: []InlineKeyboardButton{
+			{
+				Text: model.BotEnableCommand,
+			},
+		},
+	}
+
+	if config.IsEnabled {
+		statusEmoji = "✅ Enabled"
+		conditionText = "*disable*"
+		keyboardRow = InlineKeyboardRow{
+			Buttons: []InlineKeyboardButton{
+				{
+					Text: model.BotDisableCommand,
+				},
+			},
+		}
+	}
+
+	outputMessage := fmt.Sprintf(
+		"%s *%s*\n"+
+			"Current Status: %s\n"+
+			"Select the button below to %s %s.",
+		config.Icon,
+		config.Title,
+		statusEmoji,
+		conditionText,
+		config.Description,
+	)
+
+	return toggleSettingResult{
+		KeyboardRow:   keyboardRow,
+		OutputMessage: outputMessage,
+	}
+}
