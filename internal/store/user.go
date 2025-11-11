@@ -42,7 +42,17 @@ func (u *userStore) CreateSettings(ctx context.Context, settings *model.UserSett
 	return err
 }
 
-func (u userStore) Get(ctx context.Context, filter service.GetUserFilter) (*model.User, error) {
+func (u *userStore) UpdateSettings(ctx context.Context, settings *model.UserSettings) error {
+	_, err := u.DB.ExecContext(
+		ctx,
+		"UPDATE user_settings SET ai_parser_enabled = $1, notify_about_subscription_payments = $2 WHERE id = $3;",
+		settings.AIParserEnabled, settings.NotifyAboutSubscriptionPayments, settings.ID,
+	)
+
+	return err
+}
+
+func (u *userStore) Get(ctx context.Context, filter service.GetUserFilter) (*model.User, error) {
 	stmt := sq.
 		StatementBuilder.
 		PlaceholderFormat(sq.Dollar).

@@ -28,6 +28,8 @@ type UserStore interface {
 	Get(ctx context.Context, filters GetUserFilter) (*model.User, error)
 	// CreateSettings creates a new user settings in store.
 	CreateSettings(ctx context.Context, settings *model.UserSettings) error
+	// UpdateSettings updates user settings in store.
+	UpdateSettings(ctx context.Context, settings *model.UserSettings) error
 }
 
 // GetUserFilter represents a filters for GetUser method.
