@@ -89,7 +89,7 @@ func (s stateService) handleNewState(ctx context.Context, message Message, event
 		UserID:    message.GetSenderName(),
 		Flow:      model.EventToFlow[event],
 		Steps:     []model.FlowStep{model.StartFlowStep},
-		Metedata:  make(map[string]any),
+		Metadata:  make(model.Metadata),
 		CreatedAt: time.Now(),
 		UpdatedAt: time.Now(),
 	}
@@ -145,15 +145,15 @@ func (s stateService) handleSimpleEvent(ctx context.Context, message Message, st
 		UserID:    message.GetSenderName(),
 		Flow:      model.EventToFlow[event],
 		Steps:     []model.FlowStep{model.StartFlowStep, model.EndFlowStep},
-		Metedata:  make(map[string]any),
+		Metadata:  make(model.Metadata),
 		CreatedAt: time.Now(),
 		UpdatedAt: time.Now(),
 	}
 	// Store the base flow in metadata when canceling to preserve the user's context.
 	// This allows returning to the previous keyboard layout instead of the default one.
 	if event == model.CancelEvent {
-		completedState.Metedata = map[string]any{
-			baseFlowKey: model.GetBaseFlowFromCurrentFlow(state.Flow),
+		completedState.Metadata = model.Metadata{
+			model.BaseFlowMetadataKey: model.GetBaseFlowFromCurrentFlow(state.Flow),
 		}
 	}
 

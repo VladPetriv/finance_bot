@@ -45,7 +45,7 @@ type flowProcessingOptions struct {
 	user          *model.User
 	message       Message
 	state         *model.State
-	stateMetaData map[string]any
+	stateMetaData model.Metadata
 }
 
 // HandleErrorOptions represents input structure for HandleError method.
@@ -354,40 +354,6 @@ var (
 	ErrNoBalanceSubscriptionsFound = errs.New("No balance subscriptions found. Please try to select another balance.")
 	// ErrBalanceSubscriptionNotFound happens when don't receive balance subscription from store.
 	ErrBalanceSubscriptionNotFound = errs.New("Balance subscription not found. Please try to select another balance subscription.")
-)
-
-const (
-	// General keys
-	baseFlowKey     = "base_flow"
-	pageMetadataKey = "page"
-
-	// Balance related keys
-	balanceIDMetadataKey          = "balance_id"
-	balanceNameMetadataKey        = "balance_name"
-	balanceAmountMetadataKey      = "balance_amount"
-	balanceFromMetadataKey        = "balance_from"
-	balanceToMetadataKey          = "balance_to"
-	currentBalanceNameMetadataKey = "current_balance_name"
-	monthForBalanceStatisticsKey  = "month_for_balance_statistics"
-
-	// Category related keys
-	previousCategoryIDMetadataKey = "previous_category_id"
-	categoryTitleMetadataKey      = "category_title"
-	categoryIDMetadataKey         = "category_id"
-
-	// Operation related keys
-	exchangeRateMetadataKey            = "exchange_rate"
-	operationDescriptionMetadataKey    = "operation_description"
-	operationAmountMetadataKey         = "operation_amount"
-	operationTypeMetadataKey           = "operation_type"
-	operationIDMetadataKey             = "operation_id"
-	operationCreationPeriodMetadataKey = "operation_creation_period"
-
-	// Balance subscription related keys
-	balanceSubscriptionIDMetadataKey     = "balance_subscription_id"
-	balanceSubscriptionNameMetadataKey   = "balance_subscription_name"
-	balanceSubscriptionPeriodMetadataKey = "balance_subscription_period"
-	balanceSubscriptionAmountMetadataKey = "balance_subscription_amount"
 )
 
 // StateService represents a service for managing and handling complex bot flow using state.

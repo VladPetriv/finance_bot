@@ -129,8 +129,7 @@ func (h handlerService) handleChooseCategoryFlowStepForUpdate(ctx context.Contex
 		return "", ErrCategoryNotFound
 	}
 
-	opts.stateMetaData[previousCategoryIDMetadataKey] = category.ID
-
+	opts.stateMetaData.Add(model.PreviousCategoryIDMetadataKey, category.ID)
 	return model.EnterUpdatedCategoryNameFlowStep, h.apis.Messenger.UpdateMessage(UpdateMessageOptions{
 		ChatID:                  opts.message.GetChatID(),
 		MessageID:               opts.message.GetMessageID(),
@@ -144,8 +143,14 @@ func (h handlerService) handleEnterUpdatedCategoryNameFlowStep(ctx context.Conte
 	logger := h.logger.With().Str("name", "handlerService.handleEnterUpdatedCategoryNameFlowStep").Logger()
 	logger.Debug().Any("opts", opts).Msg("got args")
 
+	previousCategoryID, ok := model.GetTypedFromMetadata[string](opts.stateMetaData, model.PreviousCategoryIDMetadataKey)
+	if !ok {
+		logger.Error().Msg("previous category id not found in metadata")
+		return "", fmt.Errorf("previous category id not found in metadata")
+	}
+
 	category, err := h.stores.Category.Get(ctx, GetCategoryFilter{
-		ID: opts.stateMetaData[previousCategoryIDMetadataKey].(string),
+		ID: previousCategoryID,
 	})
 	if err != nil {
 		logger.Error().Err(err).Msg("get category from store")

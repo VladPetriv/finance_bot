@@ -63,10 +63,10 @@ func (h *handlerService) handleCreateOperationsThroughOneTimeInputFlowStep(ctx c
 		return model.EndFlowStep, ErrCategoryNotFound
 	}
 
-	opts.stateMetaData[categoryTitleMetadataKey] = categoryTitle
-	opts.stateMetaData[operationTypeMetadataKey] = operationData.Type
-	opts.stateMetaData[operationAmountMetadataKey] = parsedAmount.StringFixed()
-	opts.stateMetaData[operationDescriptionMetadataKey] = operationData.Description
+	opts.stateMetaData.Add(model.CategoryTitleMetadataKey, categoryTitle)
+	opts.stateMetaData.Add(model.OperationTypeMetadataKey, operationData.Type)
+	opts.stateMetaData.Add(model.OperationAmountMetadataKey, parsedAmount.StringFixed())
+	opts.stateMetaData.Add(model.OperationDescriptionMetadataKey, operationData.Description)
 
 	operationDetailsMessage := fmt.Sprintf(`Please confirm the following operation details:
 Category: %s
@@ -111,20 +111,32 @@ func (h *handlerService) handleChooseBalanceFlowStepForOneTimeInputOperationCrea
 	if balance == nil {
 		return model.EndFlowStep, ErrBalanceNotFound
 	}
-	opts.stateMetaData[balanceNameMetadataKey] = balance.Name
+	opts.stateMetaData.Add(model.BalanceNameMetadataKey, balance.Name)
 
-	parsedAmount, err := money.NewFromString(opts.stateMetaData[operationAmountMetadataKey].(string))
+	operationAmount, ok := model.GetTypedFromMetadata[string](opts.stateMetaData, model.OperationAmountMetadataKey)
+	if !ok {
+		logger.Error().Msg("operation amount not found in metadata")
+		return "", fmt.Errorf("operation amount not found in metadata")
+	}
+
+	operationType, ok := model.GetTypedFromMetadata[string](opts.stateMetaData, model.OperationTypeMetadataKey)
+	if !ok {
+		logger.Error().Msg("operation type not found in metadata")
+		return "", fmt.Errorf("operation type not found in metadata")
+	}
+
+	parsedAmount, err := money.NewFromString(operationAmount)
 	if err != nil {
 		logger.Error().Err(err).Msg("parse amount")
 		return "", fmt.Errorf("parse amount: %w", err)
 	}
 
-	operationType := model.OperationType(opts.stateMetaData[operationTypeMetadataKey].(string))
+	parsedOperationType := model.OperationType(operationType)
 
 	operation, err := h.createSpendingOrIncomingOperation(ctx, createSpendingOrIncomingOperationOptions{
 		user:            opts.user,
 		metaData:        opts.stateMetaData,
-		operationType:   operationType,
+		operationType:   parsedOperationType,
 		operationAmount: parsedAmount,
 	})
 	if err != nil {
@@ -182,7 +194,7 @@ func (h handlerService) handleProcessOperationTypeFlowStep(_ context.Context, op
 	logger.Debug().Any("opts", opts).Msg("got args")
 
 	operationType := model.OperationCommandToOperationType[opts.message.GetText()]
-	opts.stateMetaData[operationTypeMetadataKey] = operationType
+	opts.stateMetaData.Add(model.OperationTypeMetadataKey, operationType)
 
 	var (
 		nextStep model.FlowStep
@@ -211,7 +223,7 @@ func (h handlerService) handleChooseBalanceFlowStepForCreatingOperation(ctx cont
 	logger := h.logger.With().Str("name", "handlerService.handleChooseBalanceFlowStepForCreatingOperation").Logger()
 	logger.Debug().Any("opts", opts).Msg("got args")
 
-	opts.stateMetaData[balanceNameMetadataKey] = opts.message.GetText()
+	opts.stateMetaData.Add(model.BalanceNameMetadataKey, opts.message.GetText())
 
 	categories, err := h.stores.Category.List(ctx, &ListCategoriesFilter{
 		UserID: opts.user.ID,
@@ -239,7 +251,7 @@ func (h handlerService) handleChooseBalanceFromFlowStep(_ context.Context, opts 
 	logger := h.logger.With().Str("name", "handlerService.handleChooseBalanceFromFlowStep").Logger()
 	logger.Debug().Any("opts", opts).Msg("got args")
 
-	opts.stateMetaData[balanceFromMetadataKey] = opts.message.GetText()
+	opts.stateMetaData.Add(model.BalanceFromMetadataKey, opts.message.GetText())
 
 	userBalancesWithoutBalanceFrom := slices.DeleteFunc(opts.user.Balances, func(balance model.Balance) bool {
 		return balance.Name == opts.message.GetText()
@@ -259,10 +271,16 @@ func (h handlerService) handleChooseBalanceToFlowStep(ctx context.Context, opts 
 	logger := h.logger.With().Str("name", "handlerService.handleChooseBalanceToFlowStep").Logger()
 	logger.Debug().Any("opts", opts).Msg("got args")
 
-	opts.stateMetaData[balanceToMetadataKey] = opts.message.GetText()
+	opts.stateMetaData.Add(model.BalanceToMetadataKey, opts.message.GetText())
+
+	balanceFromName, ok := model.GetTypedFromMetadata[string](opts.stateMetaData, model.BalanceFromMetadataKey)
+	if !ok {
+		logger.Error().Msg("balance from not found in metadata")
+		return "", fmt.Errorf("balance from not found in metadata")
+	}
 
 	balanceFrom, err := h.stores.Balance.Get(ctx, GetBalanceFilter{
-		Name:            opts.stateMetaData[balanceFromMetadataKey].(string),
+		Name:            balanceFromName,
 		PreloadCurrency: true,
 	})
 	if err != nil {
@@ -315,11 +333,17 @@ func (h handlerService) handleEnterCurrencyExchangeRateFlowStep(ctx context.Cont
 		return "", ErrInvalidExchangeRateFormat
 	}
 
-	opts.stateMetaData[exchangeRateMetadataKey] = exchangeRate.String()
+	opts.stateMetaData.Add(model.ExchangeRateMetadataKey, exchangeRate.String())
 	logger.Debug().Any("exchangeRate", exchangeRate).Msg("parsed exchange rate")
 
+	balanceFromName, ok := model.GetTypedFromMetadata[string](opts.stateMetaData, model.BalanceFromMetadataKey)
+	if !ok {
+		logger.Error().Msg("balance from not found in metadata")
+		return "", fmt.Errorf("balance from not found in metadata")
+	}
+
 	balanceFrom, err := h.stores.Balance.Get(ctx, GetBalanceFilter{
-		Name:            opts.stateMetaData[balanceFromMetadataKey].(string),
+		Name:            balanceFromName,
 		PreloadCurrency: true,
 	})
 	if err != nil {
@@ -344,7 +368,7 @@ func (h handlerService) handleChooseCategoryFlowStep(_ context.Context, opts flo
 	logger := h.logger.With().Str("name", "handlerService.handleChooseCategoryFlowStep").Logger()
 	logger.Debug().Any("opts", opts).Msg("got args")
 
-	opts.stateMetaData[categoryTitleMetadataKey] = opts.message.GetText()
+	opts.stateMetaData.Add(model.CategoryTitleMetadataKey, opts.message.GetText())
 	return model.EnterOperationDescriptionFlowStep, h.apis.Messenger.UpdateMessage(UpdateMessageOptions{
 		ChatID:          opts.message.GetChatID(),
 		MessageID:       opts.message.GetMessageID(),
@@ -357,7 +381,7 @@ func (h handlerService) handleEnterOperationDescriptionFlowStep(_ context.Contex
 	logger := h.logger.With().Str("name", "handlerService.handleEnterOperationDescriptionFlowStep").Logger()
 	logger.Debug().Any("opts", opts).Msg("got args")
 
-	opts.stateMetaData[operationDescriptionMetadataKey] = opts.message.GetText()
+	opts.stateMetaData.Add(model.OperationDescriptionMetadataKey, opts.message.GetText())
 	return model.EnterOperationAmountFlowStep, h.apis.Messenger.SendMessage(opts.message.GetChatID(), "Enter operation amount:")
 }
 
@@ -372,18 +396,23 @@ func (h handlerService) handleEnterOperationAmountFlowStep(ctx context.Context, 
 	}
 	logger.Debug().Any("operationAmount", operationAmount).Msg("parsed operation amount")
 
-	operationType := model.OperationType(opts.stateMetaData[operationTypeMetadataKey].(string))
+	operationType, ok := model.GetTypedFromMetadata[string](opts.stateMetaData, model.OperationTypeMetadataKey)
+	if !ok {
+		logger.Error().Msg("operation type not found in metadata")
+		return "", fmt.Errorf("operation type not found in metadata")
+	}
+
+	parsedOperationType := model.OperationType(operationType)
 	logger.Debug().Any("operationType", operationType).Msg("parsed operation type")
 
-	outputMessage := ""
-
-	switch operationType {
+	var outputMessage string
+	switch parsedOperationType {
 	case model.OperationTypeIncoming, model.OperationTypeSpending:
 		operation, err := h.createSpendingOrIncomingOperation(ctx, createSpendingOrIncomingOperationOptions{
 			metaData:        opts.stateMetaData,
 			user:            opts.user,
 			operationAmount: operationAmount,
-			operationType:   operationType,
+			operationType:   parsedOperationType,
 		})
 		if err != nil {
 			logger.Error().Err(err).Msgf("create %s operation", operationType)
@@ -418,7 +447,7 @@ func (h handlerService) handleEnterOperationAmountFlowStep(ctx context.Context, 
 }
 
 type createSpendingOrIncomingOperationOptions struct {
-	metaData        map[string]any
+	metaData        model.Metadata
 	user            *model.User
 	operationAmount money.Money
 	operationType   model.OperationType
@@ -428,15 +457,32 @@ func (h handlerService) createSpendingOrIncomingOperation(ctx context.Context, o
 	logger := h.logger.With().Str("name", "handlerService.createSpendingOrIncomingOperation").Logger()
 	logger.Debug().Any("opts", opts).Msg("got args")
 
-	balance := opts.user.GetBalance(opts.metaData[balanceNameMetadataKey].(string))
+	balanceName, ok := model.GetTypedFromMetadata[string](opts.metaData, model.BalanceNameMetadataKey)
+	if !ok {
+		logger.Error().Msg("balance name not found in metadata")
+		return nil, fmt.Errorf("balance name not found in metadata")
+	}
+
+	categoryTitle, ok := model.GetTypedFromMetadata[string](opts.metaData, model.CategoryTitleMetadataKey)
+	if !ok {
+		logger.Error().Msg("category title not found in metadata")
+		return nil, fmt.Errorf("category title not found in metadata")
+	}
+
+	operationDescription, ok := model.GetTypedFromMetadata[string](opts.metaData, model.OperationDescriptionMetadataKey)
+	if !ok {
+		logger.Error().Msg("operation description not found in metadata")
+		return nil, fmt.Errorf("operation description not found in metadata")
+	}
+
+	balance := opts.user.GetBalance(balanceName)
 	if balance == nil {
 		logger.Info().Msg("balance not found")
 		return nil, ErrBalanceNotFound
 	}
-	logger.Debug().Any("balance", balance).Msg("got balance")
 
 	category, err := h.stores.Category.Get(ctx, GetCategoryFilter{
-		Title: opts.metaData[categoryTitleMetadataKey].(string),
+		Title: categoryTitle,
 	})
 	if err != nil {
 		logger.Error().Err(err).Msg("get category from store")
@@ -470,7 +516,7 @@ func (h handlerService) createSpendingOrIncomingOperation(ctx context.Context, o
 		CategoryID:  category.ID,
 		Type:        opts.operationType,
 		Amount:      opts.operationAmount.StringFixed(),
-		Description: opts.metaData[operationDescriptionMetadataKey].(string),
+		Description: operationDescription,
 		CreatedAt:   time.Now(),
 	}
 	logger.Debug().Any("operation", operation).Msg("build operation for create")
@@ -491,7 +537,7 @@ func (h handlerService) createSpendingOrIncomingOperation(ctx context.Context, o
 }
 
 type createTransferOperationOptions struct {
-	metaData        map[string]any
+	metaData        model.Metadata
 	user            *model.User
 	operationAmount money.Money
 }
@@ -500,14 +546,26 @@ func (h handlerService) createTransferOperation(ctx context.Context, opts create
 	logger := h.logger.With().Str("name", "handlerService.createTransferOperation").Logger()
 	logger.Debug().Any("opts", opts).Msg("got args")
 
-	balanceFrom := opts.user.GetBalance(opts.metaData[balanceFromMetadataKey].(string))
+	balanceFromName, ok := model.GetTypedFromMetadata[string](opts.metaData, model.BalanceFromMetadataKey)
+	if !ok {
+		logger.Error().Msg("balance from not found in metadata")
+		return nil, nil, fmt.Errorf("balance from not found in metadata")
+	}
+
+	balanceToName, ok := model.GetTypedFromMetadata[string](opts.metaData, model.BalanceToMetadataKey)
+	if !ok {
+		logger.Error().Msg("balance to not found in metadata")
+		return nil, nil, fmt.Errorf("balance to not found in metadata")
+	}
+
+	balanceFrom := opts.user.GetBalance(balanceFromName)
 	if balanceFrom == nil {
 		logger.Info().Msg("balance 'from' not found")
 		return nil, nil, ErrBalanceNotFound
 	}
 	logger.Debug().Any("balanceFrom", balanceFrom).Msg("got balance from which money is transferred")
 
-	balanceTo := opts.user.GetBalance(opts.metaData[balanceToMetadataKey].(string))
+	balanceTo := opts.user.GetBalance(balanceToName)
 	if balanceTo == nil {
 		logger.Info().Msg("balance 'to' not found")
 		return nil, nil, ErrBalanceNotFound
@@ -515,7 +573,6 @@ func (h handlerService) createTransferOperation(ctx context.Context, opts create
 	logger.Debug().Any("balanceTo", balanceTo).Msg("got balance to which money is transferred")
 
 	operationIDOut, operationIDIn := uuid.NewString(), uuid.NewString()
-
 	operationOut := model.Operation{
 		ID:                operationIDOut,
 		BalanceID:         balanceFrom.ID,
@@ -547,9 +604,9 @@ func (h handlerService) createTransferOperation(ctx context.Context, opts create
 		operationAmount: opts.operationAmount,
 	}
 
-	exchangeRate, ok := opts.metaData[exchangeRateMetadataKey]
+	exchangeRate, ok := model.GetTypedFromMetadata[string](opts.metaData, model.ExchangeRateMetadataKey)
 	if ok {
-		parsedExchangeRate, _ := money.NewFromString(exchangeRate.(string))
+		parsedExchangeRate, _ := money.NewFromString(exchangeRate)
 		operationIn.ExchangeRate = parsedExchangeRate.String()
 		operationOut.ExchangeRate = parsedExchangeRate.String()
 		calculateOptions.exchangeRate = &parsedExchangeRate
@@ -603,8 +660,8 @@ func (h handlerService) handleChooseBalanceFlowStepForGetOperationsHistory(_ con
 	logger := h.logger.With().Str("name", "handlerService.handleChooseBalanceFlowStepForGetOperationsHistory").Logger()
 	logger.Debug().Any("opts", opts).Msg("got args")
 
-	opts.stateMetaData[balanceNameMetadataKey] = opts.message.GetText()
-	opts.stateMetaData[pageMetadataKey] = firstPage
+	opts.stateMetaData.Add(model.BalanceNameMetadataKey, opts.message.GetText())
+	opts.stateMetaData.Add(model.PageMetadataKey, firstPage)
 
 	return model.ChooseTimePeriodForOperationsHistoryFlowStep, h.apis.Messenger.UpdateMessage(UpdateMessageOptions{
 		ChatID:                opts.message.GetChatID(),
@@ -619,8 +676,14 @@ func (h handlerService) handleChooseTimePeriodForOperationsHistoryFlowStep(ctx c
 	logger := h.logger.With().Str("name", "handlerService.handleChooseTimePeriodForOperationsHistoryFlowStep").Logger()
 	logger.Debug().Any("opts", opts).Msg("got args")
 
+	balanceName, ok := model.GetTypedFromMetadata[string](opts.stateMetaData, model.BalanceNameMetadataKey)
+	if !ok {
+		logger.Error().Msg("balance name not found in metadata")
+		return "", fmt.Errorf("balance name not found in metadata")
+	}
+
 	balance, err := h.stores.Balance.Get(ctx, GetBalanceFilter{
-		Name:            opts.stateMetaData[balanceNameMetadataKey].(string),
+		Name:            balanceName,
 		PreloadCurrency: true,
 	})
 	if err != nil {
@@ -635,15 +698,21 @@ func (h handlerService) handleChooseTimePeriodForOperationsHistoryFlowStep(ctx c
 
 	messageText := opts.message.GetText()
 	if isPaginationNeeded(messageText) {
+		creationPeriod, ok := model.GetTypedFromMetadata[string](opts.stateMetaData, model.OperationCreationPeriodMetadataKey)
+		if !ok {
+			logger.Error().Msg("creation period not found in metadata")
+			return "", fmt.Errorf("creation period not found in metadata")
+		}
+
 		nextPage := calculateNextPage(messageText, opts.stateMetaData)
-		opts.stateMetaData[pageMetadataKey] = nextPage
-		creationPeriod := model.CreationPeriod(opts.stateMetaData[operationCreationPeriodMetadataKey].(string))
+		opts.stateMetaData.Add(model.PageMetadataKey, nextPage)
+		parsedCreationPeriod := model.CreationPeriod(creationPeriod)
 
 		message, keyboard, err := h.getOperationsHistoryKeyboard(
 			ctx,
 			getOperationsHistoryKeyboardOptions{
 				balance:        balance,
-				creationPeriod: creationPeriod,
+				creationPeriod: parsedCreationPeriod,
 				page:           nextPage,
 			},
 		)
@@ -663,7 +732,7 @@ func (h handlerService) handleChooseTimePeriodForOperationsHistoryFlowStep(ctx c
 	}
 
 	creationPeriod := model.GetCreationPeriodFromText(messageText)
-	opts.stateMetaData[operationCreationPeriodMetadataKey] = creationPeriod
+	opts.stateMetaData.Add(model.OperationCreationPeriodMetadataKey, creationPeriod)
 
 	message, keyboard, err := h.getOperationsHistoryKeyboard(
 		ctx,
@@ -708,8 +777,8 @@ func (h handlerService) handleChooseBalanceFlowStepForDeleteOperation(ctx contex
 	logger := h.logger.With().Str("name", "handlerService.handleChooseBalanceFlowStepForDeleteOperation").Logger()
 	logger.Debug().Any("opts", opts).Msg("got args")
 
-	opts.stateMetaData[balanceNameMetadataKey] = opts.message.GetText()
-	opts.stateMetaData[pageMetadataKey] = firstPage
+	opts.stateMetaData.Add(model.BalanceNameMetadataKey, opts.message.GetText())
+	opts.stateMetaData.Add(model.PageMetadataKey, firstPage)
 
 	keyboard, err := h.getOperationsKeyboard(ctx, getOperationsKeyboardOptions{
 		balanceID: opts.user.GetBalance(opts.message.GetText()).ID,
@@ -734,11 +803,17 @@ func (h handlerService) handleChooseOperationToDeleteFlowStep(ctx context.Contex
 
 	messageText := opts.message.GetText()
 	if isPaginationNeeded(messageText) {
+		balanceName, ok := model.GetTypedFromMetadata[string](opts.stateMetaData, model.BalanceNameMetadataKey)
+		if !ok {
+			logger.Error().Msg("balance name not found in metadata")
+			return "", fmt.Errorf("balance name not found in metadata")
+		}
+
 		nextPage := calculateNextPage(messageText, opts.stateMetaData)
-		opts.stateMetaData[pageMetadataKey] = nextPage
+		opts.stateMetaData.Add(model.PageMetadataKey, nextPage)
 
 		keyboard, err := h.getOperationsKeyboard(ctx, getOperationsKeyboardOptions{
-			balanceID: opts.user.GetBalance(opts.stateMetaData[balanceNameMetadataKey].(string)).ID,
+			balanceID: opts.user.GetBalance(balanceName).ID,
 			page:      nextPage,
 		})
 		if err != nil {
@@ -767,8 +842,7 @@ func (h handlerService) handleChooseOperationToDeleteFlowStep(ctx context.Contex
 		return "", ErrOperationNotFound
 	}
 
-	opts.stateMetaData[operationIDMetadataKey] = operation.ID
-
+	opts.stateMetaData.Add(model.OperationIDMetadataKey, operation.ID)
 	return model.ConfirmOperationDeletionFlowStep, h.apis.Messenger.UpdateMessage(UpdateMessageOptions{
 		ChatID:                opts.message.GetChatID(),
 		MessageID:             opts.message.GetMessageID(),
@@ -793,10 +867,22 @@ func (h handlerService) handleConfirmOperationDeletionFlowStep(ctx context.Conte
 		return model.EndFlowStep, h.notifyCancellationAndShowKeyboard(opts.message, operationKeyboardRows)
 	}
 
+	balanceName, ok := model.GetTypedFromMetadata[string](opts.stateMetaData, model.BalanceNameMetadataKey)
+	if !ok {
+		logger.Error().Msg("balance name not found in metadata")
+		return "", fmt.Errorf("balance name not found in metadata")
+	}
+
+	operationID, ok := model.GetTypedFromMetadata[string](opts.stateMetaData, model.OperationIDMetadataKey)
+	if !ok {
+		logger.Error().Msg("operation id not found in metadata")
+		return "", fmt.Errorf("operation id not found in metadata")
+	}
+
 	err = h.deleteOperation(ctx, deleteOperationOptions{
 		user:        opts.user,
-		balanceName: opts.stateMetaData[balanceNameMetadataKey].(string),
-		operationID: opts.stateMetaData[operationIDMetadataKey].(string),
+		balanceName: balanceName,
+		operationID: operationID,
 	})
 	if err != nil {
 		logger.Error().Err(err).Msg("delete operation")
@@ -984,14 +1070,15 @@ func (h handlerService) handleChooseBalanceFlowStepForUpdateOperation(ctx contex
 	logger := h.logger.With().Str("name", "handlerService.handleChooseBalanceFlowStepForUpdateOperation").Logger()
 	logger.Debug().Any("opts", opts).Msg("got args")
 
-	opts.stateMetaData[balanceNameMetadataKey] = opts.message.GetText()
-	opts.stateMetaData[pageMetadataKey] = firstPage
+	opts.stateMetaData.Add(model.BalanceNameMetadataKey, opts.message.GetText())
+	opts.stateMetaData.Add(model.PageMetadataKey, firstPage)
 
 	keyboard, err := h.getOperationsKeyboard(ctx, getOperationsKeyboardOptions{
 		balanceID: opts.user.GetBalance(opts.message.GetText()).ID,
 		page:      firstPage,
 	})
 	if err != nil {
+		logger.Error().Err(err).Msg("get operations keyboard")
 		return "", fmt.Errorf("get operations keyboard: %w", err)
 	}
 
@@ -1010,11 +1097,17 @@ func (h handlerService) handleChooseOperationToUpdateFlowStep(ctx context.Contex
 
 	messageText := opts.message.GetText()
 	if isPaginationNeeded(messageText) {
+		balanceName, ok := model.GetTypedFromMetadata[string](opts.stateMetaData, model.BalanceNameMetadataKey)
+		if !ok {
+			logger.Error().Msg("balance name not found in metadata")
+			return "", fmt.Errorf("balance name not found in metadata")
+		}
+
 		nextPage := calculateNextPage(messageText, opts.stateMetaData)
-		opts.stateMetaData[pageMetadataKey] = nextPage
+		opts.stateMetaData.Add(model.PageMetadataKey, nextPage)
 
 		keyboard, err := h.getOperationsKeyboard(ctx, getOperationsKeyboardOptions{
-			balanceID: opts.user.GetBalance(opts.stateMetaData[balanceNameMetadataKey].(string)).ID,
+			balanceID: opts.user.GetBalance(balanceName).ID,
 			page:      nextPage,
 		})
 		if err != nil {
@@ -1044,10 +1137,9 @@ func (h handlerService) handleChooseOperationToUpdateFlowStep(ctx context.Contex
 		return "", ErrOperationNotFound
 	}
 
-	opts.stateMetaData[operationIDMetadataKey] = operation.ID
+	opts.stateMetaData.Add(model.OperationIDMetadataKey, operation.ID)
 
 	outputMessage := fmt.Sprintf("Choose update operation option:\n%s", operation.GetDetails())
-
 	return model.ChooseUpdateOperationOptionFlowStep, h.apis.Messenger.UpdateMessage(UpdateMessageOptions{
 		ChatID:                opts.message.GetChatID(),
 		MessageID:             opts.message.GetMessageID(),
@@ -1061,8 +1153,14 @@ func (h handlerService) handleChooseUpdateOperationOptionFlowStep(ctx context.Co
 	logger := h.logger.With().Str("name", "handlerService.handleChooseUpdateOperationOptionFlowStep").Logger()
 	logger.Debug().Any("opts", opts).Msg("got args")
 
+	operationID, ok := model.GetTypedFromMetadata[string](opts.stateMetaData, model.OperationIDMetadataKey)
+	if !ok {
+		logger.Error().Msg("operation id not found in metadata")
+		return "", fmt.Errorf("operation id not found in metadata")
+	}
+
 	operation, err := h.stores.Operation.Get(ctx, GetOperationFilter{
-		ID:         opts.stateMetaData[operationIDMetadataKey].(string),
+		ID:         operationID,
 		BalanceIDs: opts.user.GetBalancesIDs(),
 	})
 	if err != nil {
@@ -1165,8 +1263,14 @@ func (h handlerService) handleEnterOperationAmountFlowStepForUpdate(ctx context.
 		return "", ErrInvalidAmountFormat
 	}
 
+	operationID, ok := model.GetTypedFromMetadata[string](opts.stateMetaData, model.OperationIDMetadataKey)
+	if !ok {
+		logger.Error().Msg("operation id not found in metadata")
+		return "", fmt.Errorf("operation id not found in metadata")
+	}
+
 	initialOperation, err := h.stores.Operation.Get(ctx, GetOperationFilter{
-		ID:         opts.stateMetaData[operationIDMetadataKey].(string),
+		ID:         operationID,
 		BalanceIDs: opts.user.GetBalancesIDs(),
 	})
 	if err != nil {
@@ -1356,8 +1460,14 @@ func (h handlerService) handleEnterOperationDescriptionFlowStepForUpdate(ctx con
 	logger := h.logger.With().Str("name", "handlerService.handleEnterOperationDescriptionFlowStepForUpdate").Logger()
 	logger.Debug().Any("opts", opts).Msg("got args")
 
+	operationID, ok := model.GetTypedFromMetadata[string](opts.stateMetaData, model.OperationIDMetadataKey)
+	if !ok {
+		logger.Error().Msg("operation id not found in metadata")
+		return "", fmt.Errorf("operation id not found in metadata")
+	}
+
 	operation, err := h.stores.Operation.Get(ctx, GetOperationFilter{
-		ID:         opts.stateMetaData[operationIDMetadataKey].(string),
+		ID:         operationID,
 		BalanceIDs: opts.user.GetBalancesIDs(),
 	})
 	if err != nil {
@@ -1405,8 +1515,14 @@ func (h handlerService) handleChooseCategoryFlowStepForOperationUpdate(ctx conte
 		return "", ErrCategoryNotFound
 	}
 
+	operationID, ok := model.GetTypedFromMetadata[string](opts.stateMetaData, model.OperationIDMetadataKey)
+	if !ok {
+		logger.Error().Msg("operation id not found in metadata")
+		return "", fmt.Errorf("operation id not found in metadata")
+	}
+
 	operation, err := h.stores.Operation.Get(ctx, GetOperationFilter{
-		ID:         opts.stateMetaData[operationIDMetadataKey].(string),
+		ID:         operationID,
 		BalanceIDs: opts.user.GetBalancesIDs(),
 	})
 	if err != nil {
@@ -1445,8 +1561,14 @@ func (h handlerService) handleEnterOperationDateFlowStep(ctx context.Context, op
 	logger := h.logger.With().Str("name", "handlerService.handleEnterOperationDateFlowStep").Logger()
 	logger.Debug().Any("opts", opts).Msg("got args")
 
+	operationID, ok := model.GetTypedFromMetadata[string](opts.stateMetaData, model.OperationIDMetadataKey)
+	if !ok {
+		logger.Error().Msg("operation id not found in metadata")
+		return "", fmt.Errorf("operation id not found in metadata")
+	}
+
 	operation, err := h.stores.Operation.Get(ctx, GetOperationFilter{
-		ID:         opts.stateMetaData[operationIDMetadataKey].(string),
+		ID:         operationID,
 		BalanceIDs: opts.user.GetBalancesIDs(),
 	})
 	if err != nil {

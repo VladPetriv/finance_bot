@@ -278,7 +278,7 @@ func (h handlerService) HandleCancel(ctx context.Context, msg Message) error {
 		return fmt.Errorf("get state from context: %w", err)
 	}
 
-	previousBaseFlow, ok := state.Metedata[baseFlowKey].(model.Flow)
+	previousBaseFlow, ok := model.GetTypedFromMetadata[model.Flow](state.Metadata, model.BaseFlowMetadataKey)
 	if !ok {
 		logger.Warn().Msg("no base flow found in metadata, showing default menu")
 		return h.sendMessageWithDefaultKeyboard(msg.GetChatID(), "Please choose command to execute:")
@@ -429,7 +429,7 @@ func (h handlerService) processHandler(ctx context.Context, state *model.State, 
 		user:          user,
 		message:       message,
 		state:         state,
-		stateMetaData: state.Metedata,
+		stateMetaData: state.Metadata,
 	})
 	if err != nil {
 		if errs.IsExpected(err) {
@@ -455,7 +455,7 @@ func getStateFromContext(ctx context.Context) (*model.State, error) {
 
 type updateStateOptions struct {
 	updatedStep     model.FlowStep
-	updatedMetadata map[string]any
+	updatedMetadata model.Metadata
 	initialState    *model.State
 }
 
@@ -468,7 +468,7 @@ func (h handlerService) updateState(ctx context.Context, opts updateStateOptions
 	}
 
 	if len(opts.updatedMetadata) > 0 {
-		opts.initialState.Metedata = opts.updatedMetadata
+		opts.initialState.Metadata = opts.updatedMetadata
 	}
 
 	updatedState, err := h.stores.State.Update(ctx, opts.initialState)

@@ -52,7 +52,7 @@ func TestState_Create(t *testing.T) {
 				UserID: "test_state_create" + userID1,
 				Flow:   model.StartFlow,
 				Steps:  []model.FlowStep{model.StartFlowStep, model.CreateInitialBalanceFlowStep},
-				Metedata: map[string]any{
+				Metadata: model.Metadata{
 					"string": "test",
 					"bool":   true,
 				},
@@ -109,9 +109,19 @@ func TestState_Create(t *testing.T) {
 			if len(tc.args.Steps) != 0 {
 				assert.Equal(t, tc.args.Steps, actual.Steps)
 			}
-			if tc.args.Metedata != nil {
-				assert.Equal(t, tc.args.Metedata["string"].(string), actual.Metedata["string"].(string))
-				assert.Equal(t, tc.args.Metedata["bool"].(bool), actual.Metedata["bool"].(bool))
+			if tc.args.Metadata != nil {
+				expectedStringValue, ok := model.GetTypedFromMetadata[string](tc.args.Metadata, "string")
+				assert.True(t, ok)
+				expectedBoolValue, ok := model.GetTypedFromMetadata[bool](tc.args.Metadata, "bool")
+				assert.True(t, ok)
+
+				actualStringValue, ok := model.GetTypedFromMetadata[string](actual.Metadata, "string")
+				assert.True(t, ok)
+				actualBoolValue, ok := model.GetTypedFromMetadata[bool](actual.Metadata, "bool")
+				assert.True(t, ok)
+
+				assert.Equal(t, expectedStringValue, actualStringValue)
+				assert.Equal(t, expectedBoolValue, actualBoolValue)
 			}
 		})
 	}
@@ -245,8 +255,8 @@ func TestState_Update(t *testing.T) {
 				UserID: "test_state_update" + userID,
 				Flow:   model.StartFlow,
 				Steps:  []model.FlowStep{model.StartFlowStep, model.CreateInitialBalanceFlowStep},
-				Metedata: map[string]any{
-					"updated_flow_blabla": "test",
+				Metadata: model.Metadata{
+					model.BaseFlowMetadataKey: "test",
 				},
 			},
 			expected: &model.State{
@@ -254,8 +264,8 @@ func TestState_Update(t *testing.T) {
 				UserID: "test_state_update" + userID,
 				Flow:   model.StartFlow,
 				Steps:  []model.FlowStep{model.StartFlowStep, model.CreateInitialBalanceFlowStep},
-				Metedata: map[string]any{
-					"updated_flow_blabla": "test",
+				Metadata: model.Metadata{
+					model.BaseFlowMetadataKey: "test",
 				},
 			},
 		},
@@ -284,7 +294,7 @@ func TestState_Update(t *testing.T) {
 			assert.Equal(t, tc.expected.UserID, actual.UserID)
 			assert.Equal(t, tc.expected.Flow, actual.Flow)
 			assert.Equal(t, tc.expected.Steps, actual.Steps)
-			assert.Equal(t, tc.expected.Metedata, actual.Metedata)
+			assert.Equal(t, tc.expected.Metadata, actual.Metadata)
 		})
 	}
 }

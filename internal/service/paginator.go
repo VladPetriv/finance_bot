@@ -14,8 +14,8 @@ func isPaginationNeeded(text string) bool {
 	return slices.Contains([]string{model.BotPreviousCommand, model.BotNextCommand}, text)
 }
 
-func calculateNextPage(text string, metadata map[string]any) int {
-	currentPage := metadata[pageMetadataKey].(float64)
+func calculateNextPage(text string, metadata model.Metadata) int {
+	currentPage, _ := model.GetTypedFromMetadata[float64](metadata, model.PageMetadataKey)
 	switch {
 	case text == model.BotPreviousCommand && currentPage > firstPage:
 		currentPage--
