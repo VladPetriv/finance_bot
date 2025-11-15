@@ -27,7 +27,7 @@ func (s *stateStore) Create(ctx context.Context, state *model.State) error {
 	_, err := s.DB.ExecContext(
 		ctx,
 		"INSERT INTO states (id, user_username, flow, steps, metadata) VALUES ($1, $2, $3, $4, $5);",
-		state.ID, state.UserID, state.Flow, state.Steps, state.Metedata,
+		state.ID, state.UserID, state.Flow, state.Steps, state.Metadata,
 	)
 
 	return err
@@ -74,13 +74,13 @@ func (s *stateStore) Update(ctx context.Context, state *model.State) (*model.Sta
 		 	updated_at = NOW()
 		WHERE id = $5
 		RETURNING *;`,
-		state.UserID, state.Flow, state.Steps, state.Metedata, state.ID,
+		state.UserID, state.Flow, state.Steps, state.Metadata, state.ID,
 	).Scan(
 		&updatedState.ID,
 		&updatedState.UserID,
 		&updatedState.Flow,
 		&updatedState.Steps,
-		&updatedState.Metedata,
+		&updatedState.Metadata,
 		&updatedState.CreatedAt,
 		&updatedState.UpdatedAt,
 	)

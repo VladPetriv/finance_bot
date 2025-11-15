@@ -40,7 +40,7 @@ func (h *handlerService) handleChooseBalanceFlowStepForCreateBalanceSubscription
 		return model.EndFlowStep, ErrBalanceNotFound
 	}
 
-	opts.stateMetaData[balanceIDMetadataKey] = balance.ID
+	opts.stateMetaData.Add(model.BalanceIDMetadataKey, balance.ID)
 
 	categories, err := h.stores.Category.List(ctx, &ListCategoriesFilter{
 		UserID: opts.user.ID,
@@ -77,8 +77,7 @@ func (h *handlerService) handleChooseCategoryFlowStepForCreateBalanceSubscriptio
 		return model.EndFlowStep, ErrCategoryNotFound
 	}
 
-	opts.stateMetaData[categoryIDMetadataKey] = category.ID
-
+	opts.stateMetaData.Add(model.CategoryIDMetadataKey, category.ID)
 	return model.EnterBalanceSubscriptionNameFlowStep, h.apis.Messenger.UpdateMessage(UpdateMessageOptions{
 		ChatID:          opts.message.GetChatID(),
 		MessageID:       opts.message.GetMessageID(),
@@ -91,8 +90,7 @@ func (h *handlerService) handleEnterBalanceSubscriptionNameFlowStep(ctx context.
 	logger := h.logger.With().Str("name", "handlerService.handleEnterBalanceSubscriptionNameFlowStep").Logger()
 	logger.Debug().Any("opts", opts).Msg("got args")
 
-	opts.stateMetaData[balanceSubscriptionNameMetadataKey] = opts.message.GetText()
-
+	opts.stateMetaData.Add(model.BalanceSubscriptionNameMetadataKey, opts.message.GetText())
 	return model.EnterBalanceSubscriptionAmountFlowStep, h.apis.Messenger.SendMessage(opts.message.GetChatID(), "Enter balance subscription amount:")
 }
 
@@ -105,8 +103,7 @@ func (h *handlerService) handleEnterBalanceSubscriptionAmountFlowStep(ctx contex
 		return "", ErrInvalidAmountFormat
 	}
 
-	opts.stateMetaData[balanceSubscriptionAmountMetadataKey] = parsedAmount.String()
-
+	opts.stateMetaData.Add(model.BalanceSubscriptionAmountMetadataKey, parsedAmount.String())
 	return model.ChooseBalanceSubscriptionFrequencyFlowStep, h.apis.Messenger.SendWithKeyboard(SendWithKeyboardOptions{
 		ChatID:         opts.message.GetChatID(),
 		Message:        "Choose subscription frequency:",
@@ -127,8 +124,7 @@ func (h *handlerService) handleChooseBalanceSubscriptionFrequencyFlowStep(_ cont
 		})
 	}
 
-	opts.stateMetaData[balanceSubscriptionPeriodMetadataKey] = period
-
+	opts.stateMetaData.Add(model.BalanceSubscriptionPeriodMetadataKey, period)
 	return model.EnterStartAtDateForBalanceSubscriptionFlowStep, h.apis.Messenger.UpdateMessage(
 		UpdateMessageOptions{
 			ChatID:          opts.message.GetChatID(),
@@ -151,17 +147,47 @@ func (h *handlerService) handleEnterStartAtDateForBalanceSubscriptionFlowStep(ct
 		return "", ErrInvalidDateFormat
 	}
 
-	period, err := model.ParseSubscriptionPeriod(opts.stateMetaData[balanceSubscriptionPeriodMetadataKey].(string))
+	balanceID, ok := model.GetTypedFromMetadata[string](opts.stateMetaData, model.BalanceIDMetadataKey)
+	if !ok {
+		logger.Error().Msg("balance id not found in metadata")
+		return "", fmt.Errorf("balance id not found in metadata")
+	}
+
+	categoryID, ok := model.GetTypedFromMetadata[string](opts.stateMetaData, model.CategoryIDMetadataKey)
+	if !ok {
+		logger.Error().Msg("category id not found in metadata")
+		return "", fmt.Errorf("category id not found in metadata")
+	}
+
+	balanceSubscriptionName, ok := model.GetTypedFromMetadata[string](opts.stateMetaData, model.BalanceSubscriptionNameMetadataKey)
+	if !ok {
+		logger.Error().Msg("balance subscription name not found in metadata")
+		return "", fmt.Errorf("balance subscription name not found in metadata")
+	}
+
+	balanceSubscriptionAmount, ok := model.GetTypedFromMetadata[string](opts.stateMetaData, model.BalanceSubscriptionAmountMetadataKey)
+	if !ok {
+		logger.Error().Msg("balance subscription amount not found in metadata")
+		return "", fmt.Errorf("balance subscription amount not found in metadata")
+	}
+
+	balanceSubscriptionPeriod, ok := model.GetTypedFromMetadata[string](opts.stateMetaData, model.BalanceSubscriptionPeriodMetadataKey)
+	if !ok {
+		logger.Error().Msg("balance subscription period not found in metadata")
+		return "", fmt.Errorf("balance subscription period not found in metadata")
+	}
+
+	period, err := model.ParseSubscriptionPeriod(balanceSubscriptionPeriod)
 	if err != nil {
 		return "", fmt.Errorf("parse subscription period: %w", err)
 	}
 
 	balanceSubscription := model.BalanceSubscription{
 		ID:         uuid.NewString(),
-		BalanceID:  opts.stateMetaData[balanceIDMetadataKey].(string),
-		CategoryID: opts.stateMetaData[categoryIDMetadataKey].(string),
-		Name:       opts.stateMetaData[balanceSubscriptionNameMetadataKey].(string),
-		Amount:     opts.stateMetaData[balanceSubscriptionAmountMetadataKey].(string),
+		BalanceID:  balanceID,
+		CategoryID: categoryID,
+		Name:       balanceSubscriptionName,
+		Amount:     balanceSubscriptionAmount,
 		Period:     period,
 		StartAt:    parsedStartAtTime,
 	}
@@ -192,8 +218,7 @@ func (h *handlerService) handleListBalanceSubscriptionFlowStep(_ context.Context
 		return "", fmt.Errorf("show cancel button: %w", err)
 	}
 
-	opts.stateMetaData[pageMetadataKey] = firstPage
-
+	opts.stateMetaData.Add(model.PageMetadataKey, firstPage)
 	return model.ChooseBalanceFlowStep, h.apis.Messenger.SendWithKeyboard(SendWithKeyboardOptions{
 		ChatID:         opts.message.GetChatID(),
 		Message:        "Select balance:",
@@ -207,10 +232,10 @@ func (h *handlerService) handleChooseBalanceFlowStepForListBalanceSubscriptions(
 
 	messageText := opts.message.GetText()
 
-	balanceName, ok := opts.stateMetaData[balanceNameMetadataKey].(string)
+	balanceName, ok := model.GetTypedFromMetadata[string](opts.stateMetaData, model.BalanceNameMetadataKey)
 	if !ok {
-		opts.stateMetaData[balanceNameMetadataKey] = messageText
-		opts.stateMetaData[pageMetadataKey] = firstPage
+		opts.stateMetaData.Add(model.BalanceNameMetadataKey, messageText)
+		opts.stateMetaData.Add(model.PageMetadataKey, firstPage)
 
 		balanceName = messageText
 	}
@@ -222,7 +247,7 @@ func (h *handlerService) handleChooseBalanceFlowStepForListBalanceSubscriptions(
 
 	if isPaginationNeeded(messageText) {
 		nextPage := calculateNextPage(messageText, opts.stateMetaData)
-		opts.stateMetaData[pageMetadataKey] = nextPage
+		opts.stateMetaData.Add(model.PageMetadataKey, nextPage)
 
 		message, keyboard, err := h.getListBalanceSubscriptionsKeyboard(ctx, getBalanceSubscriptionsKeyboardOptions{
 			userID:    opts.user.ID,
@@ -290,8 +315,8 @@ func (h *handlerService) handleChooseBalanceFlowStepForUpdateBalanceSubscription
 		return model.EndFlowStep, ErrBalanceNotFound
 	}
 
-	opts.stateMetaData[balanceIDMetadataKey] = balance.ID
-	opts.stateMetaData[pageMetadataKey] = firstPage
+	opts.stateMetaData.Add(model.BalanceIDMetadataKey, balance.ID)
+	opts.stateMetaData.Add(model.PageMetadataKey, firstPage)
 
 	keyboard, err := h.getBalanceSubscriptionsKeyboard(ctx, getBalanceSubscriptionsKeyboardOptions{
 		balanceID: balance.ID,
@@ -320,11 +345,17 @@ func (h *handlerService) handleChooseBalanceSubscriptionToUpdateFlowStep(ctx con
 
 	messageText := opts.message.GetText()
 	if isPaginationNeeded(messageText) {
+		balanceID, ok := model.GetTypedFromMetadata[string](opts.stateMetaData, model.BalanceIDMetadataKey)
+		if !ok {
+			logger.Error().Msg("balance ID not found in metadata")
+			return "", fmt.Errorf("balance ID not found in metadata")
+		}
+
 		nextPage := calculateNextPage(messageText, opts.stateMetaData)
-		opts.stateMetaData[pageMetadataKey] = nextPage
+		opts.stateMetaData.Add(model.PageMetadataKey, nextPage)
 
 		keyboard, err := h.getBalanceSubscriptionsKeyboard(ctx, getBalanceSubscriptionsKeyboardOptions{
-			balanceID: opts.stateMetaData[balanceIDMetadataKey].(string),
+			balanceID: balanceID,
 			page:      nextPage,
 		})
 		if err != nil {
@@ -353,8 +384,7 @@ func (h *handlerService) handleChooseBalanceSubscriptionToUpdateFlowStep(ctx con
 		return "", ErrBalanceSubscriptionNotFound
 	}
 
-	opts.stateMetaData[balanceSubscriptionIDMetadataKey] = balanceSubscription.ID
-
+	opts.stateMetaData.Add(model.BalanceSubscriptionIDMetadataKey, balanceSubscription.ID)
 	return model.ChooseUpdateBalanceSubscriptionOptionFlowStep, h.apis.Messenger.UpdateMessage(UpdateMessageOptions{
 		ChatID:                opts.message.GetChatID(),
 		MessageID:             opts.message.GetMessageID(),
@@ -368,8 +398,14 @@ func (h *handlerService) handleChooseUpdateBalanceSubscriptionOptionFlowStep(ctx
 	logger := h.logger.With().Str("name", "handlerService.handleChooseUpdateBalanceSubscriptionOptionFlowStep").Logger()
 	logger.Debug().Any("opts", opts).Msg("got message")
 
+	balanceSubscriptionID, ok := model.GetTypedFromMetadata[string](opts.stateMetaData, model.BalanceSubscriptionIDMetadataKey)
+	if !ok {
+		logger.Error().Msg("balance subscription ID not found in metadata")
+		return "", fmt.Errorf("balance subscription ID not found in metadata")
+	}
+
 	balanceSubscription, err := h.stores.BalanceSubscription.Get(ctx, GetBalanceSubscriptionFilter{
-		ID: opts.stateMetaData[balanceSubscriptionIDMetadataKey].(string),
+		ID: balanceSubscriptionID,
 	})
 	if err != nil {
 		logger.Error().Err(err).Msg("get balance subscription from store")
@@ -463,8 +499,14 @@ func (h *handlerService) handleEnterBalanceSubscriptionNameFlowStepForUpdate(ctx
 	logger := h.logger.With().Str("name", "handlerService.handleEnterBalanceSubscriptionNameFlowStepForUpdate").Logger()
 	logger.Debug().Any("opts", opts).Msg("got args")
 
+	balanceSubscriptionID, ok := model.GetTypedFromMetadata[string](opts.stateMetaData, model.BalanceSubscriptionIDMetadataKey)
+	if !ok {
+		logger.Error().Msg("balance subscription ID not found in metadata")
+		return "", fmt.Errorf("balance subscription ID not found in metadata")
+	}
+
 	balanceSubscription, err := h.stores.BalanceSubscription.Get(ctx, GetBalanceSubscriptionFilter{
-		ID: opts.stateMetaData[balanceSubscriptionIDMetadataKey].(string),
+		ID: balanceSubscriptionID,
 	})
 	if err != nil {
 		logger.Error().Err(err).Msg("get balance subscription from store")
@@ -504,8 +546,14 @@ func (h *handlerService) handleEnterBalanceSubscriptionAmountFlowStepForUpdate(c
 		return "", ErrInvalidAmountFormat
 	}
 
+	balanceSubscriptionID, ok := model.GetTypedFromMetadata[string](opts.stateMetaData, model.BalanceSubscriptionIDMetadataKey)
+	if !ok {
+		logger.Error().Msg("balance subscription ID not found in metadata")
+		return "", fmt.Errorf("balance subscription ID not found in metadata")
+	}
+
 	balanceSubscription, err := h.stores.BalanceSubscription.Get(ctx, GetBalanceSubscriptionFilter{
-		ID: opts.stateMetaData[balanceSubscriptionIDMetadataKey].(string),
+		ID: balanceSubscriptionID,
 	})
 	if err != nil {
 		logger.Error().Err(err).Msg("get balance subscription from store")
@@ -551,8 +599,14 @@ func (h *handlerService) handleChooseCategoryFlowStepForBalanceSubscriptionUpdat
 		return "", ErrCategoryNotFound
 	}
 
+	balanceSubscriptionID, ok := model.GetTypedFromMetadata[string](opts.stateMetaData, model.BalanceSubscriptionIDMetadataKey)
+	if !ok {
+		logger.Error().Msg("balance subscription ID not found in metadata")
+		return "", fmt.Errorf("balance subscription ID not found in metadata")
+	}
+
 	balanceSubscription, err := h.stores.BalanceSubscription.Get(ctx, GetBalanceSubscriptionFilter{
-		ID: opts.stateMetaData[balanceSubscriptionIDMetadataKey].(string),
+		ID: balanceSubscriptionID,
 	})
 	if err != nil {
 		logger.Error().Err(err).Msg("get balance subscription from store")
@@ -594,8 +648,14 @@ func (h *handlerService) handleChooseBalanceSubscriptionFrequencyFlowStepForUpda
 		return "", fmt.Errorf("parse subscription period: %w", err)
 	}
 
+	balanceSubscriptionID, ok := model.GetTypedFromMetadata[string](opts.stateMetaData, model.BalanceSubscriptionIDMetadataKey)
+	if !ok {
+		logger.Error().Msg("balance subscription ID not found in metadata")
+		return "", fmt.Errorf("balance subscription ID not found in metadata")
+	}
+
 	balanceSubscription, err := h.stores.BalanceSubscription.Get(ctx, GetBalanceSubscriptionFilter{
-		ID: opts.stateMetaData[balanceSubscriptionIDMetadataKey].(string),
+		ID: balanceSubscriptionID,
 	})
 	if err != nil {
 		logger.Error().Err(err).Msg("get balance subscription from store")
@@ -654,8 +714,8 @@ func (h *handlerService) handleChooseBalanceFlowStepForBalanceSubscriptionDelete
 		return model.EndFlowStep, ErrBalanceNotFound
 	}
 
-	opts.stateMetaData[balanceIDMetadataKey] = balance.ID
-	opts.stateMetaData[pageMetadataKey] = firstPage
+	opts.stateMetaData.Add(model.BalanceIDMetadataKey, balance.ID)
+	opts.stateMetaData.Add(model.PageMetadataKey, firstPage)
 
 	keyboard, err := h.getBalanceSubscriptionsKeyboard(ctx, getBalanceSubscriptionsKeyboardOptions{
 		balanceID: balance.ID,
@@ -681,11 +741,17 @@ func (h *handlerService) handleChooseBalanceSubscriptionToDeleteFlowStep(ctx con
 
 	messageText := opts.message.GetText()
 	if isPaginationNeeded(messageText) {
+		balanceID, ok := model.GetTypedFromMetadata[string](opts.stateMetaData, model.BalanceIDMetadataKey)
+		if !ok {
+			logger.Error().Msg("balance ID not found in metadata")
+			return "", fmt.Errorf("balance ID not found in metadata")
+		}
+
 		nextPage := calculateNextPage(messageText, opts.stateMetaData)
-		opts.stateMetaData[pageMetadataKey] = nextPage
+		opts.stateMetaData.Add(model.PageMetadataKey, nextPage)
 
 		keyboard, err := h.getBalanceSubscriptionsKeyboard(ctx, getBalanceSubscriptionsKeyboardOptions{
-			balanceID: opts.stateMetaData[balanceIDMetadataKey].(string),
+			balanceID: balanceID,
 			page:      nextPage,
 		})
 		if err != nil {
@@ -714,7 +780,7 @@ func (h *handlerService) handleChooseBalanceSubscriptionToDeleteFlowStep(ctx con
 		return "", ErrBalanceSubscriptionNotFound
 	}
 
-	opts.stateMetaData[balanceSubscriptionIDMetadataKey] = balanceSubscription.ID
+	opts.stateMetaData.Add(model.BalanceSubscriptionIDMetadataKey, balanceSubscription.ID)
 
 	return model.ConfirmDeleteBalanceSubscriptionFlowStep, h.apis.Messenger.UpdateMessage(UpdateMessageOptions{
 		ChatID:                opts.message.GetChatID(),
@@ -734,13 +800,18 @@ func (h *handlerService) handleConfirmDeleteBalanceSubscriptionFlowStep(ctx cont
 		logger.Error().Err(err).Msg("parse callback data to bool")
 		return "", fmt.Errorf("parse callback data to bool: %w", err)
 	}
-
 	if !confirmDeletion {
 		logger.Info().Msg("user did not confirm balance subscription deletion")
 		return model.EndFlowStep, h.notifyCancellationAndShowKeyboard(opts.message, balanceSubscriptionKeyboardRows)
 	}
 
-	err = h.stores.BalanceSubscription.Delete(ctx, opts.stateMetaData[balanceSubscriptionIDMetadataKey].(string))
+	balanceSubscriptionID, ok := model.GetTypedFromMetadata[string](opts.stateMetaData, model.BalanceSubscriptionIDMetadataKey)
+	if !ok {
+		logger.Error().Msg("balance subscription ID not found in metadata")
+		return "", fmt.Errorf("balance subscription ID not found in metadata")
+	}
+
+	err = h.stores.BalanceSubscription.Delete(ctx, balanceSubscriptionID)
 	if err != nil {
 		logger.Error().Err(err).Msg("delete balance subscription")
 		return "", fmt.Errorf("delete balance subscription: %w", err)
