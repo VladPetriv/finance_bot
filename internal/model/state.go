@@ -271,6 +271,16 @@ func (s *State) GetEvent() Event {
 		return UpdateBalanceSubscriptionEvent
 	case DeleteBalanceSubscriptionFlowStep:
 		return DeleteBalanceSubscriptionEvent
+
+	// Automatic Report
+	case CreateAutomaticReportFlowStep:
+		return CreateAutomaticReportEvent
+	case ListAutomaticReportsFlowStep:
+		return ListAutomaticReportsEvent
+	case UpdateAutomaticReportFlowStep:
+		return UpdateAutomaticReportEvent
+	case DeleteAutomaticReportFlowStep:
+		return DeleteAutomaticReportEvent
 	default:
 		return UnknownEvent
 	}
