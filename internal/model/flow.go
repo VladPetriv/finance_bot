@@ -28,6 +28,8 @@ const (
 	BalanceSubscriptionFlow Flow = "balance_subscriptions"
 	// UserSettingsFlow represents the flow for getting user settings actions
 	UserSettingsFlow Flow = "user_settings"
+	// AutomaticReportFlow represents the flow for getting automatic report actions
+	AutomaticReportFlow Flow = "automatic_report"
 
 	// GetUserSettingsFlow represents the flow for getting all user settings
 	GetUserSettingsFlow Flow = "get_user_settings"
@@ -71,6 +73,15 @@ const (
 	UpdateBalanceSubscriptionFlow Flow = "update_balance_subscription"
 	// DeleteBalanceSubscriptionFlow represents the flow for deleting a balance subscription
 	DeleteBalanceSubscriptionFlow Flow = "delete_balance_subscription"
+
+	// CreateAutomaticReportFlow represents the flow for creating a new "job" for automatic report
+	CreateAutomaticReportFlow Flow = "create_report"
+	// ListAutomaticReportsFlow represents the flow for getting a list of all "jobs" for automatic reports
+	ListAutomaticReportsFlow Flow = "list_reports"
+	// UpdateAutomaticReportFlow represents the flow for updating a "job" settings for automatic report
+	UpdateAutomaticReportFlow Flow = "update_report"
+	// DeleteAutomaticReportFlow represents the flow for deleting a "job" for automatic report
+	DeleteAutomaticReportFlow Flow = "delete_report"
 )
 
 // GetBaseFlowFromCurrentFlow returns base(wrapper) flow from current one.
@@ -103,6 +114,12 @@ func GetBaseFlowFromCurrentFlow(flow Flow) Flow {
 		GetUserSettingsFlow, UpdateUserSettingsFlow,
 	}, flow) {
 		return UserSettingsFlow
+	}
+
+	if slices.Contains([]Flow{
+		CreateAutomaticReportFlow, ListAutomaticReportsFlow, UpdateAutomaticReportFlow, DeleteAutomaticReportFlow,
+	}, flow) {
+		return AutomaticReportFlow
 	}
 
 	return ""
@@ -267,4 +284,15 @@ const (
 	ChooseBalanceSubscriptionToDeleteFlowStep FlowStep = "choose_balance_subscription_to_delete"
 	// ConfirmDeleteBalanceSubscriptionFlowStep represents the step for confirming deletion of a balance subscription
 	ConfirmDeleteBalanceSubscriptionFlowStep FlowStep = "confirm_delete_balance_subscription"
+
+	// Steps that are related to automatic reports
+
+	// CreateAutomaticReportFlowStep represents the step for creating a new automatic report "job"
+	CreateAutomaticReportFlowStep FlowStep = "create_automatic_report"
+	// ListAutomaticReportsFlowStep represents the step for getting a list of automatic report "jobs"
+	ListAutomaticReportsFlowStep FlowStep = "list_automatic_reports"
+	// UpdateAutomaticReportFlowStep represents the step for updating an automatic report
+	UpdateAutomaticReportFlowStep FlowStep = "update_automatic_report"
+	// DeleteAutomaticReportFlowStep represents the step for deleting an automatic report
+	DeleteAutomaticReportFlowStep FlowStep = "delete_automatic_report"
 )

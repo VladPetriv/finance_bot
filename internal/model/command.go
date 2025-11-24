@@ -15,6 +15,8 @@ const (
 	BotOperationCommand string = "💸 Operation"
 	// BotBalanceSubscriptionsCommand represents the wrapper command for managing balance subscription actions
 	BotBalanceSubscriptionsCommand string = "🔄 Balance Subscriptions"
+	// BotAutomaticReportCommand represents the wrapper command for automatic reports action
+	BotAutomaticReportCommand string = "📊 Automatic Reports"
 
 	// BotGetUserSettingsCommand represents the command to get user settings
 	BotGetUserSettingsCommand string = "Get User Settings ⚙️"
@@ -89,6 +91,15 @@ const (
 	// BotDeleteBalanceSubscriptionCommand represents the command to delete a balance subscription
 	BotDeleteBalanceSubscriptionCommand string = "Delete Balance Subscription 🗑️"
 
+	// BotCreateAutomaticReportCommand represents the command to create a new automatic report
+	BotCreateAutomaticReportCommand string = "Create Automatic Report 📈"
+	// BotListAutomaticReportsCommand represents the command to list all automatic reports
+	BotListAutomaticReportsCommand string = "List Automatic Reports 📋"
+	// BotUpdateAutomaticReportCommand represents the command to update an automatic report
+	BotUpdateAutomaticReportCommand string = "Update Automatic Report ✏️"
+	// BotDeleteAutomaticReportCommand represents the command to delete an automatic report
+	BotDeleteAutomaticReportCommand string = "Delete Automatic Report 🗑️"
+
 	// BotPreviousCommand represents the command to go back to the previous page
 	BotPreviousCommand string = "Previous ⬅️"
 	// BotNextCommand represents the command to go to the next page
@@ -105,17 +116,35 @@ const (
 
 // AvailableCommands is a list of all available bot commands.
 var AvailableCommands = []string{
+	// General commands
 	BotEnableCommand, BotDisableCommand, BotStartCommand, BotCancelCommand,
-	BotBackCommand, BotNextCommand, BotPreviousCommand, BotUserSettingsCommand,
-	BotBalanceCommand, BotCategoryCommand, BotOperationCommand, BotBalanceSubscriptionsCommand,
-	BotGetUserSettingsCommand, BotUpdateUserSettingsCommand, BotGetBalanceCommand, BotCreateBalanceCommand,
-	BotUpdateBalanceCommand, BotDeleteBalanceCommand, BotUpdateBalanceNameCommand, BotUpdateBalanceAmountCommand,
-	BotUpdateBalanceCurrencyCommand, BotCreateCategoryCommand, BotListCategoriesCommand, BotUpdateCategoryCommand,
-	BotDeleteCategoryCommand, BotCreateOperationCommand, BotCreateIncomingOperationCommand, BotCreateSpendingOperationCommand,
-	BotGetOperationsHistory, BotCreateTransferOperationCommand, BotDeleteOperationCommand, BotUpdateOperationCommand,
-	BotUpdateOperationAmountCommand, BotUpdateOperationDescriptionCommand, BotUpdateOperationDateCommand, BotUpdateOperationCategoryCommand,
+	BotBackCommand, BotNextCommand, BotPreviousCommand,
+
+	// Wrappers
+	BotUserSettingsCommand, BotBalanceCommand, BotCategoryCommand, BotOperationCommand,
+	BotBalanceSubscriptionsCommand, BotAutomaticReportCommand,
+
+	// User settings
+	BotGetUserSettingsCommand, BotUpdateUserSettingsCommand,
+
+	// Balance
+	BotGetBalanceCommand, BotCreateBalanceCommand, BotUpdateBalanceCommand, BotDeleteBalanceCommand,
+	BotUpdateBalanceNameCommand, BotUpdateBalanceAmountCommand, BotUpdateBalanceCurrencyCommand,
+
+	// Category
+	BotCreateCategoryCommand, BotListCategoriesCommand, BotUpdateCategoryCommand, BotDeleteCategoryCommand,
+
+	// Operation
+	BotCreateOperationCommand, BotCreateIncomingOperationCommand, BotCreateSpendingOperationCommand, BotGetOperationsHistory,
+	BotCreateTransferOperationCommand, BotDeleteOperationCommand, BotUpdateOperationCommand, BotUpdateOperationAmountCommand,
+	BotUpdateOperationDescriptionCommand, BotUpdateOperationDateCommand, BotUpdateOperationCategoryCommand,
+
+	// Balance Subscription
 	BotCreateBalanceSubscriptionCommand, BotListBalanceSubscriptionsCommand, BotDeleteBalanceSubscriptionCommand, BotUpdateBalanceSubscriptionCommand,
 	BotUpdateBalanceSubscriptionNameCommand, BotUpdateBalanceSubscriptionCategoryCommand, BotUpdateBalanceSubscriptionAmountCommand, BotUpdateBalanceSubscriptionPeriodCommand,
+
+	// Automatic Report
+	BotCreateAutomaticReportCommand, BotListAutomaticReportsCommand, BotUpdateAutomaticReportCommand, BotDeleteAutomaticReportCommand,
 }
 
 // CommandToEvent maps bot commands to their corresponding events
@@ -131,6 +160,7 @@ var CommandToEvent = map[string]Event{
 	BotCategoryCommand:             CategoryEvent,
 	BotOperationCommand:            OperationEvent,
 	BotBalanceSubscriptionsCommand: BalanceSubscriptionEvent,
+	BotAutomaticReportCommand:      AutomaticReportEvent,
 
 	// User Settings
 	BotGetUserSettingsCommand:    GetUserSettingsEvent,
@@ -159,6 +189,12 @@ var CommandToEvent = map[string]Event{
 	BotListBalanceSubscriptionsCommand:  ListBalanceSubscriptionEvent,
 	BotUpdateBalanceSubscriptionCommand: UpdateBalanceSubscriptionEvent,
 	BotDeleteBalanceSubscriptionCommand: DeleteBalanceSubscriptionEvent,
+
+	// Automatic Report
+	BotCreateAutomaticReportCommand: CreateAutomaticReportEvent,
+	BotListAutomaticReportsCommand:  ListAutomaticReportsEvent,
+	BotUpdateAutomaticReportCommand: UpdateAutomaticReportEvent,
+	BotDeleteAutomaticReportCommand: DeleteAutomaticReportEvent,
 }
 
 // CommandToFistFlowStep maps commands to their initial flow steps
@@ -190,6 +226,12 @@ var CommandToFistFlowStep = map[string]FlowStep{
 	BotListBalanceSubscriptionsCommand:  ListBalanceSubscriptionFlowStep,
 	BotUpdateBalanceSubscriptionCommand: UpdateBalanceSubscriptionFlowStep,
 	BotDeleteBalanceSubscriptionCommand: DeleteBalanceSubscriptionFlowStep,
+
+	// Automatic Report
+	BotCreateAutomaticReportCommand: CreateAutomaticReportFlowStep,
+	BotListAutomaticReportsCommand:  ListAutomaticReportsFlowStep,
+	BotUpdateAutomaticReportCommand: UpdateAutomaticReportFlowStep,
+	BotDeleteAutomaticReportCommand: DeleteAutomaticReportFlowStep,
 }
 
 // OperationCommandToOperationType maps operation commands to their corresponding operation types
