@@ -11,7 +11,7 @@ var (
 			Buttons: []string{model.BotOperationCommand, model.BotBalanceSubscriptionsCommand},
 		},
 		{
-			Buttons: []string{model.BotUserSettingsCommand},
+			Buttons: []string{model.BotUserSettingsCommand, model.BotAutomaticReportCommand},
 		},
 	}
 
@@ -87,6 +87,18 @@ var (
 		},
 		{
 			Buttons: []string{model.BotUpdateBalanceSubscriptionCommand, model.BotDeleteBalanceSubscriptionCommand},
+		},
+		{
+			Buttons: []string{model.BotBackCommand},
+		},
+	}
+
+	automaticReportKeyboardRows = []KeyboardRow{
+		{
+			Buttons: []string{model.BotCreateAutomaticReportCommand, model.BotListAutomaticReportsCommand},
+		},
+		{
+			Buttons: []string{model.BotUpdateAutomaticReportCommand, model.BotDeleteAutomaticReportCommand},
 		},
 		{
 			Buttons: []string{model.BotBackCommand},
