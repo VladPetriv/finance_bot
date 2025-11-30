@@ -285,7 +285,7 @@ func TestAutomaticReport_CreateScheduledReportExecution(t *testing.T) {
 			assert.NotNil(t, actual)
 			assert.Equal(t, tc.args.ID, actual.ID)
 			assert.Equal(t, tc.args.AutomaticReportID, actual.AutomaticReportID)
-			assert.Equal(t, tc.args.ExecutionDate.UTC(), actual.ExecutionDate.UTC())
+			assertTimeEqual(t, tc.args.ExecutionDate.UTC(), actual.ExecutionDate.UTC())
 		})
 	}
 }
@@ -1214,7 +1214,7 @@ func TestAutomaticReport_ListScheduledReportExecutions(t *testing.T) {
 			for i := range actual {
 				assert.Equal(t, tc.expected[i].ID, actual[i].ID)
 				assert.Equal(t, tc.expected[i].AutomaticReportID, actual[i].AutomaticReportID)
-				assert.Equal(t, tc.expected[i].ExecutionDate.UTC(), actual[i].ExecutionDate.UTC())
+				assertTimeEqual(t, tc.expected[i].ExecutionDate.UTC(), actual[i].ExecutionDate.UTC())
 			}
 		})
 	}
