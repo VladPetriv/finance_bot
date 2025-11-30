@@ -68,4 +68,8 @@ var Migrations = []any{
 		Name: "Add exchange_rate column to operations table",
 		Func: addExchangeRateToOperationsTable,
 	},
+	&migrator.MigrationNoTx{
+		Name: "Init automatic report and all related tables/enums to it",
+		Func: initAutomaticReport,
+	},
 }
