@@ -3,6 +3,7 @@ package store_test
 import (
 	"fmt"
 	"testing"
+	"time"
 
 	"github.com/VladPetriv/finance_bot/config"
 	"github.com/VladPetriv/finance_bot/internal/migrations"
@@ -10,6 +11,7 @@ import (
 	"github.com/VladPetriv/finance_bot/pkg/logger"
 	"github.com/lib/pq"
 	"github.com/ory/dockertest/v3"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
@@ -131,4 +133,9 @@ func createTestDB(t *testing.T, testCaseName string) *database.PostgreSQL {
 	})
 
 	return testDB
+}
+
+func assertTimeEqual(t *testing.T, expected, actual time.Time) {
+	t.Helper()
+	assert.Equal(t, expected.UTC().Truncate(time.Second), actual.UTC().Truncate(time.Second))
 }
