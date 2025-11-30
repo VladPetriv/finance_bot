@@ -59,7 +59,12 @@ func Run(ctx context.Context, cfg *config.Config, logger *logger.Logger) {
 		logger.Fatal().Err(err).Msg("connection with postgres is not established")
 	}
 
-	err = migrations.MigrateDB(logger, postgres.DB, cfg.PostgreSQL.Database, migrations.Migrations)
+	err = migrations.MigrateDB(migrations.MigrateDBOptions{
+		Logger:     logger,
+		DB:         postgres.DB,
+		DBName:     cfg.PostgreSQL.Database,
+		Migrations: migrations.Migrations,
+	})
 	if err != nil {
 		logger.Fatal().Err(err).Msg("migrate database")
 	}

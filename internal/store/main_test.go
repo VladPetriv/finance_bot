@@ -112,7 +112,13 @@ func createTestDB(t *testing.T, testCaseName string) *database.PostgreSQL {
 	})
 	require.NoError(t, err)
 
-	err = migrations.MigrateDB(log, testDB.DB, testCaseName, migrations.Migrations)
+	err = migrations.MigrateDB(
+		migrations.MigrateDBOptions{
+			DB:         testDB.DB,
+			DBName:     testCaseName,
+			Migrations: migrations.Migrations,
+		},
+	)
 	require.NoError(t, err)
 
 	t.Cleanup(func() {
