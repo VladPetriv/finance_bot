@@ -77,6 +77,7 @@ func Run(ctx context.Context, cfg *config.Config, logger *logger.Logger) {
 		Operation:           store.NewOperation(postgres),
 		State:               store.NewState(postgres),
 		Currency:            store.NewCurrency(postgres),
+		AutomaticReport:     store.NewAutomaticReport(postgres),
 	}
 
 	services := service.Services{
