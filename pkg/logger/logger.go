@@ -65,3 +65,9 @@ func New(opts LoggergerOptions) *Logger {
 
 	return &logger
 }
+
+// NewDummy returns a new instance of dummy logger that log nothing.
+func NewDummy() *Logger {
+	dummyLog := zerolog.New(io.Discard)
+	return &Logger{&dummyLog}
+}
