@@ -107,6 +107,34 @@ func (o *operationStore) List(ctx context.Context, filter service.ListOperations
 	return operations, nil
 }
 
+func (o *operationStore) ListOperationYears(ctx context.Context, filter service.ListOperationYearsFilter) ([]int, error) {
+	stmt := sq.
+		StatementBuilder.
+		PlaceholderFormat(sq.Dollar).
+		Select("EXTRACT(YEAR FROM created_at)::int AS year").
+		Distinct().
+		From("operations").
+		GroupBy("operations.created_at").
+		OrderBy("year")
+
+	if filter.BalanceID != "" {
+		stmt = stmt.Where(sq.Eq{"operations.balance_id": filter.BalanceID})
+	}
+
+	query, args, err := stmt.ToSql()
+	if err != nil {
+		return nil, fmt.Errorf("build list operation query: %w", err)
+	}
+
+	var years []int
+	err = o.DB.SelectContext(ctx, &years, query, args...)
+	if err != nil {
+		return nil, err
+	}
+
+	return years, nil
+}
+
 func (o *operationStore) Count(ctx context.Context, filter service.ListOperationsFilter) (int, error) {
 	stmt := applyListOperationsFilter(applyListOperationsOptions{countQuery: true}, filter)
 
