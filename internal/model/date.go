@@ -1,6 +1,22 @@
 package model
 
-import "time"
+import (
+	"fmt"
+	"time"
+)
+
+// Year is a type representing a year
+type Year int
+
+// GetID returns the string representation of the year
+func (y Year) GetID() string {
+	return fmt.Sprintf("%d", y)
+}
+
+// GetName returns the string representation of the year
+func (y Year) GetName() string {
+	return fmt.Sprintf("%d", y)
+}
 
 // Month is a type representing a month of the year
 type Month string
