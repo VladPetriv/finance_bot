@@ -76,7 +76,7 @@ type OperationStore interface {
 	List(ctx context.Context, filter ListOperationsFilter) ([]model.Operation, error)
 	// ListOperationYears returns distinct years in which operations matching
 	// the given filter were created.
-	ListOperationYears(ctx context.Context, filter ListOperationYearsFilter) ([]int, error)
+	ListOperationYears(ctx context.Context, filter ListOperationYearsFilter) ([]model.Year, error)
 	// Update updates an operation in store.
 	Update(ctx context.Context, operationID string, operation *model.Operation) error
 	// Delete delete operation by his id.

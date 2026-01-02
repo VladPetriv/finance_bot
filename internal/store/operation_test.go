@@ -923,7 +923,7 @@ func TestOperation_ListOperationYears(t *testing.T) {
 		desc          string
 		preconditions []model.Operation
 		args          service.ListOperationYearsFilter
-		expected      []int
+		expected      []model.Year
 	}{
 		{
 			desc: "received all years of operations by balance id filter",
@@ -953,7 +953,7 @@ func TestOperation_ListOperationYears(t *testing.T) {
 			args: service.ListOperationYearsFilter{
 				BalanceID: balanceID1,
 			},
-			expected: []int{2023, 2024, 2025},
+			expected: []model.Year{2023, 2024, 2025},
 		},
 		{
 			desc: "negative: operations not found",
@@ -965,7 +965,6 @@ func TestOperation_ListOperationYears(t *testing.T) {
 	}
 	for _, tc := range testCases {
 		t.Run(tc.desc, func(t *testing.T) {
-
 			t.Parallel()
 
 			for _, o := range tc.preconditions {

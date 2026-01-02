@@ -107,7 +107,7 @@ func (o *operationStore) List(ctx context.Context, filter service.ListOperations
 	return operations, nil
 }
 
-func (o *operationStore) ListOperationYears(ctx context.Context, filter service.ListOperationYearsFilter) ([]int, error) {
+func (o *operationStore) ListOperationYears(ctx context.Context, filter service.ListOperationYearsFilter) ([]model.Year, error) {
 	stmt := sq.
 		StatementBuilder.
 		PlaceholderFormat(sq.Dollar).
@@ -126,7 +126,7 @@ func (o *operationStore) ListOperationYears(ctx context.Context, filter service.
 		return nil, fmt.Errorf("build list operation query: %w", err)
 	}
 
-	var years []int
+	var years []model.Year
 	err = o.DB.SelectContext(ctx, &years, query, args...)
 	if err != nil {
 		return nil, err
