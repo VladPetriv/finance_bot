@@ -83,6 +83,8 @@ const (
 	CurrentBalanceNameMetadataKey MetadataKey = "current_balance_name"
 	// MonthForBalanceStatisticsKey represents the month that was used for balance statistics.
 	MonthForBalanceStatisticsKey MetadataKey = "month_for_balance_statistics"
+	// YearForBalanceStatisticsKey represents the year that was used for balance statistics.
+	YearForBalanceStatisticsKey MetadataKey = "year_for_balance_statistics"
 
 	// Category related keys
 
