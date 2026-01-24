@@ -136,7 +136,7 @@ func TestMonth_GetTimeRange(t *testing.T) {
 		t.Run(tc.desc, func(t *testing.T) {
 			t.Parallel()
 
-			start, end := tc.month.GetTimeRange(tc.currentTime)
+			start, end := tc.month.GetTimeRange(tc.currentTime,0)
 			assert.Equal(t, tc.expected.start, start)
 			assert.Equal(t, tc.expected.end, end)
 		})
