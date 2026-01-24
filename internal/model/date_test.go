@@ -33,7 +33,6 @@ func TestMonth_GetName(t *testing.T) {
 	}
 
 	for _, tc := range testCases {
-		tc := tc
 		t.Run(tc.desc, func(t *testing.T) {
 			t.Parallel()
 
@@ -69,7 +68,6 @@ func TestMonth_GetIndex(t *testing.T) {
 	}
 
 	for _, tc := range testCases {
-		tc := tc
 		t.Run(tc.desc, func(t *testing.T) {
 			t.Parallel()
 
@@ -132,11 +130,10 @@ func TestMonth_GetTimeRange(t *testing.T) {
 	}
 
 	for _, tc := range testCases {
-		tc := tc
 		t.Run(tc.desc, func(t *testing.T) {
 			t.Parallel()
 
-			start, end := tc.month.GetTimeRange(tc.currentTime,0)
+			start, end := tc.month.GetTimeRange(tc.currentTime, 0)
 			assert.Equal(t, tc.expected.start, start)
 			assert.Equal(t, tc.expected.end, end)
 		})
@@ -192,7 +189,6 @@ func TestCreationPeriod_CalculateTimeRange(t *testing.T) {
 	}
 
 	for _, tc := range testCases {
-		tc := tc
 		t.Run(tc.desc, func(t *testing.T) {
 			t.Parallel()
 
@@ -241,7 +237,6 @@ func TestGetCreationPeriodFromText(t *testing.T) {
 	}
 
 	for _, tc := range testCases {
-		tc := tc
 		t.Run(tc.desc, func(t *testing.T) {
 			t.Parallel()
 
