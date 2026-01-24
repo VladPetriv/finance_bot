@@ -82,49 +82,92 @@ func TestMonth_GetTimeRange(t *testing.T) {
 
 	fixedTime := time.Date(2024, 3, 15, 14, 30, 0, 0, time.UTC)
 
-	testCases := [...]struct {
+	testCases := []struct {
 		desc        string
 		month       Month
 		currentTime time.Time
+		year        int
 		expected    struct {
 			start time.Time
 			end   time.Time
 		}
 	}{
 		{
-			desc:        "positive: get time range for current month",
+			desc:        "current month same year -> end is now",
 			month:       MonthMarch,
 			currentTime: fixedTime,
+			year:        0,
 			expected: struct {
 				start time.Time
 				end   time.Time
 			}{
 				start: time.Date(2024, 3, 1, 0, 0, 0, 0, time.UTC),
-				end:   time.Date(2024, 3, 15, 14, 30, 0, 0, time.UTC),
+				end:   fixedTime,
 			},
 		},
 		{
-			desc:        "positive: get time range for different month",
+			desc:        "same month but different year -> full month",
+			month:       MonthMarch,
+			currentTime: fixedTime,
+			year:        2023,
+			expected: struct {
+				start time.Time
+				end   time.Time
+			}{
+				start: time.Date(2023, 3, 1, 0, 0, 0, 0, time.UTC),
+				end:   time.Date(2023, 4, 1, 0, 0, 0, 0, time.UTC),
+			},
+		},
+		{
+			desc:        "different month same year",
 			month:       MonthJanuary,
 			currentTime: fixedTime,
+			year:        0,
 			expected: struct {
 				start time.Time
 				end   time.Time
 			}{
 				start: time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC),
-				end:   time.Date(2024, 1, 31, 23, 59, 59, 0, time.UTC),
+				end:   time.Date(2024, 2, 1, 0, 0, 0, 0, time.UTC),
 			},
 		},
 		{
-			desc:        "positive: get time range for December with year transition",
+			desc:        "december -> january transition",
 			month:       MonthDecember,
 			currentTime: fixedTime,
+			year:        2024,
 			expected: struct {
 				start time.Time
 				end   time.Time
 			}{
 				start: time.Date(2024, 12, 1, 0, 0, 0, 0, time.UTC),
-				end:   time.Date(2024, 12, 31, 23, 59, 59, 0, time.UTC),
+				end:   time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC),
+			},
+		},
+		{
+			desc:        "leap year february",
+			month:       MonthFebruary,
+			currentTime: fixedTime,
+			year:        2024, // leap year
+			expected: struct {
+				start time.Time
+				end   time.Time
+			}{
+				start: time.Date(2024, 2, 1, 0, 0, 0, 0, time.UTC),
+				end:   time.Date(2024, 3, 1, 0, 0, 0, 0, time.UTC),
+			},
+		},
+		{
+			desc:        "non-leap year february",
+			month:       MonthFebruary,
+			currentTime: fixedTime,
+			year:        2023,
+			expected: struct {
+				start time.Time
+				end   time.Time
+			}{
+				start: time.Date(2023, 2, 1, 0, 0, 0, 0, time.UTC),
+				end:   time.Date(2023, 3, 1, 0, 0, 0, 0, time.UTC),
 			},
 		},
 	}
@@ -133,7 +176,7 @@ func TestMonth_GetTimeRange(t *testing.T) {
 		t.Run(tc.desc, func(t *testing.T) {
 			t.Parallel()
 
-			start, end := tc.month.GetTimeRange(tc.currentTime, 0)
+			start, end := tc.month.GetTimeRange(tc.currentTime, tc.year)
 			assert.Equal(t, tc.expected.start, start)
 			assert.Equal(t, tc.expected.end, end)
 		})
