@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"strconv"
 	"time"
 
 	sq "github.com/Masterminds/squirrel"
@@ -114,7 +115,7 @@ func (o *operationStore) ListOperationYears(ctx context.Context, filter service.
 		Select("EXTRACT(YEAR FROM created_at)::int AS year").
 		Distinct().
 		From("operations").
-		GroupBy("operations.created_at").
+		GroupBy("year").
 		OrderBy("year")
 
 	if filter.BalanceID != "" {
@@ -123,7 +124,7 @@ func (o *operationStore) ListOperationYears(ctx context.Context, filter service.
 
 	query, args, err := stmt.ToSql()
 	if err != nil {
-		return nil, fmt.Errorf("build list operation query: %w", err)
+		return nil, fmt.Errorf("build list operation year query: %w", err)
 	}
 
 	var years []model.Year
@@ -133,6 +134,53 @@ func (o *operationStore) ListOperationYears(ctx context.Context, filter service.
 	}
 
 	return years, nil
+}
+
+func (o *operationStore) ListOperationMonths(ctx context.Context, filter service.ListOperationMonthsFilter) ([]model.Month, error) {
+	stmt := sq.
+		StatementBuilder.
+		PlaceholderFormat(sq.Dollar).
+		Select("EXTRACT(MONTH FROM created_at)::int AS month").
+		Distinct().
+		From("operations").
+		GroupBy("month").
+		OrderBy("month")
+
+	if filter.BalanceID != "" {
+		stmt = stmt.Where(sq.Eq{"operations.balance_id": filter.BalanceID})
+	}
+	if filter.Year != 0 {
+		start := time.Date(filter.Year, 1, 1, 0, 0, 0, 0, time.UTC)
+		end := time.Date(filter.Year+1, 1, 1, 0, 0, 0, 0, time.UTC)
+
+		stmt = stmt.Where(
+			sq.And{
+				sq.GtOrEq{"operations.created_at": start},
+				sq.Lt{"operations.created_at": end},
+			},
+		)
+	}
+
+	query, args, err := stmt.ToSql()
+	if err != nil {
+		return nil, fmt.Errorf("build list operation months query: %w", err)
+	}
+
+	var months []int
+	err = o.DB.SelectContext(ctx, &months, query, args...)
+	if err != nil {
+		return nil, err
+	}
+	if len(months) == 0 {
+		return nil, nil
+	}
+
+	result := make([]model.Month, len(months))
+	for i, month := range months {
+		result[i] = model.Months[month-1]
+	}
+
+	return result, nil
 }
 
 func (o *operationStore) Count(ctx context.Context, filter service.ListOperationsFilter) (int, error) {
@@ -186,7 +234,8 @@ func applyListOperationsFilter(options applyListOperationsOptions, filter servic
 	}
 
 	if filter.Month != "" {
-		startDate, endDate := filter.Month.GetTimeRange(time.Now())
+		year, _ := strconv.Atoi(filter.Year.GetName())
+		startDate, endDate := filter.Month.GetTimeRange(time.Now(), year)
 		stmt = stmt.Where(sq.GtOrEq{"created_at": startDate}).Where(sq.LtOrEq{"created_at": endDate})
 	}
 
