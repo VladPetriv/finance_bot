@@ -429,12 +429,18 @@ func TestStatisticsMessageBuilder_Build(t *testing.T) {
 		},
 	}
 	for _, tc := range testCases {
-		tc := tc
 		t.Run(tc.desc, func(t *testing.T) {
 			t.Parallel()
 
-			builder := NewStatisticsMessageBuilder(tc.args.balance, tc.args.operations, tc.args.categories)
-			message, err := builder.Build(convertToMonth(int(time.Now().Month())))
+			year := Year(time.Now().Year())
+			month := convertToMonth(int(time.Now().Month()))
+
+			message, err := NewStatisticsMessageBuilder(
+				tc.args.balance,
+				tc.args.operations,
+				tc.args.categories,
+			).
+				Build(year, month)
 
 			if tc.expected.err {
 				assert.Error(t, err)
