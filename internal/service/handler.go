@@ -69,8 +69,9 @@ func (h *handlerService) RegisterHandlers() {
 		},
 		model.GetBalanceFlow: {
 			model.GetBalanceFlowStep:                   h.handleGetBalanceFlowStep,
+			model.ChooseBalanceFlowStep:                h.handleChooseBalanceForBalanceStatisticsFlowStep,
+			model.ChooseYearBalanceStatisticsFlowStep:  h.handleChooseYearBalanceStatisticsFlowStep,
 			model.ChooseMonthBalanceStatisticsFlowStep: h.handleChooseMonthBalanceStatisticsFlowStep,
-			model.ChooseBalanceFlowStep:                h.handleChooseBalanceFlowStepForGetBalance,
 		},
 		model.UpdateBalanceFlow: {
 			model.UpdateBalanceFlowStep:             h.handleUpdateBalanceFlowStep,

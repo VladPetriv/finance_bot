@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"strconv"
-	"time"
 
 	"github.com/VladPetriv/finance_bot/internal/model"
 	"github.com/VladPetriv/finance_bot/pkg/errs"
@@ -173,23 +172,95 @@ func (h handlerService) handleEnterBalanceCurrencyFlowStepForCreate(ctx context.
 	})
 }
 
-const maxMonthsPerRow = 3
-
 func (h handlerService) handleGetBalanceFlowStep(ctx context.Context, opts flowProcessingOptions) (model.FlowStep, error) {
 	logger := h.logger.With().Str("name", "handlerService.handleGetBalanceFlowStep").Logger()
 	logger.Debug().Any("opts", opts).Msg("got args")
 
-	availableMonths := model.Months[:time.Now().Month()]
-
 	err := h.showCancelButton(opts.message.GetChatID(), "")
 	if err != nil {
-		return "", fmt.Errorf("show cancle button: %w", err)
+		logger.Error().Err(err).Msg("show cancel button")
+		return "", fmt.Errorf("show cancel button: %w", err)
 	}
 
-	return model.ChooseMonthBalanceStatisticsFlowStep, h.apis.Messenger.SendWithKeyboard(SendWithKeyboardOptions{
+	return model.ChooseBalanceFlowStep, h.apis.Messenger.SendWithKeyboard(SendWithKeyboardOptions{
 		ChatID:         opts.message.GetChatID(),
-		Message:        "Please select a month to view your balance statistics:",
-		InlineKeyboard: getInlineKeyboardRows(availableMonths, maxMonthsPerRow),
+		Message:        "Select a balance to view information:",
+		InlineKeyboard: getInlineKeyboardRows(opts.user.Balances, 2),
+	})
+}
+
+func (h handlerService) handleChooseBalanceForBalanceStatisticsFlowStep(ctx context.Context, opts flowProcessingOptions) (model.FlowStep, error) {
+	logger := h.logger.With().Str("name", "handlerService.handleChooseBalanceForBalanceStatisticsFlowStep").Logger()
+	logger.Debug().Any("opts", opts).Msg("got args")
+
+	balanceName := opts.message.GetText()
+	balance := opts.user.GetBalance(balanceName)
+	if balance == nil {
+		logger.Error().Msg("balance not found")
+		return "", fmt.Errorf("balance not found")
+	}
+
+	years, err := h.stores.Operation.ListOperationYears(ctx, ListOperationYearsFilter{
+		BalanceID: balance.ID,
+	})
+	if err != nil {
+		logger.Error().Err(err).Msg("list operation years")
+		return "", fmt.Errorf("list operation years: %w", err)
+	}
+	if len(years) == 0 {
+		return "", ErrOperationsNotFound
+	}
+
+	opts.stateMetaData.Add(model.BalanceNameMetadataKey, balanceName)
+	return model.ChooseYearBalanceStatisticsFlowStep, h.apis.Messenger.UpdateMessage(UpdateMessageOptions{
+		ChatID:                opts.message.GetChatID(),
+		MessageID:             opts.message.GetMessageID(),
+		InlineMessageID:       opts.message.GetInlineMessageID(),
+		UpdatedMessage:        "Select a year to view information:",
+		UpdatedInlineKeyboard: getInlineKeyboardRows(years, 1),
+	})
+}
+
+const maxMonthsPerRow = 3
+
+func (h handlerService) handleChooseYearBalanceStatisticsFlowStep(ctx context.Context, opts flowProcessingOptions) (model.FlowStep, error) {
+	logger := h.logger.With().Str("name", "handlerService.handleChooseYearBalanceStatisticsFlowStep").Logger()
+	logger.Debug().Any("opts", opts).Msg("got args")
+
+	year, err := strconv.Atoi(opts.message.GetText())
+	if err != nil {
+		logger.Error().Err(err).Msg("parse year")
+		return "", fmt.Errorf("parse year: %w", err)
+	}
+
+	balanceName, ok := model.GetTypedFromMetadata[string](opts.stateMetaData, model.BalanceNameMetadataKey)
+	if !ok {
+		logger.Error().Msg("balance name not found in metadata")
+		return "", fmt.Errorf("balance name not found in metadata")
+	}
+
+	balance := opts.user.GetBalance(balanceName)
+	if balance == nil {
+		logger.Error().Msg("balance not found")
+		return "", fmt.Errorf("balance not found")
+	}
+
+	months, err := h.stores.Operation.ListOperationMonths(ctx, ListOperationMonthsFilter{
+		BalanceID: balance.ID,
+		Year:      year,
+	})
+	if err != nil {
+		logger.Error().Err(err).Msg("list operation months")
+		return "", fmt.Errorf("list operation months: %w", err)
+	}
+
+	opts.stateMetaData.Add(model.YearForBalanceStatisticsKey, opts.message.GetText())
+	return model.ChooseMonthBalanceStatisticsFlowStep, h.apis.Messenger.UpdateMessage(UpdateMessageOptions{
+		ChatID:                opts.message.GetChatID(),
+		MessageID:             opts.message.GetMessageID(),
+		InlineMessageID:       opts.message.GetInlineMessageID(),
+		UpdatedMessage:        "Select a month to view information:",
+		UpdatedInlineKeyboard: getInlineKeyboardRows(months, maxMonthsPerRow),
 	})
 }
 
@@ -197,22 +268,24 @@ func (h handlerService) handleChooseMonthBalanceStatisticsFlowStep(ctx context.C
 	logger := h.logger.With().Str("name", "handlerService.handleChooseMonthBalanceStatisticsFlowStep").Logger()
 	logger.Debug().Any("opts", opts).Msg("got args")
 
-	opts.stateMetaData.Add(model.MonthForBalanceStatisticsKey, opts.message.GetText())
-	return model.ChooseBalanceFlowStep, h.apis.Messenger.UpdateMessage(UpdateMessageOptions{
-		ChatID:                opts.message.GetChatID(),
-		MessageID:             opts.message.GetMessageID(),
-		InlineMessageID:       opts.message.GetInlineMessageID(),
-		UpdatedMessage:        "Select a balance to view information:",
-		UpdatedInlineKeyboard: getInlineKeyboardRows(opts.user.Balances, 2),
-	})
-}
+	balanceName, ok := model.GetTypedFromMetadata[string](opts.stateMetaData, model.BalanceNameMetadataKey)
+	if !ok {
+		logger.Error().Msg("balance name not found in metadata")
+		return "", fmt.Errorf("balance name not found")
+	}
 
-func (h handlerService) handleChooseBalanceFlowStepForGetBalance(ctx context.Context, opts flowProcessingOptions) (model.FlowStep, error) {
-	logger := h.logger.With().Str("name", "handlerService.handleChooseBalanceFlowStepForGetBalance").Logger()
-	logger.Debug().Any("opts", opts).Msg("got args")
+	year, ok := model.GetTypedFromMetadata[string](opts.stateMetaData, model.YearForBalanceStatisticsKey)
+	if !ok {
+		logger.Error().Msg("year for balance statistics not found in metadata")
+		return "", fmt.Errorf("year for balance statistics not found")
+	}
+
+	parsedYear, _ := strconv.Atoi(year)
+	yearForBalanceStatistics := model.Year(parsedYear)
+	monthForBalanceStatistics := model.Month(opts.message.GetText())
 
 	balance, err := h.stores.Balance.Get(ctx, GetBalanceFilter{
-		Name:            opts.message.GetText(),
+		Name:            balanceName,
 		PreloadCurrency: true,
 	})
 	if err != nil {
@@ -232,15 +305,10 @@ func (h handlerService) handleChooseBalanceFlowStepForGetBalance(ctx context.Con
 		return "", fmt.Errorf("list categories from store: %w", err)
 	}
 
-	monthForBalanceStatistics, ok := model.GetTypedFromMetadata[string](opts.stateMetaData, model.MonthForBalanceStatisticsKey)
-	if !ok {
-		logger.Error().Msg("month for balance statistics not found in metadata")
-		return "", fmt.Errorf("month for balance statistics not found")
-	}
-
 	operations, err := h.stores.Operation.List(ctx, ListOperationsFilter{
 		BalanceID: balance.ID,
-		Month:     model.Month(monthForBalanceStatistics),
+		Month:     monthForBalanceStatistics,
+		Year:      yearForBalanceStatistics,
 	})
 	if err != nil {
 		logger.Error().Err(err).Msg("list operations from store")
@@ -249,7 +317,7 @@ func (h handlerService) handleChooseBalanceFlowStepForGetBalance(ctx context.Con
 
 	outputMessage, err := model.
 		NewStatisticsMessageBuilder(balance, operations, categories).
-		Build(model.Month(monthForBalanceStatistics))
+		Build(yearForBalanceStatistics, monthForBalanceStatistics)
 	if err != nil {
 		logger.Error().Err(err).Msg("build statistic message")
 		return "", fmt.Errorf("build statistic message: %w", err)
