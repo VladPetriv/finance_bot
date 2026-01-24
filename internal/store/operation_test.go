@@ -610,7 +610,7 @@ func TestOperation_List(t *testing.T) {
 					CategoryID: categoryID,
 					BalanceID:  balanceID4,
 					Type:       model.OperationTypeIncoming,
-					CreatedAt:  time.Now().Add(-730 * time.Hour),
+					CreatedAt:  time.Now().Add(-1000 * time.Hour),
 				},
 				{
 					ID:         operationID10,
