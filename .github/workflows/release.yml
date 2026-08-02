@@ -1,0 +1,43 @@
+name: Release
+
+on:
+  push:
+    branches:
+      - production
+
+permissions:
+  contents: write
+  issues: write
+  pull-requests: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: true
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: "npm"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: npx semantic-release
+
+      - name: Save released version
+        run: git describe --tags --abbrev=0 > release_version.txt
+
+      - name: Upload release version
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-version
+          path: release_version.txt
