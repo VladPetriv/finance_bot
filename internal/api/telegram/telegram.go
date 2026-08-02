@@ -214,7 +214,7 @@ type sendOptions struct {
 
 const (
 	markdownFormat = "MarkdownV2"
-	emptyMessage   = "ㅤ"
+	loadingMessage = "Loading..."
 )
 
 func (t *telegramMessenger) send(opts *sendOptions) error {
@@ -241,7 +241,7 @@ func (t *telegramMessenger) send(opts *sendOptions) error {
 
 			for _, inlineKeyboard := range inlineKeyboards[1:] {
 				message := telegoutil.
-					Message(telegoutil.ID(opts.chatID), emptyMessage).
+					Message(telegoutil.ID(opts.chatID), loadingMessage).
 					WithReplyMarkup(inlineKeyboard)
 
 				_, err := t.api.SendMessage(message)
