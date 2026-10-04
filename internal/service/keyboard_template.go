@@ -11,7 +11,10 @@ var (
 			Buttons: []string{model.BotOperationCommand, model.BotBalanceSubscriptionsCommand},
 		},
 		{
-			Buttons: []string{model.BotUserSettingsCommand, model.BotAutomaticReportCommand},
+			Buttons: []string{model.BotAutomaticReportCommand},
+		},
+		{
+			Buttons: []string{model.BotUserSettingsCommand},
 		},
 	}
 
@@ -220,6 +223,104 @@ var (
 			Buttons: []InlineKeyboardButton{
 				{
 					Text: model.BotUpdateBalanceSubscriptionPeriodCommand,
+				},
+			},
+		},
+	}
+
+	updateAutomaticReportOptionsKeyboard = []InlineKeyboardRow{
+		{
+			Buttons: []InlineKeyboardButton{
+				{
+					Text: model.BotUpdateAutomaticReportNameCommand,
+				},
+			},
+		},
+		{
+			Buttons: []InlineKeyboardButton{
+				{
+					Text: model.BotUpdateAutomaticReportPeriodCommand,
+				},
+			},
+		},
+		{
+			Buttons: []InlineKeyboardButton{
+				{
+					Text: model.BotUpdateAutomaticReportBalancesCommand,
+				},
+			},
+		},
+		{
+			Buttons: []InlineKeyboardButton{
+				{
+					Text: model.BotUpdateAutomaticReportCategoriesCommand,
+				},
+			},
+		},
+	}
+
+	automaticReportPeriodKeyboard = []InlineKeyboardRow{
+		{
+			Buttons: []InlineKeyboardButton{
+				{
+					Text: "🔁 Daily",
+					Data: string(model.AutomaticReportPeriodDaily),
+				},
+				{
+					Text: "🔁 Weekly",
+					Data: string(model.AutomaticReportPeriodWeekly),
+				},
+			},
+		},
+		{
+			Buttons: []InlineKeyboardButton{
+				{
+					Text: "🔁 Monthly",
+					Data: string(model.AutomaticReportPeriodMonthly),
+				},
+				{
+					Text: "🔁 Quarterly",
+					Data: string(model.AutomaticReportPeriodQuarterly),
+				},
+			},
+		},
+		{
+			Buttons: []InlineKeyboardButton{
+				{
+					Text: "🔁 Yearly",
+					Data: string(model.AutomaticReportPeriodYearly),
+				},
+			},
+		},
+		{
+			Buttons: []InlineKeyboardButton{
+				{
+					Text: "📌 End of day",
+					Data: string(model.AutomaticReportPeriodEndOfDay),
+				},
+				{
+					Text: "📌 End of week",
+					Data: string(model.AutomaticReportPeriodEndOfWeek),
+				},
+			},
+		},
+		{
+			Buttons: []InlineKeyboardButton{
+				{
+					Text: "📌 End of month",
+					Data: string(model.AutomaticReportPeriodEndOfMonth),
+				},
+				{
+					Text: "📌 End of quarter",
+					Data: string(model.AutomaticReportPeriodEndOfQuarter),
+				},
+			},
+		},
+		{
+			Buttons: []InlineKeyboardButton{
+				{
+					Text: "📌 End of year",
+					Data: string(model.AutomaticReportPeriodEndOfYear),
 				},
 			},
 		},
