@@ -866,7 +866,7 @@ func TestOperation_ListOperationYears(t *testing.T) {
 	operationStore := store.NewOperation(testCaseDB)
 
 	userID := uuid.NewString()
-	balanceID1, balanceID2 := uuid.NewString(), uuid.NewString()
+	balanceID1, balanceID2, balanceID3 := uuid.NewString(), uuid.NewString(), uuid.NewString()
 	categoryID := uuid.NewString()
 	operationID1, operationID2,
 		operationID3 := uuid.NewString(), uuid.NewString(),
@@ -887,7 +887,7 @@ func TestOperation_ListOperationYears(t *testing.T) {
 	require.NoError(t, err)
 
 	for _, balanceID := range [...]string{
-		balanceID1, balanceID2,
+		balanceID1, balanceID2, balanceID3,
 	} {
 		err = balanceStore.Create(ctx, &model.Balance{
 			ID:         balanceID,
@@ -906,7 +906,7 @@ func TestOperation_ListOperationYears(t *testing.T) {
 
 	t.Cleanup(func() {
 		for _, balanceID := range [...]string{
-			balanceID1, balanceID2,
+			balanceID1, balanceID2, balanceID3,
 		} {
 			err = balanceStore.Delete(ctx, balanceID)
 			require.NoError(t, err)
@@ -980,13 +980,13 @@ func TestOperation_ListOperationYears(t *testing.T) {
 				{
 					ID:         uuid.NewString(),
 					CategoryID: categoryID,
-					BalanceID:  balanceID2,
+					BalanceID:  balanceID3,
 					Type:       model.OperationTypeIncoming,
 					CreatedAt:  time.Date(2024, time.December, 31, 23, 30, 0, 0, time.UTC),
 				},
 			},
 			args: service.ListOperationYearsFilter{
-				BalanceID: balanceID2,
+				BalanceID: balanceID3,
 				Location:  auckland,
 			},
 			expected: []model.Year{2025},
