@@ -6,7 +6,7 @@ import (
 
 func initAutomaticReport(db *sql.DB) error {
 	_, err := db.Exec(`
-		CREATE TYPE automatic_report_period AS ENUM ('daily', 'weekly', 'monthly', 'quarterly', 'yearly');
+		CREATE TYPE automatic_report_period AS ENUM ('daily', 'weekly', 'monthly', 'quarterly', 'yearly', 'end_of_day', 'end_of_week', 'end_of_month', 'end_of_quarter', 'end_of_year');
 
 		CREATE TABLE automatic_reports (
 			id VARCHAR(255) PRIMARY KEY,
