@@ -72,4 +72,12 @@ var Migrations = []any{
 		Name: "Init automatic report and all related tables/enums to it",
 		Func: initAutomaticReport,
 	},
+	&migrator.Migration{
+		Name: "Add timezone column to user_settings table",
+		Func: addTimezoneToUserSettingsTable,
+	},
+	&migrator.Migration{
+		Name: "Convert timestamp columns to timestamptz",
+		Func: convertTimestampsToTimestamptz,
+	},
 }
