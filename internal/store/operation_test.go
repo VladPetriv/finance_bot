@@ -919,6 +919,9 @@ func TestOperation_ListOperationYears(t *testing.T) {
 		require.NoError(t, err)
 	})
 
+	auckland, err := time.LoadLocation("Pacific/Auckland")
+	require.NoError(t, err)
+
 	testCases := [...]struct {
 		desc          string
 		preconditions []model.Operation
@@ -954,6 +957,39 @@ func TestOperation_ListOperationYears(t *testing.T) {
 				BalanceID: balanceID1,
 			},
 			expected: []model.Year{2023, 2024, 2025},
+		},
+		{
+			desc: "operation near the end of the year is counted in the UTC year when no location is provided",
+			preconditions: []model.Operation{
+				{
+					ID:         uuid.NewString(),
+					CategoryID: categoryID,
+					BalanceID:  balanceID2,
+					Type:       model.OperationTypeIncoming,
+					CreatedAt:  time.Date(2024, time.December, 31, 23, 30, 0, 0, time.UTC),
+				},
+			},
+			args: service.ListOperationYearsFilter{
+				BalanceID: balanceID2,
+			},
+			expected: []model.Year{2024},
+		},
+		{
+			desc: "operation near the end of the year is counted in the next year for a location ahead of UTC",
+			preconditions: []model.Operation{
+				{
+					ID:         uuid.NewString(),
+					CategoryID: categoryID,
+					BalanceID:  balanceID2,
+					Type:       model.OperationTypeIncoming,
+					CreatedAt:  time.Date(2024, time.December, 31, 23, 30, 0, 0, time.UTC),
+				},
+			},
+			args: service.ListOperationYearsFilter{
+				BalanceID: balanceID2,
+				Location:  auckland,
+			},
+			expected: []model.Year{2025},
 		},
 		{
 			desc: "negative: operations not found",
