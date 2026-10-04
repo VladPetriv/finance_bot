@@ -88,6 +88,7 @@ func Run(ctx context.Context, cfg *config.Config, logger *logger.Logger) {
 		}),
 		Currency:                  service.NewCurrency(logger, apis, stores),
 		BalanceSubscriptionEngine: service.NewBalanceSubscriptionEngine(cfg, logger, stores, apis),
+		AutomaticReportEngine:     service.NewAutomaticReportEngine(cfg, logger, stores, apis),
 	}
 
 	handlerService := service.NewHandler(&service.HandlerOptions{
@@ -114,6 +115,7 @@ func Run(ctx context.Context, cfg *config.Config, logger *logger.Logger) {
 	go services.BalanceSubscriptionEngine.CreateOperations(ctx)
 	go services.BalanceSubscriptionEngine.ExtendScheduledOperations(ctx)
 	go services.BalanceSubscriptionEngine.NotifyAboutSubscriptionPayment(ctx)
+	go services.AutomaticReportEngine.GenerateReports(ctx)
 
 	// Setup health check server
 	mux := http.NewServeMux()
