@@ -4,9 +4,11 @@ import (
 	"context"
 	"fmt"
 	"slices"
+	"strings"
 	"time"
 
 	"github.com/VladPetriv/finance_bot/internal/model"
+	"github.com/VladPetriv/finance_bot/pkg/errs"
 )
 
 type identifiable interface {
@@ -392,4 +394,199 @@ func (h handlerService) getCurrenciesKeyboard(ctx context.Context, page int) ([]
 	}
 
 	return keyboard, nil
+}
+
+const (
+	automaticReportsPerKeyboard    = 5
+	automaticReportsPerKeyboardRow = 1
+)
+
+type getAutomaticReportsKeyboardOptions struct {
+	user *model.User
+	page int
+}
+
+func (h handlerService) getAutomaticReportsKeyboard(ctx context.Context, opts getAutomaticReportsKeyboardOptions) ([]InlineKeyboardRow, error) {
+	logger := h.logger.With().Str("name", "handlerService.getAutomaticReportsKeyboard").Logger()
+	logger.Debug().Any("opts", opts).Msg("got args")
+
+	automaticReportsCount, err := h.stores.AutomaticReport.Count(ctx, ListAutomaticReportFilter{
+		BalanceIDs: opts.user.GetBalancesIDs(),
+	})
+	if err != nil {
+		logger.Error().Err(err).Msg("count automatic reports in store")
+		return nil, fmt.Errorf("count automatic reports in store: %w", err)
+	}
+	if automaticReportsCount == 0 {
+		logger.Info().Msg("automatic reports not found")
+		return nil, ErrNoAutomaticReportsFound
+	}
+
+	keyboard, err := paginateInlineKeyboard(
+		inlineKeyboardPaginatorOptions{
+			totalCount:     automaticReportsCount,
+			maxPerKeyboard: automaticReportsPerKeyboard,
+			maxPerRow:      automaticReportsPerKeyboardRow,
+			currentPage:    opts.page,
+		},
+		func() ([]model.AutomaticReport, error) {
+			automaticReports, err := h.stores.AutomaticReport.List(ctx, ListAutomaticReportFilter{
+				BalanceIDs:           opts.user.GetBalancesIDs(),
+				OrderByCreatedAtDesc: true,
+				Pagination: &Pagination{
+					Limit: automaticReportsPerKeyboard,
+					Page:  opts.page,
+				},
+			})
+			if err != nil {
+				logger.Error().Err(err).Msg("list automatic reports from store")
+				return nil, fmt.Errorf("list automatic reports from store: %w", err)
+			}
+			if len(automaticReports) == 0 {
+				logger.Info().Msg("automatic reports not found")
+				return nil, ErrNoAutomaticReportsFound
+			}
+
+			return automaticReports, nil
+		})
+	if err != nil {
+		if errs.IsExpected(err) {
+			return nil, err
+		}
+		logger.Error().Err(err).Msg("paginate automatic reports")
+		return nil, fmt.Errorf("paginate automatic reports: %w", err)
+	}
+
+	return keyboard, nil
+}
+
+func (h handlerService) getListAutomaticReportsKeyboard(ctx context.Context, opts getAutomaticReportsKeyboardOptions) (string, []InlineKeyboardRow, error) {
+	logger := h.logger.With().Str("name", "handlerService.getListAutomaticReportsKeyboard").Logger()
+	logger.Debug().Any("opts", opts).Msg("got args")
+
+	automaticReportsCount, err := h.stores.AutomaticReport.Count(ctx, ListAutomaticReportFilter{
+		BalanceIDs: opts.user.GetBalancesIDs(),
+	})
+	if err != nil {
+		logger.Error().Err(err).Msg("count automatic reports in store")
+		return "", nil, fmt.Errorf("count automatic reports in store: %w", err)
+	}
+	if automaticReportsCount == 0 {
+		logger.Info().Msg("automatic reports not found")
+		return "", nil, ErrNoAutomaticReportsFound
+	}
+
+	categories, err := h.stores.Category.List(ctx, &ListCategoriesFilter{
+		UserID: opts.user.ID,
+	})
+	if err != nil {
+		logger.Error().Err(err).Msg("list categories")
+		return "", nil, fmt.Errorf("list categories: %w", err)
+	}
+
+	message, keyboard, err := paginateTextUsingInlineKeybaord(
+		inlineKeyboardPaginatorOptions{
+			totalCount:     automaticReportsCount,
+			maxPerKeyboard: automaticReportsPerKeyboard,
+			maxPerRow:      automaticReportsPerKeyboardRow,
+			currentPage:    opts.page,
+		},
+		func() (string, error) {
+			automaticReports, err := h.stores.AutomaticReport.List(ctx, ListAutomaticReportFilter{
+				BalanceIDs:           opts.user.GetBalancesIDs(),
+				OrderByCreatedAtDesc: true,
+				Pagination: &Pagination{
+					Limit: automaticReportsPerKeyboard,
+					Page:  opts.page,
+				},
+			})
+			if err != nil {
+				logger.Error().Err(err).Msg("list automatic reports from store")
+				return "", fmt.Errorf("list automatic reports from store: %w", err)
+			}
+			if len(automaticReports) == 0 {
+				logger.Info().Msg("automatic reports not found")
+				return "", ErrNoAutomaticReportsFound
+			}
+
+			var outputMessage string
+			for _, automaticReport := range automaticReports {
+				balanceNames := make([]string, 0, len(automaticReport.BalanceIDs))
+				for _, balanceID := range automaticReport.BalanceIDs {
+					balance := opts.user.GetBalance(balanceID)
+					if balance != nil {
+						balanceNames = append(balanceNames, balance.Name)
+					}
+				}
+
+				categoryTitles := make([]string, 0, len(automaticReport.CategoryIDs))
+				for _, categoryID := range automaticReport.CategoryIDs {
+					categoryIndex := slices.IndexFunc(categories, func(category model.Category) bool {
+						return category.ID == categoryID
+					})
+					if categoryIndex != -1 {
+						categoryTitles = append(categoryTitles, categories[categoryIndex].Title)
+					}
+				}
+
+				outputMessage += fmt.Sprintf(
+					"📊 *Title*: %s\n"+
+						"⏰ *Frequency*: %s\n"+
+						"💰 *Balances*: %s\n"+
+						"🏷️ *Categories*: %s\n"+
+						"──────────────\n",
+					automaticReport.Name,
+					automaticReport.Period.GetLabel(),
+					strings.Join(balanceNames, ", "),
+					strings.Join(categoryTitles, ", "),
+				)
+			}
+
+			return outputMessage, nil
+		},
+	)
+	if err != nil {
+		if errs.IsExpected(err) {
+			return "", nil, err
+		}
+		logger.Error().Err(err).Msg("paginate automatic reports")
+		return "", nil, fmt.Errorf("paginate automatic reports: %w", err)
+	}
+
+	return message, keyboard, nil
+}
+
+const automaticReportSelectionDoneData = "done"
+
+func getSelectionInlineKeyboardRows[T identifiable](data []T, selectedIDs []string, elementLimitPerRow int) []InlineKeyboardRow {
+	inlineKeyboardRows := make([]InlineKeyboardRow, 0)
+
+	var currentRow InlineKeyboardRow
+	for i, entry := range data {
+		text := entry.GetName()
+		if slices.Contains(selectedIDs, entry.GetID()) {
+			text = "✅ " + text
+		}
+
+		currentRow.Buttons = append(currentRow.Buttons, InlineKeyboardButton{
+			Text: text,
+			Data: entry.GetID(),
+		})
+
+		if len(currentRow.Buttons) == elementLimitPerRow || i == len(data)-1 {
+			inlineKeyboardRows = append(inlineKeyboardRows, currentRow)
+			currentRow = InlineKeyboardRow{}
+		}
+	}
+
+	inlineKeyboardRows = append(inlineKeyboardRows, InlineKeyboardRow{
+		Buttons: []InlineKeyboardButton{
+			{
+				Text: "Done ✔️",
+				Data: automaticReportSelectionDoneData,
+			},
+		},
+	})
+
+	return inlineKeyboardRows
 }
