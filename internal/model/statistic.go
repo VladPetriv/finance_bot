@@ -15,6 +15,7 @@ type StatisticsMessageBuilder struct {
 	balance    *Balance
 	operations []Operation
 	categories []Category
+	location   *time.Location
 
 	buffer strings.Builder
 }
@@ -27,6 +28,13 @@ func NewStatisticsMessageBuilder(balance *Balance, operations []Operation, categ
 		operations: operations,
 		categories: categories,
 	}
+}
+
+// WithLocation sets the location in which the statistics period is calculated and displayed.
+func (b *StatisticsMessageBuilder) WithLocation(location *time.Location) *StatisticsMessageBuilder {
+	b.location = location
+
+	return b
 }
 
 // Build generates a formatted message string containing financial statistics.
@@ -52,7 +60,7 @@ func (b *StatisticsMessageBuilder) BuildForRange(from, to time.Time) (string, er
 
 	return b.
 		addHeader().
-		addPeriodText(formatTimeRange(from, to)).
+		addPeriodText(formatTimeRange(from, to, b.getLocation())).
 		addOperationsAndCategoriesStatistics(stats).buffer.String(), nil
 }
 
@@ -69,7 +77,7 @@ func (b *StatisticsMessageBuilder) addHeader() *StatisticsMessageBuilder {
 }
 
 func (b *StatisticsMessageBuilder) addPeriod(year Year, month Month) *StatisticsMessageBuilder {
-	return b.addPeriodText(formatPeriod(year, month))
+	return b.addPeriodText(formatPeriod(year, month, b.getLocation()))
 }
 
 func (b *StatisticsMessageBuilder) addPeriodText(period string) *StatisticsMessageBuilder {
@@ -175,16 +183,24 @@ func formatInlineCode(s string) string {
 
 const dateFormat = "02 Jan 2006"
 
-func formatPeriod(year Year, month Month) string {
-	startTime, endTime := month.GetTimeRange(time.Now(), int(year))
+func (b *StatisticsMessageBuilder) getLocation() *time.Location {
+	if b.location == nil {
+		return time.UTC
+	}
 
-	return formatTimeRange(startTime, endTime)
+	return b.location
 }
 
-func formatTimeRange(from, to time.Time) string {
+func formatPeriod(year Year, month Month, location *time.Location) string {
+	startTime, endTime := month.GetTimeRange(time.Now(), int(year), location)
+
+	return formatTimeRange(startTime, endTime, location)
+}
+
+func formatTimeRange(from, to time.Time, location *time.Location) string {
 	template := "📅 Period: _%s - %s_"
 
-	return fmt.Sprintf(template, from.Format(dateFormat), to.Add(-time.Second).Format(dateFormat))
+	return fmt.Sprintf(template, from.In(location).Format(dateFormat), to.Add(-time.Second).In(location).Format(dateFormat))
 }
 
 type operationsStatistics struct {

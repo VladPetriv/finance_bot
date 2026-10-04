@@ -15,6 +15,15 @@ type User struct {
 	Settings *UserSettings
 }
 
+// GetLocation returns the user's timezone location, falling back to UTC when settings are not loaded.
+func (u *User) GetLocation() *time.Location {
+	if u.Settings == nil {
+		return time.UTC
+	}
+
+	return u.Settings.GetLocation()
+}
+
 // GetBalancesIDs returns the balances IDs.
 func (u *User) GetBalancesIDs() []string {
 	ids := make([]string, 0, len(u.Balances))
@@ -41,11 +50,22 @@ type UserSettings struct {
 	ID     string `db:"id"`
 	UserID string `db:"user_id"`
 
-	AIParserEnabled                 bool `db:"ai_parser_enabled"`
-	NotifyAboutSubscriptionPayments bool `db:"notify_about_subscription_payments"`
+	AIParserEnabled                 bool   `db:"ai_parser_enabled"`
+	NotifyAboutSubscriptionPayments bool   `db:"notify_about_subscription_payments"`
+	Timezone                        string `db:"timezone"`
 
 	CreatedAt time.Time `db:"created_at"`
 	UpdatedAt time.Time `db:"updated_at"`
+}
+
+// GetLocation returns the user's timezone location, falling back to UTC when it is empty or unknown.
+func (u *UserSettings) GetLocation() *time.Location {
+	location, err := time.LoadLocation(u.Timezone)
+	if err != nil {
+		return time.UTC
+	}
+
+	return location
 }
 
 // GetDetails returns brief and formatted information about user settings
@@ -67,8 +87,10 @@ func (u *UserSettings) GetDetails() string {
 	return fmt.Sprintf(`⚙️ *User Settings*
 
 🤖 AI Parser: %s %s
-🔔 Subscription Notifications: %s %s`,
+🔔 Subscription Notifications: %s %s
+🌍 Timezone: %s`,
 		aiParserIcon, aiParserStatus,
 		notifyIcon, notifyStatus,
+		u.GetLocation().String(),
 	)
 }
