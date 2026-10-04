@@ -114,6 +114,7 @@ type ListOperationsFilter struct {
 	CreationPeriod       model.CreationPeriod
 	Month                model.Month
 	Year                 model.Year
+	BetweenFilter        *BetweenFilter
 	OrderByCreatedAtDesc bool
 	Pagination           *Pagination
 }
