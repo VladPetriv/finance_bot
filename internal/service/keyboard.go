@@ -615,7 +615,10 @@ func (h handlerService) getListAutomaticReportsKeyboard(ctx context.Context, opt
 	return message, keyboard, nil
 }
 
-const automaticReportSelectionDoneData = "done"
+const (
+	automaticReportSelectionDoneData      = "done"
+	automaticReportSelectionSelectAllData = "select_all"
+)
 
 func getSelectionInlineKeyboardRows[T identifiable](data []T, selectedIDs []string, elementLimitPerRow int) []InlineKeyboardRow {
 	inlineKeyboardRows := make([]InlineKeyboardRow, 0)
@@ -637,6 +640,20 @@ func getSelectionInlineKeyboardRows[T identifiable](data []T, selectedIDs []stri
 			currentRow = InlineKeyboardRow{}
 		}
 	}
+
+	selectAllText := "Select All ☑️"
+	if isAllSelected(selectedIDs, getIDs(data)) {
+		selectAllText = "Unselect All ⬜"
+	}
+
+	inlineKeyboardRows = append(inlineKeyboardRows, InlineKeyboardRow{
+		Buttons: []InlineKeyboardButton{
+			{
+				Text: selectAllText,
+				Data: automaticReportSelectionSelectAllData,
+			},
+		},
+	})
 
 	inlineKeyboardRows = append(inlineKeyboardRows, InlineKeyboardRow{
 		Buttons: []InlineKeyboardButton{
