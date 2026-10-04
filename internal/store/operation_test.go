@@ -1493,3 +1493,113 @@ func TestOperation_Delete(t *testing.T) {
 		})
 	}
 }
+
+func TestOperation_List_BetweenFilter(t *testing.T) {
+	t.Parallel()
+
+	ctx := context.Background() //nolint: forbidigo
+	testCaseDB := createTestDB(t, "operation_list_between_filter")
+	currencyStore := store.NewCurrency(testCaseDB)
+	userStore := store.NewUser(testCaseDB)
+	balanceStore := store.NewBalance(testCaseDB)
+	categoryStore := store.NewCategory(testCaseDB)
+	operationStore := store.NewOperation(testCaseDB)
+
+	userID, balanceID, categoryID := uuid.NewString(), uuid.NewString(), uuid.NewString()
+	insideOperationID, boundaryOperationID, outsideOperationID := uuid.NewString(), uuid.NewString(), uuid.NewString()
+
+	currency := &model.Currency{
+		ID:   uuid.NewString(),
+		Code: "USD",
+	}
+	err := currencyStore.CreateIfNotExists(ctx, currency)
+	require.NoError(t, err)
+
+	err = userStore.Create(ctx, &model.User{
+		ID:       userID,
+		Username: "test" + userID,
+	})
+	require.NoError(t, err)
+
+	err = balanceStore.Create(ctx, &model.Balance{
+		ID:         balanceID,
+		UserID:     userID,
+		CurrencyID: currency.ID,
+	})
+	require.NoError(t, err)
+
+	err = categoryStore.Create(ctx, &model.Category{
+		ID:     categoryID,
+		UserID: userID,
+		Title:  "test_category",
+	})
+	require.NoError(t, err)
+
+	t.Cleanup(func() {
+		for _, operationID := range [...]string{insideOperationID, boundaryOperationID, outsideOperationID} {
+			err := operationStore.Delete(ctx, operationID)
+			require.NoError(t, err)
+		}
+		err := balanceStore.Delete(ctx, balanceID)
+		require.NoError(t, err)
+		err = categoryStore.Delete(ctx, categoryID)
+		require.NoError(t, err)
+		err = deleteCurrencyByID(testCaseDB.DB, currency.ID)
+		require.NoError(t, err)
+		err = deleteUserByID(testCaseDB.DB, userID)
+		require.NoError(t, err)
+	})
+
+	from := time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC)
+	to := time.Date(2025, 1, 2, 0, 0, 0, 0, time.UTC)
+
+	for operationID, createdAt := range map[string]time.Time{
+		insideOperationID:   from.Add(time.Hour),
+		boundaryOperationID: to,
+		outsideOperationID:  from.Add(-time.Hour),
+	} {
+		err = operationStore.Create(ctx, &model.Operation{
+			ID:         operationID,
+			BalanceID:  balanceID,
+			CategoryID: categoryID,
+			Type:       model.OperationTypeSpending,
+			Amount:     "10",
+			CreatedAt:  createdAt,
+			UpdatedAt:  createdAt,
+		})
+		require.NoError(t, err)
+	}
+
+	testCases := [...]struct {
+		desc     string
+		filter   service.ListOperationsFilter
+		expected []string
+	}{
+		{
+			desc: "it should return only operations in [from, to) range",
+			filter: service.ListOperationsFilter{
+				BalanceID: balanceID,
+				BetweenFilter: &service.BetweenFilter{
+					From: from,
+					To:   to,
+				},
+			},
+			expected: []string{insideOperationID},
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.desc, func(t *testing.T) {
+			t.Parallel()
+
+			actual, err := operationStore.List(ctx, tc.filter)
+			require.NoError(t, err)
+
+			actualIDs := make([]string, 0, len(actual))
+			for _, operation := range actual {
+				actualIDs = append(actualIDs, operation.ID)
+			}
+			assert.ElementsMatch(t, tc.expected, actualIDs)
+		})
+	}
+}
