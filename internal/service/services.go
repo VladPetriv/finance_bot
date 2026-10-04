@@ -98,6 +98,9 @@ var (
 	// ErrInvalidDateFormat happens when user enters date with invalid format
 	ErrInvalidDateFormat = errs.New("Invalid date format! Please try again.")
 
+	// ErrInvalidTimezone happens when user enters timezone that is not a valid IANA name
+	ErrInvalidTimezone = errs.New("Invalid timezone! Please choose one from the list or enter a valid IANA name, e.g. Europe/Kyiv.")
+
 	// ErrInvalidExchangeRateFormat happens when user enters exchange rate with invalid format
 	ErrInvalidExchangeRateFormat = errs.New("Invalid exchange rate format! Please try again.")
 
