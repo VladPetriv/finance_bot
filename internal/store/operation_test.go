@@ -1302,7 +1302,7 @@ func TestOperation_Count(t *testing.T) {
 					CategoryID: categoryID,
 					BalanceID:  balanceID4,
 					Type:       model.OperationTypeIncoming,
-					CreatedAt:  time.Now().Add(1 * time.Second),
+					CreatedAt:  time.Now().Add(1 * time.Hour),
 				},
 			},
 			args: service.ListOperationsFilter{
