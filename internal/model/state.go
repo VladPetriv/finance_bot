@@ -202,6 +202,47 @@ func (s *State) IsCommandAllowedDuringFlow(command string) bool {
 		}
 
 		return false
+
+	case ListAutomaticReportsFlow:
+		switch s.GetCurrentStep() {
+		case ChooseAutomaticReportFlowStep:
+			return slices.Contains(
+				[]string{BotPreviousCommand, BotNextCommand},
+				command,
+			)
+		}
+
+		return false
+
+	case UpdateAutomaticReportFlow:
+		switch s.GetCurrentStep() {
+		case ChooseAutomaticReportToUpdateFlowStep:
+			return slices.Contains(
+				[]string{BotPreviousCommand, BotNextCommand},
+				command,
+			)
+		case ChooseUpdateAutomaticReportOptionFlowStep:
+			return slices.Contains(
+				[]string{
+					BotUpdateAutomaticReportNameCommand, BotUpdateAutomaticReportPeriodCommand,
+					BotUpdateAutomaticReportBalancesCommand, BotUpdateAutomaticReportCategoriesCommand,
+				},
+				command,
+			)
+		}
+
+		return false
+
+	case DeleteAutomaticReportFlow:
+		switch s.GetCurrentStep() {
+		case ChooseAutomaticReportToDeleteFlowStep:
+			return slices.Contains(
+				[]string{BotPreviousCommand, BotNextCommand},
+				command,
+			)
+		}
+
+		return false
 	default:
 		return false
 	}
