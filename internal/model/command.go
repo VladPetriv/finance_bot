@@ -100,6 +100,15 @@ const (
 	// BotDeleteAutomaticReportCommand represents the command to delete an automatic report
 	BotDeleteAutomaticReportCommand string = "Delete Automatic Report 🗑️"
 
+	// BotUpdateAutomaticReportNameCommand represents the command to update automatic report name
+	BotUpdateAutomaticReportNameCommand string = "Update Report Name 🏷️"
+	// BotUpdateAutomaticReportPeriodCommand represents the command to update automatic report period
+	BotUpdateAutomaticReportPeriodCommand string = "Update Report Period 📅"
+	// BotUpdateAutomaticReportBalancesCommand represents the command to update automatic report balances
+	BotUpdateAutomaticReportBalancesCommand string = "Update Report Balances 💰"
+	// BotUpdateAutomaticReportCategoriesCommand represents the command to update automatic report categories
+	BotUpdateAutomaticReportCategoriesCommand string = "Update Report Categories 🗂️"
+
 	// BotPreviousCommand represents the command to go back to the previous page
 	BotPreviousCommand string = "Previous ⬅️"
 	// BotNextCommand represents the command to go to the next page
@@ -145,6 +154,7 @@ var AvailableCommands = []string{
 
 	// Automatic Report
 	BotCreateAutomaticReportCommand, BotListAutomaticReportsCommand, BotUpdateAutomaticReportCommand, BotDeleteAutomaticReportCommand,
+	BotUpdateAutomaticReportNameCommand, BotUpdateAutomaticReportPeriodCommand, BotUpdateAutomaticReportBalancesCommand, BotUpdateAutomaticReportCategoriesCommand,
 }
 
 // CommandToEvent maps bot commands to their corresponding events

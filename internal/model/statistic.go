@@ -43,6 +43,19 @@ func (b *StatisticsMessageBuilder) Build(year Year, month Month) (string, error)
 		addOperationsAndCategoriesStatistics(stats).buffer.String(), nil
 }
 
+// BuildForRange generates the same statistics message as Build, but for an arbitrary [from, to) time range.
+func (b *StatisticsMessageBuilder) BuildForRange(from, to time.Time) (string, error) {
+	stats, err := calculateOperationsStatistics(b.operations)
+	if err != nil {
+		return "", fmt.Errorf("error calculating statistics: %w", err)
+	}
+
+	return b.
+		addHeader().
+		addPeriodText(formatTimeRange(from, to)).
+		addOperationsAndCategoriesStatistics(stats).buffer.String(), nil
+}
+
 func (b *StatisticsMessageBuilder) addHeader() *StatisticsMessageBuilder {
 	balanceAmount, _ := money.NewFromString(b.balance.Amount)
 
@@ -56,7 +69,11 @@ func (b *StatisticsMessageBuilder) addHeader() *StatisticsMessageBuilder {
 }
 
 func (b *StatisticsMessageBuilder) addPeriod(year Year, month Month) *StatisticsMessageBuilder {
-	b.buffer.WriteString(formatPeriod(year, month))
+	return b.addPeriodText(formatPeriod(year, month))
+}
+
+func (b *StatisticsMessageBuilder) addPeriodText(period string) *StatisticsMessageBuilder {
+	b.buffer.WriteString(period)
 	b.buffer.WriteString(`
 
 `)
@@ -159,12 +176,15 @@ func formatInlineCode(s string) string {
 const dateFormat = "02 Jan 2006"
 
 func formatPeriod(year Year, month Month) string {
+	startTime, endTime := month.GetTimeRange(time.Now(), int(year))
+
+	return formatTimeRange(startTime, endTime)
+}
+
+func formatTimeRange(from, to time.Time) string {
 	template := "📅 Period: _%s - %s_"
 
-	startTime, endTime := month.GetTimeRange(time.Now(), int(year))
-	endTime = endTime.Add(-time.Second)
-
-	return fmt.Sprintf(template, startTime.Format(dateFormat), endTime.Format(dateFormat))
+	return fmt.Sprintf(template, from.Format(dateFormat), to.Add(-time.Second).Format(dateFormat))
 }
 
 type operationsStatistics struct {

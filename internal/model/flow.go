@@ -297,4 +297,18 @@ const (
 	UpdateAutomaticReportFlowStep FlowStep = "update_automatic_report"
 	// DeleteAutomaticReportFlowStep represents the step for deleting an automatic report
 	DeleteAutomaticReportFlowStep FlowStep = "delete_automatic_report"
+	// EnterAutomaticReportNameFlowStep represents the step for entering an automatic report name
+	EnterAutomaticReportNameFlowStep FlowStep = "enter_automatic_report_name"
+	// ChooseAutomaticReportPeriodFlowStep represents the step for choosing an automatic report period
+	ChooseAutomaticReportPeriodFlowStep FlowStep = "choose_automatic_report_period"
+	// ChooseAutomaticReportFlowStep represents the step for choosing an automatic report from the paginated list
+	ChooseAutomaticReportFlowStep FlowStep = "choose_automatic_report"
+	// ChooseAutomaticReportToUpdateFlowStep represents the step for choosing an automatic report to update
+	ChooseAutomaticReportToUpdateFlowStep FlowStep = "choose_automatic_report_to_update"
+	// ChooseUpdateAutomaticReportOptionFlowStep represents the step for choosing which automatic report option to update
+	ChooseUpdateAutomaticReportOptionFlowStep FlowStep = "choose_update_automatic_report_option"
+	// ChooseAutomaticReportToDeleteFlowStep represents the step for choosing an automatic report to delete
+	ChooseAutomaticReportToDeleteFlowStep FlowStep = "choose_automatic_report_to_delete"
+	// ConfirmDeleteAutomaticReportFlowStep represents the step for confirming deletion of an automatic report
+	ConfirmDeleteAutomaticReportFlowStep FlowStep = "confirm_delete_automatic_report"
 )
