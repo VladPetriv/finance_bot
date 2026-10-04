@@ -78,15 +78,10 @@ func (h *handlerService) handleChooseBalanceFlowStepForCreateAutomaticReport(ctx
 	selectedBalanceIDs := getSelectedIDsFromMetadata(opts.stateMetaData, model.AutomaticReportBalanceIDsMetadataKey)
 
 	if opts.message.GetText() != automaticReportSelectionDoneData {
-		if opts.message.GetText() == automaticReportSelectionSelectAllData {
-			selectedBalanceIDs = toggleAllSelectedIDs(selectedBalanceIDs, getIDs(opts.user.Balances))
-		} else {
-			balance := opts.user.GetBalance(opts.message.GetText())
-			if balance == nil {
-				return "", ErrBalanceNotFound
-			}
-
-			selectedBalanceIDs = toggleSelectedID(selectedBalanceIDs, balance.ID)
+		var err error
+		selectedBalanceIDs, err = applySelection(selectedBalanceIDs, opts.message.GetText(), opts.user.Balances, ErrBalanceNotFound)
+		if err != nil {
+			return "", err
 		}
 		opts.stateMetaData.Add(model.AutomaticReportBalanceIDsMetadataKey, strings.Join(selectedBalanceIDs, ","))
 
@@ -138,17 +133,9 @@ func (h *handlerService) handleChooseCategoryFlowStepForCreateAutomaticReport(ct
 			return "", fmt.Errorf("list user categories from store: %w", err)
 		}
 
-		if opts.message.GetText() == automaticReportSelectionSelectAllData {
-			selectedCategoryIDs = toggleAllSelectedIDs(selectedCategoryIDs, getIDs(categories))
-		} else {
-			categoryIndex := slices.IndexFunc(categories, func(category model.Category) bool {
-				return category.ID == opts.message.GetText()
-			})
-			if categoryIndex == -1 {
-				return "", ErrCategoryNotFound
-			}
-
-			selectedCategoryIDs = toggleSelectedID(selectedCategoryIDs, categories[categoryIndex].ID)
+		selectedCategoryIDs, err = applySelection(selectedCategoryIDs, opts.message.GetText(), categories, ErrCategoryNotFound)
+		if err != nil {
+			return "", err
 		}
 		opts.stateMetaData.Add(model.AutomaticReportCategoryIDsMetadataKey, strings.Join(selectedCategoryIDs, ","))
 
@@ -512,15 +499,10 @@ func (h *handlerService) handleChooseBalanceFlowStepForUpdateAutomaticReport(ctx
 	selectedBalanceIDs := getSelectedIDsFromMetadata(opts.stateMetaData, model.AutomaticReportBalanceIDsMetadataKey)
 
 	if opts.message.GetText() != automaticReportSelectionDoneData {
-		if opts.message.GetText() == automaticReportSelectionSelectAllData {
-			selectedBalanceIDs = toggleAllSelectedIDs(selectedBalanceIDs, getIDs(opts.user.Balances))
-		} else {
-			balance := opts.user.GetBalance(opts.message.GetText())
-			if balance == nil {
-				return "", ErrBalanceNotFound
-			}
-
-			selectedBalanceIDs = toggleSelectedID(selectedBalanceIDs, balance.ID)
+		var err error
+		selectedBalanceIDs, err = applySelection(selectedBalanceIDs, opts.message.GetText(), opts.user.Balances, ErrBalanceNotFound)
+		if err != nil {
+			return "", err
 		}
 		opts.stateMetaData.Add(model.AutomaticReportBalanceIDsMetadataKey, strings.Join(selectedBalanceIDs, ","))
 
@@ -579,17 +561,9 @@ func (h *handlerService) handleChooseCategoryFlowStepForUpdateAutomaticReport(ct
 			return "", fmt.Errorf("list user categories from store: %w", err)
 		}
 
-		if opts.message.GetText() == automaticReportSelectionSelectAllData {
-			selectedCategoryIDs = toggleAllSelectedIDs(selectedCategoryIDs, getIDs(categories))
-		} else {
-			categoryIndex := slices.IndexFunc(categories, func(category model.Category) bool {
-				return category.ID == opts.message.GetText()
-			})
-			if categoryIndex == -1 {
-				return "", ErrCategoryNotFound
-			}
-
-			selectedCategoryIDs = toggleSelectedID(selectedCategoryIDs, categories[categoryIndex].ID)
+		selectedCategoryIDs, err = applySelection(selectedCategoryIDs, opts.message.GetText(), categories, ErrCategoryNotFound)
+		if err != nil {
+			return "", err
 		}
 		opts.stateMetaData.Add(model.AutomaticReportCategoryIDsMetadataKey, strings.Join(selectedCategoryIDs, ","))
 
@@ -836,6 +810,22 @@ func isAllSelected(selectedIDs, allIDs []string) bool {
 	}
 
 	return true
+}
+
+func applySelection[T identifiable](selectedIDs []string, text string, data []T, notFoundErr error) ([]string, error) {
+	allIDs := getIDs(data)
+	if text == automaticReportSelectionSelectAllData {
+		return toggleAllSelectedIDs(selectedIDs, allIDs), nil
+	}
+
+	index := slices.IndexFunc(data, func(entry T) bool {
+		return entry.GetID() == text || entry.GetName() == text
+	})
+	if index == -1 {
+		return nil, notFoundErr
+	}
+
+	return toggleSelectedID(selectedIDs, allIDs[index]), nil
 }
 
 func toggleAllSelectedIDs(selectedIDs, allIDs []string) []string {
