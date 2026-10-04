@@ -59,7 +59,12 @@ func Run(ctx context.Context, cfg *config.Config, logger *logger.Logger) {
 		logger.Fatal().Err(err).Msg("connection with postgres is not established")
 	}
 
-	err = migrations.MigrateDB(logger, postgres.DB, cfg.PostgreSQL.Database, migrations.Migrations)
+	err = migrations.MigrateDB(migrations.MigrateDBOptions{
+		Logger:     logger,
+		DB:         postgres.DB,
+		DBName:     cfg.PostgreSQL.Database,
+		Migrations: migrations.Migrations,
+	})
 	if err != nil {
 		logger.Fatal().Err(err).Msg("migrate database")
 	}
@@ -72,6 +77,7 @@ func Run(ctx context.Context, cfg *config.Config, logger *logger.Logger) {
 		Operation:           store.NewOperation(postgres),
 		State:               store.NewState(postgres),
 		Currency:            store.NewCurrency(postgres),
+		AutomaticReport:     store.NewAutomaticReport(postgres),
 	}
 
 	services := service.Services{
@@ -82,6 +88,7 @@ func Run(ctx context.Context, cfg *config.Config, logger *logger.Logger) {
 		}),
 		Currency:                  service.NewCurrency(logger, apis, stores),
 		BalanceSubscriptionEngine: service.NewBalanceSubscriptionEngine(cfg, logger, stores, apis),
+		AutomaticReportEngine:     service.NewAutomaticReportEngine(cfg, logger, stores, apis),
 	}
 
 	handlerService := service.NewHandler(&service.HandlerOptions{
@@ -108,6 +115,7 @@ func Run(ctx context.Context, cfg *config.Config, logger *logger.Logger) {
 	go services.BalanceSubscriptionEngine.CreateOperations(ctx)
 	go services.BalanceSubscriptionEngine.ExtendScheduledOperations(ctx)
 	go services.BalanceSubscriptionEngine.NotifyAboutSubscriptionPayment(ctx)
+	go services.AutomaticReportEngine.GenerateReports(ctx)
 
 	// Setup health check server
 	mux := http.NewServeMux()

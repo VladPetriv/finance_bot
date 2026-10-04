@@ -23,6 +23,7 @@ type App struct {
 	OperationCreationInterval               time.Duration `env:"FB_APP_OPERATION_CREATION_INTERVAL" env-default:"5m"`
 	ExtendingScheduledOperationsInterval    time.Duration `env:"FB_APP_EXTENDING_SCHEDULED_OPERATIONS_INTERVAL" env-default:"1h"`
 	NotifyAboutSubscriptionPaymentsInterval time.Duration `env:"FB_APP_NOTIFY_ABOUT_SUBSCRIPTION_PAYMENTS_INTERVAL" env-default:"1m"`
+	AutomaticReportGenerationInterval       time.Duration `env:"FB_APP_AUTOMATIC_REPORT_GENERATION_INTERVAL" env-default:"5m"`
 }
 
 // Telegram represents a telegram bot configuration.

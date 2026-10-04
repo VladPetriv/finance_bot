@@ -15,6 +15,7 @@ type Services struct {
 	State                     StateService
 	Currency                  CurrencyService
 	BalanceSubscriptionEngine BalanceSubscriptionEngine
+	AutomaticReportEngine     AutomaticReportEngine
 }
 
 // HandlerService provides functionally for handling bot events.
@@ -68,253 +69,6 @@ type contextFieldName string
 const contextFieldNameState contextFieldName = "state"
 
 var (
-	defaultKeyboardRows = []KeyboardRow{
-		{
-			Buttons: []string{model.BotBalanceCommand, model.BotCategoryCommand},
-		},
-		{
-			Buttons: []string{model.BotOperationCommand, model.BotBalanceSubscriptionsCommand},
-		},
-		{
-			Buttons: []string{model.BotUserSettingsCommand},
-		},
-	}
-
-	rowKeyboardWithCancelButtonOnly = []KeyboardRow{
-		{
-			Buttons: []string{model.BotCancelCommand},
-		},
-	}
-
-	confirmationInlineKeyboardRows = []InlineKeyboardRow{
-		{
-			Buttons: []InlineKeyboardButton{
-				{
-					Text: "Yes",
-					Data: "true",
-				},
-				{
-					Text: "No",
-					Data: "false",
-				},
-			},
-		},
-	}
-
-	userSettingsKeyboardRows = []KeyboardRow{
-		{
-			Buttons: []string{model.BotGetUserSettingsCommand, model.BotUpdateUserSettingsCommand},
-		},
-		{
-			Buttons: []string{model.BotBackCommand},
-		},
-	}
-
-	balanceKeyboardRows = []KeyboardRow{
-		{
-			Buttons: []string{model.BotCreateBalanceCommand, model.BotGetBalanceCommand},
-		},
-		{
-			Buttons: []string{model.BotUpdateBalanceCommand, model.BotDeleteBalanceCommand},
-		},
-		{
-			Buttons: []string{model.BotBackCommand},
-		},
-	}
-
-	categoryKeyboardRows = []KeyboardRow{
-		{
-			Buttons: []string{model.BotCreateCategoryCommand, model.BotListCategoriesCommand},
-		},
-		{
-			Buttons: []string{model.BotUpdateCategoryCommand, model.BotDeleteCategoryCommand},
-		},
-		{
-			Buttons: []string{model.BotBackCommand},
-		},
-	}
-
-	operationKeyboardRows = []KeyboardRow{
-		{
-			Buttons: []string{model.BotCreateOperationCommand, model.BotGetOperationsHistory},
-		},
-		{
-			Buttons: []string{model.BotUpdateOperationCommand, model.BotDeleteOperationCommand},
-		},
-		{
-			Buttons: []string{model.BotBackCommand},
-		},
-	}
-
-	balanceSubscriptionKeyboardRows = []KeyboardRow{
-		{
-			Buttons: []string{model.BotCreateBalanceSubscriptionCommand, model.BotListBalanceSubscriptionsCommand},
-		},
-		{
-			Buttons: []string{model.BotUpdateBalanceSubscriptionCommand, model.BotDeleteBalanceSubscriptionCommand},
-		},
-		{
-			Buttons: []string{model.BotBackCommand},
-		},
-	}
-
-	updateUserSettingsOptionsKeyboard = []InlineKeyboardRow{
-		{
-			Buttons: []InlineKeyboardButton{
-				{
-					Text: model.BotUpdateUserAIParserCommand,
-				},
-			},
-		},
-		{
-			Buttons: []InlineKeyboardButton{
-				{
-					Text: model.BotUpdateUserSubscriptionNotificationsCommand,
-				},
-			},
-		},
-	}
-
-	updateOperationOptionsKeyboardForIncomingAndSpendingOperations = []InlineKeyboardRow{
-		{
-			Buttons: []InlineKeyboardButton{
-				{
-					Text: model.BotUpdateOperationAmountCommand,
-				},
-			},
-		},
-		{
-			Buttons: []InlineKeyboardButton{
-				{
-					Text: model.BotUpdateOperationDescriptionCommand,
-				},
-			},
-		},
-		{
-			Buttons: []InlineKeyboardButton{
-				{
-					Text: model.BotUpdateOperationCategoryCommand,
-				},
-			},
-		},
-		{
-			Buttons: []InlineKeyboardButton{
-				{
-					Text: model.BotUpdateOperationDateCommand,
-				},
-			},
-		},
-	}
-
-	updateOperationOptionsKeyboardForTransferOperations = []InlineKeyboardRow{
-		{
-			Buttons: []InlineKeyboardButton{
-				{
-					Text: model.BotUpdateOperationAmountCommand,
-				},
-			},
-		},
-		{
-			Buttons: []InlineKeyboardButton{
-				{
-					Text: model.BotUpdateOperationDateCommand,
-				},
-			},
-		},
-	}
-
-	updateBalanceOptionsKeyboard = []InlineKeyboardRow{
-		{
-			Buttons: []InlineKeyboardButton{
-				{
-					Text: model.BotUpdateBalanceNameCommand,
-				},
-			},
-		},
-		{
-			Buttons: []InlineKeyboardButton{
-				{
-					Text: model.BotUpdateBalanceAmountCommand,
-				},
-			},
-		},
-		{
-			Buttons: []InlineKeyboardButton{
-				{
-					Text: model.BotUpdateBalanceCurrencyCommand,
-				},
-			},
-		},
-	}
-
-	updateBalanceSubscriptionOptionsKeyboard = []InlineKeyboardRow{
-		{
-			Buttons: []InlineKeyboardButton{
-				{
-					Text: model.BotUpdateBalanceSubscriptionNameCommand,
-				},
-			},
-		},
-		{
-			Buttons: []InlineKeyboardButton{
-				{
-					Text: model.BotUpdateBalanceSubscriptionAmountCommand,
-				},
-			},
-		},
-		{
-			Buttons: []InlineKeyboardButton{
-				{
-					Text: model.BotUpdateBalanceSubscriptionCategoryCommand,
-				},
-			},
-		},
-		{
-			Buttons: []InlineKeyboardButton{
-				{
-					Text: model.BotUpdateBalanceSubscriptionPeriodCommand,
-				},
-			},
-		},
-	}
-
-	operationHistoryPeriodKeyboard = []InlineKeyboardRow{
-		{
-			Buttons: []InlineKeyboardButton{
-				{
-					Text: string(model.CreationPeriodDay),
-				},
-				{
-					Text: string(model.CreationPeriodWeek),
-				},
-				{
-					Text: string(model.CreationPeriodMonth),
-				},
-				{
-					Text: string(model.CreationPeriodYear),
-				},
-			},
-		},
-	}
-
-	balanceSubscriptionFrequencyKeyboard = []InlineKeyboardRow{
-		{
-			Buttons: []InlineKeyboardButton{
-				{
-					Text: string(model.SubscriptionPeriodWeekly),
-				},
-				{
-					Text: string(model.SubscriptionPeriodMonthly),
-				},
-				{
-					Text: string(model.SubscriptionPeriodYearly),
-				},
-			},
-		},
-	}
-)
-
-var (
 	// ErrUserAlreadyExists happens when user already exists in system.
 	ErrUserAlreadyExists = errs.New("user already exists")
 	// ErrUserNotFound happens when user not exists in system.
@@ -354,6 +108,15 @@ var (
 	ErrNoBalanceSubscriptionsFound = errs.New("No balance subscriptions found. Please try to select another balance.")
 	// ErrBalanceSubscriptionNotFound happens when don't receive balance subscription from store.
 	ErrBalanceSubscriptionNotFound = errs.New("Balance subscription not found. Please try to select another balance subscription.")
+
+	// ErrNoAutomaticReportsFound happens when don't receive automatic reports from store.
+	ErrNoAutomaticReportsFound = errs.New("No automatic reports found.")
+	// ErrAutomaticReportNotFound happens when don't receive automatic report from store.
+	ErrAutomaticReportNotFound = errs.New("Automatic report not found. Please try to select another automatic report.")
+	// ErrAutomaticReportBalancesNotSelected happens when user finishes balances selection without choosing any balance.
+	ErrAutomaticReportBalancesNotSelected = errs.New("Please select at least one balance.")
+	// ErrAutomaticReportCategoriesNotSelected happens when user finishes categories selection without choosing any category.
+	ErrAutomaticReportCategoriesNotSelected = errs.New("Please select at least one category.")
 )
 
 // StateService represents a service for managing and handling complex bot flow using state.
@@ -399,4 +162,11 @@ type BalanceSubscriptionEngine interface {
 	CreateOperations(ctx context.Context)
 	// NotifyAboutSubscriptionPayment sends a notification a day before subscription payment.
 	NotifyAboutSubscriptionPayment(ctx context.Context)
+}
+
+// AutomaticReportEngine represents a service for generating automatic reports and sending them to users.
+type AutomaticReportEngine interface {
+	// GenerateReports finds scheduled report executions that are due, builds the reports for the finished period,
+	// sends them to the users and schedules the next execution.
+	GenerateReports(ctx context.Context)
 }

@@ -23,6 +23,8 @@ const (
 	BalanceSubscriptionEvent Event = "balance/subscriptions/actions"
 	// UserSettingsEvent represents the event for receiving user settings actions
 	UserSettingsEvent Event = "user_settings/actions"
+	// AutomaticReportEvent represents the event for receiving automatic report actions
+	AutomaticReportEvent Event = "automatic_report/actions"
 
 	// GetUserSettingsEvent represents the event for receiving user settings
 	GetUserSettingsEvent Event = "user_settings/get"
@@ -66,6 +68,15 @@ const (
 	UpdateBalanceSubscriptionEvent Event = "balance_subscription/update"
 	// DeleteBalanceSubscriptionEvent represents the event for deleting a balance subscription
 	DeleteBalanceSubscriptionEvent Event = "balance_subscription/delete"
+
+	// CreateAutomaticReportEvent represents the event for creating a new "job" forautomatic report
+	CreateAutomaticReportEvent Event = "automatic_report/create"
+	// ListAutomaticReportsEvent represents the event for getting a list of all automatic report "jobs"
+	ListAutomaticReportsEvent Event = "automatic_report/list"
+	// UpdateAutomaticReportEvent represents the event for updating an automatic report "job" configuration
+	UpdateAutomaticReportEvent Event = "automatic_report/update"
+	// DeleteAutomaticReportEvent represents the event for deleting an automatic report "job"
+	DeleteAutomaticReportEvent Event = "automatic_report/delete"
 )
 
 // EventToFlow maps events to their corresponding flows
@@ -81,6 +92,7 @@ var EventToFlow = map[Event]Flow{
 	OperationEvent:           OperationFlow,
 	BalanceSubscriptionEvent: BalanceSubscriptionFlow,
 	UserSettingsEvent:        UserSettingsFlow,
+	AutomaticReportEvent:     AutomaticReportFlow,
 
 	// User settings
 	GetUserSettingsEvent:    GetUserSettingsFlow,
@@ -110,4 +122,10 @@ var EventToFlow = map[Event]Flow{
 	ListBalanceSubscriptionEvent:   ListBalanceSubscriptionFlow,
 	UpdateBalanceSubscriptionEvent: UpdateBalanceSubscriptionFlow,
 	DeleteBalanceSubscriptionEvent: DeleteBalanceSubscriptionFlow,
+
+	// Automatic reports
+	CreateAutomaticReportEvent: CreateAutomaticReportFlow,
+	ListAutomaticReportsEvent:  ListAutomaticReportsFlow,
+	UpdateAutomaticReportEvent: UpdateAutomaticReportFlow,
+	DeleteAutomaticReportEvent: DeleteAutomaticReportFlow,
 }

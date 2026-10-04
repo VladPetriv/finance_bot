@@ -16,6 +16,7 @@ type Stores struct {
 	State               StateStore
 	Currency            CurrencyStore
 	BalanceSubscription BalanceSubscriptionStore
+	AutomaticReport     AutomaticReportStore
 }
 
 // UserStore provides functionality for work with users store.
@@ -113,6 +114,7 @@ type ListOperationsFilter struct {
 	CreationPeriod       model.CreationPeriod
 	Month                model.Month
 	Year                 model.Year
+	BetweenFilter        *BetweenFilter
 	OrderByCreatedAtDesc bool
 	Pagination           *Pagination
 }
@@ -229,6 +231,48 @@ type ListScheduledOperation struct {
 	BetweenFilter          *BetweenFilter
 	BalanceSubscriptionIDs []string
 	NotNotified            bool
+}
+
+// AutomaticReportStore represents a store for automatic reports.
+type AutomaticReportStore interface {
+	// Create creates a new automatic report "job" in store
+	Create(ctx context.Context, report *model.AutomaticReport) error
+	// CreateScheduledReportExecution creates a new scheduled report execution in store
+	CreateScheduledReportExecution(ctx context.Context, execution *model.ScheduledReportExecution) error
+	// Get returns an automatic report from store by specific filter
+	Get(ctx context.Context, filter GetAutomaticReportFilter) (*model.AutomaticReport, error)
+	// Count returns the number of automatic reports in store by specific filter
+	Count(ctx context.Context, filter ListAutomaticReportFilter) (int, error)
+	// List returns a list of automatic reports from store by specific filter
+	List(ctx context.Context, filter ListAutomaticReportFilter) ([]model.AutomaticReport, error)
+	// ListScheduledReportExecutions returns a list of scheduled report executions from store by specific filter
+	ListScheduledReportExecutions(ctx context.Context, filter ListScheduledReportExecutionFilter) ([]model.ScheduledReportExecution, error)
+	// Update updates an automatic report in store
+	Update(ctx context.Context, report *model.AutomaticReport) error
+	// Delete deletes an automatic report from store by ID
+	Delete(ctx context.Context, id string) error
+	// DeleteScheduledReportExecution deletes a scheduled report execution from store by ID
+	DeleteScheduledReportExecution(ctx context.Context, id string) error
+}
+
+// GetAutomaticReportFilter represents a filter for store.Get method.
+type GetAutomaticReportFilter struct {
+	ID   string
+	Name string
+}
+
+// ListAutomaticReportFilter represents a filter for store.List method.
+type ListAutomaticReportFilter struct {
+	BalanceIDs           []string
+	CategoryIDs          []string
+	Pagination           *Pagination
+	OrderByCreatedAtDesc bool
+}
+
+// ListScheduledReportExecutionFilter represents a filter for store.ListScheduledReportExecutions method.
+type ListScheduledReportExecutionFilter struct {
+	AutomaticReportID string
+	BetweenFilter     *BetweenFilter
 }
 
 // BetweenFilter represents a time range filter with inclusive From and To boundaries

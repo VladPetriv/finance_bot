@@ -14,7 +14,7 @@ func (m Metadata) Add(key MetadataKey, value any) {
 	if m == nil {
 		m = Metadata{}
 	}
-	(m)[key] = value
+	m[key] = value
 }
 
 // Value implements the driver.Valuer interface
@@ -120,4 +120,17 @@ const (
 	BalanceSubscriptionPeriodMetadataKey MetadataKey = "balance_subscription_period"
 	// BalanceSubscriptionAmountMetadataKey represents the amount of the balance subscription.
 	BalanceSubscriptionAmountMetadataKey MetadataKey = "balance_subscription_amount"
+
+	// Automatic report related keys
+
+	// AutomaticReportIDMetadataKey represents the ID of the automatic report.
+	AutomaticReportIDMetadataKey MetadataKey = "automatic_report_id"
+	// AutomaticReportNameMetadataKey represents the name of the automatic report.
+	AutomaticReportNameMetadataKey MetadataKey = "automatic_report_name"
+	// AutomaticReportPeriodMetadataKey represents the period of the automatic report.
+	AutomaticReportPeriodMetadataKey MetadataKey = "automatic_report_period"
+	// AutomaticReportBalanceIDsMetadataKey represents the comma separated IDs of the balances selected for the automatic report.
+	AutomaticReportBalanceIDsMetadataKey MetadataKey = "automatic_report_balance_ids"
+	// AutomaticReportCategoryIDsMetadataKey represents the comma separated IDs of the categories selected for the automatic report.
+	AutomaticReportCategoryIDsMetadataKey MetadataKey = "automatic_report_category_ids"
 )
