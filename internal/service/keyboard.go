@@ -16,6 +16,58 @@ type identifiable interface {
 	GetName() string
 }
 
+const (
+	timezonesPerKeyboard    = 20
+	timezonesPerKeyboardRow = 2
+	timezoneRegionsPerRow   = 2
+)
+
+func buildTimezoneRegionsKeyboard() []InlineKeyboardRow {
+	rows := make([]InlineKeyboardRow, 0, len(model.TimezoneRegions)/timezoneRegionsPerRow+2)
+	for i := 0; i < len(model.TimezoneRegions); i += timezoneRegionsPerRow {
+		buttons := make([]InlineKeyboardButton, 0, timezoneRegionsPerRow)
+		for _, region := range model.TimezoneRegions[i:min(i+timezoneRegionsPerRow, len(model.TimezoneRegions))] {
+			buttons = append(buttons, InlineKeyboardButton{
+				Text: region,
+			})
+		}
+
+		rows = append(rows, InlineKeyboardRow{
+			Buttons: buttons,
+		})
+	}
+
+	return append(rows, InlineKeyboardRow{
+		Buttons: []InlineKeyboardButton{
+			{
+				Text: "UTC",
+			},
+		},
+	})
+}
+
+func getTimezonesKeyboard(region string, page int) ([]InlineKeyboardRow, error) {
+	timezones := model.GetTimezonesByRegion(region)
+
+	maxPage := calculateMaxPage(len(timezones), timezonesPerKeyboard)
+	page = max(firstPage, min(page, maxPage))
+
+	start := (page - 1) * timezonesPerKeyboard
+	end := min(start+timezonesPerKeyboard, len(timezones))
+
+	return paginateInlineKeyboard(
+		inlineKeyboardPaginatorOptions{
+			totalCount:     len(timezones),
+			maxPerKeyboard: timezonesPerKeyboard,
+			maxPerRow:      timezonesPerKeyboardRow,
+			currentPage:    page,
+		},
+		func() ([]model.Timezone, error) {
+			return timezones[start:end], nil
+		},
+	)
+}
+
 func getInlineKeyboardRows[T identifiable](data []T, elementLimitPerRow int) []InlineKeyboardRow {
 	inlineKeyboardRows := make([]InlineKeyboardRow, 0)
 
@@ -43,6 +95,7 @@ const (
 type getOperationsKeyboardOptions struct {
 	balanceID string
 	page      int
+	location  *time.Location
 }
 
 func (h handlerService) getOperationsKeyboard(ctx context.Context, opts getOperationsKeyboardOptions) ([]InlineKeyboardRow, error) {
@@ -76,11 +129,13 @@ func (h handlerService) getOperationsKeyboard(ctx context.Context, opts getOpera
 					Limit: operationsPerKeyboard,
 					Page:  opts.page,
 				},
+				Location: opts.location,
 			})
 			if err != nil {
 				logger.Error().Err(err).Msg("list operations from store")
 				return nil, fmt.Errorf("list operations from store: %w", err)
 			}
+			convertOperationsToLocation(operations, opts.location)
 			if len(operations) == 0 {
 				logger.Info().Msg("operations not found")
 				return nil, ErrOperationsNotFound
@@ -100,6 +155,7 @@ type getOperationsHistoryKeyboardOptions struct {
 	balance        *model.Balance
 	creationPeriod model.CreationPeriod
 	page           int
+	location       *time.Location
 }
 
 func (h handlerService) getOperationsHistoryKeyboard(ctx context.Context, opts getOperationsHistoryKeyboardOptions) (string, []InlineKeyboardRow, error) {
@@ -109,6 +165,7 @@ func (h handlerService) getOperationsHistoryKeyboard(ctx context.Context, opts g
 	operationsCount, err := h.stores.Operation.Count(ctx, ListOperationsFilter{
 		BalanceID:      opts.balance.ID,
 		CreationPeriod: opts.creationPeriod,
+		Location:       opts.location,
 	})
 	if err != nil {
 		logger.Error().Err(err).Msg("count operations")
@@ -130,6 +187,7 @@ func (h handlerService) getOperationsHistoryKeyboard(ctx context.Context, opts g
 			operations, err := h.stores.Operation.List(ctx, ListOperationsFilter{
 				BalanceID:            opts.balance.ID,
 				CreationPeriod:       opts.creationPeriod,
+				Location:             opts.location,
 				OrderByCreatedAtDesc: true,
 				Pagination: &Pagination{
 					Limit: operationsPerKeyboard,
@@ -144,6 +202,7 @@ func (h handlerService) getOperationsHistoryKeyboard(ctx context.Context, opts g
 				logger.Info().Msg("operations not found")
 				return "", ErrOperationsNotFound
 			}
+			convertOperationsToLocation(operations, opts.location)
 
 			outputMessage := fmt.Sprintf(
 				"💰 *Balance:* %v%s\n📅 *Period:* %v\n\n",
@@ -589,4 +648,14 @@ func getSelectionInlineKeyboardRows[T identifiable](data []T, selectedIDs []stri
 	})
 
 	return inlineKeyboardRows
+}
+
+func convertOperationsToLocation(operations []model.Operation, location *time.Location) {
+	if location == nil {
+		return
+	}
+
+	for i := range operations {
+		operations[i].CreatedAt = operations[i].CreatedAt.In(location)
+	}
 }
