@@ -15,6 +15,7 @@ type Services struct {
 	State                     StateService
 	Currency                  CurrencyService
 	BalanceSubscriptionEngine BalanceSubscriptionEngine
+	AutomaticReportEngine     AutomaticReportEngine
 }
 
 // HandlerService provides functionally for handling bot events.
@@ -107,6 +108,15 @@ var (
 	ErrNoBalanceSubscriptionsFound = errs.New("No balance subscriptions found. Please try to select another balance.")
 	// ErrBalanceSubscriptionNotFound happens when don't receive balance subscription from store.
 	ErrBalanceSubscriptionNotFound = errs.New("Balance subscription not found. Please try to select another balance subscription.")
+
+	// ErrNoAutomaticReportsFound happens when don't receive automatic reports from store.
+	ErrNoAutomaticReportsFound = errs.New("No automatic reports found.")
+	// ErrAutomaticReportNotFound happens when don't receive automatic report from store.
+	ErrAutomaticReportNotFound = errs.New("Automatic report not found. Please try to select another automatic report.")
+	// ErrAutomaticReportBalancesNotSelected happens when user finishes balances selection without choosing any balance.
+	ErrAutomaticReportBalancesNotSelected = errs.New("Please select at least one balance.")
+	// ErrAutomaticReportCategoriesNotSelected happens when user finishes categories selection without choosing any category.
+	ErrAutomaticReportCategoriesNotSelected = errs.New("Please select at least one category.")
 )
 
 // StateService represents a service for managing and handling complex bot flow using state.
@@ -152,4 +162,11 @@ type BalanceSubscriptionEngine interface {
 	CreateOperations(ctx context.Context)
 	// NotifyAboutSubscriptionPayment sends a notification a day before subscription payment.
 	NotifyAboutSubscriptionPayment(ctx context.Context)
+}
+
+// AutomaticReportEngine represents a service for generating automatic reports and sending them to users.
+type AutomaticReportEngine interface {
+	// GenerateReports finds scheduled report executions that are due, builds the reports for the finished period,
+	// sends them to the users and schedules the next execution.
+	GenerateReports(ctx context.Context)
 }
