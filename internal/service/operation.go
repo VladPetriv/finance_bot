@@ -517,7 +517,7 @@ func (h handlerService) createSpendingOrIncomingOperation(ctx context.Context, o
 		Type:        opts.operationType,
 		Amount:      opts.operationAmount.StringFixed(),
 		Description: operationDescription,
-		CreatedAt:   time.Now(),
+		CreatedAt:   time.Now().UTC(),
 	}
 	logger.Debug().Any("operation", operation).Msg("build operation for create")
 
@@ -581,7 +581,7 @@ func (h handlerService) createTransferOperation(ctx context.Context, opts create
 		Type:              model.OperationTypeTransferOut,
 		Amount:            opts.operationAmount.StringFixed(),
 		Description:       fmt.Sprintf("Transfer: %s ➜ %s", balanceFrom.Name, balanceTo.Name),
-		CreatedAt:         time.Now(),
+		CreatedAt:         time.Now().UTC(),
 	}
 	operationIn := model.Operation{
 		ID:                operationIDIn,
@@ -591,7 +591,7 @@ func (h handlerService) createTransferOperation(ctx context.Context, opts create
 		Type:              model.OperationTypeTransferIn,
 		Amount:            opts.operationAmount.StringFixed(),
 		Description:       fmt.Sprintf("Received transfer from %s", balanceFrom.Name),
-		CreatedAt:         time.Now(),
+		CreatedAt:         time.Now().UTC(),
 	}
 
 	balanceAmountFrom, _ := money.NewFromString(balanceFrom.Amount)
@@ -714,6 +714,7 @@ func (h handlerService) handleChooseTimePeriodForOperationsHistoryFlowStep(ctx c
 				balance:        balance,
 				creationPeriod: parsedCreationPeriod,
 				page:           nextPage,
+				location:       opts.user.GetLocation(),
 			},
 		)
 		if err != nil {
@@ -740,6 +741,7 @@ func (h handlerService) handleChooseTimePeriodForOperationsHistoryFlowStep(ctx c
 			balance:        balance,
 			creationPeriod: creationPeriod,
 			page:           firstPage,
+			location:       opts.user.GetLocation(),
 		},
 	)
 	if err != nil {
@@ -783,6 +785,7 @@ func (h handlerService) handleChooseBalanceFlowStepForDeleteOperation(ctx contex
 	keyboard, err := h.getOperationsKeyboard(ctx, getOperationsKeyboardOptions{
 		balanceID: opts.user.GetBalance(opts.message.GetText()).ID,
 		page:      firstPage,
+		location:  opts.user.GetLocation(),
 	})
 	if err != nil {
 		return "", fmt.Errorf("get operations keyboard: %w", err)
@@ -815,6 +818,7 @@ func (h handlerService) handleChooseOperationToDeleteFlowStep(ctx context.Contex
 		keyboard, err := h.getOperationsKeyboard(ctx, getOperationsKeyboardOptions{
 			balanceID: opts.user.GetBalance(balanceName).ID,
 			page:      nextPage,
+			location:  opts.user.GetLocation(),
 		})
 		if err != nil {
 			logger.Error().Err(err).Msg("get operations keyboard")
@@ -1076,6 +1080,7 @@ func (h handlerService) handleChooseBalanceFlowStepForUpdateOperation(ctx contex
 	keyboard, err := h.getOperationsKeyboard(ctx, getOperationsKeyboardOptions{
 		balanceID: opts.user.GetBalance(opts.message.GetText()).ID,
 		page:      firstPage,
+		location:  opts.user.GetLocation(),
 	})
 	if err != nil {
 		logger.Error().Err(err).Msg("get operations keyboard")
@@ -1109,6 +1114,7 @@ func (h handlerService) handleChooseOperationToUpdateFlowStep(ctx context.Contex
 		keyboard, err := h.getOperationsKeyboard(ctx, getOperationsKeyboardOptions{
 			balanceID: opts.user.GetBalance(balanceName).ID,
 			page:      nextPage,
+			location:  opts.user.GetLocation(),
 		})
 		if err != nil {
 			logger.Error().Err(err).Msg("get operations keyboard")
@@ -1245,7 +1251,7 @@ func (h handlerService) handleChooseUpdateOperationOptionFlowStep(ctx context.Co
 			FormatMessageInMarkDown: true,
 			UpdatedMessage: fmt.Sprintf(
 				"Enter updated operation date(Current: `%s`):\nPlease use the following format: DD/MM/YYYY HH:MM. Example: 01/01/2025 12:00",
-				operation.CreatedAt.Format(operationTimeFormat),
+				operation.CreatedAt.In(opts.user.GetLocation()).Format(operationTimeFormat),
 			),
 		})
 	default:
@@ -1580,7 +1586,7 @@ func (h handlerService) handleEnterOperationDateFlowStep(ctx context.Context, op
 		return "", ErrOperationNotFound
 	}
 
-	parsedOperationDate, err := time.Parse(operationTimeFormat, opts.message.GetText())
+	parsedOperationDate, err := time.ParseInLocation(operationTimeFormat, opts.message.GetText(), opts.user.GetLocation())
 	if err != nil {
 		logger.Error().Err(err).Msg("parse operation date")
 		return "", ErrInvalidDateFormat
@@ -1588,7 +1594,7 @@ func (h handlerService) handleEnterOperationDateFlowStep(ctx context.Context, op
 
 	switch operation.Type {
 	case model.OperationTypeSpending, model.OperationTypeIncoming:
-		operation.CreatedAt = parsedOperationDate
+		operation.CreatedAt = parsedOperationDate.UTC()
 
 		err = h.stores.Operation.Update(ctx, operation.ID, operation)
 		if err != nil {
@@ -1610,7 +1616,7 @@ func (h handlerService) handleEnterOperationDateFlowStep(ctx context.Context, op
 		}
 
 		for _, operation := range []*model.Operation{operation, pairedOperation} {
-			operation.CreatedAt = parsedOperationDate
+			operation.CreatedAt = parsedOperationDate.UTC()
 			err = h.stores.Operation.Update(ctx, operation.ID, operation)
 			if err != nil {
 				logger.Error().Err(err).Msg("update operation in store")

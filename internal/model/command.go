@@ -26,6 +26,8 @@ const (
 	BotUpdateUserAIParserCommand string = "Update AI Parser 🤖"
 	// BotUpdateUserSubscriptionNotificationsCommand represents the command to update subscription notification settings
 	BotUpdateUserSubscriptionNotificationsCommand string = "Update Subscription Notifications 💳"
+	// BotUpdateUserTimezoneCommand represents the command to update timezone settings
+	BotUpdateUserTimezoneCommand string = "Update Timezone 🌍"
 
 	// BotCreateBalanceCommand represents the command to create a new balance
 	BotCreateBalanceCommand string = "Create Balance 💰"
@@ -134,7 +136,7 @@ var AvailableCommands = []string{
 	BotBalanceSubscriptionsCommand, BotAutomaticReportCommand,
 
 	// User settings
-	BotGetUserSettingsCommand, BotUpdateUserSettingsCommand,
+	BotGetUserSettingsCommand, BotUpdateUserSettingsCommand, BotUpdateUserTimezoneCommand,
 
 	// Balance
 	BotGetBalanceCommand, BotCreateBalanceCommand, BotUpdateBalanceCommand, BotDeleteBalanceCommand,

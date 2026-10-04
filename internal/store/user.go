@@ -35,8 +35,8 @@ func (u *userStore) Create(ctx context.Context, user *model.User) error {
 func (u *userStore) CreateSettings(ctx context.Context, settings *model.UserSettings) error {
 	_, err := u.DB.ExecContext(
 		ctx,
-		"INSERT INTO user_settings (id, user_id, ai_parser_enabled, notify_about_subscription_payments) VALUES ($1, $2, $3, $4);",
-		settings.ID, settings.UserID, settings.AIParserEnabled, settings.NotifyAboutSubscriptionPayments,
+		"INSERT INTO user_settings (id, user_id, ai_parser_enabled, notify_about_subscription_payments, timezone) VALUES ($1, $2, $3, $4, $5);",
+		settings.ID, settings.UserID, settings.AIParserEnabled, settings.NotifyAboutSubscriptionPayments, settings.Timezone,
 	)
 
 	return err
@@ -45,8 +45,8 @@ func (u *userStore) CreateSettings(ctx context.Context, settings *model.UserSett
 func (u *userStore) UpdateSettings(ctx context.Context, settings *model.UserSettings) error {
 	_, err := u.DB.ExecContext(
 		ctx,
-		"UPDATE user_settings SET ai_parser_enabled = $1, notify_about_subscription_payments = $2 WHERE id = $3;",
-		settings.AIParserEnabled, settings.NotifyAboutSubscriptionPayments, settings.ID,
+		"UPDATE user_settings SET ai_parser_enabled = $1, notify_about_subscription_payments = $2, timezone = $3 WHERE id = $4;",
+		settings.AIParserEnabled, settings.NotifyAboutSubscriptionPayments, settings.Timezone, settings.ID,
 	)
 
 	return err
@@ -109,7 +109,7 @@ func (u *userStore) Get(ctx context.Context, filter service.GetUserFilter) (*mod
 		stmt := sq.
 			StatementBuilder.
 			PlaceholderFormat(sq.Dollar).
-			Select("id", "user_id", "ai_parser_enabled", "notify_about_subscription_payments", "created_at", "updated_at").
+			Select("id", "user_id", "ai_parser_enabled", "notify_about_subscription_payments", "timezone", "created_at", "updated_at").
 			From("user_settings").
 			Where(sq.Eq{"user_id": user.ID})
 

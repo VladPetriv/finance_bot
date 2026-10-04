@@ -100,12 +100,14 @@ type GetOperationFilter struct {
 // ListOperationYearsFilter represents a filters for ListOperationYears method.
 type ListOperationYearsFilter struct {
 	BalanceID string
+	Location  *time.Location
 }
 
 // ListOperationMonthsFilter represents a filters for ListOperationMonths method.
 type ListOperationMonthsFilter struct {
 	BalanceID string
 	Year      int
+	Location  *time.Location
 }
 
 // ListOperationsFilter represents filters for list operations from store.
@@ -117,6 +119,7 @@ type ListOperationsFilter struct {
 	BetweenFilter        *BetweenFilter
 	OrderByCreatedAtDesc bool
 	Pagination           *Pagination
+	Location             *time.Location
 }
 
 // CategoryStore provides functionality for work with categories store.

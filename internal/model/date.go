@@ -78,25 +78,27 @@ var monthToMonthIndex = map[Month]int{
 	MonthDecember:  12,
 }
 
-// GetTimeRange returns [start, end) time range for the month.
+// GetTimeRange returns [start, end) time range for the month in UTC.
+// Month boundaries are calculated in the given location.
 // If it's the current month of the selected year, end is currentTime.
-func (m Month) GetTimeRange(currentTime time.Time, year int) (time.Time, time.Time) {
+func (m Month) GetTimeRange(currentTime time.Time, year int, location *time.Location) (time.Time, time.Time) {
 	selectedMonth := time.Month(m.GetIndex())
+	localTime := currentTime.In(location)
 
-	currentYear := currentTime.Year()
+	currentYear := localTime.Year()
 	if year != 0 {
 		currentYear = year
 	}
 
-	start := time.Date(currentYear, selectedMonth, 1, 0, 0, 0, 0, time.UTC)
+	start := time.Date(currentYear, selectedMonth, 1, 0, 0, 0, 0, location)
 	end := start.AddDate(0, 1, 0) // first day of next month
 
 	// If it's the current month of the current year → cut at now
-	if currentTime.Year() == currentYear && currentTime.Month() == selectedMonth {
-		end = currentTime.UTC()
+	if localTime.Year() == currentYear && localTime.Month() == selectedMonth {
+		end = currentTime
 	}
 
-	return start, end
+	return start.UTC(), end.UTC()
 }
 
 // Months represents an array of all months
@@ -124,8 +126,8 @@ const (
 )
 
 // CalculateTimeRange is used to calculate start and end times based on a given period
-func (c CreationPeriod) CalculateTimeRange() (time.Time, time.Time) {
-	now := time.Now()
+func (c CreationPeriod) CalculateTimeRange(location *time.Location) (time.Time, time.Time) {
+	now := time.Now().UTC()
 
 	startTime := now
 	endTime := now
@@ -140,7 +142,8 @@ func (c CreationPeriod) CalculateTimeRange() (time.Time, time.Time) {
 	case CreationPeriodYear:
 		startTime = now.Add(-365 * 24 * time.Hour)
 	case CreationPeriodCurrentMonth:
-		startTime = time.Date(now.Year(), now.Month(), 1, 0, 0, 0, 0, time.Local)
+		localNow := now.In(location)
+		startTime = time.Date(localNow.Year(), localNow.Month(), 1, 0, 0, 0, 0, location).UTC()
 	}
 
 	return startTime, endTime

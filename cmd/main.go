@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	_ "time/tzdata"
 
 	"github.com/VladPetriv/finance_bot/config"
 	"github.com/VladPetriv/finance_bot/internal/app"

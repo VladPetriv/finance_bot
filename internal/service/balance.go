@@ -202,6 +202,7 @@ func (h handlerService) handleChooseBalanceForBalanceStatisticsFlowStep(ctx cont
 
 	years, err := h.stores.Operation.ListOperationYears(ctx, ListOperationYearsFilter{
 		BalanceID: balance.ID,
+		Location:  opts.user.GetLocation(),
 	})
 	if err != nil {
 		logger.Error().Err(err).Msg("list operation years")
@@ -248,6 +249,7 @@ func (h handlerService) handleChooseYearBalanceStatisticsFlowStep(ctx context.Co
 	months, err := h.stores.Operation.ListOperationMonths(ctx, ListOperationMonthsFilter{
 		BalanceID: balance.ID,
 		Year:      year,
+		Location:  opts.user.GetLocation(),
 	})
 	if err != nil {
 		logger.Error().Err(err).Msg("list operation months")
@@ -309,6 +311,7 @@ func (h handlerService) handleChooseMonthBalanceStatisticsFlowStep(ctx context.C
 		BalanceID: balance.ID,
 		Month:     monthForBalanceStatistics,
 		Year:      yearForBalanceStatistics,
+		Location:  opts.user.GetLocation(),
 	})
 	if err != nil {
 		logger.Error().Err(err).Msg("list operations from store")
@@ -317,6 +320,7 @@ func (h handlerService) handleChooseMonthBalanceStatisticsFlowStep(ctx context.C
 
 	outputMessage, err := model.
 		NewStatisticsMessageBuilder(balance, operations, categories).
+		WithLocation(opts.user.GetLocation()).
 		Build(yearForBalanceStatistics, monthForBalanceStatistics)
 	if err != nil {
 		logger.Error().Err(err).Msg("build statistic message")

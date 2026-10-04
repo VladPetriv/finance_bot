@@ -124,6 +124,7 @@ func TestUser_CreateSettings(t *testing.T) {
 				UserID:                          user.ID,
 				AIParserEnabled:                 true,
 				NotifyAboutSubscriptionPayments: true,
+				Timezone:                        "Europe/Kyiv",
 			},
 		},
 		{
@@ -133,12 +134,14 @@ func TestUser_CreateSettings(t *testing.T) {
 				UserID:                          user.ID,
 				AIParserEnabled:                 false,
 				NotifyAboutSubscriptionPayments: false,
+				Timezone:                        "Europe/Kyiv",
 			},
 			args: &model.UserSettings{
 				ID:                              userSettingsID,
 				UserID:                          user.ID,
 				AIParserEnabled:                 false,
 				NotifyAboutSubscriptionPayments: false,
+				Timezone:                        "Europe/Kyiv",
 			},
 			expectDuplicateError: true,
 		},
@@ -179,6 +182,7 @@ func TestUser_CreateSettings(t *testing.T) {
 			assert.Equal(t, tc.args.UserID, createdUserSettings.UserID)
 			assert.Equal(t, tc.args.AIParserEnabled, createdUserSettings.AIParserEnabled)
 			assert.Equal(t, tc.args.NotifyAboutSubscriptionPayments, createdUserSettings.NotifyAboutSubscriptionPayments)
+			assert.Equal(t, tc.args.Timezone, createdUserSettings.Timezone)
 		})
 	}
 }
@@ -221,18 +225,21 @@ func TestUser_UpdateSettings(t *testing.T) {
 				UserID:                          userID1,
 				AIParserEnabled:                 true,
 				NotifyAboutSubscriptionPayments: true,
+				Timezone:                        "Europe/Kyiv",
 			},
 			preconditions: &model.UserSettings{
 				ID:                              userSettingsID1,
 				UserID:                          userID1,
 				AIParserEnabled:                 false,
 				NotifyAboutSubscriptionPayments: false,
+				Timezone:                        "UTC",
 			},
 			expected: &model.UserSettings{
 				ID:                              userSettingsID1,
 				UserID:                          userID1,
 				AIParserEnabled:                 true,
 				NotifyAboutSubscriptionPayments: true,
+				Timezone:                        "Europe/Kyiv",
 			},
 		},
 		{
@@ -242,18 +249,21 @@ func TestUser_UpdateSettings(t *testing.T) {
 				UserID:                          userID2,
 				AIParserEnabled:                 true,
 				NotifyAboutSubscriptionPayments: true,
+				Timezone:                        "Europe/Kyiv",
 			},
 			preconditions: &model.UserSettings{
 				ID:                              userSettingsID2,
 				UserID:                          userID2,
 				AIParserEnabled:                 false,
 				NotifyAboutSubscriptionPayments: false,
+				Timezone:                        "UTC",
 			},
 			expected: &model.UserSettings{
 				ID:                              userSettingsID2,
 				UserID:                          userID2,
 				AIParserEnabled:                 true,
 				NotifyAboutSubscriptionPayments: true,
+				Timezone:                        "Europe/Kyiv",
 			},
 		},
 	}
@@ -283,6 +293,7 @@ func TestUser_UpdateSettings(t *testing.T) {
 			assert.Equal(t, tc.expected.UserID, updatedUserSettings.UserID)
 			assert.Equal(t, tc.expected.AIParserEnabled, updatedUserSettings.AIParserEnabled)
 			assert.Equal(t, tc.expected.NotifyAboutSubscriptionPayments, updatedUserSettings.NotifyAboutSubscriptionPayments)
+			assert.Equal(t, tc.expected.Timezone, updatedUserSettings.Timezone)
 		})
 	}
 }

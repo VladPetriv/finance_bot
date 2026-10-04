@@ -174,9 +174,17 @@ const (
 	UpdateAIParserEnabledUserSettingFlowStep FlowStep = "update_ai_parser_enabled_user_setting"
 	// UpdateSubscriptionNotificationUserSettingFlowStep represents the step for updating subscription notification user setting
 	UpdateSubscriptionNotificationUserSettingFlowStep FlowStep = "update_subscription_notification_user_setting"
+	// UpdateTimezoneUserSettingFlowStep represents the step for updating timezone user setting
+	UpdateTimezoneUserSettingFlowStep FlowStep = "update_timezone_user_setting"
+	// ChooseTimezoneUserSettingFlowStep represents the step for choosing a timezone from the selected region
+	ChooseTimezoneUserSettingFlowStep FlowStep = "choose_timezone_user_setting"
 
 	// Steps that are related for balance
 
+	// EnterInitialTimezoneFlowStep represents the step for entering the timezone of a newly registered user
+	EnterInitialTimezoneFlowStep FlowStep = "enter_initial_timezone"
+	// ChooseInitialTimezoneFlowStep represents the step for choosing the timezone of a newly registered user from the selected region
+	ChooseInitialTimezoneFlowStep FlowStep = "choose_initial_timezone"
 	// CreateInitialBalanceFlowStep represents the step for creating the first balance
 	CreateInitialBalanceFlowStep FlowStep = "create_initial_balance"
 	// CreateBalanceFlowStep represents the step for creating additional balances

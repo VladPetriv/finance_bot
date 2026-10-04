@@ -123,7 +123,16 @@ var (
 				},
 			},
 		},
+		{
+			Buttons: []InlineKeyboardButton{
+				{
+					Text: model.BotUpdateUserTimezoneCommand,
+				},
+			},
+		},
 	}
+
+	timezoneOptionsKeyboard = buildTimezoneRegionsKeyboard()
 
 	updateOperationOptionsKeyboardForIncomingAndSpendingOperations = []InlineKeyboardRow{
 		{

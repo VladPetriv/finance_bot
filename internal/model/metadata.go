@@ -66,6 +66,8 @@ const (
 	BaseFlowMetadataKey MetadataKey = "base_flow"
 	// PageMetadataKey represents the current page number.
 	PageMetadataKey MetadataKey = "page"
+	// TimezoneRegionMetadataKey represents the region selected while choosing a timezone.
+	TimezoneRegionMetadataKey MetadataKey = "timezone_region"
 
 	// Balance related keys
 

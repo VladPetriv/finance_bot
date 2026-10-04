@@ -52,11 +52,15 @@ func (h *handlerService) RegisterHandlers() {
 			model.ChooseUpdateUserSettingsOptionFlowStep:            h.handleChooseUpdateUserSettingsOptionFlowStep,
 			model.UpdateAIParserEnabledUserSettingFlowStep:          h.handleUpdateAIParserEnabledUserSettingFlowStep,
 			model.UpdateSubscriptionNotificationUserSettingFlowStep: h.handleUpdateSubscriptionNotificationUserSettingFlowStep,
+			model.UpdateTimezoneUserSettingFlowStep:                 h.handleUpdateTimezoneUserSettingFlowStep,
+			model.ChooseTimezoneUserSettingFlowStep:                 h.handleChooseTimezoneUserSettingFlowStep,
 		},
 
 		// Flows with balances
 		model.StartFlow: {
-			model.CreateInitialBalanceFlowStep: h.handleCreateInitialBalanceFlowStep,
+			model.EnterInitialTimezoneFlowStep:  h.handleEnterInitialTimezoneFlowStep,
+			model.ChooseInitialTimezoneFlowStep: h.handleChooseInitialTimezoneFlowStep,
+			model.CreateInitialBalanceFlowStep:  h.handleCreateInitialBalanceFlowStep,
 			// NOTE: We're using -ForUpdate methods, since the balance after first step is already created in the store.
 			model.EnterBalanceAmountFlowStep:   h.handleEnterBalanceAmountFlowStepForUpdate,
 			model.EnterBalanceCurrencyFlowStep: h.handleEnterBalanceCurrencyFlowStepForUpdate,
@@ -225,6 +229,8 @@ func (h handlerService) HandleUnknown(msg Message) error {
 	return h.sendMessageWithDefaultKeyboard(msg.GetChatID(), "Didn't understand you!\nCould you please check available commands!")
 }
 
+const enterTimezoneMessage = "Please choose your timezone region or enter any IANA timezone name (e.g. Europe/Kyiv):"
+
 func (h handlerService) HandleStart(ctx context.Context, msg Message) error {
 	logger := h.logger.With().Str("name", "handlerService.HandleStart").Logger()
 
@@ -274,6 +280,7 @@ func (h handlerService) HandleStart(ctx context.Context, msg Message) error {
 		UserID:                          userID,
 		AIParserEnabled:                 false,
 		NotifyAboutSubscriptionPayments: true,
+		Timezone:                        "UTC",
 	})
 	if err != nil {
 		logger.Error().Err(err).Msg("create user settings in store")
@@ -281,18 +288,24 @@ func (h handlerService) HandleStart(ctx context.Context, msg Message) error {
 	}
 
 	welcomeMessage := fmt.Sprintf("Hello, @%s!\nWelcome to @FinanceTracking_bot!", username)
-	enterBalanceNameMessage := "Please enter the name of your initial balance!:"
 
-	messagesToSend := []string{welcomeMessage, enterBalanceNameMessage}
-	for _, message := range messagesToSend {
-		err := h.apis.Messenger.SendMessage(chatID, message)
-		if err != nil {
-			logger.Error().Err(err).Msg("send message")
-			return fmt.Errorf("send message: %w", err)
-		}
+	err = h.apis.Messenger.SendMessage(chatID, welcomeMessage)
+	if err != nil {
+		logger.Error().Err(err).Msg("send message")
+		return fmt.Errorf("send message: %w", err)
 	}
 
-	nextStep = model.CreateInitialBalanceFlowStep
+	err = h.apis.Messenger.SendWithKeyboard(SendWithKeyboardOptions{
+		ChatID:         chatID,
+		Message:        enterTimezoneMessage,
+		InlineKeyboard: timezoneOptionsKeyboard,
+	})
+	if err != nil {
+		logger.Error().Err(err).Msg("send timezone message")
+		return fmt.Errorf("send timezone message: %w", err)
+	}
+
+	nextStep = model.EnterInitialTimezoneFlowStep
 	return nil
 }
 
