@@ -1,6 +1,22 @@
 package model
 
-import "time"
+import (
+	"fmt"
+	"time"
+)
+
+// Year is a type representing a year
+type Year int
+
+// GetID returns the string representation of the year
+func (y Year) GetID() string {
+	return fmt.Sprintf("%d", y)
+}
+
+// GetName returns the string representation of the year
+func (y Year) GetName() string {
+	return fmt.Sprintf("%d", y)
+}
 
 // Month is a type representing a month of the year
 type Month string
@@ -62,45 +78,25 @@ var monthToMonthIndex = map[Month]int{
 	MonthDecember:  12,
 }
 
-// GetTimeRange returns the start and end time of the month.
-// If the current time is in the same month, the start time is the current time and the end time is the end of the day.
-func (m Month) GetTimeRange(currentTime time.Time) (time.Time, time.Time) {
+// GetTimeRange returns [start, end) time range for the month.
+// If it's the current month of the selected year, end is currentTime.
+func (m Month) GetTimeRange(currentTime time.Time, year int) (time.Time, time.Time) {
 	selectedMonth := time.Month(m.GetIndex())
 
-	if currentTime.Month() == selectedMonth {
-		startTime := time.Date(currentTime.Year(), selectedMonth, 1, 0, 0, 0, 0, time.UTC)
-		endTime := time.Date(
-			currentTime.Year(),
-			selectedMonth,
-			currentTime.Day(),
-			currentTime.Hour(),
-			currentTime.Minute(),
-			currentTime.Second(),
-			0,
-			time.UTC,
-		)
-
-		return startTime, endTime
+	currentYear := currentTime.Year()
+	if year != 0 {
+		currentYear = year
 	}
 
-	startTime := time.Date(currentTime.Year(), selectedMonth, 1, 0, 0, 0, 0, time.UTC)
+	start := time.Date(currentYear, selectedMonth, 1, 0, 0, 0, 0, time.UTC)
+	end := start.AddDate(0, 1, 0) // first day of next month
 
-	// Get the first day of next month
-	nextMonth := selectedMonth + 1
-	nextYear := currentTime.Year()
-
-	// Handle December -> January transition
-	if nextMonth > 12 {
-		nextMonth = 1
-		nextYear++
+	// If it's the current month of the current year → cut at now
+	if currentTime.Year() == currentYear && currentTime.Month() == selectedMonth {
+		end = currentTime.UTC()
 	}
 
-	// Set endTime to the last day of the month (by taking first day of next month and subtracting 1 day)
-	firstDayOfNextMonth := time.Date(nextYear, nextMonth, 1, 0, 0, 0, 0, time.UTC)
-	endTime := firstDayOfNextMonth.AddDate(0, 0, -1)
-	endTime = time.Date(endTime.Year(), endTime.Month(), endTime.Day(), 23, 59, 59, 0, time.UTC)
-
-	return startTime, endTime
+	return start, end
 }
 
 // Months represents an array of all months

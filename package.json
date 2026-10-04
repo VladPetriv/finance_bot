@@ -1,0 +1,11 @@
+{
+  "name": "finance_bot",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Release tooling for the finance_bot Go project. Not published to npm.",
+  "devDependencies": {
+    "semantic-release": "^25.0.8",
+    "@semantic-release/changelog": "^7.0.0",
+    "@semantic-release/git": "^11.0.1"
+  }
+}

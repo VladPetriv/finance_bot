@@ -610,7 +610,7 @@ func TestOperation_List(t *testing.T) {
 					CategoryID: categoryID,
 					BalanceID:  balanceID4,
 					Type:       model.OperationTypeIncoming,
-					CreatedAt:  time.Now().Add(-730 * time.Hour),
+					CreatedAt:  time.Now().Add(-1000 * time.Hour),
 				},
 				{
 					ID:         operationID10,
@@ -850,6 +850,267 @@ func TestOperation_List(t *testing.T) {
 				assert.Equal(t, tc.expected[i].CategoryID, actual[i].CategoryID)
 				assert.Equal(t, tc.expected[i].BalanceID, actual[i].BalanceID)
 			}
+		})
+	}
+}
+
+func TestOperation_ListOperationYears(t *testing.T) {
+	t.Parallel()
+
+	ctx := context.Background() //nolint: forbidigo
+	testCaseDB := createTestDB(t, "operation_list_operation_years")
+	currencyStore := store.NewCurrency(testCaseDB)
+	userStore := store.NewUser(testCaseDB)
+	balanceStore := store.NewBalance(testCaseDB)
+	categoryStore := store.NewCategory(testCaseDB)
+	operationStore := store.NewOperation(testCaseDB)
+
+	userID := uuid.NewString()
+	balanceID1, balanceID2 := uuid.NewString(), uuid.NewString()
+	categoryID := uuid.NewString()
+	operationID1, operationID2,
+		operationID3 := uuid.NewString(), uuid.NewString(),
+		uuid.NewString()
+
+	currency := &model.Currency{
+		ID:   uuid.NewString(),
+		Code: "USD",
+	}
+
+	err := currencyStore.CreateIfNotExists(ctx, currency)
+	require.NoError(t, err)
+
+	err = userStore.Create(ctx, &model.User{
+		ID:       userID,
+		Username: "test" + userID,
+	})
+	require.NoError(t, err)
+
+	for _, balanceID := range [...]string{
+		balanceID1, balanceID2,
+	} {
+		err = balanceStore.Create(ctx, &model.Balance{
+			ID:         balanceID,
+			UserID:     userID,
+			CurrencyID: currency.ID,
+		})
+		require.NoError(t, err)
+	}
+
+	err = categoryStore.Create(ctx, &model.Category{
+		ID:     categoryID,
+		UserID: userID,
+		Title:  "test_category",
+	})
+	require.NoError(t, err)
+
+	t.Cleanup(func() {
+		for _, balanceID := range [...]string{
+			balanceID1, balanceID2,
+		} {
+			err = balanceStore.Delete(ctx, balanceID)
+			require.NoError(t, err)
+		}
+		err = categoryStore.Delete(ctx, categoryID)
+		require.NoError(t, err)
+		err := deleteCurrencyByID(testCaseDB.DB, currency.ID)
+		require.NoError(t, err)
+		err = deleteUserByID(testCaseDB.DB, userID)
+		require.NoError(t, err)
+	})
+
+	testCases := [...]struct {
+		desc          string
+		preconditions []model.Operation
+		args          service.ListOperationYearsFilter
+		expected      []model.Year
+	}{
+		{
+			desc: "received all years of operations by balance id filter",
+			preconditions: []model.Operation{
+				{
+					ID:         operationID1,
+					CategoryID: categoryID,
+					BalanceID:  balanceID1,
+					Type:       model.OperationTypeIncoming,
+					CreatedAt:  time.Date(2025, time.March, 1, 10, 0, 0, 0, time.UTC),
+				},
+				{
+					ID:         operationID2,
+					CategoryID: categoryID,
+					BalanceID:  balanceID1,
+					Type:       model.OperationTypeIncoming,
+					CreatedAt:  time.Date(2023, time.March, 1, 10, 0, 0, 0, time.UTC),
+				},
+				{
+					ID:         operationID3,
+					CategoryID: categoryID,
+					BalanceID:  balanceID1,
+					Type:       model.OperationTypeIncoming,
+					CreatedAt:  time.Date(2024, time.March, 1, 10, 0, 0, 0, time.UTC),
+				},
+			},
+			args: service.ListOperationYearsFilter{
+				BalanceID: balanceID1,
+			},
+			expected: []model.Year{2023, 2024, 2025},
+		},
+		{
+			desc: "negative: operations not found",
+			args: service.ListOperationYearsFilter{
+				BalanceID: uuid.NewString(),
+			},
+			expected: nil,
+		},
+	}
+	for _, tc := range testCases {
+		t.Run(tc.desc, func(t *testing.T) {
+			t.Parallel()
+
+			for _, o := range tc.preconditions {
+				err := operationStore.Create(ctx, &o)
+				require.NoError(t, err)
+			}
+
+			t.Cleanup(func() {
+				_, err := testCaseDB.DB.Exec("DELETE FROM operations WHERE balance_id = $1;", tc.args.BalanceID)
+				assert.NoError(t, err)
+			})
+
+			actual, err := operationStore.ListOperationYears(ctx, tc.args)
+			assert.NoError(t, err)
+			assert.Equal(t, tc.expected, actual)
+		})
+	}
+}
+
+func TestOperation_ListOperationMonths(t *testing.T) {
+	t.Parallel()
+
+	ctx := context.Background() //nolint: forbidigo
+	testCaseDB := createTestDB(t, "operation_list_operation_months")
+	currencyStore := store.NewCurrency(testCaseDB)
+	userStore := store.NewUser(testCaseDB)
+	balanceStore := store.NewBalance(testCaseDB)
+	categoryStore := store.NewCategory(testCaseDB)
+	operationStore := store.NewOperation(testCaseDB)
+
+	userID := uuid.NewString()
+	balanceID1, balanceID2 := uuid.NewString(), uuid.NewString()
+	categoryID := uuid.NewString()
+	operationID1, operationID2,
+		operationID3 := uuid.NewString(), uuid.NewString(),
+		uuid.NewString()
+
+	currency := &model.Currency{
+		ID:   uuid.NewString(),
+		Code: "USD",
+	}
+
+	err := currencyStore.CreateIfNotExists(ctx, currency)
+	require.NoError(t, err)
+
+	err = userStore.Create(ctx, &model.User{
+		ID:       userID,
+		Username: "test" + userID,
+	})
+	require.NoError(t, err)
+
+	for _, balanceID := range [...]string{
+		balanceID1, balanceID2,
+	} {
+		err = balanceStore.Create(ctx, &model.Balance{
+			ID:         balanceID,
+			UserID:     userID,
+			CurrencyID: currency.ID,
+		})
+		require.NoError(t, err)
+	}
+
+	err = categoryStore.Create(ctx, &model.Category{
+		ID:     categoryID,
+		UserID: userID,
+		Title:  "test_category",
+	})
+	require.NoError(t, err)
+
+	t.Cleanup(func() {
+		for _, balanceID := range [...]string{
+			balanceID1, balanceID2,
+		} {
+			err = balanceStore.Delete(ctx, balanceID)
+			require.NoError(t, err)
+		}
+		err = categoryStore.Delete(ctx, categoryID)
+		require.NoError(t, err)
+		err := deleteCurrencyByID(testCaseDB.DB, currency.ID)
+		require.NoError(t, err)
+		err = deleteUserByID(testCaseDB.DB, userID)
+		require.NoError(t, err)
+	})
+
+	testCases := [...]struct {
+		desc          string
+		preconditions []model.Operation
+		args          service.ListOperationMonthsFilter
+		expected      []model.Month
+	}{
+		{
+			desc: "received all montsh of operations by balance id filter",
+			preconditions: []model.Operation{
+				{
+					ID:         operationID1,
+					CategoryID: categoryID,
+					BalanceID:  balanceID1,
+					Type:       model.OperationTypeIncoming,
+					CreatedAt:  time.Date(2024, time.December, 1, 10, 0, 0, 0, time.UTC),
+				},
+				{
+					ID:         operationID2,
+					CategoryID: categoryID,
+					BalanceID:  balanceID1,
+					Type:       model.OperationTypeIncoming,
+					CreatedAt:  time.Date(2024, time.January, 1, 10, 0, 0, 0, time.UTC),
+				},
+				{
+					ID:         operationID3,
+					CategoryID: categoryID,
+					BalanceID:  balanceID1,
+					Type:       model.OperationTypeIncoming,
+					CreatedAt:  time.Date(2024, time.June, 1, 10, 0, 0, 0, time.UTC),
+				},
+			},
+			args: service.ListOperationMonthsFilter{
+				BalanceID: balanceID1,
+				Year:      2024,
+			},
+			expected: []model.Month{model.MonthJanuary, model.MonthJune, model.MonthDecember},
+		},
+		{
+			desc: "negative: operations not found",
+			args: service.ListOperationMonthsFilter{
+				BalanceID: uuid.NewString(),
+			},
+			expected: nil,
+		},
+	}
+	for _, tc := range testCases {
+		t.Run(tc.desc, func(t *testing.T) {
+			t.Parallel()
+
+			for _, o := range tc.preconditions {
+				err := operationStore.Create(ctx, &o)
+				require.NoError(t, err)
+			}
+
+			t.Cleanup(func() {
+				_, err := testCaseDB.DB.Exec("DELETE FROM operations WHERE balance_id = $1;", tc.args.BalanceID)
+				assert.NoError(t, err)
+			})
+
+			actual, err := operationStore.ListOperationMonths(ctx, tc.args)
+			assert.NoError(t, err)
+			assert.Equal(t, tc.expected, actual)
 		})
 	}
 }

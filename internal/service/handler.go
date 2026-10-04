@@ -69,8 +69,9 @@ func (h *handlerService) RegisterHandlers() {
 		},
 		model.GetBalanceFlow: {
 			model.GetBalanceFlowStep:                   h.handleGetBalanceFlowStep,
+			model.ChooseBalanceFlowStep:                h.handleChooseBalanceForBalanceStatisticsFlowStep,
+			model.ChooseYearBalanceStatisticsFlowStep:  h.handleChooseYearBalanceStatisticsFlowStep,
 			model.ChooseMonthBalanceStatisticsFlowStep: h.handleChooseMonthBalanceStatisticsFlowStep,
-			model.ChooseBalanceFlowStep:                h.handleChooseBalanceFlowStepForGetBalance,
 		},
 		model.UpdateBalanceFlow: {
 			model.UpdateBalanceFlowStep:             h.handleUpdateBalanceFlowStep,
@@ -513,14 +514,14 @@ func (h handlerService) notifyCancellationAndShowKeyboard(message Message, keybo
 	})
 }
 
-const emptyMessage = "ㅤ"
+const loadingMessage = "Loading..."
 
 // showCancelButton displays a single "Cancel" button in the chat interface,
 // replacing any previous keyboard and sends a message if provided. This prevents users from interacting with
 // outdated keyboard buttons that may still be visible from previous messages.
 func (h handlerService) showCancelButton(chatID int, message string) error {
 	if message == "" {
-		message = emptyMessage
+		message = loadingMessage
 	}
 
 	return h.apis.Messenger.SendWithKeyboard(SendWithKeyboardOptions{
@@ -534,7 +535,7 @@ func (h handlerService) showCancelButton(chatID int, message string) error {
 // If message is empty, it sends an empty message.
 func (h handlerService) sendMessageWithDefaultKeyboard(chatID int, message string) error {
 	if message == "" {
-		message = emptyMessage
+		message = loadingMessage
 	}
 
 	return h.apis.Messenger.SendWithKeyboard(SendWithKeyboardOptions{

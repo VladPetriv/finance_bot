@@ -75,6 +75,12 @@ type OperationStore interface {
 	Count(ctx context.Context, filter ListOperationsFilter) (int, error)
 	// GetAll returns all operations from store by balance id.
 	List(ctx context.Context, filter ListOperationsFilter) ([]model.Operation, error)
+	// ListOperationYears returns distinct years in which operations matching
+	// the given filter were created.
+	ListOperationYears(ctx context.Context, filter ListOperationYearsFilter) ([]model.Year, error)
+	// ListOperationMonths returns distinct months in which operations matching
+	// the given filter were created.
+	ListOperationMonths(ctx context.Context, filter ListOperationMonthsFilter) ([]model.Month, error)
 	// Update updates an operation in store.
 	Update(ctx context.Context, operationID string, operation *model.Operation) error
 	// Delete delete operation by his id.
@@ -91,11 +97,23 @@ type GetOperationFilter struct {
 	BalanceIDs   []string
 }
 
+// ListOperationYearsFilter represents a filters for ListOperationYears method.
+type ListOperationYearsFilter struct {
+	BalanceID string
+}
+
+// ListOperationMonthsFilter represents a filters for ListOperationMonths method.
+type ListOperationMonthsFilter struct {
+	BalanceID string
+	Year      int
+}
+
 // ListOperationsFilter represents filters for list operations from store.
 type ListOperationsFilter struct {
 	BalanceID            string
 	CreationPeriod       model.CreationPeriod
 	Month                model.Month
+	Year                 model.Year
 	OrderByCreatedAtDesc bool
 	Pagination           *Pagination
 }
