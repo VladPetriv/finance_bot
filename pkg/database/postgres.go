@@ -29,7 +29,7 @@ func (p PostgreSQLOptions) convertToConnectionURL() string {
 	}
 
 	return fmt.Sprintf(
-		"user=%s password=%s dbname=%s host=%s port=%s sslmode=%s",
+		"user=%s password=%s dbname=%s host=%s port=%s sslmode=%s timezone=UTC",
 		p.User, p.Password, p.Database, p.Host, p.Port, p.SSLMode,
 	)
 }
