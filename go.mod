@@ -1,8 +1,6 @@
 module github.com/VladPetriv/finance_bot
 
-go 1.24.0
-
-require resty.dev/v3 v3.0.0-beta.1
+go 1.27.1
 
 require (
 	github.com/Masterminds/squirrel v1.5.4
@@ -22,6 +20,7 @@ require (
 	golang.org/x/text v0.32.0
 	google.golang.org/api v0.186.0
 	gopkg.in/natefinch/lumberjack.v2 v2.2.1
+	resty.dev/v3 v3.0.0-beta.1
 )
 
 require (
