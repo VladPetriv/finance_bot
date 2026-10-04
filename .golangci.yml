@@ -95,7 +95,7 @@ linters:
     staticcheck:
       # ST1000 checks for missing package comments. We don't use these for most
       # packages, so let's disable this check.
-      checks: ["all", "-ST1000"]
+      checks: ["all", "-ST1000", "-QF*"]
     thelper:
       test:
         # The following linter would check whether we always call `t.Helper()` in
@@ -117,6 +117,10 @@ linters:
           - forbidigo
         # Only report forbidigo findings in test files.
         path-except: _test\.go$
+      # Migrations and test helpers run raw SQL without a request context.
+      - linters:
+          - noctx
+        path: (internal/migrations/|_test\.go$)
 
 formatters:
   enable:

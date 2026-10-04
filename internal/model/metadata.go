@@ -14,7 +14,7 @@ func (m Metadata) Add(key MetadataKey, value any) {
 	if m == nil {
 		m = Metadata{}
 	}
-	(m)[key] = value
+	m[key] = value
 }
 
 // Value implements the driver.Valuer interface

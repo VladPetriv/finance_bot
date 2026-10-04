@@ -20,14 +20,17 @@ type AutomaticReport struct {
 	UpdatedAt time.Time `db:"updated_at"`
 }
 
+// GetID returns the ID of the automatic report.
 func (a AutomaticReport) GetID() string {
 	return a.ID
 }
 
+// GetName returns the name of the automatic report.
 func (a AutomaticReport) GetName() string {
 	return a.Name
 }
 
+// GetDeletionMessage returns the deletion confirmation message for the automatic report.
 func (a AutomaticReport) GetDeletionMessage() string {
 	return fmt.Sprintf(
 		"Are you sure you want to delete the automatic report '%s' (%s)?\nYou will no longer receive this report.",
@@ -69,6 +72,7 @@ type ScheduledReportExecution struct {
 	ExecutionDate     time.Time `db:"execution_date"`
 }
 
+// ParseAutomaticReportPeriod parses a string into an AutomaticReportPeriod.
 func ParseAutomaticReportPeriod(period string) (AutomaticReportPeriod, error) {
 	switch period {
 	case string(AutomaticReportPeriodDaily):
@@ -96,6 +100,7 @@ func ParseAutomaticReportPeriod(period string) (AutomaticReportPeriod, error) {
 	}
 }
 
+// AddTo returns the date shifted forward by one period.
 func (p AutomaticReportPeriod) AddTo(date time.Time) time.Time {
 	switch p {
 	case AutomaticReportPeriodDaily, AutomaticReportPeriodEndOfDay:
@@ -113,6 +118,7 @@ func (p AutomaticReportPeriod) AddTo(date time.Time) time.Time {
 	}
 }
 
+// SubtractFrom returns the date shifted back by one period.
 func (p AutomaticReportPeriod) SubtractFrom(date time.Time) time.Time {
 	switch p {
 	case AutomaticReportPeriodDaily, AutomaticReportPeriodEndOfDay:
@@ -130,6 +136,7 @@ func (p AutomaticReportPeriod) SubtractFrom(date time.Time) time.Time {
 	}
 }
 
+// CalculateNextExecutionDate returns the first execution date after now, stepping forward by one period from the given date.
 func (p AutomaticReportPeriod) CalculateNextExecutionDate(from, now time.Time) time.Time {
 	next := p.AddTo(from)
 	for !next.After(now) {
@@ -139,6 +146,7 @@ func (p AutomaticReportPeriod) CalculateNextExecutionDate(from, now time.Time) t
 	return next
 }
 
+// CalculateFirstExecutionDate returns the date of the first report execution for a report created at the given time.
 func (p AutomaticReportPeriod) CalculateFirstExecutionDate(now time.Time) time.Time {
 	now = now.UTC()
 	today := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, time.UTC)
@@ -164,6 +172,7 @@ func (p AutomaticReportPeriod) CalculateFirstExecutionDate(now time.Time) time.T
 	}
 }
 
+// GetLabel returns a human readable name of the period.
 func (p AutomaticReportPeriod) GetLabel() string {
 	switch p {
 	case AutomaticReportPeriodDaily:
