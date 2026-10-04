@@ -29,7 +29,7 @@ func (o *operationStore) Create(ctx context.Context, operation *model.Operation)
 	var createdAt time.Time
 	switch operation.CreatedAt.IsZero() {
 	case true:
-		createdAt = time.Now()
+		createdAt = time.Now().UTC()
 	case false:
 		createdAt = operation.CreatedAt
 	}
@@ -112,7 +112,8 @@ func (o *operationStore) ListOperationYears(ctx context.Context, filter service.
 	stmt := sq.
 		StatementBuilder.
 		PlaceholderFormat(sq.Dollar).
-		Select("EXTRACT(YEAR FROM created_at)::int AS year").
+		Select().
+		Column(sq.Expr("EXTRACT(YEAR FROM created_at AT TIME ZONE ?)::int AS year", locationOrUTC(filter.Location).String())).
 		Distinct().
 		From("operations").
 		GroupBy("year").
@@ -140,7 +141,8 @@ func (o *operationStore) ListOperationMonths(ctx context.Context, filter service
 	stmt := sq.
 		StatementBuilder.
 		PlaceholderFormat(sq.Dollar).
-		Select("EXTRACT(MONTH FROM created_at)::int AS month").
+		Select().
+		Column(sq.Expr("EXTRACT(MONTH FROM created_at AT TIME ZONE ?)::int AS month", locationOrUTC(filter.Location).String())).
 		Distinct().
 		From("operations").
 		GroupBy("month").
@@ -150,8 +152,9 @@ func (o *operationStore) ListOperationMonths(ctx context.Context, filter service
 		stmt = stmt.Where(sq.Eq{"operations.balance_id": filter.BalanceID})
 	}
 	if filter.Year != 0 {
-		start := time.Date(filter.Year, 1, 1, 0, 0, 0, 0, time.UTC)
-		end := time.Date(filter.Year+1, 1, 1, 0, 0, 0, 0, time.UTC)
+		location := locationOrUTC(filter.Location)
+		start := time.Date(filter.Year, 1, 1, 0, 0, 0, 0, location)
+		end := time.Date(filter.Year+1, 1, 1, 0, 0, 0, 0, location)
 
 		stmt = stmt.Where(
 			sq.And{
@@ -229,13 +232,13 @@ func applyListOperationsFilter(options applyListOperationsOptions, filter servic
 	}
 
 	if filter.CreationPeriod != "" {
-		startDate, endDate := filter.CreationPeriod.CalculateTimeRange()
+		startDate, endDate := filter.CreationPeriod.CalculateTimeRange(locationOrUTC(filter.Location))
 		stmt = stmt.Where(sq.GtOrEq{"created_at": startDate}).Where(sq.LtOrEq{"created_at": endDate})
 	}
 
 	if filter.Month != "" {
 		year, _ := strconv.Atoi(filter.Year.GetName())
-		startDate, endDate := filter.Month.GetTimeRange(time.Now(), year)
+		startDate, endDate := filter.Month.GetTimeRange(time.Now(), year, locationOrUTC(filter.Location))
 		stmt = stmt.Where(sq.GtOrEq{"created_at": startDate}).Where(sq.LtOrEq{"created_at": endDate})
 	}
 
@@ -278,4 +281,12 @@ func (o *operationStore) Update(ctx context.Context, operationID string, operati
 func (o *operationStore) Delete(ctx context.Context, operationID string) error {
 	_, err := o.DB.ExecContext(ctx, "DELETE FROM operations WHERE id = $1;", operationID)
 	return err
+}
+
+func locationOrUTC(location *time.Location) *time.Location {
+	if location == nil {
+		return time.UTC
+	}
+
+	return location
 }
