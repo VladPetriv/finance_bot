@@ -2,3 +2,4 @@ config.sh
 .env
 node_modules
 CLAUDE.md
+graphify-out/
