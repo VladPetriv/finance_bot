@@ -7,11 +7,10 @@ import (
 	"fmt"
 
 	sq "github.com/Masterminds/squirrel"
-	"github.com/lib/pq"
-
 	"github.com/VladPetriv/finance_bot/internal/model"
 	"github.com/VladPetriv/finance_bot/internal/service"
 	"github.com/VladPetriv/finance_bot/pkg/database"
+	"github.com/lib/pq"
 )
 
 type automaticReportStore struct {
@@ -36,7 +35,8 @@ func (a *automaticReportStore) Create(ctx context.Context, report *model.Automat
 		}
 	}()
 
-	_, err = tx.Exec(
+	_, err = tx.ExecContext(
+		ctx,
 		"INSERT INTO automatic_reports (id, name, period) VALUES ($1, $2, $3)",
 		report.ID, report.Name, report.Period,
 	)
@@ -45,7 +45,8 @@ func (a *automaticReportStore) Create(ctx context.Context, report *model.Automat
 	}
 
 	for _, balanceID := range report.BalanceIDs {
-		_, err = tx.Exec(
+		_, err = tx.ExecContext(
+			ctx,
 			"INSERT INTO automatic_report_balances (automatic_report_id, balance_id) VALUES ($1, $2)",
 			report.ID, balanceID,
 		)
@@ -55,7 +56,8 @@ func (a *automaticReportStore) Create(ctx context.Context, report *model.Automat
 	}
 
 	for _, categoryID := range report.CategoryIDs {
-		_, err = tx.Exec(
+		_, err = tx.ExecContext(
+			ctx,
 			"INSERT INTO automatic_report_categories (automatic_report_id, category_id) VALUES ($1, $2)",
 			report.ID, categoryID,
 		)
@@ -279,7 +281,8 @@ func (a *automaticReportStore) Update(ctx context.Context, report *model.Automat
 		}
 	}()
 
-	_, err = tx.Exec(
+	_, err = tx.ExecContext(
+		ctx,
 		"UPDATE automatic_reports SET name = $1, period = $2, updated_at = NOW() WHERE id = $3",
 		report.Name, report.Period, report.ID,
 	)
@@ -287,14 +290,16 @@ func (a *automaticReportStore) Update(ctx context.Context, report *model.Automat
 		return err
 	}
 
-	_, err = tx.Exec(
+	_, err = tx.ExecContext(
+		ctx,
 		"DELETE FROM automatic_report_balances WHERE automatic_report_id = $1",
 		report.ID,
 	)
 	if err != nil {
 		return err
 	}
-	_, err = tx.Exec(
+	_, err = tx.ExecContext(
+		ctx,
 		"DELETE FROM automatic_report_categories WHERE automatic_report_id = $1",
 		report.ID,
 	)
@@ -303,7 +308,8 @@ func (a *automaticReportStore) Update(ctx context.Context, report *model.Automat
 	}
 
 	for _, balanceID := range report.BalanceIDs {
-		_, err = tx.Exec(
+		_, err = tx.ExecContext(
+			ctx,
 			"INSERT INTO automatic_report_balances (automatic_report_id, balance_id) VALUES ($1, $2)",
 			report.ID, balanceID,
 		)
@@ -312,7 +318,8 @@ func (a *automaticReportStore) Update(ctx context.Context, report *model.Automat
 		}
 	}
 	for _, categoryID := range report.CategoryIDs {
-		_, err = tx.Exec(
+		_, err = tx.ExecContext(
+			ctx,
 			"INSERT INTO automatic_report_categories (automatic_report_id, category_id) VALUES ($1, $2)",
 			report.ID, categoryID,
 		)
