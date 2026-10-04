@@ -1,0 +1,38 @@
+services:
+  postgres:
+    image: postgres:17-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${FB_POSTGRESQL_USER:-root}
+      POSTGRES_PASSWORD: ${FB_POSTGRESQL_PASSWORD:-admin}
+      POSTGRES_DB: ${FB_POSTGRESQL_DATABASE:-finance_bot}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${FB_POSTGRESQL_USER:-root} -d ${FB_POSTGRESQL_DATABASE:-finance_bot}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  bot:
+    build: .
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    env_file:
+      - .env
+    environment:
+      FB_POSTGRESQL_HOST: postgres
+      FB_POSTGRESQL_PORT: "5432"
+      FB_POSTGRESQL_URL: ""
+      FB_TELEGRAM_UPDATES_TYPE: ${FB_TELEGRAM_UPDATES_TYPE:-polling}
+      FB_TELEGRAM_SERVER_ADDRESS: ${FB_TELEGRAM_SERVER_ADDRESS:-:8443}
+    ports:
+      - "8080:8080"
+      - "8443:8443"
+
+volumes:
+  postgres_data:
