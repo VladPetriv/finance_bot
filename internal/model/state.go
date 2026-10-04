@@ -57,7 +57,7 @@ func (s *State) IsCommandAllowedDuringFlow(command string) bool {
 	switch s.Flow {
 	case StartFlow:
 		switch s.GetCurrentStep() {
-		case EnterBalanceCurrencyFlowStep:
+		case EnterBalanceCurrencyFlowStep, ChooseInitialTimezoneFlowStep:
 			return slices.Contains(
 				[]string{BotPreviousCommand, BotNextCommand},
 				command,
@@ -69,7 +69,14 @@ func (s *State) IsCommandAllowedDuringFlow(command string) bool {
 	case UpdateUserSettingsFlow:
 		if s.GetCurrentStep() == ChooseUpdateUserSettingsOptionFlowStep {
 			return slices.Contains(
-				[]string{BotUpdateUserAIParserCommand, BotUpdateUserSubscriptionNotificationsCommand},
+				[]string{BotUpdateUserAIParserCommand, BotUpdateUserSubscriptionNotificationsCommand, BotUpdateUserTimezoneCommand},
+				command,
+			)
+		}
+
+		if s.GetCurrentStep() == ChooseTimezoneUserSettingFlowStep {
+			return slices.Contains(
+				[]string{BotPreviousCommand, BotNextCommand},
 				command,
 			)
 		}
@@ -272,7 +279,7 @@ func (s *State) GetEvent() Event {
 		return UpdateUserSettingsEvent
 
 	// Balance
-	case CreateInitialBalanceFlowStep, CreateBalanceFlowStep:
+	case EnterInitialTimezoneFlowStep, CreateInitialBalanceFlowStep, CreateBalanceFlowStep:
 		return CreateBalanceEvent
 	case UpdateBalanceFlowStep:
 		return UpdateBalanceEvent
