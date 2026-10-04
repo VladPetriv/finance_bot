@@ -174,6 +174,33 @@ func (h *handlerService) RegisterHandlers() {
 			model.ChooseBalanceSubscriptionToDeleteFlowStep: h.handleChooseBalanceSubscriptionToDeleteFlowStep,
 			model.ConfirmDeleteBalanceSubscriptionFlowStep:  h.handleConfirmDeleteBalanceSubscriptionFlowStep,
 		},
+
+		// Flows with automatic reports
+		model.CreateAutomaticReportFlow: {
+			model.CreateAutomaticReportFlowStep:       h.handleCreateAutomaticReportFlowStep,
+			model.EnterAutomaticReportNameFlowStep:    h.handleEnterAutomaticReportNameFlowStepForCreate,
+			model.ChooseAutomaticReportPeriodFlowStep: h.handleChooseAutomaticReportPeriodFlowStepForCreate,
+			model.ChooseBalanceFlowStep:               h.handleChooseBalanceFlowStepForCreateAutomaticReport,
+			model.ChooseCategoryFlowStep:              h.handleChooseCategoryFlowStepForCreateAutomaticReport,
+		},
+		model.ListAutomaticReportsFlow: {
+			model.ListAutomaticReportsFlowStep:  h.handleListAutomaticReportsFlowStep,
+			model.ChooseAutomaticReportFlowStep: h.handleChooseAutomaticReportFlowStepForList,
+		},
+		model.UpdateAutomaticReportFlow: {
+			model.UpdateAutomaticReportFlowStep:             h.handleUpdateAutomaticReportFlowStep,
+			model.ChooseAutomaticReportToUpdateFlowStep:     h.handleChooseAutomaticReportToUpdateFlowStep,
+			model.ChooseUpdateAutomaticReportOptionFlowStep: h.handleChooseUpdateAutomaticReportOptionFlowStep,
+			model.EnterAutomaticReportNameFlowStep:          h.handleEnterAutomaticReportNameFlowStepForUpdate,
+			model.ChooseAutomaticReportPeriodFlowStep:       h.handleChooseAutomaticReportPeriodFlowStepForUpdate,
+			model.ChooseBalanceFlowStep:                     h.handleChooseBalanceFlowStepForUpdateAutomaticReport,
+			model.ChooseCategoryFlowStep:                    h.handleChooseCategoryFlowStepForUpdateAutomaticReport,
+		},
+		model.DeleteAutomaticReportFlow: {
+			model.DeleteAutomaticReportFlowStep:         h.handleDeleteAutomaticReportFlowStep,
+			model.ChooseAutomaticReportToDeleteFlowStep: h.handleChooseAutomaticReportToDeleteFlowStep,
+			model.ConfirmDeleteAutomaticReportFlowStep:  h.handleConfirmDeleteAutomaticReportFlowStep,
+		},
 	}
 }
 
@@ -309,6 +336,10 @@ func (h handlerService) HandleCancel(ctx context.Context, msg Message) error {
 			rows:    balanceSubscriptionKeyboardRows,
 			message: "Action cancelled!\nPlease choose balance subscription command to execute:",
 		},
+		model.AutomaticReportFlow: {
+			rows:    automaticReportKeyboardRows,
+			message: "Action cancelled!\nPlease choose automatic report command to execute:",
+		},
 	}
 
 	config, exists := flowConfigs[previousBaseFlow]
@@ -353,6 +384,9 @@ func (h handlerService) HandleWrappers(ctx context.Context, event model.Event, m
 	case model.BalanceSubscriptionEvent:
 		rows = balanceSubscriptionKeyboardRows
 		message = "Please choose balance subscription command to execute:"
+	case model.AutomaticReportEvent:
+		rows = automaticReportKeyboardRows
+		message = "Please choose automatic report command to execute:"
 	default:
 		return fmt.Errorf("unknown wrappers event: %s", event)
 	}

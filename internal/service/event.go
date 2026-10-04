@@ -179,7 +179,7 @@ func (e eventService) ReactOnEvent(ctx context.Context, event model.Event, msg M
 		}
 
 	case model.UserSettingsEvent, model.BalanceEvent, model.CategoryEvent, model.OperationEvent,
-		model.BalanceSubscriptionEvent:
+		model.BalanceSubscriptionEvent, model.AutomaticReportEvent:
 		err := e.services.Handler.HandleWrappers(ctx, event, msg)
 		if err != nil {
 			logger.Error().Err(err).Msg("handle wrappers")
@@ -190,7 +190,8 @@ func (e eventService) ReactOnEvent(ctx context.Context, event model.Event, msg M
 		model.UpdateBalanceEvent, model.DeleteBalanceEvent, model.CreateCategoryEvent, model.ListCategoriesEvent,
 		model.UpdateCategoryEvent, model.DeleteCategoryEvent, model.CreateOperationEvent, model.GetOperationsHistoryEvent,
 		model.DeleteOperationEvent, model.UpdateOperationEvent, model.CreateBalanceSubscriptionEvent, model.ListBalanceSubscriptionEvent,
-		model.UpdateBalanceSubscriptionEvent, model.DeleteBalanceSubscriptionEvent, model.CreateOperationsThroughOneTimeInputEvent:
+		model.UpdateBalanceSubscriptionEvent, model.DeleteBalanceSubscriptionEvent, model.CreateOperationsThroughOneTimeInputEvent,
+		model.CreateAutomaticReportEvent, model.ListAutomaticReportsEvent, model.UpdateAutomaticReportEvent, model.DeleteAutomaticReportEvent:
 		err := e.services.Handler.HandleAction(ctx, msg)
 		if err != nil {
 			if errs.IsExpected(err) {
