@@ -1,3 +1,36 @@
+# [0.11.0](https://github.com/VladPetriv/finance_bot/compare/v0.10.0...v0.11.0) (2026-10-04)
+
+
+### Features
+
+* add docker-compose + makefile commands + dot env example ([4013568](https://github.com/VladPetriv/finance_bot/commit/4013568c4fcb075cc69bdacc941b120b407ab09b))
+* automatic report engine ([81862eb](https://github.com/VladPetriv/finance_bot/commit/81862eb18f9f515786245af55605456fe8303e20))
+* bump up golang version to 1.27.1 ([025d83d](https://github.com/VladPetriv/finance_bot/commit/025d83d05643404ec38a243b69a42d315dab6c84))
+* **keyboard:** add base keyboard templates for automatic report ([ed32b96](https://github.com/VladPetriv/finance_bot/commit/ed32b96a6542c6d1773de49750b92a83ed7ce0b8))
+* **migration/automatic_reports:** add more enum values for report period ([c49d9f5](https://github.com/VladPetriv/finance_bot/commit/c49d9f588cdf72909a5b24f476dfdaf8da2a7b0d))
+* **migration:** init automatic reports ([30ff03a](https://github.com/VladPetriv/finance_bot/commit/30ff03aa894fe3b9c2859efe76ef73f2229b2bc3))
+* **migrations:** add timezone for user, migrate all time related columns to timestampz ([47638c8](https://github.com/VladPetriv/finance_bot/commit/47638c872f8cd385b7d04569a10af95c27aaeaea))
+* **migrator:** add ability to enable/disable logger ([9b15e14](https://github.com/VladPetriv/finance_bot/commit/9b15e1492bb552cc28764ab30c39c38dea2e3796))
+* **model/state:** add automatic report events to state.GetEvent ([429bec0](https://github.com/VladPetriv/finance_bot/commit/429bec091bea06799e4ba4317d3211c06bc879d8))
+* **model:** add base command/event/flow/flow steps for automatic ([f729a12](https://github.com/VladPetriv/finance_bot/commit/f729a129a3c71266f9a20e94443896775a2f0617))
+* **model:** add new commands/flow/steps for timezone update ([4913f41](https://github.com/VladPetriv/finance_bot/commit/4913f41a4fdd2a867e3055c399bbcd6fad4cd178))
+* **model:** adjust everything that needed for new commands and flows ([ceb1cf0](https://github.com/VladPetriv/finance_bot/commit/ceb1cf083935faff211e9d81f114ee1fe720f349))
+* **model:** adopt layer to work with timezone ([08c84c2](https://github.com/VladPetriv/finance_bot/commit/08c84c286446ad36b8d6c7dfe2976c0b4468ddb3))
+* **model:** init models for automatic reports logic ([fc41328](https://github.com/VladPetriv/finance_bot/commit/fc413282bd9902d7a9f3fcc9cd177dc9c08da5c8))
+* **model:** init timezone model ([27ed229](https://github.com/VladPetriv/finance_bot/commit/27ed229462b1211726559b5926d6bb815d4bfafa))
+* **pkg/database:** add utc timezone for postgres conn ([e1926bf](https://github.com/VladPetriv/finance_bot/commit/e1926bf02e53e1d50f481cf3dd4d287ee4315a78))
+* **pkg/logger:** add dummy logger ([1a9ed35](https://github.com/VladPetriv/finance_bot/commit/1a9ed35788fce1dd53269f57f29eb1c98b1720e8))
+* **service:** add keyboards for automatic reports, add selection keyboard ([e44f404](https://github.com/VladPetriv/finance_bot/commit/e44f404db1ff5f2d29a381200cc1fe2c0e09e1e3))
+* **service:** add keyboards for work with timezones ([f749aeb](https://github.com/VladPetriv/finance_bot/commit/f749aeb49c3c729e5daa690e7f707e3db9edf8ec))
+* **service:** add select all/unselect all button for keyboard ([adbff9a](https://github.com/VladPetriv/finance_bot/commit/adbff9a8f702636ba598b5f6eab36cbfcce70740))
+* **service:** automatic reports crud ([612c732](https://github.com/VladPetriv/finance_bot/commit/612c732021d9aa518300506465c18c46daf54221))
+* **service:** integrate timezone ([7c0af79](https://github.com/VladPetriv/finance_bot/commit/7c0af79e29a434cb7e131aa7707e92354fd1bad0))
+* **service:** new keyboard template for automatic report ([556f9f9](https://github.com/VladPetriv/finance_bot/commit/556f9f95d17b30a07fbb29e9aa222fedd361284c))
+* **state:** add new automatic report event to simple events ([326a6ea](https://github.com/VladPetriv/finance_bot/commit/326a6ea76d0f6d8bc7b6e206849f58aa5db96048))
+* **store/operation:** add between filter ([ebbc252](https://github.com/VladPetriv/finance_bot/commit/ebbc2529f068d7be114a8b34029765308f4ece39))
+* **store:** add automatic report store ([3082904](https://github.com/VladPetriv/finance_bot/commit/30829040aeae6b9f897cd1c9c5ba82bbbbbc7595))
+* **store:** adopt storage for timezone ([f642aeb](https://github.com/VladPetriv/finance_bot/commit/f642aeb5b08eb9b5119558e1c43886fe83b81ae7))
+
 # [0.10.0](https://github.com/VladPetriv/finance_bot/compare/v0.9.10...v0.10.0) (2026-10-04)
 
 
