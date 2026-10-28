@@ -188,7 +188,7 @@ func (e eventService) ReactOnEvent(ctx context.Context, event model.Event, msg M
 
 	case model.GetUserSettingsEvent, model.UpdateUserSettingsEvent, model.CreateBalanceEvent, model.GetBalanceEvent,
 		model.UpdateBalanceEvent, model.DeleteBalanceEvent, model.CreateCategoryEvent, model.ListCategoriesEvent,
-		model.UpdateCategoryEvent, model.DeleteCategoryEvent, model.CreateOperationEvent, model.GetOperationsHistoryEvent,
+		model.UpdateCategoryEvent, model.DeleteCategoryEvent, model.CreateOperationEvent, model.GetOperationsHistoryEvent, model.SearchOperationsEvent,
 		model.DeleteOperationEvent, model.UpdateOperationEvent, model.CreateBalanceSubscriptionEvent, model.ListBalanceSubscriptionEvent,
 		model.UpdateBalanceSubscriptionEvent, model.DeleteBalanceSubscriptionEvent, model.CreateOperationsThroughOneTimeInputEvent,
 		model.CreateAutomaticReportEvent, model.ListAutomaticReportsEvent, model.UpdateAutomaticReportEvent, model.DeleteAutomaticReportEvent:
