@@ -1,3 +1,10 @@
+## [0.12.1](https://github.com/VladPetriv/finance_bot/compare/v0.12.0...v0.12.1) (2026-10-28)
+
+
+### Bug Fixes
+
+* add search event to case ([1b50980](https://github.com/VladPetriv/finance_bot/commit/1b509807186c7c9204d64ceaf796303e9f7e0c8b))
+
 # [0.12.0](https://github.com/VladPetriv/finance_bot/compare/v0.11.0...v0.12.0) (2026-10-28)
 
 
