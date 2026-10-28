@@ -1,3 +1,11 @@
+# [0.12.0](https://github.com/VladPetriv/finance_bot/compare/v0.11.0...v0.12.0) (2026-10-28)
+
+
+### Features
+
+* multi select of balances/categories for search ([4a1ff5d](https://github.com/VladPetriv/finance_bot/commit/4a1ff5d7ee447e6b806e8675a6a6ed7921e2855b))
+* operations search ([e429954](https://github.com/VladPetriv/finance_bot/commit/e429954045e1abdc71c43d5dc2297539ac3d6621))
+
 # [0.11.0](https://github.com/VladPetriv/finance_bot/compare/v0.10.0...v0.11.0) (2026-10-04)
 
 
