@@ -117,6 +117,11 @@ type ListOperationsFilter struct {
 	Month                model.Month
 	Year                 model.Year
 	BetweenFilter        *BetweenFilter
+	Description          string
+	Types                []model.OperationType
+	CategoryID           string
+	AmountFrom           string
+	AmountTo             string
 	OrderByCreatedAtDesc bool
 	Pagination           *Pagination
 	Location             *time.Location

@@ -156,17 +156,25 @@ type getOperationsHistoryKeyboardOptions struct {
 	creationPeriod model.CreationPeriod
 	page           int
 	location       *time.Location
+	search         *ListOperationsFilter
 }
 
 func (h handlerService) getOperationsHistoryKeyboard(ctx context.Context, opts getOperationsHistoryKeyboardOptions) (string, []InlineKeyboardRow, error) {
 	logger := h.logger.With().Str("name", "handlerService.getOperationsHistoryKeyboard").Logger()
 	logger.Debug().Any("opts", opts).Msg("got args")
 
-	operationsCount, err := h.stores.Operation.Count(ctx, ListOperationsFilter{
+	baseFilter := ListOperationsFilter{
 		BalanceID:      opts.balance.ID,
 		CreationPeriod: opts.creationPeriod,
 		Location:       opts.location,
-	})
+	}
+	periodLine := fmt.Sprintf("📅 *Period:* %v", opts.creationPeriod)
+	if opts.search != nil {
+		baseFilter = *opts.search
+		periodLine = "🔎 *Search results*"
+	}
+
+	operationsCount, err := h.stores.Operation.Count(ctx, baseFilter)
 	if err != nil {
 		logger.Error().Err(err).Msg("count operations")
 		return "", nil, fmt.Errorf("count operations: %w", err)
@@ -184,16 +192,14 @@ func (h handlerService) getOperationsHistoryKeyboard(ctx context.Context, opts g
 			currentPage:    opts.page,
 		},
 		func() (string, error) {
-			operations, err := h.stores.Operation.List(ctx, ListOperationsFilter{
-				BalanceID:            opts.balance.ID,
-				CreationPeriod:       opts.creationPeriod,
-				Location:             opts.location,
-				OrderByCreatedAtDesc: true,
-				Pagination: &Pagination{
-					Limit: operationsPerKeyboard,
-					Page:  opts.page,
-				},
-			})
+			listFilter := baseFilter
+			listFilter.OrderByCreatedAtDesc = true
+			listFilter.Pagination = &Pagination{
+				Limit: operationsPerKeyboard,
+				Page:  opts.page,
+			}
+
+			operations, err := h.stores.Operation.List(ctx, listFilter)
 			if err != nil {
 				logger.Error().Err(err).Msg("list operations from store")
 				return "", fmt.Errorf("list operations from store: %w", err)
@@ -205,8 +211,8 @@ func (h handlerService) getOperationsHistoryKeyboard(ctx context.Context, opts g
 			convertOperationsToLocation(operations, opts.location)
 
 			outputMessage := fmt.Sprintf(
-				"💰 *Balance:* %v%s\n📅 *Period:* %v\n\n",
-				opts.balance.Amount, opts.balance.GetCurrency().Symbol, opts.creationPeriod,
+				"💰 *Balance:* %v%s\n%s\n\n",
+				opts.balance.Amount, opts.balance.GetCurrency().Symbol, periodLine,
 			)
 
 			separator := "━━━━━━━━━━━━━━━"

@@ -110,6 +110,16 @@ func (s *State) IsCommandAllowedDuringFlow(command string) bool {
 
 		return false
 
+	case SearchOperationsFlow:
+		if s.GetCurrentStep() == SearchOperationsResultsFlowStep {
+			return slices.Contains(
+				[]string{BotPreviousCommand, BotNextCommand},
+				command,
+			)
+		}
+
+		return false
+
 	case DeleteOperationFlow:
 		if s.GetCurrentStep() == ChooseOperationToDeleteFlowStep {
 			return slices.Contains(
@@ -305,6 +315,8 @@ func (s *State) GetEvent() Event {
 		return DeleteOperationEvent
 	case GetOperationsHistoryFlowStep:
 		return GetOperationsHistoryEvent
+	case SearchOperationsFlowStep:
+		return SearchOperationsEvent
 	case UpdateOperationFlowStep:
 		return UpdateOperationEvent
 	case CreateOperationsThroughOneTimeInputFlowStep:
