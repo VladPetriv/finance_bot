@@ -30,7 +30,7 @@ func TestBuildSearchOperationsFilter(t *testing.T) {
 				metadata: model.Metadata{
 					model.SearchQueryMetadataKey:         "coffee",
 					model.SearchOperationTypeMetadataKey: "transfer",
-					model.SearchCategoryIDMetadataKey:    "category-id",
+					model.SearchCategoryIDsMetadataKey:   "category-1,category-2",
 					model.SearchAmountFromMetadataKey:    "10",
 					model.SearchAmountToMetadataKey:      "20.5",
 					model.SearchDateFromMetadataKey:      "2026-10-01",
@@ -39,11 +39,11 @@ func TestBuildSearchOperationsFilter(t *testing.T) {
 			},
 			expected: &expected{
 				filter: ListOperationsFilter{
-					BalanceID:   "balance-id",
+					BalanceIDs:  []string{"balance-1", "balance-2"},
 					Location:    time.UTC,
 					Description: "coffee",
 					Types:       []model.OperationType{model.OperationTypeTransferIn, model.OperationTypeTransferOut},
-					CategoryID:  "category-id",
+					CategoryIDs: []string{"category-1", "category-2"},
 					AmountFrom:  "10",
 					AmountTo:    "20.5",
 					BetweenFilter: &BetweenFilter{
@@ -60,8 +60,8 @@ func TestBuildSearchOperationsFilter(t *testing.T) {
 			},
 			expected: &expected{
 				filter: ListOperationsFilter{
-					BalanceID: "balance-id",
-					Location:  time.UTC,
+					BalanceIDs: []string{"balance-1", "balance-2"},
+					Location:   time.UTC,
 				},
 			},
 		},
@@ -71,7 +71,7 @@ func TestBuildSearchOperationsFilter(t *testing.T) {
 		t.Run(tc.desc, func(t *testing.T) {
 			t.Parallel()
 
-			actual := buildSearchOperationsFilter(tc.precondition.metadata, "balance-id", time.UTC)
+			actual := buildSearchOperationsFilter(tc.precondition.metadata, []string{"balance-1", "balance-2"}, time.UTC)
 
 			assert.Equal(t, tc.expected.filter, actual)
 		})

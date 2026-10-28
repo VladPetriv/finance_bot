@@ -152,7 +152,7 @@ func (h handlerService) getOperationsKeyboard(ctx context.Context, opts getOpera
 }
 
 type getOperationsHistoryKeyboardOptions struct {
-	balance        *model.Balance
+	balances       []model.Balance
 	creationPeriod model.CreationPeriod
 	page           int
 	location       *time.Location
@@ -164,7 +164,7 @@ func (h handlerService) getOperationsHistoryKeyboard(ctx context.Context, opts g
 	logger.Debug().Any("opts", opts).Msg("got args")
 
 	baseFilter := ListOperationsFilter{
-		BalanceID:      opts.balance.ID,
+		BalanceIDs:     getIDs(opts.balances),
 		CreationPeriod: opts.creationPeriod,
 		Location:       opts.location,
 	}
@@ -180,7 +180,7 @@ func (h handlerService) getOperationsHistoryKeyboard(ctx context.Context, opts g
 		return "", nil, fmt.Errorf("count operations: %w", err)
 	}
 	if operationsCount == 0 {
-		logger.Info().Any("balanceID", opts.balance.ID).Msg("operations not found")
+		logger.Info().Any("balanceIDs", baseFilter.BalanceIDs).Msg("operations not found")
 		return "", nil, ErrOperationsNotFound
 	}
 
@@ -210,10 +210,18 @@ func (h handlerService) getOperationsHistoryKeyboard(ctx context.Context, opts g
 			}
 			convertOperationsToLocation(operations, opts.location)
 
-			outputMessage := fmt.Sprintf(
-				"💰 *Balance:* %v%s\n%s\n\n",
-				opts.balance.Amount, opts.balance.GetCurrency().Symbol, periodLine,
-			)
+			balancesByID := make(map[string]model.Balance, len(opts.balances))
+			outputMessage := ""
+			for _, balance := range opts.balances {
+				balancesByID[balance.ID] = balance
+
+				label := "Balance"
+				if len(opts.balances) > 1 {
+					label = balance.Name
+				}
+				outputMessage += fmt.Sprintf("💰 *%s:* %v%s\n", label, balance.Amount, balance.GetCurrency().Symbol)
+			}
+			outputMessage += periodLine + "\n\n"
 
 			separator := "━━━━━━━━━━━━━━━"
 			for _, o := range operations {
@@ -242,8 +250,12 @@ func (h handlerService) getOperationsHistoryKeyboard(ctx context.Context, opts g
 					o.Description,
 					category.Title,
 					o.Amount,
-					opts.balance.GetCurrency().Symbol,
+					balancesByID[o.BalanceID].GetCurrency().Symbol,
 				)
+
+				if len(opts.balances) > 1 {
+					outputMessage += fmt.Sprintf("🏦 *Balance:* %s\n", balancesByID[o.BalanceID].Name)
+				}
 
 				if o.ExchangeRate != "" {
 					outputMessage += fmt.Sprintf("💱 *Exchange Rate:* %s\n", o.ExchangeRate)

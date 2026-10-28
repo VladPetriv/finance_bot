@@ -116,10 +116,10 @@ const (
 	SearchQueryMetadataKey MetadataKey = "search_query"
 	// SearchOperationTypeMetadataKey represents the operation type to search for.
 	SearchOperationTypeMetadataKey MetadataKey = "search_operation_type"
-	// SearchCategoryIDMetadataKey represents the ID of the category to search in.
-	SearchCategoryIDMetadataKey MetadataKey = "search_category_id"
-	// SearchCategoryTitleMetadataKey represents the title of the category to search in.
-	SearchCategoryTitleMetadataKey MetadataKey = "search_category_title"
+	// SearchBalanceIDsMetadataKey represents the comma separated IDs of the balances to search in.
+	SearchBalanceIDsMetadataKey MetadataKey = "search_balance_ids"
+	// SearchCategoryIDsMetadataKey represents the comma separated IDs of the categories to search in.
+	SearchCategoryIDsMetadataKey MetadataKey = "search_category_ids"
 	// SearchAmountFromMetadataKey represents the minimal amount to search for.
 	SearchAmountFromMetadataKey MetadataKey = "search_amount_from"
 	// SearchAmountToMetadataKey represents the maximal amount to search for.

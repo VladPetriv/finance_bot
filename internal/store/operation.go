@@ -234,6 +234,10 @@ func applyListOperationsFilter(options applyListOperationsOptions, filter servic
 		stmt = stmt.Where(sq.Eq{"balance_id": filter.BalanceID})
 	}
 
+	if len(filter.BalanceIDs) != 0 {
+		stmt = stmt.Where(sq.Eq{"balance_id": filter.BalanceIDs})
+	}
+
 	if filter.CreationPeriod != "" {
 		startDate, endDate := filter.CreationPeriod.CalculateTimeRange(locationOrUTC(filter.Location))
 		stmt = stmt.Where(sq.GtOrEq{"created_at": startDate}).Where(sq.LtOrEq{"created_at": endDate})
@@ -255,8 +259,8 @@ func applyListOperationsFilter(options applyListOperationsOptions, filter servic
 	if len(filter.Types) != 0 {
 		stmt = stmt.Where(sq.Eq{"type": filter.Types})
 	}
-	if filter.CategoryID != "" {
-		stmt = stmt.Where(sq.Eq{"category_id": filter.CategoryID})
+	if len(filter.CategoryIDs) != 0 {
+		stmt = stmt.Where(sq.Eq{"category_id": filter.CategoryIDs})
 	}
 	if filter.AmountFrom != "" {
 		stmt = stmt.Where(sq.Expr("CAST(amount AS NUMERIC) >= CAST(? AS NUMERIC)", filter.AmountFrom))

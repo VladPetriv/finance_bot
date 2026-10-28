@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 	"fmt"
+	"slices"
 	"strings"
 	"time"
 
@@ -14,11 +15,13 @@ import (
 var (
 	errUnknownSearchFilter = errs.New("Unknown filter! Please choose one from the keyboard.")
 	errUnknownSearchType   = errs.New("Unknown operation type! Please choose one from the keyboard.")
+	errSearchBalancesEmpty = errs.New("Please select at least one balance.")
 )
 
 type searchFilterAction string
 
 const (
+	searchFilterActionBalances   searchFilterAction = "balances"
 	searchFilterActionQuery      searchFilterAction = "query"
 	searchFilterActionType       searchFilterAction = "type"
 	searchFilterActionCategory   searchFilterAction = "category"
@@ -32,6 +35,8 @@ const (
 
 func parseSearchFilterAction(raw string) (searchFilterAction, error) {
 	switch searchFilterAction(raw) {
+	case searchFilterActionBalances:
+		return searchFilterActionBalances, nil
 	case searchFilterActionQuery:
 		return searchFilterActionQuery, nil
 	case searchFilterActionType:
@@ -56,6 +61,14 @@ func parseSearchFilterAction(raw string) (searchFilterAction, error) {
 }
 
 var searchFilterKeyboard = []InlineKeyboardRow{
+	{
+		Buttons: []InlineKeyboardButton{
+			{
+				Text: "🏦 Balances",
+				Data: string(searchFilterActionBalances),
+			},
+		},
+	},
 	{
 		Buttons: []InlineKeyboardButton{
 			{
@@ -132,13 +145,17 @@ var searchOperationTypeKeyboard = []InlineKeyboardRow{
 var searchMetadataKeys = []model.MetadataKey{
 	model.SearchQueryMetadataKey,
 	model.SearchOperationTypeMetadataKey,
-	model.SearchCategoryIDMetadataKey,
-	model.SearchCategoryTitleMetadataKey,
+	model.SearchCategoryIDsMetadataKey,
 	model.SearchAmountFromMetadataKey,
 	model.SearchAmountToMetadataKey,
 	model.SearchDateFromMetadataKey,
 	model.SearchDateToMetadataKey,
 }
+
+const (
+	searchBalancesMessage   = "Select balances to search in and press Done:"
+	searchCategoriesMessage = "Select categories to search in and press Done (none selected means any):"
+)
 
 func (h handlerService) handleSearchOperationsFlowStep(_ context.Context, opts flowProcessingOptions) (model.FlowStep, error) {
 	err := h.showCancelButton(opts.message.GetChatID(), "")
@@ -148,15 +165,29 @@ func (h handlerService) handleSearchOperationsFlowStep(_ context.Context, opts f
 
 	return model.ChooseBalanceFlowStep, h.apis.Messenger.SendWithKeyboard(SendWithKeyboardOptions{
 		ChatID:         opts.message.GetChatID(),
-		Message:        "Choose balance to search operations in:",
-		InlineKeyboard: getInlineKeyboardRows(opts.user.Balances, 2),
+		Message:        searchBalancesMessage,
+		InlineKeyboard: getSelectionInlineKeyboardRows(opts.user.Balances, nil, 2),
 	})
 }
 
 func (h handlerService) handleChooseBalanceFlowStepForSearchOperations(_ context.Context, opts flowProcessingOptions) (model.FlowStep, error) {
-	opts.stateMetaData.Add(model.BalanceNameMetadataKey, opts.message.GetText())
+	selectedBalanceIDs := getSelectedIDsFromMetadata(opts.stateMetaData, model.SearchBalanceIDsMetadataKey)
 
-	return model.ChooseSearchFilterFlowStep, h.showSearchFilters(opts, true)
+	if opts.message.GetText() == automaticReportSelectionDoneData {
+		if len(selectedBalanceIDs) == 0 {
+			return "", errSearchBalancesEmpty
+		}
+
+		return model.ChooseSearchFilterFlowStep, h.showSearchFilters(opts, true)
+	}
+
+	selectedBalanceIDs, err := applySelection(selectedBalanceIDs, opts.message.GetText(), opts.user.Balances, ErrBalanceNotFound)
+	if err != nil {
+		return "", err
+	}
+	opts.stateMetaData.Add(model.SearchBalanceIDsMetadataKey, strings.Join(selectedBalanceIDs, ","))
+
+	return model.ChooseBalanceFlowStep, h.updateSearchMessage(opts, searchBalancesMessage, getSelectionInlineKeyboardRows(opts.user.Balances, selectedBalanceIDs, 2))
 }
 
 func (h handlerService) handleChooseSearchFilterFlowStep(ctx context.Context, opts flowProcessingOptions) (model.FlowStep, error) {
@@ -166,6 +197,10 @@ func (h handlerService) handleChooseSearchFilterFlowStep(ctx context.Context, op
 	}
 
 	switch action {
+	case searchFilterActionBalances:
+		selectedBalanceIDs := getSelectedIDsFromMetadata(opts.stateMetaData, model.SearchBalanceIDsMetadataKey)
+
+		return model.ChooseBalanceFlowStep, h.updateSearchMessage(opts, searchBalancesMessage, getSelectionInlineKeyboardRows(opts.user.Balances, selectedBalanceIDs, 2))
 	case searchFilterActionQuery:
 		return model.EnterSearchTextFlowStep, h.updateSearchMessage(opts, "Enter text to search in operation descriptions:", nil)
 	case searchFilterActionType:
@@ -181,7 +216,9 @@ func (h handlerService) handleChooseSearchFilterFlowStep(ctx context.Context, op
 			return "", ErrCategoriesNotFound
 		}
 
-		return model.ChooseSearchCategoryFlowStep, h.updateSearchMessage(opts, "Choose category:", getSearchCategoryKeyboard(categories))
+		selectedCategoryIDs := getSelectedIDsFromMetadata(opts.stateMetaData, model.SearchCategoryIDsMetadataKey)
+
+		return model.ChooseSearchCategoryFlowStep, h.updateSearchMessage(opts, searchCategoriesMessage, getSelectionInlineKeyboardRows(categories, selectedCategoryIDs, 2))
 	case searchFilterActionAmountFrom:
 		return model.EnterSearchAmountFromFlowStep, h.updateSearchMessage(opts, "Enter minimal amount:", nil)
 	case searchFilterActionAmountTo:
@@ -222,21 +259,29 @@ func (h handlerService) handleChooseSearchOperationTypeFlowStep(_ context.Contex
 }
 
 func (h handlerService) handleChooseSearchCategoryFlowStep(ctx context.Context, opts flowProcessingOptions) (model.FlowStep, error) {
-	category, err := h.stores.Category.Get(ctx, GetCategoryFilter{
-		ID:     opts.message.GetText(),
+	if opts.message.GetText() == automaticReportSelectionDoneData {
+		return model.ChooseSearchFilterFlowStep, h.showSearchFilters(opts, true)
+	}
+
+	categories, err := h.stores.Category.List(ctx, &ListCategoriesFilter{
 		UserID: opts.user.ID,
 	})
 	if err != nil {
-		return "", fmt.Errorf("get category from store: %w", err)
-	}
-	if category == nil {
-		return "", ErrCategoryNotFound
+		return "", fmt.Errorf("list categories from store: %w", err)
 	}
 
-	opts.stateMetaData.Add(model.SearchCategoryIDMetadataKey, category.ID)
-	opts.stateMetaData.Add(model.SearchCategoryTitleMetadataKey, category.Title)
+	selectedCategoryIDs, err := applySelection(
+		getSelectedIDsFromMetadata(opts.stateMetaData, model.SearchCategoryIDsMetadataKey),
+		opts.message.GetText(),
+		categories,
+		ErrCategoryNotFound,
+	)
+	if err != nil {
+		return "", err
+	}
+	opts.stateMetaData.Add(model.SearchCategoryIDsMetadataKey, strings.Join(selectedCategoryIDs, ","))
 
-	return model.ChooseSearchFilterFlowStep, h.showSearchFilters(opts, true)
+	return model.ChooseSearchCategoryFlowStep, h.updateSearchMessage(opts, searchCategoriesMessage, getSelectionInlineKeyboardRows(categories, selectedCategoryIDs, 2))
 }
 
 func (h handlerService) handleEnterSearchAmountFromFlowStep(_ context.Context, opts flowProcessingOptions) (model.FlowStep, error) {
@@ -320,21 +365,26 @@ func (h handlerService) handleSearchOperationsResultsFlowStep(ctx context.Contex
 }
 
 func (h handlerService) showSearchResults(ctx context.Context, opts flowProcessingOptions) (model.FlowStep, error) {
-	balanceName, ok := model.GetTypedFromMetadata[string](opts.stateMetaData, model.BalanceNameMetadataKey)
-	if !ok {
-		return "", fmt.Errorf("balance name not found in metadata")
+	balanceIDs := getSelectedIDsFromMetadata(opts.stateMetaData, model.SearchBalanceIDsMetadataKey)
+	if len(balanceIDs) == 0 {
+		return "", errSearchBalancesEmpty
 	}
 
-	balance, err := h.stores.Balance.Get(ctx, GetBalanceFilter{
-		Name:            balanceName,
-		UserID:          opts.user.ID,
-		PreloadCurrency: true,
-	})
-	if err != nil {
-		return "", fmt.Errorf("get balance from store: %w", err)
-	}
-	if balance == nil {
-		return "", ErrBalanceNotFound
+	balances := make([]model.Balance, 0, len(balanceIDs))
+	for _, balanceID := range balanceIDs {
+		balance, err := h.stores.Balance.Get(ctx, GetBalanceFilter{
+			BalanceID:       balanceID,
+			UserID:          opts.user.ID,
+			PreloadCurrency: true,
+		})
+		if err != nil {
+			return "", fmt.Errorf("get balance from store: %w", err)
+		}
+		if balance == nil {
+			return "", ErrBalanceNotFound
+		}
+
+		balances = append(balances, *balance)
 	}
 
 	page := firstPage
@@ -343,10 +393,10 @@ func (h handlerService) showSearchResults(ctx context.Context, opts flowProcessi
 	}
 	opts.stateMetaData.Add(model.PageMetadataKey, page)
 
-	filter := buildSearchOperationsFilter(opts.stateMetaData, balance.ID, opts.user.GetLocation())
+	filter := buildSearchOperationsFilter(opts.stateMetaData, balanceIDs, opts.user.GetLocation())
 
 	message, keyboard, err := h.getOperationsHistoryKeyboard(ctx, getOperationsHistoryKeyboardOptions{
-		balance:  balance,
+		balances: balances,
 		page:     page,
 		location: opts.user.GetLocation(),
 		search:   &filter,
@@ -369,12 +419,12 @@ func (h handlerService) showSearchResults(ctx context.Context, opts flowProcessi
 	})
 }
 
-func buildSearchOperationsFilter(metadata model.Metadata, balanceID string, location *time.Location) ListOperationsFilter {
+func buildSearchOperationsFilter(metadata model.Metadata, balanceIDs []string, location *time.Location) ListOperationsFilter {
 	filter := ListOperationsFilter{
-		BalanceID:   balanceID,
+		BalanceIDs:  balanceIDs,
 		Location:    location,
 		Description: searchMetadataValue(metadata, model.SearchQueryMetadataKey),
-		CategoryID:  searchMetadataValue(metadata, model.SearchCategoryIDMetadataKey),
+		CategoryIDs: getSelectedIDsFromMetadata(metadata, model.SearchCategoryIDsMetadataKey),
 		AmountFrom:  searchMetadataValue(metadata, model.SearchAmountFromMetadataKey),
 		AmountTo:    searchMetadataValue(metadata, model.SearchAmountToMetadataKey),
 	}
@@ -426,7 +476,7 @@ func searchMetadataValue(metadata model.Metadata, key model.MetadataKey) string 
 }
 
 func (h handlerService) showSearchFilters(opts flowProcessingOptions, updateMessage bool) error {
-	message := "Search filters:\n\n" + buildSearchSummary(opts.stateMetaData) + "\n\nChoose a filter to change or show results:"
+	message := "Search filters:\n\n" + buildSearchSummary(opts.stateMetaData, opts.user.Balances) + "\n\nChoose a filter to change or show results:"
 
 	if updateMessage {
 		return h.updateSearchMessage(opts, message, searchFilterKeyboard)
@@ -449,7 +499,7 @@ func (h handlerService) updateSearchMessage(opts flowProcessingOptions, message 
 	})
 }
 
-func buildSearchSummary(metadata model.Metadata) string {
+func buildSearchSummary(metadata model.Metadata, balances []model.Balance) string {
 	valueOrAny := func(value string) string {
 		if value == "" {
 			return "any"
@@ -458,35 +508,29 @@ func buildSearchSummary(metadata model.Metadata) string {
 		return value
 	}
 
+	balanceNames := make([]string, 0)
+	for _, balance := range balances {
+		if slices.Contains(getSelectedIDsFromMetadata(metadata, model.SearchBalanceIDsMetadataKey), balance.ID) {
+			balanceNames = append(balanceNames, balance.Name)
+		}
+	}
+
+	categories := "any"
+	if selected := getSelectedIDsFromMetadata(metadata, model.SearchCategoryIDsMetadataKey); len(selected) != 0 {
+		categories = fmt.Sprintf("%d selected", len(selected))
+	}
+
 	return fmt.Sprintf(
-		"📝 Text: %s\n📌 Type: %s\n📂 Category: %s\n💰 Amount: %s — %s\n📅 Date: %s — %s",
+		"🏦 Balances: %s\n📝 Text: %s\n📌 Type: %s\n📂 Category: %s\n💰 Amount: %s — %s\n📅 Date: %s — %s",
+		valueOrAny(strings.Join(balanceNames, ", ")),
 		valueOrAny(searchMetadataValue(metadata, model.SearchQueryMetadataKey)),
 		valueOrAny(searchMetadataValue(metadata, model.SearchOperationTypeMetadataKey)),
-		valueOrAny(searchMetadataValue(metadata, model.SearchCategoryTitleMetadataKey)),
+		categories,
 		valueOrAny(searchMetadataValue(metadata, model.SearchAmountFromMetadataKey)),
 		valueOrAny(searchMetadataValue(metadata, model.SearchAmountToMetadataKey)),
 		valueOrAny(searchMetadataValue(metadata, model.SearchDateFromMetadataKey)),
 		valueOrAny(searchMetadataValue(metadata, model.SearchDateToMetadataKey)),
 	)
-}
-
-func getSearchCategoryKeyboard(categories []model.Category) []InlineKeyboardRow {
-	const categoriesPerRow = 2
-
-	rows := make([]InlineKeyboardRow, 0, len(categories)/categoriesPerRow+1)
-	for i, category := range categories {
-		if i%categoriesPerRow == 0 {
-			rows = append(rows, InlineKeyboardRow{})
-		}
-
-		last := len(rows) - 1
-		rows[last].Buttons = append(rows[last].Buttons, InlineKeyboardButton{
-			Text: category.Title,
-			Data: category.ID,
-		})
-	}
-
-	return rows
 }
 
 func getSearchCalendarKeyboard(month time.Time) []InlineKeyboardRow {
