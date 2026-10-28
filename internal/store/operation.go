@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"strconv"
+	"strings"
 	"time"
 
 	sq "github.com/Masterminds/squirrel"
@@ -206,6 +207,8 @@ func (o *operationStore) Count(ctx context.Context, filter service.ListOperation
 	return int(count), nil
 }
 
+var likeEscaper = strings.NewReplacer(`\`, `\\`, `%`, `\%`, `_`, `\_`)
+
 type applyListOperationsOptions struct {
 	listQuery  bool
 	countQuery bool
@@ -231,6 +234,10 @@ func applyListOperationsFilter(options applyListOperationsOptions, filter servic
 		stmt = stmt.Where(sq.Eq{"balance_id": filter.BalanceID})
 	}
 
+	if len(filter.BalanceIDs) != 0 {
+		stmt = stmt.Where(sq.Eq{"balance_id": filter.BalanceIDs})
+	}
+
 	if filter.CreationPeriod != "" {
 		startDate, endDate := filter.CreationPeriod.CalculateTimeRange(locationOrUTC(filter.Location))
 		stmt = stmt.Where(sq.GtOrEq{"created_at": startDate}).Where(sq.LtOrEq{"created_at": endDate})
@@ -244,6 +251,22 @@ func applyListOperationsFilter(options applyListOperationsOptions, filter servic
 
 	if filter.BetweenFilter != nil {
 		stmt = stmt.Where(sq.GtOrEq{"created_at": filter.BetweenFilter.From}).Where(sq.Lt{"created_at": filter.BetweenFilter.To})
+	}
+
+	if filter.Description != "" {
+		stmt = stmt.Where(sq.Expr("description ILIKE ?", "%"+likeEscaper.Replace(filter.Description)+"%"))
+	}
+	if len(filter.Types) != 0 {
+		stmt = stmt.Where(sq.Eq{"type": filter.Types})
+	}
+	if len(filter.CategoryIDs) != 0 {
+		stmt = stmt.Where(sq.Eq{"category_id": filter.CategoryIDs})
+	}
+	if filter.AmountFrom != "" {
+		stmt = stmt.Where(sq.Expr("CAST(amount AS NUMERIC) >= CAST(? AS NUMERIC)", filter.AmountFrom))
+	}
+	if filter.AmountTo != "" {
+		stmt = stmt.Where(sq.Expr("CAST(amount AS NUMERIC) <= CAST(? AS NUMERIC)", filter.AmountTo))
 	}
 
 	if filter.Pagination != nil {

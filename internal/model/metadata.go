@@ -112,6 +112,23 @@ const (
 	// OperationCreationPeriodMetadataKey represents the creation period of the operation.
 	OperationCreationPeriodMetadataKey MetadataKey = "operation_creation_period"
 
+	// SearchQueryMetadataKey represents the description text to search for.
+	SearchQueryMetadataKey MetadataKey = "search_query"
+	// SearchOperationTypeMetadataKey represents the operation type to search for.
+	SearchOperationTypeMetadataKey MetadataKey = "search_operation_type"
+	// SearchBalanceIDsMetadataKey represents the comma separated IDs of the balances to search in.
+	SearchBalanceIDsMetadataKey MetadataKey = "search_balance_ids"
+	// SearchCategoryIDsMetadataKey represents the comma separated IDs of the categories to search in.
+	SearchCategoryIDsMetadataKey MetadataKey = "search_category_ids"
+	// SearchAmountFromMetadataKey represents the minimal amount to search for.
+	SearchAmountFromMetadataKey MetadataKey = "search_amount_from"
+	// SearchAmountToMetadataKey represents the maximal amount to search for.
+	SearchAmountToMetadataKey MetadataKey = "search_amount_to"
+	// SearchDateFromMetadataKey represents the start date (2006-01-02) to search from.
+	SearchDateFromMetadataKey MetadataKey = "search_date_from"
+	// SearchDateToMetadataKey represents the end date (2006-01-02) to search to.
+	SearchDateToMetadataKey MetadataKey = "search_date_to"
+
 	// Balance subscription related keys
 
 	// BalanceSubscriptionIDMetadataKey represents the ID of the balance subscription.

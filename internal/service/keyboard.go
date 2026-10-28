@@ -152,27 +152,35 @@ func (h handlerService) getOperationsKeyboard(ctx context.Context, opts getOpera
 }
 
 type getOperationsHistoryKeyboardOptions struct {
-	balance        *model.Balance
+	balances       []model.Balance
 	creationPeriod model.CreationPeriod
 	page           int
 	location       *time.Location
+	search         *ListOperationsFilter
 }
 
 func (h handlerService) getOperationsHistoryKeyboard(ctx context.Context, opts getOperationsHistoryKeyboardOptions) (string, []InlineKeyboardRow, error) {
 	logger := h.logger.With().Str("name", "handlerService.getOperationsHistoryKeyboard").Logger()
 	logger.Debug().Any("opts", opts).Msg("got args")
 
-	operationsCount, err := h.stores.Operation.Count(ctx, ListOperationsFilter{
-		BalanceID:      opts.balance.ID,
+	baseFilter := ListOperationsFilter{
+		BalanceIDs:     getIDs(opts.balances),
 		CreationPeriod: opts.creationPeriod,
 		Location:       opts.location,
-	})
+	}
+	periodLine := fmt.Sprintf("📅 *Period:* %v", opts.creationPeriod)
+	if opts.search != nil {
+		baseFilter = *opts.search
+		periodLine = "🔎 *Search results*"
+	}
+
+	operationsCount, err := h.stores.Operation.Count(ctx, baseFilter)
 	if err != nil {
 		logger.Error().Err(err).Msg("count operations")
 		return "", nil, fmt.Errorf("count operations: %w", err)
 	}
 	if operationsCount == 0 {
-		logger.Info().Any("balanceID", opts.balance.ID).Msg("operations not found")
+		logger.Info().Any("balanceIDs", baseFilter.BalanceIDs).Msg("operations not found")
 		return "", nil, ErrOperationsNotFound
 	}
 
@@ -184,16 +192,14 @@ func (h handlerService) getOperationsHistoryKeyboard(ctx context.Context, opts g
 			currentPage:    opts.page,
 		},
 		func() (string, error) {
-			operations, err := h.stores.Operation.List(ctx, ListOperationsFilter{
-				BalanceID:            opts.balance.ID,
-				CreationPeriod:       opts.creationPeriod,
-				Location:             opts.location,
-				OrderByCreatedAtDesc: true,
-				Pagination: &Pagination{
-					Limit: operationsPerKeyboard,
-					Page:  opts.page,
-				},
-			})
+			listFilter := baseFilter
+			listFilter.OrderByCreatedAtDesc = true
+			listFilter.Pagination = &Pagination{
+				Limit: operationsPerKeyboard,
+				Page:  opts.page,
+			}
+
+			operations, err := h.stores.Operation.List(ctx, listFilter)
 			if err != nil {
 				logger.Error().Err(err).Msg("list operations from store")
 				return "", fmt.Errorf("list operations from store: %w", err)
@@ -204,10 +210,18 @@ func (h handlerService) getOperationsHistoryKeyboard(ctx context.Context, opts g
 			}
 			convertOperationsToLocation(operations, opts.location)
 
-			outputMessage := fmt.Sprintf(
-				"💰 *Balance:* %v%s\n📅 *Period:* %v\n\n",
-				opts.balance.Amount, opts.balance.GetCurrency().Symbol, opts.creationPeriod,
-			)
+			balancesByID := make(map[string]model.Balance, len(opts.balances))
+			outputMessage := ""
+			for _, balance := range opts.balances {
+				balancesByID[balance.ID] = balance
+
+				label := "Balance"
+				if len(opts.balances) > 1 {
+					label = balance.Name
+				}
+				outputMessage += fmt.Sprintf("💰 *%s:* %v%s\n", label, balance.Amount, balance.GetCurrency().Symbol)
+			}
+			outputMessage += periodLine + "\n\n"
 
 			separator := "━━━━━━━━━━━━━━━"
 			for _, o := range operations {
@@ -236,8 +250,12 @@ func (h handlerService) getOperationsHistoryKeyboard(ctx context.Context, opts g
 					o.Description,
 					category.Title,
 					o.Amount,
-					opts.balance.GetCurrency().Symbol,
+					balancesByID[o.BalanceID].GetCurrency().Symbol,
 				)
+
+				if len(opts.balances) > 1 {
+					outputMessage += fmt.Sprintf("🏦 *Balance:* %s\n", balancesByID[o.BalanceID].Name)
+				}
 
 				if o.ExchangeRate != "" {
 					outputMessage += fmt.Sprintf("💱 *Exchange Rate:* %s\n", o.ExchangeRate)
