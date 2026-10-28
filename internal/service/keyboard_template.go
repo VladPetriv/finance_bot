@@ -80,6 +80,9 @@ var (
 			Buttons: []string{model.BotUpdateOperationCommand, model.BotDeleteOperationCommand},
 		},
 		{
+			Buttons: []string{model.BotSearchOperationsCommand},
+		},
+		{
 			Buttons: []string{model.BotBackCommand},
 		},
 	}

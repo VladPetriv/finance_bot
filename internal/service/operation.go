@@ -711,7 +711,7 @@ func (h handlerService) handleChooseTimePeriodForOperationsHistoryFlowStep(ctx c
 		message, keyboard, err := h.getOperationsHistoryKeyboard(
 			ctx,
 			getOperationsHistoryKeyboardOptions{
-				balance:        balance,
+				balances:       []model.Balance{*balance},
 				creationPeriod: parsedCreationPeriod,
 				page:           nextPage,
 				location:       opts.user.GetLocation(),
@@ -738,7 +738,7 @@ func (h handlerService) handleChooseTimePeriodForOperationsHistoryFlowStep(ctx c
 	message, keyboard, err := h.getOperationsHistoryKeyboard(
 		ctx,
 		getOperationsHistoryKeyboardOptions{
-			balance:        balance,
+			balances:       []model.Balance{*balance},
 			creationPeriod: creationPeriod,
 			page:           firstPage,
 			location:       opts.user.GetLocation(),

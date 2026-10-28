@@ -63,6 +63,8 @@ const (
 	BotCreateTransferOperationCommand string = "Transfer ➡️"
 	// BotGetOperationsHistory represents the command to get operations history
 	BotGetOperationsHistory string = "Get Operations History 📖"
+	// BotSearchOperationsCommand represents the command to search operations
+	BotSearchOperationsCommand string = "Search Operations 🔎"
 	// BotDeleteOperationCommand represents the command to delete an operation
 	BotDeleteOperationCommand string = "Delete Operation ❌"
 	// BotUpdateOperationCommand represents the command to update an operation
@@ -146,7 +148,7 @@ var AvailableCommands = []string{
 	BotCreateCategoryCommand, BotListCategoriesCommand, BotUpdateCategoryCommand, BotDeleteCategoryCommand,
 
 	// Operation
-	BotCreateOperationCommand, BotCreateIncomingOperationCommand, BotCreateSpendingOperationCommand, BotGetOperationsHistory,
+	BotCreateOperationCommand, BotCreateIncomingOperationCommand, BotCreateSpendingOperationCommand, BotGetOperationsHistory, BotSearchOperationsCommand,
 	BotCreateTransferOperationCommand, BotDeleteOperationCommand, BotUpdateOperationCommand, BotUpdateOperationAmountCommand,
 	BotUpdateOperationDescriptionCommand, BotUpdateOperationDateCommand, BotUpdateOperationCategoryCommand,
 
@@ -191,10 +193,11 @@ var CommandToEvent = map[string]Event{
 	BotDeleteCategoryCommand: DeleteCategoryEvent,
 
 	// Operation
-	BotCreateOperationCommand: CreateOperationEvent,
-	BotGetOperationsHistory:   GetOperationsHistoryEvent,
-	BotDeleteOperationCommand: DeleteOperationEvent,
-	BotUpdateOperationCommand: UpdateOperationEvent,
+	BotCreateOperationCommand:  CreateOperationEvent,
+	BotGetOperationsHistory:    GetOperationsHistoryEvent,
+	BotSearchOperationsCommand: SearchOperationsEvent,
+	BotDeleteOperationCommand:  DeleteOperationEvent,
+	BotUpdateOperationCommand:  UpdateOperationEvent,
 
 	// Balance Subscriptions
 	BotCreateBalanceSubscriptionCommand: CreateBalanceSubscriptionEvent,
@@ -228,10 +231,11 @@ var CommandToFistFlowStep = map[string]FlowStep{
 	BotDeleteCategoryCommand: DeleteCategoryFlowStep,
 
 	// Operation
-	BotCreateOperationCommand: CreateOperationFlowStep,
-	BotGetOperationsHistory:   GetOperationsHistoryFlowStep,
-	BotDeleteOperationCommand: DeleteOperationFlowStep,
-	BotUpdateOperationCommand: UpdateOperationFlowStep,
+	BotCreateOperationCommand:  CreateOperationFlowStep,
+	BotGetOperationsHistory:    GetOperationsHistoryFlowStep,
+	BotSearchOperationsCommand: SearchOperationsFlowStep,
+	BotDeleteOperationCommand:  DeleteOperationFlowStep,
+	BotUpdateOperationCommand:  UpdateOperationFlowStep,
 
 	// Balance Subscription
 	BotCreateBalanceSubscriptionCommand: CreateBalanceSubscriptionFlowStep,

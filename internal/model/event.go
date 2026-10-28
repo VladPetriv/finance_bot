@@ -53,6 +53,8 @@ const (
 	CreateOperationEvent Event = "operation/create"
 	// GetOperationsHistoryEvent represents the event for getting operations history
 	GetOperationsHistoryEvent Event = "operation/get_history"
+	// SearchOperationsEvent represents the event for searching operations
+	SearchOperationsEvent Event = "operation/search"
 	// DeleteOperationEvent represents the event for deleting an operation
 	DeleteOperationEvent Event = "operation/delete"
 	// UpdateOperationEvent represents the event for updating an operation
@@ -113,6 +115,7 @@ var EventToFlow = map[Event]Flow{
 	// Operation
 	CreateOperationEvent:                     CreateOperationFlow,
 	GetOperationsHistoryEvent:                GetOperationsHistoryFlow,
+	SearchOperationsEvent:                    SearchOperationsFlow,
 	DeleteOperationEvent:                     DeleteOperationFlow,
 	UpdateOperationEvent:                     UpdateOperationFlow,
 	CreateOperationsThroughOneTimeInputEvent: CreateOperationsThroughOneTimeInputFlow,

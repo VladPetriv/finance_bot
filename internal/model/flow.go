@@ -58,6 +58,8 @@ const (
 	CreateOperationFlow Flow = "create_operation"
 	// GetOperationsHistoryFlow represents the flow for getting operations history
 	GetOperationsHistoryFlow Flow = "get_operations_history"
+	// SearchOperationsFlow represents the flow for searching operations
+	SearchOperationsFlow Flow = "search_operations"
 	// DeleteOperationFlow represents the flow for deleting an operation
 	DeleteOperationFlow Flow = "delete_operation"
 	// UpdateOperationFlow represents the flow for updating an operation
@@ -99,7 +101,7 @@ func GetBaseFlowFromCurrentFlow(flow Flow) Flow {
 	}
 
 	if slices.Contains([]Flow{
-		CreateOperationFlow, GetOperationsHistoryFlow, UpdateOperationFlow, DeleteOperationFlow,
+		CreateOperationFlow, GetOperationsHistoryFlow, SearchOperationsFlow, UpdateOperationFlow, DeleteOperationFlow,
 	}, flow) {
 		return OperationFlow
 	}
@@ -249,6 +251,26 @@ const (
 	GetOperationsHistoryFlowStep FlowStep = "get_operations_history"
 	// ChooseTimePeriodForOperationsHistoryFlowStep represents the step for choosing time period for operations history
 	ChooseTimePeriodForOperationsHistoryFlowStep FlowStep = "choose_time_period_for_operations_history"
+	// SearchOperationsFlowStep represents the step for starting operations search
+	SearchOperationsFlowStep FlowStep = "search_operations"
+	// ChooseSearchFilterFlowStep represents the step for choosing which search filter to change
+	ChooseSearchFilterFlowStep FlowStep = "choose_search_filter"
+	// EnterSearchTextFlowStep represents the step for entering the description text to search for
+	EnterSearchTextFlowStep FlowStep = "enter_search_text"
+	// ChooseSearchOperationTypeFlowStep represents the step for choosing operation type for search
+	ChooseSearchOperationTypeFlowStep FlowStep = "choose_search_operation_type"
+	// ChooseSearchCategoryFlowStep represents the step for choosing category for search
+	ChooseSearchCategoryFlowStep FlowStep = "choose_search_category"
+	// EnterSearchAmountFromFlowStep represents the step for entering the minimal amount for search
+	EnterSearchAmountFromFlowStep FlowStep = "enter_search_amount_from"
+	// EnterSearchAmountToFlowStep represents the step for entering the maximal amount for search
+	EnterSearchAmountToFlowStep FlowStep = "enter_search_amount_to"
+	// ChooseSearchDateFromFlowStep represents the step for picking the start date for search
+	ChooseSearchDateFromFlowStep FlowStep = "choose_search_date_from"
+	// ChooseSearchDateToFlowStep represents the step for picking the end date for search
+	ChooseSearchDateToFlowStep FlowStep = "choose_search_date_to"
+	// SearchOperationsResultsFlowStep represents the step for browsing search results
+	SearchOperationsResultsFlowStep FlowStep = "search_operations_results"
 	// DeleteOperationFlowStep represents the step for deleting an operation
 	DeleteOperationFlowStep FlowStep = "delete_operation"
 	// ChooseOperationToDeleteFlowStep represents the step for choosing operation to delete
