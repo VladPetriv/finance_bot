@@ -3,9 +3,13 @@ config.sh
 node_modules
 CLAUDE.md
 graphify-out/
+graphify-out
 .claude/
 AGENT.md
 docs/
 CONTEXT.md
 .scratch/
 GLOSSARY.md
+.claude/
+.claude
+.gitattributes
