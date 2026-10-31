@@ -4,3 +4,8 @@ node_modules
 CLAUDE.md
 graphify-out/
 .claude/
+AGENT.md
+docs/
+CONTEXT.md
+.scratch/
+GLOSSARY.md
