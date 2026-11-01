@@ -30,14 +30,14 @@ func Test_calculateOperationsStatistics(t *testing.T) {
 		{
 			desc: "positive: calculate statistics for all operation types",
 			args: []Operation{
-				{Type: OperationTypeIncoming, Amount: "100.00"},
-				{Type: OperationTypeIncoming, Amount: "100.00"},
-				{Type: OperationTypeSpending, Amount: "50.00"},
-				{Type: OperationTypeSpending, Amount: "50.00"},
-				{Type: OperationTypeTransferIn, Amount: "75.00"},
-				{Type: OperationTypeTransferIn, Amount: "75.00"},
-				{Type: OperationTypeTransferOut, Amount: "25.00"},
-				{Type: OperationTypeTransferOut, Amount: "25.00"},
+				{Type: OperationTypeIncoming, Amount: testAmount("100.00")},
+				{Type: OperationTypeIncoming, Amount: testAmount("100.00")},
+				{Type: OperationTypeSpending, Amount: testAmount("50.00")},
+				{Type: OperationTypeSpending, Amount: testAmount("50.00")},
+				{Type: OperationTypeTransferIn, Amount: testAmount("75.00")},
+				{Type: OperationTypeTransferIn, Amount: testAmount("75.00")},
+				{Type: OperationTypeTransferOut, Amount: testAmount("25.00")},
+				{Type: OperationTypeTransferOut, Amount: testAmount("25.00")},
 			},
 			expected: expected{
 				stats: &operationsStatistics{
@@ -63,15 +63,6 @@ func Test_calculateOperationsStatistics(t *testing.T) {
 					TransferOutTotal: money.Zero,
 					OperationsByType: make(map[OperationType][]Operation),
 				},
-			},
-		},
-		{
-			desc: "negative: operation amount is invalid",
-			args: []Operation{
-				{Type: OperationTypeIncoming, Amount: "invalid"},
-			},
-			expected: expected{
-				err: true,
 			},
 		},
 	}
@@ -129,9 +120,9 @@ func Test_calculateCategoryStatistics(t *testing.T) {
 			args: args{
 				totalAmount: amount100,
 				operations: []Operation{
-					{CategoryID: "1", Amount: "50.00"},
-					{CategoryID: "2", Amount: "30.00"},
-					{CategoryID: "1", Amount: "20.00"},
+					{CategoryID: "1", Amount: testAmount("50.00")},
+					{CategoryID: "2", Amount: testAmount("30.00")},
+					{CategoryID: "1", Amount: testAmount("20.00")},
 				},
 				categories: []Category{
 					{ID: "1", Title: "Food"},
@@ -165,21 +156,6 @@ func Test_calculateCategoryStatistics(t *testing.T) {
 
 			expected: expected{
 				stats: []categoryStatistics{},
-			},
-		},
-		{
-			desc: "negative: invalid amount format",
-			args: args{
-				totalAmount: amount100,
-				operations: []Operation{
-					{CategoryID: "1", Amount: "invalid"},
-				},
-				categories: []Category{
-					{ID: "1", Title: "Food"},
-				},
-			},
-			expected: expected{
-				err: true,
 			},
 		},
 	}
@@ -231,14 +207,14 @@ func TestStatisticsMessageBuilder_Build(t *testing.T) {
 			args: args{
 				balance: &Balance{
 					Name:     "Main Balance",
-					Amount:   "1000.00",
+					Amount:   money.NewFromInt(1000),
 					Currency: Currency{Symbol: "$"},
 				},
 				operations: []Operation{
-					{Type: OperationTypeIncoming, Amount: "100.00", CategoryID: "1"},
-					{Type: OperationTypeSpending, Amount: "50.00", CategoryID: "2"},
-					{Type: OperationTypeTransferIn, Amount: "75.00"},
-					{Type: OperationTypeTransferOut, Amount: "25.00"},
+					{Type: OperationTypeIncoming, Amount: testAmount("100.00"), CategoryID: "1"},
+					{Type: OperationTypeSpending, Amount: testAmount("50.00"), CategoryID: "2"},
+					{Type: OperationTypeTransferIn, Amount: testAmount("75.00")},
+					{Type: OperationTypeTransferOut, Amount: testAmount("25.00")},
 				},
 				categories: []Category{
 					{ID: "1", Title: "Salary"},
@@ -269,11 +245,11 @@ func TestStatisticsMessageBuilder_Build(t *testing.T) {
 			args: args{
 				balance: &Balance{
 					Name:     "Main Balance",
-					Amount:   "1000.00",
+					Amount:   money.NewFromInt(1000),
 					Currency: Currency{Symbol: "$"},
 				},
 				operations: []Operation{
-					{Type: OperationTypeIncoming, Amount: "100.00", CategoryID: "1"},
+					{Type: OperationTypeIncoming, Amount: testAmount("100.00"), CategoryID: "1"},
 				},
 				categories: []Category{
 					{ID: "1", Title: "Salary"},
@@ -302,11 +278,11 @@ func TestStatisticsMessageBuilder_Build(t *testing.T) {
 			args: args{
 				balance: &Balance{
 					Name:     "Main Balance",
-					Amount:   "1000.00",
+					Amount:   money.NewFromInt(1000),
 					Currency: Currency{Symbol: "$"},
 				},
 				operations: []Operation{
-					{Type: OperationTypeSpending, Amount: "50.00", CategoryID: "2"},
+					{Type: OperationTypeSpending, Amount: testAmount("50.00"), CategoryID: "2"},
 				},
 				categories: []Category{
 					{ID: "1", Title: "Salary"},
@@ -335,11 +311,11 @@ func TestStatisticsMessageBuilder_Build(t *testing.T) {
 			args: args{
 				balance: &Balance{
 					Name:     "Main Balance",
-					Amount:   "1000.00",
+					Amount:   money.NewFromInt(1000),
 					Currency: Currency{Symbol: "$"},
 				},
 				operations: []Operation{
-					{Type: OperationTypeTransferIn, Amount: "75.00"},
+					{Type: OperationTypeTransferIn, Amount: testAmount("75.00")},
 				},
 			},
 			expected: expected{
@@ -362,11 +338,11 @@ func TestStatisticsMessageBuilder_Build(t *testing.T) {
 			args: args{
 				balance: &Balance{
 					Name:     "Main Balance",
-					Amount:   "1000.00",
+					Amount:   money.NewFromInt(1000),
 					Currency: Currency{Symbol: "$"},
 				},
 				operations: []Operation{
-					{Type: OperationTypeTransferOut, Amount: "75.00"},
+					{Type: OperationTypeTransferOut, Amount: testAmount("75.00")},
 				},
 			},
 			expected: expected{
@@ -389,7 +365,7 @@ func TestStatisticsMessageBuilder_Build(t *testing.T) {
 			args: args{
 				balance: &Balance{
 					Name:     "Empty Balance",
-					Amount:   "0.00",
+					Amount:   money.Zero,
 					Currency: Currency{Symbol: "$"},
 				},
 				operations: []Operation{},
@@ -408,23 +384,6 @@ func TestStatisticsMessageBuilder_Build(t *testing.T) {
 		 ➡️ In: `+"`0.00$`"+` *(0)*
 			⬅️ Out: `+"`0.00$`"+` *(0)*
 	`, time.Date(time.Now().Year(), time.Now().Month(), 1, 0, 0, 0, 0, time.UTC).Format(dateFormat), time.Now().Format(dateFormat)),
-			},
-		},
-		{
-			desc: "negative: invalid operation amount",
-			args: args{
-				balance: &Balance{
-					Name:     "Main Balance",
-					Amount:   "1000.00",
-					Currency: Currency{Symbol: "$"},
-				},
-				operations: []Operation{
-					{Type: OperationTypeIncoming, Amount: "invalid"},
-				},
-				categories: []Category{},
-			},
-			expected: expected{
-				err: true,
 			},
 		},
 	}
@@ -482,4 +441,13 @@ func convertToMonth(monthIndex int) Month {
 	default:
 		return MonthJanuary
 	}
+}
+
+func testAmount(raw string) money.Money {
+	amount, err := money.NewFromString(raw)
+	if err != nil {
+		panic(err)
+	}
+
+	return amount
 }

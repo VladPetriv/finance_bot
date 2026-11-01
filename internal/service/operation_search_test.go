@@ -5,6 +5,8 @@ import (
 	"time"
 
 	"github.com/VladPetriv/finance_bot/internal/model"
+	"github.com/VladPetriv/finance_bot/pkg/money"
+	"github.com/VladPetriv/finance_bot/pkg/typecast"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -44,8 +46,8 @@ func TestBuildSearchOperationsFilter(t *testing.T) {
 					Description: "coffee",
 					Types:       []model.OperationType{model.OperationTypeTransferIn, model.OperationTypeTransferOut},
 					CategoryIDs: []string{"category-1", "category-2"},
-					AmountFrom:  "10",
-					AmountTo:    "20.5",
+					AmountFrom:  typecast.ToPtr(money.NewFromInt(10)),
+					AmountTo:    typecast.ToPtr(money.NewFromFloat(20.5)),
 					BetweenFilter: &BetweenFilter{
 						From: time.Date(2026, 10, 1, 0, 0, 0, 0, time.UTC),
 						To:   time.Date(2026, 11, 1, 0, 0, 0, 0, time.UTC),

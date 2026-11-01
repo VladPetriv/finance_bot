@@ -38,7 +38,7 @@ func (o *operationStore) Create(ctx context.Context, operation *model.Operation)
 	_, err := o.DB.ExecContext(
 		ctx,
 		`INSERT INTO
-			operations (id, category_id, balance_id, parent_operation_id, type, amount, exchange_rate, description, created_at)
+			operations (id, category_id, balance_id, parent_operation_id, type, amount_minor, exchange_rate, description, created_at)
 		VALUES
 			($1, $2, $3, $4, $5, $6, $7, $8, $9);
 		`,
@@ -48,11 +48,15 @@ func (o *operationStore) Create(ctx context.Context, operation *model.Operation)
 	return err
 }
 
+const operationAmountMinorExpr = "COALESCE(operations.amount_minor, ROUND(NULLIF(operations.amount, '')::numeric * 100))::bigint"
+
+const operationAmountMinorColumn = operationAmountMinorExpr + " AS amount_minor"
+
 func (o *operationStore) Get(ctx context.Context, filter service.GetOperationFilter) (*model.Operation, error) {
 	stmt := sq.
 		StatementBuilder.
 		PlaceholderFormat(sq.Dollar).
-		Select("id", "category_id", "balance_id", "parent_operation_id", "type", "amount", "exchange_rate", "description", "created_at", "updated_at").
+		Select("id", "category_id", "balance_id", "parent_operation_id", "type", operationAmountMinorColumn, "exchange_rate", "description", "created_at", "updated_at").
 		From("operations")
 
 	if filter.ID != "" {
@@ -61,8 +65,13 @@ func (o *operationStore) Get(ctx context.Context, filter service.GetOperationFil
 	if filter.Type != "" {
 		stmt = stmt.Where(sq.Eq{"type": filter.Type})
 	}
-	if filter.Amount != "" {
-		stmt = stmt.Where(sq.Eq{"amount": filter.Amount})
+	if filter.Amount != nil {
+		amountMinor, err := filter.Amount.MinorUnits()
+		if err != nil {
+			return nil, fmt.Errorf("convert amount filter to minor units: %w", err)
+		}
+
+		stmt = stmt.Where(sq.Expr(operationAmountMinorExpr+" = ?", amountMinor))
 	}
 	if len(filter.BalanceIDs) != 0 {
 		stmt = stmt.Where(sq.Eq{"balance_id": filter.BalanceIDs})
@@ -93,7 +102,10 @@ func (o *operationStore) Get(ctx context.Context, filter service.GetOperationFil
 }
 
 func (o *operationStore) List(ctx context.Context, filter service.ListOperationsFilter) ([]model.Operation, error) {
-	stmt := applyListOperationsFilter(applyListOperationsOptions{listQuery: true}, filter)
+	stmt, err := applyListOperationsFilter(applyListOperationsOptions{listQuery: true}, filter)
+	if err != nil {
+		return nil, fmt.Errorf("apply list operations filter: %w", err)
+	}
 
 	query, args, err := stmt.ToSql()
 	if err != nil {
@@ -188,7 +200,10 @@ func (o *operationStore) ListOperationMonths(ctx context.Context, filter service
 }
 
 func (o *operationStore) Count(ctx context.Context, filter service.ListOperationsFilter) (int, error) {
-	stmt := applyListOperationsFilter(applyListOperationsOptions{countQuery: true}, filter)
+	stmt, err := applyListOperationsFilter(applyListOperationsOptions{countQuery: true}, filter)
+	if err != nil {
+		return 0, fmt.Errorf("apply list operations filter: %w", err)
+	}
 
 	query, args, err := stmt.ToSql()
 	if err != nil {
@@ -214,14 +229,14 @@ type applyListOperationsOptions struct {
 	countQuery bool
 }
 
-func applyListOperationsFilter(options applyListOperationsOptions, filter service.ListOperationsFilter) *sq.SelectBuilder {
+func applyListOperationsFilter(options applyListOperationsOptions, filter service.ListOperationsFilter) (*sq.SelectBuilder, error) {
 	var expectedColumns []string
 	if options.countQuery {
 		expectedColumns = []string{"COUNT(id)"}
 	}
 
 	if options.listQuery {
-		expectedColumns = []string{"id", "category_id", "balance_id", "parent_operation_id", "type", "amount", "exchange_rate", "description", "created_at", "updated_at"}
+		expectedColumns = []string{"id", "category_id", "balance_id", "parent_operation_id", "type", operationAmountMinorColumn, "exchange_rate", "description", "created_at", "updated_at"}
 	}
 
 	stmt := sq.
@@ -262,11 +277,21 @@ func applyListOperationsFilter(options applyListOperationsOptions, filter servic
 	if len(filter.CategoryIDs) != 0 {
 		stmt = stmt.Where(sq.Eq{"category_id": filter.CategoryIDs})
 	}
-	if filter.AmountFrom != "" {
-		stmt = stmt.Where(sq.Expr("CAST(amount AS NUMERIC) >= CAST(? AS NUMERIC)", filter.AmountFrom))
+	if filter.AmountFrom != nil {
+		amountMinor, err := filter.AmountFrom.MinorUnits()
+		if err != nil {
+			return nil, fmt.Errorf("convert amount from filter to minor units: %w", err)
+		}
+
+		stmt = stmt.Where(sq.Expr(operationAmountMinorExpr+" >= ?", amountMinor))
 	}
-	if filter.AmountTo != "" {
-		stmt = stmt.Where(sq.Expr("CAST(amount AS NUMERIC) <= CAST(? AS NUMERIC)", filter.AmountTo))
+	if filter.AmountTo != nil {
+		amountMinor, err := filter.AmountTo.MinorUnits()
+		if err != nil {
+			return nil, fmt.Errorf("convert amount to filter to minor units: %w", err)
+		}
+
+		stmt = stmt.Where(sq.Expr(operationAmountMinorExpr+" <= ?", amountMinor))
 	}
 
 	if filter.Pagination != nil {
@@ -274,11 +299,11 @@ func applyListOperationsFilter(options applyListOperationsOptions, filter servic
 	}
 
 	if filter.OrderByCreatedAtDesc {
-		stmt = stmt.GroupBy("id", "category_id", "balance_id", "parent_operation_id", "type", "amount", "exchange_rate", "description", "created_at", "updated_at").
+		stmt = stmt.GroupBy("id").
 			OrderBy("created_at DESC")
 	}
 
-	return &stmt
+	return &stmt, nil
 }
 
 func (o *operationStore) Update(ctx context.Context, operationID string, operation *model.Operation) error {
@@ -289,7 +314,7 @@ func (o *operationStore) Update(ctx context.Context, operationID string, operati
 			category_id = $1,
 			balance_id = $2,
 			type = $3,
-			amount = $4,
+			amount_minor = $4,
 			description = $5,
 			created_at = $6,
 			updated_at = NOW()

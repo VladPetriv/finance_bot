@@ -3,6 +3,8 @@ package model
 import (
 	"fmt"
 	"time"
+
+	"github.com/VladPetriv/finance_bot/pkg/money"
 )
 
 // BalanceSubscription represents a subscription for an internal user balance.
@@ -12,7 +14,7 @@ type BalanceSubscription struct {
 	CategoryID string `db:"category_id"`
 
 	Name   string             `db:"name"`
-	Amount string             `db:"amount"`
+	Amount money.Money        `db:"amount_minor"`
 	Period SubscriptionPeriod `db:"period"`
 
 	StartAt   time.Time `db:"start_at"`
@@ -34,7 +36,7 @@ func (b BalanceSubscription) GetName() string {
 func (b BalanceSubscription) GetDetails() string {
 	return fmt.Sprintf(
 		"Subscription Details:\nName: %s\nAmount: %s\nPeriod: %s\nStart At: %s",
-		b.Name, b.Amount, b.Period, b.StartAt.Format("2006-01-02 15:04"),
+		b.Name, b.Amount.StringFixed(), b.Period, b.StartAt.Format("2006-01-02 15:04"),
 	)
 }
 
@@ -43,7 +45,7 @@ func (b BalanceSubscription) GetDeletionMessage() string {
 	return fmt.Sprintf(
 		"Are you sure you want to delete the subscription '%s' (%s, %s)?\nAll previously created operations will remain untouched, but no new operations will be generated in the future.",
 		b.Name,
-		b.Amount,
+		b.Amount.StringFixed(),
 		b.Period,
 	)
 }

@@ -9,6 +9,9 @@ import (
 	"github.com/VladPetriv/finance_bot/internal/model"
 	"github.com/VladPetriv/finance_bot/internal/service"
 	"github.com/VladPetriv/finance_bot/internal/store"
+	"github.com/VladPetriv/finance_bot/pkg/database"
+	"github.com/VladPetriv/finance_bot/pkg/money"
+	"github.com/VladPetriv/finance_bot/pkg/typecast"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -82,7 +85,7 @@ func TestOperation_Create(t *testing.T) {
 				CategoryID:        categoryID,
 				BalanceID:         balanceID,
 				Type:              model.OperationTypeIncoming,
-				Amount:            "100",
+				Amount:            money.NewFromInt(100),
 				ParentOperationID: "123",
 				ExchangeRate:      "10.00",
 				Description:       "test_create_1",
@@ -95,7 +98,7 @@ func TestOperation_Create(t *testing.T) {
 				CategoryID:  categoryID,
 				BalanceID:   balanceID,
 				Type:        model.OperationTypeIncoming,
-				Amount:      "100",
+				Amount:      money.NewFromInt(100),
 				Description: "test_create_2",
 			},
 			args: &model.Operation{
@@ -103,7 +106,7 @@ func TestOperation_Create(t *testing.T) {
 				CategoryID:  categoryID,
 				BalanceID:   balanceID,
 				Type:        model.OperationTypeIncoming,
-				Amount:      "100",
+				Amount:      money.NewFromInt(100),
 				Description: "test_create_2",
 			},
 			expectDuplicateError: true,
@@ -145,7 +148,7 @@ func TestOperation_Create(t *testing.T) {
 			assert.Equal(t, tc.args.BalanceID, actual.BalanceID)
 			assert.Equal(t, tc.args.ParentOperationID, actual.ParentOperationID)
 			assert.Equal(t, tc.args.Type, actual.Type)
-			assert.Equal(t, tc.args.Amount, actual.Amount)
+			assert.True(t, tc.args.Amount.Equal(actual.Amount))
 			assert.Equal(t, tc.args.ExchangeRate, actual.ExchangeRate)
 			assert.Equal(t, tc.args.Description, actual.Description)
 		})
@@ -231,7 +234,7 @@ func TestOperation_Get(t *testing.T) {
 				BalanceID:         balanceID1,
 				ParentOperationID: "123",
 				Type:              model.OperationTypeIncoming,
-				Amount:            "100",
+				Amount:            money.NewFromInt(100),
 				ExchangeRate:      "1.0",
 				Description:       "test_get_1",
 			},
@@ -244,7 +247,7 @@ func TestOperation_Get(t *testing.T) {
 				BalanceID:         balanceID1,
 				ParentOperationID: "123",
 				Type:              model.OperationTypeIncoming,
-				Amount:            "100",
+				Amount:            money.NewFromInt(100),
 				ExchangeRate:      "1.0",
 				Description:       "test_get_1",
 			},
@@ -256,7 +259,7 @@ func TestOperation_Get(t *testing.T) {
 				CategoryID:  categoryID,
 				BalanceID:   balanceID1,
 				Type:        model.OperationTypeSpending,
-				Amount:      "100",
+				Amount:      money.NewFromInt(100),
 				Description: "test_get_2",
 			},
 			args: service.GetOperationFilter{
@@ -267,7 +270,7 @@ func TestOperation_Get(t *testing.T) {
 				CategoryID:  categoryID,
 				BalanceID:   balanceID1,
 				Type:        model.OperationTypeSpending,
-				Amount:      "100",
+				Amount:      money.NewFromInt(100),
 				Description: "test_get_2",
 			},
 		},
@@ -278,7 +281,7 @@ func TestOperation_Get(t *testing.T) {
 				CategoryID:  categoryID,
 				BalanceID:   balanceID1,
 				Type:        model.OperationTypeTransfer,
-				Amount:      "100",
+				Amount:      money.NewFromInt(100),
 				Description: "test_get_3",
 				CreatedAt:   now.Add(-3 * time.Hour),
 			},
@@ -291,7 +294,7 @@ func TestOperation_Get(t *testing.T) {
 				CategoryID:  categoryID,
 				BalanceID:   balanceID1,
 				Type:        model.OperationTypeTransfer,
-				Amount:      "100",
+				Amount:      money.NewFromInt(100),
 				Description: "test_get_3",
 				CreatedAt:   now.Add(-3 * time.Hour),
 			},
@@ -303,7 +306,7 @@ func TestOperation_Get(t *testing.T) {
 				CategoryID:  categoryID,
 				BalanceID:   balanceID2,
 				Type:        model.OperationTypeTransfer,
-				Amount:      "100",
+				Amount:      money.NewFromInt(100),
 				Description: "test_get_4",
 			},
 			args: service.GetOperationFilter{
@@ -314,7 +317,7 @@ func TestOperation_Get(t *testing.T) {
 				CategoryID:  categoryID,
 				BalanceID:   balanceID2,
 				Type:        model.OperationTypeTransfer,
-				Amount:      "100",
+				Amount:      money.NewFromInt(100),
 				Description: "test_get_4",
 			},
 		},
@@ -325,18 +328,18 @@ func TestOperation_Get(t *testing.T) {
 				CategoryID:  categoryID,
 				BalanceID:   balanceID1,
 				Type:        model.OperationTypeTransfer,
-				Amount:      "50",
+				Amount:      money.NewFromInt(50),
 				Description: "test_get_5",
 			},
 			args: service.GetOperationFilter{
-				Amount: "50",
+				Amount: typecast.ToPtr(money.NewFromInt(50)),
 			},
 			expected: &model.Operation{
 				ID:          operationID5,
 				CategoryID:  categoryID,
 				BalanceID:   balanceID1,
 				Type:        model.OperationTypeTransfer,
-				Amount:      "50",
+				Amount:      money.NewFromInt(50),
 				Description: "test_get_5",
 			},
 		},
@@ -379,7 +382,7 @@ func TestOperation_Get(t *testing.T) {
 			assert.Equal(t, tc.expected.CategoryID, actual.CategoryID)
 			assert.Equal(t, tc.expected.ParentOperationID, actual.ParentOperationID)
 			assert.Equal(t, tc.expected.Type, actual.Type)
-			assert.Equal(t, tc.expected.Amount, actual.Amount)
+			assert.True(t, tc.expected.Amount.Equal(actual.Amount))
 			assert.Equal(t, tc.expected.ExchangeRate, actual.ExchangeRate)
 			assert.Equal(t, tc.expected.Description, actual.Description)
 		})
@@ -1599,7 +1602,7 @@ func TestOperation_List_BetweenFilter(t *testing.T) {
 			BalanceID:  balanceID,
 			CategoryID: categoryID,
 			Type:       model.OperationTypeSpending,
-			Amount:     "10",
+			Amount:     money.NewFromInt(10),
 			CreatedAt:  createdAt,
 			UpdatedAt:  createdAt,
 		})
@@ -1638,4 +1641,256 @@ func TestOperation_List_BetweenFilter(t *testing.T) {
 			assert.ElementsMatch(t, tc.expected, actualIDs)
 		})
 	}
+}
+
+func TestOperation_AmountMinorFallback(t *testing.T) {
+	t.Parallel()
+
+	ctx := context.Background() //nolint: forbidigo
+
+	testCaseDB := createTestDB(t, "operation_amount_minor_fallback")
+	operationStore := store.NewOperation(testCaseDB)
+
+	type precondition struct {
+		legacyAmount *string
+		amountMinor  *int64
+	}
+
+	type expected struct {
+		amount money.Money
+	}
+
+	legacy := "12.34"
+	legacyOther := "99.99"
+	minor := int64(5600)
+
+	testCases := [...]struct {
+		desc         string
+		precondition *precondition
+		expected     *expected
+	}{
+		{
+			desc: "it should return legacy amount converted to minor units when amount_minor is NULL",
+			precondition: &precondition{
+				legacyAmount: &legacy,
+			},
+			expected: &expected{
+				amount: money.NewFromMinorUnits(1234),
+			},
+		},
+		{
+			desc: "it should return amount_minor when legacy amount is NULL",
+			precondition: &precondition{
+				amountMinor: &minor,
+			},
+			expected: &expected{
+				amount: money.NewFromMinorUnits(5600),
+			},
+		},
+		{
+			desc: "it should prefer amount_minor when both columns are set",
+			precondition: &precondition{
+				legacyAmount: &legacyOther,
+				amountMinor:  &minor,
+			},
+			expected: &expected{
+				amount: money.NewFromMinorUnits(5600),
+			},
+		},
+	}
+	for _, tc := range testCases {
+		t.Run(tc.desc, func(t *testing.T) {
+			t.Parallel()
+
+			balanceID := insertTestBalance(t, testCaseDB)
+			operationID := insertTestOperation(t, testCaseDB, balanceID, tc.precondition.legacyAmount, tc.precondition.amountMinor)
+
+			got, err := operationStore.Get(ctx, service.GetOperationFilter{ID: operationID})
+			require.NoError(t, err)
+			require.NotNil(t, got)
+			assert.True(t, tc.expected.amount.Equal(got.Amount))
+
+			listed, err := operationStore.List(ctx, service.ListOperationsFilter{BalanceID: balanceID})
+			require.NoError(t, err)
+			require.Len(t, listed, 1)
+			assert.True(t, tc.expected.amount.Equal(listed[0].Amount))
+		})
+	}
+}
+
+func TestOperation_WritesOnlyAmountMinor(t *testing.T) {
+	t.Parallel()
+
+	ctx := context.Background() //nolint: forbidigo
+
+	testCaseDB := createTestDB(t, "operation_writes_only_amount_minor")
+	operationStore := store.NewOperation(testCaseDB)
+
+	balanceID := insertTestBalance(t, testCaseDB)
+	operationID := uuid.NewString()
+
+	err := operationStore.Create(ctx, &model.Operation{
+		ID:        operationID,
+		BalanceID: balanceID,
+		Type:      model.OperationTypeIncoming,
+		Amount:    money.NewFromMinorUnits(1050),
+	})
+	require.NoError(t, err)
+
+	type row struct {
+		Legacy *string `db:"amount"`
+		Minor  *int64  `db:"amount_minor"`
+	}
+
+	var created row
+	err = testCaseDB.DB.GetContext(ctx, &created, "SELECT amount, amount_minor FROM operations WHERE id = $1;", operationID)
+	require.NoError(t, err)
+	assert.Nil(t, created.Legacy)
+	require.NotNil(t, created.Minor)
+	assert.Equal(t, int64(1050), *created.Minor)
+
+	err = operationStore.Update(ctx, operationID, &model.Operation{
+		BalanceID: balanceID,
+		Type:      model.OperationTypeIncoming,
+		Amount:    money.NewFromMinorUnits(2000),
+	})
+	require.NoError(t, err)
+
+	var updated row
+	err = testCaseDB.DB.GetContext(ctx, &updated, "SELECT amount, amount_minor FROM operations WHERE id = $1;", operationID)
+	require.NoError(t, err)
+	assert.Nil(t, updated.Legacy)
+	require.NotNil(t, updated.Minor)
+	assert.Equal(t, int64(2000), *updated.Minor)
+}
+
+func TestOperation_SearchByAmount(t *testing.T) {
+	t.Parallel()
+
+	ctx := context.Background() //nolint: forbidigo
+
+	testCaseDB := createTestDB(t, "operation_search_by_amount")
+	operationStore := store.NewOperation(testCaseDB)
+
+	balanceID := insertTestBalance(t, testCaseDB)
+
+	legacy10, legacy20 := "10.00", "20.5"
+	minor1000, minor3000 := int64(1000), int64(3000)
+
+	legacyTen := insertTestOperation(t, testCaseDB, balanceID, &legacy10, nil)
+	legacyTwenty := insertTestOperation(t, testCaseDB, balanceID, &legacy20, nil)
+	newTen := insertTestOperation(t, testCaseDB, balanceID, nil, &minor1000)
+	newThirty := insertTestOperation(t, testCaseDB, balanceID, nil, &minor3000)
+
+	type precondition struct {
+		filter service.ListOperationsFilter
+	}
+
+	type expected struct {
+		ids []string
+	}
+
+	testCases := [...]struct {
+		desc         string
+		precondition *precondition
+		expected     *expected
+	}{
+		{
+			desc: "it should find legacy and new rows by exact amount via from and to",
+			precondition: &precondition{
+				filter: service.ListOperationsFilter{
+					AmountFrom: typecast.ToPtr(money.NewFromInt(10)),
+					AmountTo:   typecast.ToPtr(money.NewFromInt(10)),
+				},
+			},
+			expected: &expected{
+				ids: []string{legacyTen, newTen},
+			},
+		},
+		{
+			desc: "it should filter by from over both row kinds",
+			precondition: &precondition{
+				filter: service.ListOperationsFilter{
+					AmountFrom: typecast.ToPtr(money.NewFromInt(20)),
+				},
+			},
+			expected: &expected{
+				ids: []string{legacyTwenty, newThirty},
+			},
+		},
+		{
+			desc: "it should filter by to over both row kinds",
+			precondition: &precondition{
+				filter: service.ListOperationsFilter{
+					AmountTo: typecast.ToPtr(money.NewFromInt(15)),
+				},
+			},
+			expected: &expected{
+				ids: []string{legacyTen, newTen},
+			},
+		},
+	}
+	for _, tc := range testCases {
+		t.Run(tc.desc, func(t *testing.T) {
+			t.Parallel()
+
+			filter := tc.precondition.filter
+			filter.BalanceID = balanceID
+
+			listed, err := operationStore.List(ctx, filter)
+			require.NoError(t, err)
+
+			actualIDs := make([]string, 0, len(listed))
+			for _, operation := range listed {
+				actualIDs = append(actualIDs, operation.ID)
+			}
+			assert.ElementsMatch(t, tc.expected.ids, actualIDs)
+
+			count, err := operationStore.Count(ctx, filter)
+			require.NoError(t, err)
+			assert.Equal(t, len(tc.expected.ids), count)
+		})
+	}
+
+	t.Run("it should get an operation by exact amount over both row kinds", func(t *testing.T) {
+		t.Parallel()
+
+		got, err := operationStore.Get(ctx, service.GetOperationFilter{
+			Amount:     typecast.ToPtr(money.NewFromInt(30)),
+			BalanceIDs: []string{balanceID},
+		})
+		require.NoError(t, err)
+		require.NotNil(t, got)
+		assert.Equal(t, newThirty, got.ID)
+	})
+}
+
+func insertTestBalance(t *testing.T, db *database.PostgreSQL) string {
+	t.Helper()
+
+	userID := uuid.NewString()
+	err := store.NewUser(db).Create(context.Background(), &model.User{ //nolint: forbidigo
+		ID:       userID,
+		Username: "test" + userID,
+	})
+	require.NoError(t, err)
+
+	balanceID := uuid.NewString()
+	_, err = db.DB.Exec("INSERT INTO balances (id, user_id, currency_id, name, amount_minor) VALUES ($1, $2, '', '', 0);", balanceID, userID)
+	require.NoError(t, err)
+
+	return balanceID
+}
+
+func insertTestOperation(t *testing.T, db *database.PostgreSQL, balanceID string, legacyAmount *string, amountMinor *int64) string {
+	t.Helper()
+
+	operationID := uuid.NewString()
+	_, err := db.DB.Exec(
+		"INSERT INTO operations (id, category_id, balance_id, parent_operation_id, type, description, exchange_rate, amount, amount_minor) VALUES ($1, '', $2, '', 'incoming', '', '', $3, $4);",
+		operationID, balanceID, legacyAmount, amountMinor,
+	)
+	require.NoError(t, err)
+
+	return operationID
 }

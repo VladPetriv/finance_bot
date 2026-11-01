@@ -13,8 +13,8 @@ type Balance struct {
 	UserID     string `db:"user_id"`
 	CurrencyID string `db:"currency_id"`
 
-	Name   string `db:"name"`
-	Amount string `db:"amount"`
+	Name   string      `db:"name"`
+	Amount money.Money `db:"amount_minor"`
 
 	CreatedAt time.Time `db:"created_at"`
 	UpdatedAt time.Time `db:"updated_at"`
@@ -41,7 +41,7 @@ func (b Balance) GetCurrency() Currency {
 // for an exchange rate when transferring between different currencies.
 // It includes source/destination balance info and an example conversion using a 4x rate.
 func BuildCurrencyConversionMessage(balanceFrom, balanceTo *Balance) string {
-	parsedAmount, _ := money.NewFromString(balanceFrom.Amount)
+	parsedAmount := balanceFrom.Amount
 	parsedAmount.Mul(money.NewFromInt(4))
 
 	return fmt.Sprintf(`⚠️ Different Currency Transfer ⚠️
@@ -64,7 +64,7 @@ Example:
 Please enter the current exchange rate:`,
 		balanceFrom.Name,
 		balanceFrom.GetCurrency().Symbol,
-		balanceFrom.Amount,
+		balanceFrom.Amount.StringFixed(),
 		balanceFrom.GetCurrency().Symbol,
 		balanceTo.Name,
 		balanceTo.GetCurrency().Symbol,
@@ -74,7 +74,7 @@ Please enter the current exchange rate:`,
 		balanceFrom.GetCurrency().Symbol,
 		balanceFrom.GetCurrency().Symbol,
 		balanceTo.GetCurrency().Symbol,
-		balanceFrom.Amount,
+		balanceFrom.Amount.StringFixed(),
 		balanceFrom.GetCurrency().Symbol,
 		parsedAmount.StringFixed(),
 		balanceTo.GetCurrency().Symbol,

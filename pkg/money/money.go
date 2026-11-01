@@ -1,8 +1,16 @@
 package money
 
 import (
+	"database/sql/driver"
+	"errors"
+	"fmt"
+
 	"github.com/shopspring/decimal"
 )
+
+var errUnsupportedScanType = errors.New("unsupported scan type for money")
+
+var errMinorUnitsOverflow = errors.New("amount in minor units does not fit into int64")
 
 // Money represents custom typo for processing money.
 type Money struct {
@@ -88,7 +96,53 @@ func (m Money) String() string {
 	return m.decimal.String()
 }
 
+// Round rounds the value in place to 2 places, half away from zero.
+func (m *Money) Round() {
+	m.decimal = m.decimal.Round(minorUnitsExponent)
+}
+
 // Set sets the value of the Money instance to the provided value.
 func (m *Money) Set(value Money) {
 	m.decimal = value.decimal
+}
+
+const minorUnitsExponent = 2
+
+// NewFromMinorUnits returns money from an integer number of minor units (1/100).
+func NewFromMinorUnits(minorUnits int64) Money {
+	return Money{
+		decimal: decimal.New(minorUnits, -minorUnitsExponent),
+	}
+}
+
+// MinorUnits returns the amount in minor units, rounded half away from zero to 2 places.
+func (m Money) MinorUnits() (int64, error) {
+	minorUnits := m.decimal.Round(minorUnitsExponent).Shift(minorUnitsExponent).BigInt()
+	if !minorUnits.IsInt64() {
+		return 0, errMinorUnitsOverflow
+	}
+
+	return minorUnits.Int64(), nil
+}
+
+// Value implements driver.Valuer and stores the amount in minor units.
+func (m Money) Value() (driver.Value, error) {
+	minorUnits, err := m.MinorUnits()
+	if err != nil {
+		return nil, fmt.Errorf("convert to minor units: %w", err)
+	}
+
+	return minorUnits, nil
+}
+
+// Scan implements sql.Scanner and reads the amount from minor units.
+func (m *Money) Scan(src any) error {
+	minorUnits, ok := src.(int64)
+	if !ok {
+		return fmt.Errorf("%w: %T", errUnsupportedScanType, src)
+	}
+
+	*m = NewFromMinorUnits(minorUnits)
+
+	return nil
 }
