@@ -87,7 +87,7 @@ func (u *userStore) Get(ctx context.Context, filter service.GetUserFilter) (*mod
 		stmt := sq.
 			StatementBuilder.
 			PlaceholderFormat(sq.Dollar).
-			Select("id", "user_id", "currency_id", "name", "amount", "created_at", "updated_at").
+			Select("id", "user_id", "currency_id", "name", balanceAmountMinorColumn, "created_at", "updated_at").
 			From("balances").
 			OrderBy("created_at").
 			Where(sq.Eq{"user_id": user.ID})
