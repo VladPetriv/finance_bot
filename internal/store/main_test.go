@@ -101,6 +101,12 @@ func isDuplicateKeyError(err error) bool {
 func createTestDB(t *testing.T, testCaseName string) *database.PostgreSQL {
 	t.Helper()
 
+	return createTestDBWithMigrations(t, testCaseName, migrations.Migrations)
+}
+
+func createTestDBWithMigrations(t *testing.T, testCaseName string, migrationList []any) *database.PostgreSQL {
+	t.Helper()
+
 	_, err := postgresDB.DB.Exec(fmt.Sprintf("CREATE DATABASE %s;", testCaseName))
 	require.NoError(t, err)
 
@@ -118,7 +124,7 @@ func createTestDB(t *testing.T, testCaseName string) *database.PostgreSQL {
 		migrations.MigrateDBOptions{
 			DB:         testDB.DB,
 			DBName:     testCaseName,
-			Migrations: migrations.Migrations,
+			Migrations: migrationList,
 		},
 	)
 	require.NoError(t, err)
