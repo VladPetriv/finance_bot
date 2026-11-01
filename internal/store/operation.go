@@ -48,15 +48,13 @@ func (o *operationStore) Create(ctx context.Context, operation *model.Operation)
 	return err
 }
 
-const operationAmountMinorExpr = "COALESCE(operations.amount_minor, ROUND(NULLIF(operations.amount, '')::numeric * 100))::bigint"
-
-const operationAmountMinorColumn = operationAmountMinorExpr + " AS amount_minor"
+const operationAmountMinorExpr = "operations.amount_minor"
 
 func (o *operationStore) Get(ctx context.Context, filter service.GetOperationFilter) (*model.Operation, error) {
 	stmt := sq.
 		StatementBuilder.
 		PlaceholderFormat(sq.Dollar).
-		Select("id", "category_id", "balance_id", "parent_operation_id", "type", operationAmountMinorColumn, "exchange_rate", "description", "created_at", "updated_at").
+		Select("id", "category_id", "balance_id", "parent_operation_id", "type", operationAmountMinorExpr, "exchange_rate", "description", "created_at", "updated_at").
 		From("operations")
 
 	if filter.ID != "" {
@@ -236,7 +234,7 @@ func applyListOperationsFilter(options applyListOperationsOptions, filter servic
 	}
 
 	if options.listQuery {
-		expectedColumns = []string{"id", "category_id", "balance_id", "parent_operation_id", "type", operationAmountMinorColumn, "exchange_rate", "description", "created_at", "updated_at"}
+		expectedColumns = []string{"id", "category_id", "balance_id", "parent_operation_id", "type", operationAmountMinorExpr, "exchange_rate", "description", "created_at", "updated_at"}
 	}
 
 	stmt := sq.
