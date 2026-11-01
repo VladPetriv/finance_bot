@@ -1,10 +1,14 @@
 package money
 
 import (
+	"database/sql/driver"
 	"errors"
+	"fmt"
 
 	"github.com/shopspring/decimal"
 )
+
+var errUnsupportedScanType = errors.New("unsupported scan type for money")
 
 var errMinorUnitsOverflow = errors.New("amount in minor units does not fit into int64")
 
@@ -117,4 +121,24 @@ func (m Money) MinorUnits() (int64, error) {
 	}
 
 	return minorUnits.Int64(), nil
+}
+
+func (m Money) Value() (driver.Value, error) {
+	minorUnits, err := m.MinorUnits()
+	if err != nil {
+		return nil, fmt.Errorf("convert to minor units: %w", err)
+	}
+
+	return minorUnits, nil
+}
+
+func (m *Money) Scan(src any) error {
+	minorUnits, ok := src.(int64)
+	if !ok {
+		return fmt.Errorf("%w: %T", errUnsupportedScanType, src)
+	}
+
+	*m = NewFromMinorUnits(minorUnits)
+
+	return nil
 }
