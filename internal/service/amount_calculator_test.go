@@ -79,10 +79,11 @@ func TestCalculateTransferOperation(t *testing.T) {
 	t.Parallel()
 
 	tests := []struct {
-		desc         string
-		opts         calculateTransferOperationOptions
-		expectedFrom string
-		expectedTo   string
+		desc             string
+		opts             calculateTransferOperationOptions
+		expectedFrom     string
+		expectedTo       string
+		expectedCredited string
 	}{
 		{
 			desc: "simple transfer without exchange rate",
@@ -91,8 +92,9 @@ func TestCalculateTransferOperation(t *testing.T) {
 				balanceTo:       typecast.ToPtr(money.NewFromInt(50)),
 				operationAmount: money.NewFromInt(75),
 			},
-			expectedFrom: "125.00",
-			expectedTo:   "125.00",
+			expectedFrom:     "125.00",
+			expectedTo:       "125.00",
+			expectedCredited: "75.00",
 		},
 		{
 			desc: "transfer with exchange rate",
@@ -102,8 +104,21 @@ func TestCalculateTransferOperation(t *testing.T) {
 				operationAmount: money.NewFromInt(100),
 				exchangeRate:    typecast.ToPtr(money.NewFromFloat(1.5)),
 			},
-			expectedFrom: "900.00",
-			expectedTo:   "250.00",
+			expectedFrom:     "900.00",
+			expectedTo:       "250.00",
+			expectedCredited: "150.00",
+		},
+		{
+			desc: "transfer with exchange rate rounds credited amount once",
+			opts: calculateTransferOperationOptions{
+				balanceFrom:     typecast.ToPtr(money.NewFromInt(100)),
+				balanceTo:       typecast.ToPtr(money.NewFromInt(0)),
+				operationAmount: money.NewFromInt(10),
+				exchangeRate:    typecast.ToPtr(money.NewFromFloat(0.9173)),
+			},
+			expectedFrom:     "90.00",
+			expectedTo:       "9.17",
+			expectedCredited: "9.17",
 		},
 	}
 
@@ -111,8 +126,9 @@ func TestCalculateTransferOperation(t *testing.T) {
 		t.Run(tc.desc, func(t *testing.T) {
 			t.Parallel()
 
-			calculateTransferOperation(tc.opts)
+			credited := calculateTransferOperation(tc.opts)
 
+			assert.Equal(t, tc.expectedCredited, credited.StringFixed())
 			assert.Equal(t, tc.expectedFrom, tc.opts.balanceFrom.StringFixed())
 			assert.Equal(t, tc.expectedTo, tc.opts.balanceTo.StringFixed())
 		})
@@ -175,6 +191,22 @@ func TestCalculateUpdatedTransferOperation(t *testing.T) {
 			expectedBalanceTo:         "220.00",
 			expectedTransferAmountIn:  "120.00",
 			expectedTransferAmountOut: "80.00",
+		},
+		{
+			desc: "update transfer_out with exchange rate rounds credited amount",
+			opts: calculateTransferOperationOptions{
+				operationType:          model.OperationTypeTransferOut,
+				balanceFrom:            typecast.ToPtr(money.NewFromInt(90)),
+				balanceTo:              typecast.ToPtr(money.NewFromFloat(9.17)),
+				transferAmountOut:      typecast.ToPtr(money.NewFromInt(10)),
+				transferAmountIn:       typecast.ToPtr(money.NewFromFloat(9.17)),
+				updatedOperationAmount: money.NewFromInt(20),
+				exchangeRate:           typecast.ToPtr(money.NewFromFloat(0.9173)),
+			},
+			expectedBalanceFrom:       "80.00",
+			expectedBalanceTo:         "18.35",
+			expectedTransferAmountIn:  "18.35",
+			expectedTransferAmountOut: "20.00",
 		},
 	}
 
