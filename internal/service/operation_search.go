@@ -419,14 +419,28 @@ func (h handlerService) showSearchResults(ctx context.Context, opts flowProcessi
 	})
 }
 
+func searchMetadataAmount(metadata model.Metadata, key model.MetadataKey) *money.Money {
+	raw := searchMetadataValue(metadata, key)
+	if raw == "" {
+		return nil
+	}
+
+	amount, err := money.NewFromString(raw)
+	if err != nil {
+		return nil
+	}
+
+	return &amount
+}
+
 func buildSearchOperationsFilter(metadata model.Metadata, balanceIDs []string, location *time.Location) ListOperationsFilter {
 	filter := ListOperationsFilter{
 		BalanceIDs:  balanceIDs,
 		Location:    location,
 		Description: searchMetadataValue(metadata, model.SearchQueryMetadataKey),
 		CategoryIDs: getSelectedIDsFromMetadata(metadata, model.SearchCategoryIDsMetadataKey),
-		AmountFrom:  searchMetadataValue(metadata, model.SearchAmountFromMetadataKey),
-		AmountTo:    searchMetadataValue(metadata, model.SearchAmountToMetadataKey),
+		AmountFrom:  searchMetadataAmount(metadata, model.SearchAmountFromMetadataKey),
+		AmountTo:    searchMetadataAmount(metadata, model.SearchAmountToMetadataKey),
 	}
 
 	switch model.OperationType(searchMetadataValue(metadata, model.SearchOperationTypeMetadataKey)) {

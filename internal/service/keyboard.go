@@ -249,7 +249,7 @@ func (h handlerService) getOperationsHistoryKeyboard(ctx context.Context, opts g
 					typeLabel,
 					o.Description,
 					category.Title,
-					o.Amount,
+					o.Amount.StringFixed(),
 					balancesByID[o.BalanceID].GetCurrency().Symbol,
 				)
 

@@ -224,7 +224,7 @@ func (b *balanceSubscriptionEngine) createOperation(ctx context.Context, id stri
 		CategoryID:            category.ID,
 		BalanceSubscriptionID: balanceSubscription.ID,
 		Type:                  model.OperationTypeSpending,
-		Amount:                balanceSubscription.Amount.StringFixed(),
+		Amount:                balanceSubscription.Amount,
 		Description:           fmt.Sprintf("Subscprition payment for: %s", balanceSubscription.Name),
 		CreatedAt:             time.Now(),
 		UpdatedAt:             time.Now(),
