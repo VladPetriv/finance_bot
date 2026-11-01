@@ -96,4 +96,8 @@ var Migrations = []any{
 		Name: "Backfill amount_minor",
 		Func: backfillAmountMinor,
 	},
+	&migrator.Migration{
+		Name: "Drop legacy amount column",
+		Func: dropLegacyAmountColumns,
+	},
 }

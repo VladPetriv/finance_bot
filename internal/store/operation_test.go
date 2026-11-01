@@ -1643,82 +1643,7 @@ func TestOperation_List_BetweenFilter(t *testing.T) {
 	}
 }
 
-func TestOperation_AmountMinorFallback(t *testing.T) {
-	t.Parallel()
-
-	ctx := context.Background() //nolint: forbidigo
-
-	testCaseDB := createTestDB(t, "operation_amount_minor_fallback")
-	operationStore := store.NewOperation(testCaseDB)
-
-	type precondition struct {
-		legacyAmount *string
-		amountMinor  *int64
-	}
-
-	type expected struct {
-		amount money.Money
-	}
-
-	legacy := "12.34"
-	legacyOther := "99.99"
-	minor := int64(5600)
-
-	testCases := [...]struct {
-		desc         string
-		precondition *precondition
-		expected     *expected
-	}{
-		{
-			desc: "it should return legacy amount converted to minor units when amount_minor is NULL",
-			precondition: &precondition{
-				legacyAmount: &legacy,
-			},
-			expected: &expected{
-				amount: money.NewFromMinorUnits(1234),
-			},
-		},
-		{
-			desc: "it should return amount_minor when legacy amount is NULL",
-			precondition: &precondition{
-				amountMinor: &minor,
-			},
-			expected: &expected{
-				amount: money.NewFromMinorUnits(5600),
-			},
-		},
-		{
-			desc: "it should prefer amount_minor when both columns are set",
-			precondition: &precondition{
-				legacyAmount: &legacyOther,
-				amountMinor:  &minor,
-			},
-			expected: &expected{
-				amount: money.NewFromMinorUnits(5600),
-			},
-		},
-	}
-	for _, tc := range testCases {
-		t.Run(tc.desc, func(t *testing.T) {
-			t.Parallel()
-
-			balanceID := insertTestBalance(t, testCaseDB)
-			operationID := insertTestOperation(t, testCaseDB, balanceID, tc.precondition.legacyAmount, tc.precondition.amountMinor)
-
-			got, err := operationStore.Get(ctx, service.GetOperationFilter{ID: operationID})
-			require.NoError(t, err)
-			require.NotNil(t, got)
-			assert.True(t, tc.expected.amount.Equal(got.Amount))
-
-			listed, err := operationStore.List(ctx, service.ListOperationsFilter{BalanceID: balanceID})
-			require.NoError(t, err)
-			require.Len(t, listed, 1)
-			assert.True(t, tc.expected.amount.Equal(listed[0].Amount))
-		})
-	}
-}
-
-func TestOperation_WritesOnlyAmountMinor(t *testing.T) {
+func TestOperation_StoresAmountMinor(t *testing.T) {
 	t.Parallel()
 
 	ctx := context.Background() //nolint: forbidigo
@@ -1738,14 +1663,12 @@ func TestOperation_WritesOnlyAmountMinor(t *testing.T) {
 	require.NoError(t, err)
 
 	type row struct {
-		Legacy *string `db:"amount"`
-		Minor  *int64  `db:"amount_minor"`
+		Minor *int64 `db:"amount_minor"`
 	}
 
 	var created row
-	err = testCaseDB.DB.GetContext(ctx, &created, "SELECT amount, amount_minor FROM operations WHERE id = $1;", operationID)
+	err = testCaseDB.DB.GetContext(ctx, &created, "SELECT amount_minor FROM operations WHERE id = $1;", operationID)
 	require.NoError(t, err)
-	assert.Nil(t, created.Legacy)
 	require.NotNil(t, created.Minor)
 	assert.Equal(t, int64(1050), *created.Minor)
 
@@ -1757,9 +1680,8 @@ func TestOperation_WritesOnlyAmountMinor(t *testing.T) {
 	require.NoError(t, err)
 
 	var updated row
-	err = testCaseDB.DB.GetContext(ctx, &updated, "SELECT amount, amount_minor FROM operations WHERE id = $1;", operationID)
+	err = testCaseDB.DB.GetContext(ctx, &updated, "SELECT amount_minor FROM operations WHERE id = $1;", operationID)
 	require.NoError(t, err)
-	assert.Nil(t, updated.Legacy)
 	require.NotNil(t, updated.Minor)
 	assert.Equal(t, int64(2000), *updated.Minor)
 }
@@ -1774,13 +1696,9 @@ func TestOperation_SearchByAmount(t *testing.T) {
 
 	balanceID := insertTestBalance(t, testCaseDB)
 
-	legacy10, legacy20 := "10.00", "20.5"
-	minor1000, minor3000 := int64(1000), int64(3000)
-
-	legacyTen := insertTestOperation(t, testCaseDB, balanceID, &legacy10, nil)
-	legacyTwenty := insertTestOperation(t, testCaseDB, balanceID, &legacy20, nil)
-	newTen := insertTestOperation(t, testCaseDB, balanceID, nil, &minor1000)
-	newThirty := insertTestOperation(t, testCaseDB, balanceID, nil, &minor3000)
+	ten := insertTestOperation(t, testCaseDB, balanceID, 1000)
+	twenty := insertTestOperation(t, testCaseDB, balanceID, 2050)
+	thirty := insertTestOperation(t, testCaseDB, balanceID, 3000)
 
 	type precondition struct {
 		filter service.ListOperationsFilter
@@ -1796,7 +1714,7 @@ func TestOperation_SearchByAmount(t *testing.T) {
 		expected     *expected
 	}{
 		{
-			desc: "it should find legacy and new rows by exact amount via from and to",
+			desc: "it should find rows by exact amount via from and to",
 			precondition: &precondition{
 				filter: service.ListOperationsFilter{
 					AmountFrom: typecast.ToPtr(money.NewFromInt(10)),
@@ -1804,29 +1722,29 @@ func TestOperation_SearchByAmount(t *testing.T) {
 				},
 			},
 			expected: &expected{
-				ids: []string{legacyTen, newTen},
+				ids: []string{ten},
 			},
 		},
 		{
-			desc: "it should filter by from over both row kinds",
+			desc: "it should filter by from",
 			precondition: &precondition{
 				filter: service.ListOperationsFilter{
 					AmountFrom: typecast.ToPtr(money.NewFromInt(20)),
 				},
 			},
 			expected: &expected{
-				ids: []string{legacyTwenty, newThirty},
+				ids: []string{twenty, thirty},
 			},
 		},
 		{
-			desc: "it should filter by to over both row kinds",
+			desc: "it should filter by to",
 			precondition: &precondition{
 				filter: service.ListOperationsFilter{
 					AmountTo: typecast.ToPtr(money.NewFromInt(15)),
 				},
 			},
 			expected: &expected{
-				ids: []string{legacyTen, newTen},
+				ids: []string{ten},
 			},
 		},
 	}
@@ -1852,7 +1770,7 @@ func TestOperation_SearchByAmount(t *testing.T) {
 		})
 	}
 
-	t.Run("it should get an operation by exact amount over both row kinds", func(t *testing.T) {
+	t.Run("it should get an operation by exact amount", func(t *testing.T) {
 		t.Parallel()
 
 		got, err := operationStore.Get(ctx, service.GetOperationFilter{
@@ -1861,7 +1779,7 @@ func TestOperation_SearchByAmount(t *testing.T) {
 		})
 		require.NoError(t, err)
 		require.NotNil(t, got)
-		assert.Equal(t, newThirty, got.ID)
+		assert.Equal(t, thirty, got.ID)
 	})
 }
 
@@ -1882,13 +1800,13 @@ func insertTestBalance(t *testing.T, db *database.PostgreSQL) string {
 	return balanceID
 }
 
-func insertTestOperation(t *testing.T, db *database.PostgreSQL, balanceID string, legacyAmount *string, amountMinor *int64) string {
+func insertTestOperation(t *testing.T, db *database.PostgreSQL, balanceID string, amountMinor int64) string {
 	t.Helper()
 
 	operationID := uuid.NewString()
 	_, err := db.DB.Exec(
-		"INSERT INTO operations (id, category_id, balance_id, parent_operation_id, type, description, exchange_rate, amount, amount_minor) VALUES ($1, '', $2, '', 'incoming', '', '', $3, $4);",
-		operationID, balanceID, legacyAmount, amountMinor,
+		"INSERT INTO operations (id, category_id, balance_id, parent_operation_id, type, description, exchange_rate, amount_minor) VALUES ($1, '', $2, '', 'incoming', '', '', $3);",
+		operationID, balanceID, amountMinor,
 	)
 	require.NoError(t, err)
 

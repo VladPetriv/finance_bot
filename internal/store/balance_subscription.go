@@ -47,7 +47,7 @@ func (b *balanceSubscriptionStore) CreateScheduledOperation(ctx context.Context,
 	return err
 }
 
-const balanceSubscriptionAmountMinorColumn = "COALESCE(balance_subscriptions.amount_minor, ROUND(NULLIF(balance_subscriptions.amount, '')::numeric * 100))::bigint AS amount_minor"
+const balanceSubscriptionAmountMinorColumn = "balance_subscriptions.amount_minor"
 
 func (b *balanceSubscriptionStore) Get(ctx context.Context, filter service.GetBalanceSubscriptionFilter) (*model.BalanceSubscription, error) {
 	stmt := sq.
