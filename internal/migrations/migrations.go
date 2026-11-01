@@ -84,4 +84,8 @@ var Migrations = []any{
 		Name: "Add amount_minor column to balances table",
 		Func: addAmountMinorToBalancesTable,
 	},
+	&migrator.Migration{
+		Name: "Add amount_minor column to balance_subscriptions table",
+		Func: addAmountMinorToBalanceSubscriptionsTable,
+	},
 }
