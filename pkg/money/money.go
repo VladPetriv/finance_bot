@@ -108,12 +108,14 @@ func (m *Money) Set(value Money) {
 
 const minorUnitsExponent = 2
 
+// NewFromMinorUnits returns money from an integer number of minor units (1/100).
 func NewFromMinorUnits(minorUnits int64) Money {
 	return Money{
 		decimal: decimal.New(minorUnits, -minorUnitsExponent),
 	}
 }
 
+// MinorUnits returns the amount in minor units, rounded half away from zero to 2 places.
 func (m Money) MinorUnits() (int64, error) {
 	minorUnits := m.decimal.Round(minorUnitsExponent).Shift(minorUnitsExponent).BigInt()
 	if !minorUnits.IsInt64() {
@@ -123,6 +125,7 @@ func (m Money) MinorUnits() (int64, error) {
 	return minorUnits.Int64(), nil
 }
 
+// Value implements driver.Valuer and stores the amount in minor units.
 func (m Money) Value() (driver.Value, error) {
 	minorUnits, err := m.MinorUnits()
 	if err != nil {
@@ -132,6 +135,7 @@ func (m Money) Value() (driver.Value, error) {
 	return minorUnits, nil
 }
 
+// Scan implements sql.Scanner and reads the amount from minor units.
 func (m *Money) Scan(src any) error {
 	minorUnits, ok := src.(int64)
 	if !ok {
