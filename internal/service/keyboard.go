@@ -219,7 +219,7 @@ func (h handlerService) getOperationsHistoryKeyboard(ctx context.Context, opts g
 				if len(opts.balances) > 1 {
 					label = balance.Name
 				}
-				outputMessage += fmt.Sprintf("💰 *%s:* %v%s\n", label, balance.Amount, balance.GetCurrency().Symbol)
+				outputMessage += fmt.Sprintf("💰 *%s:* %v%s\n", label, balance.Amount.StringFixed(), balance.GetCurrency().Symbol)
 			}
 			outputMessage += periodLine + "\n\n"
 

@@ -235,11 +235,11 @@ func (b *balanceSubscriptionEngine) createOperation(ctx context.Context, id stri
 	}
 
 	subscriptionAmount, _ := money.NewFromString(balanceSubscription.Amount)
-	balanceAmount, _ := money.NewFromString(balance.Amount)
+	balanceAmount := balance.Amount
 
 	calculateSpendingOperation(&balanceAmount, subscriptionAmount)
 
-	balance.Amount = balanceAmount.StringFixed()
+	balance.Amount = balanceAmount
 	logger.Debug().Any("calculatedBalanceAmount", balance.Amount).Msg("reduced balance amount with subscription amount")
 
 	err = b.stores.Balance.Update(ctx, balance)
@@ -383,9 +383,9 @@ func (b *balanceSubscriptionEngine) notifyUserAboutSubscriptionPayment(ctx conte
 
 func buildSubscriptionNotificationMessage(subscription model.BalanceSubscription, balance *model.Balance) string {
 	subscriptionAmount, _ := money.NewFromString(subscription.Amount)
-	currentBalanceAmount, _ := money.NewFromString(balance.Amount)
+	currentBalanceAmount := balance.Amount
 
-	remaningBalanceAmount, _ := money.NewFromString(balance.Amount)
+	remaningBalanceAmount := balance.Amount
 	remaningBalanceAmount.Sub(subscriptionAmount)
 
 	symbol := balance.Currency.Symbol
