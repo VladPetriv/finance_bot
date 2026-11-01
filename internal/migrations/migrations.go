@@ -80,4 +80,8 @@ var Migrations = []any{
 		Name: "Convert timestamp columns to timestamptz",
 		Func: convertTimestampsToTimestamptz,
 	},
+	&migrator.Migration{
+		Name: "Add amount_minor column to balances table",
+		Func: addAmountMinorToBalancesTable,
+	},
 }
