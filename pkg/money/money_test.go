@@ -440,3 +440,18 @@ func TestMoney_MinorUnits_Overflow(t *testing.T) {
 		})
 	}
 }
+
+func TestMoney_ValueAndScan(t *testing.T) {
+	t.Parallel()
+
+	value, err := NewFromMinorUnits(1234).Value()
+	require.NoError(t, err)
+	assert.Equal(t, int64(1234), value)
+
+	var scanned Money
+	require.NoError(t, scanned.Scan(int64(-505)))
+	assert.True(t, scanned.Equal(NewFromMinorUnits(-505)))
+
+	assert.Error(t, scanned.Scan("12.34"))
+	assert.Error(t, scanned.Scan(nil))
+}

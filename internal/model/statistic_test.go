@@ -231,7 +231,7 @@ func TestStatisticsMessageBuilder_Build(t *testing.T) {
 			args: args{
 				balance: &Balance{
 					Name:     "Main Balance",
-					Amount:   "1000.00",
+					Amount:   money.NewFromInt(1000),
 					Currency: Currency{Symbol: "$"},
 				},
 				operations: []Operation{
@@ -269,7 +269,7 @@ func TestStatisticsMessageBuilder_Build(t *testing.T) {
 			args: args{
 				balance: &Balance{
 					Name:     "Main Balance",
-					Amount:   "1000.00",
+					Amount:   money.NewFromInt(1000),
 					Currency: Currency{Symbol: "$"},
 				},
 				operations: []Operation{
@@ -302,7 +302,7 @@ func TestStatisticsMessageBuilder_Build(t *testing.T) {
 			args: args{
 				balance: &Balance{
 					Name:     "Main Balance",
-					Amount:   "1000.00",
+					Amount:   money.NewFromInt(1000),
 					Currency: Currency{Symbol: "$"},
 				},
 				operations: []Operation{
@@ -335,7 +335,7 @@ func TestStatisticsMessageBuilder_Build(t *testing.T) {
 			args: args{
 				balance: &Balance{
 					Name:     "Main Balance",
-					Amount:   "1000.00",
+					Amount:   money.NewFromInt(1000),
 					Currency: Currency{Symbol: "$"},
 				},
 				operations: []Operation{
@@ -362,7 +362,7 @@ func TestStatisticsMessageBuilder_Build(t *testing.T) {
 			args: args{
 				balance: &Balance{
 					Name:     "Main Balance",
-					Amount:   "1000.00",
+					Amount:   money.NewFromInt(1000),
 					Currency: Currency{Symbol: "$"},
 				},
 				operations: []Operation{
@@ -389,7 +389,7 @@ func TestStatisticsMessageBuilder_Build(t *testing.T) {
 			args: args{
 				balance: &Balance{
 					Name:     "Empty Balance",
-					Amount:   "0.00",
+					Amount:   money.Zero,
 					Currency: Currency{Symbol: "$"},
 				},
 				operations: []Operation{},
@@ -415,7 +415,7 @@ func TestStatisticsMessageBuilder_Build(t *testing.T) {
 			args: args{
 				balance: &Balance{
 					Name:     "Main Balance",
-					Amount:   "1000.00",
+					Amount:   money.NewFromInt(1000),
 					Currency: Currency{Symbol: "$"},
 				},
 				operations: []Operation{
