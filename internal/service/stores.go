@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/VladPetriv/finance_bot/internal/model"
+	"github.com/VladPetriv/finance_bot/pkg/money"
 )
 
 // Stores represents all stores.
@@ -90,7 +91,7 @@ type OperationStore interface {
 // GetOperationFilter represents a filters for Get operation method.
 type GetOperationFilter struct {
 	ID           string
-	Amount       string
+	Amount       *money.Money
 	Type         model.OperationType
 	CreateAtFrom time.Time
 	CreateAtTo   time.Time
@@ -121,8 +122,8 @@ type ListOperationsFilter struct {
 	Description          string
 	Types                []model.OperationType
 	CategoryIDs          []string
-	AmountFrom           string
-	AmountTo             string
+	AmountFrom           *money.Money
+	AmountTo             *money.Money
 	OrderByCreatedAtDesc bool
 	Pagination           *Pagination
 	Location             *time.Location
