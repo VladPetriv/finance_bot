@@ -610,13 +610,9 @@ func (h handlerService) createTransferOperation(ctx context.Context, opts create
 		operationIn.ExchangeRate = parsedExchangeRate.String()
 		operationOut.ExchangeRate = parsedExchangeRate.String()
 		calculateOptions.exchangeRate = &parsedExchangeRate
-
-		operationAmountIn := opts.operationAmount
-		operationAmountIn.Mul(parsedExchangeRate)
-		operationIn.Amount = operationAmountIn.StringFixed()
 	}
 
-	calculateTransferOperation(calculateOptions)
+	operationIn.Amount = calculateTransferOperation(calculateOptions).StringFixed()
 
 	for _, operation := range []model.Operation{operationIn, operationOut} {
 		err := h.stores.Operation.Create(ctx, &operation)

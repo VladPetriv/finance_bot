@@ -92,6 +92,11 @@ func (m Money) String() string {
 	return m.decimal.String()
 }
 
+// Round rounds the value in place to 2 places, half away from zero.
+func (m *Money) Round() {
+	m.decimal = m.decimal.Round(minorUnitsExponent)
+}
+
 // Set sets the value of the Money instance to the provided value.
 func (m *Money) Set(value Money) {
 	m.decimal = value.decimal

@@ -46,19 +46,17 @@ type calculateTransferOperationOptions struct {
 	updatedOperationAmount money.Money
 }
 
-func calculateTransferOperation(opts calculateTransferOperationOptions) {
-	switch {
-	// Handle simply balance transfer
-	case opts.exchangeRate == nil:
-		opts.balanceFrom.Sub(opts.operationAmount)
-		opts.balanceTo.Inc(opts.operationAmount)
+func calculateTransferOperation(opts calculateTransferOperationOptions) money.Money {
+	opts.balanceFrom.Sub(opts.operationAmount)
 
-	// Handle transfer with exchange rate
-	case opts.exchangeRate != nil:
-		opts.balanceFrom.Sub(opts.operationAmount)
-		opts.operationAmount.Mul(*opts.exchangeRate)
-		opts.balanceTo.Inc(opts.operationAmount)
+	creditedAmount := opts.operationAmount
+	if opts.exchangeRate != nil {
+		creditedAmount.Mul(*opts.exchangeRate)
+		creditedAmount.Round()
 	}
+	opts.balanceTo.Inc(creditedAmount)
+
+	return creditedAmount
 }
 
 func calculateUpdatedTranferOperation(opts calculateTransferOperationOptions) {
@@ -83,6 +81,7 @@ func calculateUpdatedTranferOperation(opts calculateTransferOperationOptions) {
 		case model.OperationTypeTransferIn:
 			updatedTransferOutAmount, _ := money.NewFromString(opts.updatedOperationAmount.StringFixed())
 			updatedTransferOutAmount.Div(*opts.exchangeRate)
+			updatedTransferOutAmount.Round()
 			opts.balanceFrom.Sub(updatedTransferOutAmount)
 			opts.transferAmountOut.Set(updatedTransferOutAmount)
 
@@ -91,6 +90,7 @@ func calculateUpdatedTranferOperation(opts calculateTransferOperationOptions) {
 		case model.OperationTypeTransferOut:
 			updatedTransferInAmount, _ := money.NewFromString(opts.updatedOperationAmount.StringFixed())
 			updatedTransferInAmount.Mul(*opts.exchangeRate)
+			updatedTransferInAmount.Round()
 			opts.balanceTo.Inc(updatedTransferInAmount)
 			opts.transferAmountIn.Set(updatedTransferInAmount)
 
