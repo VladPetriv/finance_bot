@@ -65,7 +65,7 @@ func (b *StatisticsMessageBuilder) BuildForRange(from, to time.Time) (string, er
 }
 
 func (b *StatisticsMessageBuilder) addHeader() *StatisticsMessageBuilder {
-	balanceAmount, _ := money.NewFromString(b.balance.Amount)
+	balanceAmount := b.balance.Amount
 
 	template := `📊 Balance Statistics: *%s*
 💰 Current Balance: %s
