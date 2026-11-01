@@ -62,7 +62,7 @@ func TestBackfillAmountMinor(t *testing.T) {
 			testDB := createTestDBWithMigrations(
 				t,
 				fmt.Sprintf("backfill_amount_minor_%d", i),
-				migrations.Migrations[:len(migrations.Migrations)-1],
+				migrations.Migrations[:len(migrations.Migrations)-2],
 			)
 
 			seed := [...]string{

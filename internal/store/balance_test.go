@@ -475,89 +475,7 @@ func deleteBalanceByID(db *sqlx.DB, balanceID string) error {
 	return err
 }
 
-func TestBalance_AmountMinorFallback(t *testing.T) {
-	t.Parallel()
-
-	ctx := context.Background() //nolint: forbidigo
-
-	testCaseDB := createTestDB(t, "balance_amount_minor_fallback")
-	balanceStore := store.NewBalance(testCaseDB)
-
-	userID := uuid.NewString()
-	err := store.NewUser(testCaseDB).Create(ctx, &model.User{
-		ID:       userID,
-		Username: "test" + userID,
-	})
-	require.NoError(t, err)
-
-	type precondition struct {
-		legacyAmount *string
-		amountMinor  *int64
-	}
-
-	type expected struct {
-		amount money.Money
-	}
-
-	legacy := "12.34"
-	legacyOther := "99.99"
-	minor := int64(5600)
-
-	testCases := [...]struct {
-		desc         string
-		precondition *precondition
-		expected     *expected
-	}{
-		{
-			desc: "it should return legacy amount converted to minor units when amount_minor is NULL",
-			precondition: &precondition{
-				legacyAmount: &legacy,
-			},
-			expected: &expected{
-				amount: money.NewFromMinorUnits(1234),
-			},
-		},
-		{
-			desc: "it should return amount_minor when legacy amount is NULL",
-			precondition: &precondition{
-				amountMinor: &minor,
-			},
-			expected: &expected{
-				amount: money.NewFromMinorUnits(5600),
-			},
-		},
-		{
-			desc: "it should prefer amount_minor when both columns are set",
-			precondition: &precondition{
-				legacyAmount: &legacyOther,
-				amountMinor:  &minor,
-			},
-			expected: &expected{
-				amount: money.NewFromMinorUnits(5600),
-			},
-		},
-	}
-	for _, tc := range testCases {
-		t.Run(tc.desc, func(t *testing.T) {
-			t.Parallel()
-
-			balanceID := uuid.NewString()
-			_, err := testCaseDB.DB.ExecContext(
-				ctx,
-				"INSERT INTO balances (id, user_id, currency_id, name, amount, amount_minor) VALUES ($1, $4, '', '', $2, $3);",
-				balanceID, tc.precondition.legacyAmount, tc.precondition.amountMinor, userID,
-			)
-			require.NoError(t, err)
-
-			actual, err := balanceStore.Get(ctx, service.GetBalanceFilter{BalanceID: balanceID})
-			require.NoError(t, err)
-			require.NotNil(t, actual)
-			assert.True(t, tc.expected.amount.Equal(actual.Amount))
-		})
-	}
-}
-
-func TestBalance_WritesOnlyAmountMinor(t *testing.T) {
+func TestBalance_StoresAmountMinor(t *testing.T) {
 	t.Parallel()
 
 	ctx := context.Background() //nolint: forbidigo
@@ -581,14 +499,12 @@ func TestBalance_WritesOnlyAmountMinor(t *testing.T) {
 	require.NoError(t, err)
 
 	type row struct {
-		Legacy *string `db:"amount"`
-		Minor  *int64  `db:"amount_minor"`
+		Minor *int64 `db:"amount_minor"`
 	}
 
 	var created row
-	err = testCaseDB.DB.GetContext(ctx, &created, "SELECT amount, amount_minor FROM balances WHERE id = $1;", balanceID)
+	err = testCaseDB.DB.GetContext(ctx, &created, "SELECT amount_minor FROM balances WHERE id = $1;", balanceID)
 	require.NoError(t, err)
-	assert.Nil(t, created.Legacy)
 	require.NotNil(t, created.Minor)
 	assert.Equal(t, int64(1050), *created.Minor)
 
@@ -600,9 +516,8 @@ func TestBalance_WritesOnlyAmountMinor(t *testing.T) {
 	require.NoError(t, err)
 
 	var updated row
-	err = testCaseDB.DB.GetContext(ctx, &updated, "SELECT amount, amount_minor FROM balances WHERE id = $1;", balanceID)
+	err = testCaseDB.DB.GetContext(ctx, &updated, "SELECT amount_minor FROM balances WHERE id = $1;", balanceID)
 	require.NoError(t, err)
-	assert.Nil(t, updated.Legacy)
 	require.NotNil(t, updated.Minor)
 	assert.Equal(t, int64(2000), *updated.Minor)
 }

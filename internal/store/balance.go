@@ -33,7 +33,7 @@ func (b *balanceStore) Create(ctx context.Context, balance *model.Balance) error
 	return err
 }
 
-const balanceAmountMinorColumn = "COALESCE(amount_minor, ROUND(NULLIF(amount, '')::numeric * 100))::bigint AS amount_minor"
+const balanceAmountMinorColumn = "amount_minor"
 
 func (b *balanceStore) Get(ctx context.Context, filter service.GetBalanceFilter) (*model.Balance, error) {
 	stmt := sq.

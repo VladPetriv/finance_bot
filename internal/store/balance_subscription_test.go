@@ -1394,99 +1394,7 @@ func getScheledOperationByID(db *sqlx.DB, id string) (*model.ScheduledOperation,
 	return &scheduleOperation, err
 }
 
-func TestBalanceSubscription_AmountMinorFallback(t *testing.T) {
-	t.Parallel()
-
-	ctx := context.Background() //nolint: forbidigo
-
-	testCaseDB := createTestDB(t, "balance_subscription_amount_minor_fallback")
-	balanceSubscriptionStore := store.NewBalanceSubscription(testCaseDB)
-
-	_, balanceID, categoryID := createBalanceSubscriptionDependencies(ctx, t, testCaseDB)
-
-	type precondition struct {
-		legacyAmount *string
-		amountMinor  *int64
-	}
-
-	type expected struct {
-		amount money.Money
-	}
-
-	legacy := "12.34"
-	legacyOther := "99.99"
-	minor := int64(5600)
-
-	testCases := [...]struct {
-		desc         string
-		precondition *precondition
-		expected     *expected
-	}{
-		{
-			desc: "it should return legacy amount converted to minor units when amount_minor is NULL",
-			precondition: &precondition{
-				legacyAmount: &legacy,
-			},
-			expected: &expected{
-				amount: money.NewFromMinorUnits(1234),
-			},
-		},
-		{
-			desc: "it should return amount_minor when legacy amount is NULL",
-			precondition: &precondition{
-				amountMinor: &minor,
-			},
-			expected: &expected{
-				amount: money.NewFromMinorUnits(5600),
-			},
-		},
-		{
-			desc: "it should prefer amount_minor when both columns are set",
-			precondition: &precondition{
-				legacyAmount: &legacyOther,
-				amountMinor:  &minor,
-			},
-			expected: &expected{
-				amount: money.NewFromMinorUnits(5600),
-			},
-		},
-	}
-	for _, tc := range testCases {
-		t.Run(tc.desc, func(t *testing.T) {
-			t.Parallel()
-
-			subscriptionID := uuid.NewString()
-			_, err := testCaseDB.DB.ExecContext(
-				ctx,
-				`INSERT INTO balance_subscriptions (id, balance_id, category_id, name, amount, amount_minor, period, start_at)
-				VALUES ($1, $2, $3, 'test', $4, $5, 'monthly', NOW());`,
-				subscriptionID, balanceID, categoryID, tc.precondition.legacyAmount, tc.precondition.amountMinor,
-			)
-			require.NoError(t, err)
-
-			got, err := balanceSubscriptionStore.Get(ctx, service.GetBalanceSubscriptionFilter{ID: subscriptionID})
-			require.NoError(t, err)
-			require.NotNil(t, got)
-			assert.True(t, tc.expected.amount.Equal(got.Amount))
-
-			listed, err := balanceSubscriptionStore.List(ctx, service.ListBalanceSubscriptionFilter{BalanceID: balanceID})
-			require.NoError(t, err)
-
-			var found bool
-			for _, subscription := range listed {
-				if subscription.ID != subscriptionID {
-					continue
-				}
-
-				found = true
-				assert.True(t, tc.expected.amount.Equal(subscription.Amount))
-			}
-			assert.True(t, found)
-		})
-	}
-}
-
-func TestBalanceSubscription_WritesOnlyAmountMinor(t *testing.T) {
+func TestBalanceSubscription_StoresAmountMinor(t *testing.T) {
 	t.Parallel()
 
 	ctx := context.Background() //nolint: forbidigo
@@ -1508,14 +1416,12 @@ func TestBalanceSubscription_WritesOnlyAmountMinor(t *testing.T) {
 	require.NoError(t, balanceSubscriptionStore.Create(ctx, subscription))
 
 	type row struct {
-		Legacy *string `db:"amount"`
-		Minor  *int64  `db:"amount_minor"`
+		Minor *int64 `db:"amount_minor"`
 	}
 
 	var created row
-	err := testCaseDB.DB.GetContext(ctx, &created, "SELECT amount, amount_minor FROM balance_subscriptions WHERE id = $1;", subscriptionID)
+	err := testCaseDB.DB.GetContext(ctx, &created, "SELECT amount_minor FROM balance_subscriptions WHERE id = $1;", subscriptionID)
 	require.NoError(t, err)
-	assert.Nil(t, created.Legacy)
 	require.NotNil(t, created.Minor)
 	assert.Equal(t, int64(1050), *created.Minor)
 
@@ -1523,9 +1429,8 @@ func TestBalanceSubscription_WritesOnlyAmountMinor(t *testing.T) {
 	require.NoError(t, balanceSubscriptionStore.Update(ctx, &subscription))
 
 	var updated row
-	err = testCaseDB.DB.GetContext(ctx, &updated, "SELECT amount, amount_minor FROM balance_subscriptions WHERE id = $1;", subscriptionID)
+	err = testCaseDB.DB.GetContext(ctx, &updated, "SELECT amount_minor FROM balance_subscriptions WHERE id = $1;", subscriptionID)
 	require.NoError(t, err)
-	assert.Nil(t, updated.Legacy)
 	require.NotNil(t, updated.Minor)
 	assert.Equal(t, int64(2000), *updated.Minor)
 }
