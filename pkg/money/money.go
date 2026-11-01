@@ -1,8 +1,12 @@
 package money
 
 import (
+	"errors"
+
 	"github.com/shopspring/decimal"
 )
+
+var errMinorUnitsOverflow = errors.New("amount in minor units does not fit into int64")
 
 // Money represents custom typo for processing money.
 type Money struct {
@@ -91,4 +95,21 @@ func (m Money) String() string {
 // Set sets the value of the Money instance to the provided value.
 func (m *Money) Set(value Money) {
 	m.decimal = value.decimal
+}
+
+const minorUnitsExponent = 2
+
+func NewFromMinorUnits(minorUnits int64) Money {
+	return Money{
+		decimal: decimal.New(minorUnits, -minorUnitsExponent),
+	}
+}
+
+func (m Money) MinorUnits() (int64, error) {
+	minorUnits := m.decimal.Round(minorUnitsExponent).Shift(minorUnitsExponent).BigInt()
+	if !minorUnits.IsInt64() {
+		return 0, errMinorUnitsOverflow
+	}
+
+	return minorUnits.Int64(), nil
 }
