@@ -165,10 +165,16 @@ func (h *handlerService) handleEnterStartAtDateForBalanceSubscriptionFlowStep(ct
 		return "", fmt.Errorf("balance subscription name not found in metadata")
 	}
 
-	balanceSubscriptionAmount, ok := model.GetTypedFromMetadata[string](opts.stateMetaData, model.BalanceSubscriptionAmountMetadataKey)
+	rawBalanceSubscriptionAmount, ok := model.GetTypedFromMetadata[string](opts.stateMetaData, model.BalanceSubscriptionAmountMetadataKey)
 	if !ok {
 		logger.Error().Msg("balance subscription amount not found in metadata")
 		return "", fmt.Errorf("balance subscription amount not found in metadata")
+	}
+
+	balanceSubscriptionAmount, err := money.NewFromString(rawBalanceSubscriptionAmount)
+	if err != nil {
+		logger.Error().Err(err).Msg("parse balance subscription amount from metadata")
+		return "", fmt.Errorf("parse balance subscription amount from metadata: %w", err)
 	}
 
 	balanceSubscriptionPeriod, ok := model.GetTypedFromMetadata[string](opts.stateMetaData, model.BalanceSubscriptionPeriodMetadataKey)
@@ -431,7 +437,7 @@ func (h *handlerService) handleChooseUpdateBalanceSubscriptionOptionFlowStep(ctx
 			MessageID:               opts.message.GetMessageID(),
 			InlineMessageID:         opts.message.GetInlineMessageID(),
 			FormatMessageInMarkDown: true,
-			UpdatedMessage:          fmt.Sprintf("Enter updated balance subscription amount(Current: `%s`):", balanceSubscription.Amount),
+			UpdatedMessage:          fmt.Sprintf("Enter updated balance subscription amount(Current: `%s`):", balanceSubscription.Amount.StringFixed()),
 		})
 	case model.BotUpdateBalanceSubscriptionCategoryCommand:
 		categories, err := h.stores.Category.List(ctx, &ListCategoriesFilter{
@@ -564,7 +570,7 @@ func (h *handlerService) handleEnterBalanceSubscriptionAmountFlowStepForUpdate(c
 		return "", ErrBalanceSubscriptionNotFound
 	}
 
-	balanceSubscription.Amount = parsedAmount.StringFixed()
+	balanceSubscription.Amount = parsedAmount
 
 	err = h.stores.BalanceSubscription.Update(ctx, balanceSubscription)
 	if err != nil {

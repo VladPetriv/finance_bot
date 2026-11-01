@@ -414,7 +414,7 @@ func (h handlerService) getListBalanceSubscriptionsKeyboard(ctx context.Context,
 						"🏷️ Category: %s\n"+
 						"──────────────\n",
 					subscription.Name,
-					subscription.Amount,
+					subscription.Amount.StringFixed(),
 					subscription.Period,
 					startDate,
 					categoryTitle,

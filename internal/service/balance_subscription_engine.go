@@ -224,7 +224,7 @@ func (b *balanceSubscriptionEngine) createOperation(ctx context.Context, id stri
 		CategoryID:            category.ID,
 		BalanceSubscriptionID: balanceSubscription.ID,
 		Type:                  model.OperationTypeSpending,
-		Amount:                balanceSubscription.Amount,
+		Amount:                balanceSubscription.Amount.StringFixed(),
 		Description:           fmt.Sprintf("Subscprition payment for: %s", balanceSubscription.Name),
 		CreatedAt:             time.Now(),
 		UpdatedAt:             time.Now(),
@@ -234,7 +234,7 @@ func (b *balanceSubscriptionEngine) createOperation(ctx context.Context, id stri
 		return fmt.Errorf("create operation: %w", err)
 	}
 
-	subscriptionAmount, _ := money.NewFromString(balanceSubscription.Amount)
+	subscriptionAmount := balanceSubscription.Amount
 	balanceAmount := balance.Amount
 
 	calculateSpendingOperation(&balanceAmount, subscriptionAmount)
@@ -382,7 +382,7 @@ func (b *balanceSubscriptionEngine) notifyUserAboutSubscriptionPayment(ctx conte
 }
 
 func buildSubscriptionNotificationMessage(subscription model.BalanceSubscription, balance *model.Balance) string {
-	subscriptionAmount, _ := money.NewFromString(subscription.Amount)
+	subscriptionAmount := subscription.Amount
 	currentBalanceAmount := balance.Amount
 
 	remaningBalanceAmount := balance.Amount
@@ -397,7 +397,7 @@ func buildSubscriptionNotificationMessage(subscription model.BalanceSubscription
 	case remaningBalanceAmount.GreaterThan(money.Zero):
 		balanceStatus = fmt.Sprintf("✅ Balance after payment: %s%s", symbol, remaningBalanceAmount.StringFixed())
 	case remaningBalanceAmount.LessThan(money.Zero):
-		deficitAmount, _ := money.NewFromString(subscription.Amount)
+		deficitAmount := subscription.Amount
 		deficitAmount.Sub(currentBalanceAmount)
 		balanceStatus = fmt.Sprintf("❌ Insufficient funds! Need %s%s more", symbol, deficitAmount.StringFixed())
 	}
