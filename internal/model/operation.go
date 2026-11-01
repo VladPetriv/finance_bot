@@ -18,7 +18,7 @@ type Operation struct {
 	ParentOperationID     string `db:"parent_operation_id"`
 
 	Type         OperationType `db:"type"`
-	Amount       string        `db:"amount"`
+	Amount       money.Money   `db:"amount_minor"`
 	Description  string        `db:"description"`
 	ExchangeRate string        `db:"exchange_rate"`
 
@@ -43,7 +43,7 @@ func (o Operation) GetName() string {
 
 	return fmt.Sprintf("%s, %s, %s, %s",
 		o.CreatedAt.Format("02.01 15:04:05"),
-		o.Amount,
+		o.Amount.StringFixed(),
 		typeShort[o.Type],
 		truncatedDescription,
 	)
@@ -61,8 +61,8 @@ func (o *Operation) GetDeletionMessage() string {
 	var balanceImpactMsg string
 	switch o.Type {
 	case OperationTypeTransferIn, OperationTypeTransferOut:
-		increaseAmount, _ := money.NewFromString(o.Amount)
-		decreaseAmount, _ := money.NewFromString(o.Amount)
+		increaseAmount := o.Amount
+		decreaseAmount := o.Amount
 		exhangeRate, _ := money.NewFromString(o.ExchangeRate)
 
 		if !exhangeRate.Equal(money.Zero) {
@@ -91,7 +91,7 @@ func (o *Operation) GetDeletionMessage() string {
 			"⚠️ Warning: Deleting this %s operation will %s your balance by %s",
 			o.Type,
 			effect,
-			o.Amount,
+			o.Amount.StringFixed(),
 		)
 	}
 
@@ -101,7 +101,7 @@ func (o *Operation) GetDeletionMessage() string {
 			"Type: %s\n"+
 			"Amount: %s\n"+
 			"Description: %s\n",
-		o.Type, o.Amount, o.Description,
+		o.Type, o.Amount.StringFixed(), o.Description,
 	)
 
 	if o.ExchangeRate != "" {
@@ -124,7 +124,7 @@ func (o *Operation) GetDeletionMessage() string {
 func (o *Operation) GetDetails() string {
 	return fmt.Sprintf(
 		"Operation Details:\nType: %s\nAmount: %s\nDescription: %s",
-		o.Type, o.Amount, o.Description,
+		o.Type, o.Amount.StringFixed(), o.Description,
 	)
 }
 

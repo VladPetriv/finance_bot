@@ -227,10 +227,7 @@ func calculateOperationsStatistics(operations []Operation) (*operationsStatistic
 	}
 
 	for _, operation := range operations {
-		amount, err := money.NewFromString(operation.Amount)
-		if err != nil {
-			return nil, fmt.Errorf("invalid operation amount: %w", err)
-		}
+		amount := operation.Amount
 
 		switch operation.Type {
 		case OperationTypeIncoming:
@@ -275,10 +272,7 @@ func calculateCategoryStatistics(totalAmount money.Money, operations []Operation
 	for _, operation := range operations {
 		for _, category := range categories {
 			if operation.CategoryID == category.ID {
-				amount, err := money.NewFromString(operation.Amount)
-				if err != nil {
-					return nil, fmt.Errorf("invalid operation amount: %w", err)
-				}
+				amount := operation.Amount
 
 				stats := categoryStats[category.Title]
 				stats.Amount.Inc(amount)
