@@ -8,8 +8,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/VladPetriv/finance_bot/internal/model"
-	"github.com/VladPetriv/finance_bot/pkg/errs"
+	"github.com/vl-ptrv/finance_bot/internal/model"
+	"github.com/vl-ptrv/finance_bot/pkg/errs"
 	"github.com/google/uuid"
 )
 

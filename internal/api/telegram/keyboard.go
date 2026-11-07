@@ -1,7 +1,7 @@
 package telegram
 
 import (
-	"github.com/VladPetriv/finance_bot/internal/service"
+	"github.com/vl-ptrv/finance_bot/internal/service"
 	"github.com/mymmrac/telego"
 	"github.com/mymmrac/telego/telegoutil"
 )

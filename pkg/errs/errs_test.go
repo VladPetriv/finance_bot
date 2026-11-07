@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/VladPetriv/finance_bot/pkg/errs"
+	"github.com/vl-ptrv/finance_bot/pkg/errs"
 	"github.com/stretchr/testify/assert"
 )
 

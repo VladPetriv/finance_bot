@@ -5,7 +5,7 @@ import (
 	"math"
 	"slices"
 
-	"github.com/VladPetriv/finance_bot/internal/model"
+	"github.com/vl-ptrv/finance_bot/internal/model"
 )
 
 const firstPage = 1

@@ -3,7 +3,7 @@ package model_test
 import (
 	"testing"
 
-	"github.com/VladPetriv/finance_bot/internal/model"
+	"github.com/vl-ptrv/finance_bot/internal/model"
 	"github.com/stretchr/testify/assert"
 )
 
