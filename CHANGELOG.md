@@ -1,3 +1,10 @@
+# [0.15.0](https://github.com/vl-ptrv/finance_bot/compare/v0.14.0...v0.15.0) (2026-11-07)
+
+
+### Features
+
+* migrate to new github name VladPetriv -> vl-ptrv ([be2faef](https://github.com/vl-ptrv/finance_bot/commit/be2faef88d1be387694b4480d3d19453d970ea95))
+
 # [0.14.0](https://github.com/VladPetriv/finance_bot/compare/v0.13.0...v0.14.0) (2026-11-07)
 
 
