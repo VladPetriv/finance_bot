@@ -3,10 +3,10 @@ package service
 import (
 	"testing"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/vl-ptrv/finance_bot/internal/model"
 	"github.com/vl-ptrv/finance_bot/pkg/money"
 	"github.com/vl-ptrv/finance_bot/pkg/typecast"
-	"github.com/stretchr/testify/assert"
 )
 
 func TestCalculateIncomingOperation(t *testing.T) {

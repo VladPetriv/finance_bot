@@ -4,9 +4,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/vl-ptrv/finance_bot/internal/model"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"github.com/vl-ptrv/finance_bot/internal/model"
 )
 
 func TestGetTimezonesByRegion(t *testing.T) {

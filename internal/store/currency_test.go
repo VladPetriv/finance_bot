@@ -5,12 +5,12 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/vl-ptrv/finance_bot/internal/model"
-	"github.com/vl-ptrv/finance_bot/internal/service"
-	"github.com/vl-ptrv/finance_bot/internal/store"
 	"github.com/google/uuid"
 	"github.com/jmoiron/sqlx"
 	"github.com/stretchr/testify/assert"
+	"github.com/vl-ptrv/finance_bot/internal/model"
+	"github.com/vl-ptrv/finance_bot/internal/service"
+	"github.com/vl-ptrv/finance_bot/internal/store"
 )
 
 func TestCurrency_Create(t *testing.T) {

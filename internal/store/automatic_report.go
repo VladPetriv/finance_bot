@@ -7,10 +7,10 @@ import (
 	"fmt"
 
 	sq "github.com/Masterminds/squirrel"
+	"github.com/lib/pq"
 	"github.com/vl-ptrv/finance_bot/internal/model"
 	"github.com/vl-ptrv/finance_bot/internal/service"
 	"github.com/vl-ptrv/finance_bot/pkg/database"
-	"github.com/lib/pq"
 )
 
 type automaticReportStore struct {

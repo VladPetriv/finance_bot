@@ -6,10 +6,10 @@ import (
 	"slices"
 	"time"
 
-	"github.com/vl-ptrv/finance_bot/internal/model"
-	"github.com/vl-ptrv/finance_bot/pkg/logger"
 	"github.com/google/uuid"
 	"github.com/rs/zerolog"
+	"github.com/vl-ptrv/finance_bot/internal/model"
+	"github.com/vl-ptrv/finance_bot/pkg/logger"
 )
 
 type stateService struct {

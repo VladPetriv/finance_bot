@@ -3,8 +3,8 @@ package model_test
 import (
 	"testing"
 
-	"github.com/vl-ptrv/finance_bot/internal/model"
 	"github.com/stretchr/testify/assert"
+	"github.com/vl-ptrv/finance_bot/internal/model"
 )
 
 func TestUserSettings_GetLocation(t *testing.T) {

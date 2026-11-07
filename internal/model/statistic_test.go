@@ -5,8 +5,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/vl-ptrv/finance_bot/pkg/money"
 	"github.com/stretchr/testify/assert"
+	"github.com/vl-ptrv/finance_bot/pkg/money"
 )
 
 func Test_calculateOperationsStatistics(t *testing.T) {

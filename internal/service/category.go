@@ -4,9 +4,9 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/google/uuid"
 	"github.com/vl-ptrv/finance_bot/internal/model"
 	"github.com/vl-ptrv/finance_bot/pkg/errs"
-	"github.com/google/uuid"
 )
 
 func (h handlerService) handleCreateCategoryFlowStep(ctx context.Context, opts flowProcessingOptions) (model.FlowStep, error) {

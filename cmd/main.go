@@ -4,10 +4,10 @@ import (
 	"context"
 	_ "time/tzdata"
 
+	_ "github.com/lib/pq"
 	"github.com/vl-ptrv/finance_bot/config"
 	"github.com/vl-ptrv/finance_bot/internal/app"
 	"github.com/vl-ptrv/finance_bot/pkg/logger"
-	_ "github.com/lib/pq"
 )
 
 func main() {

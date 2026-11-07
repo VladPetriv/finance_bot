@@ -5,15 +5,15 @@ import (
 	"testing"
 	"time"
 
+	"github.com/google/uuid"
+	"github.com/jmoiron/sqlx"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"github.com/vl-ptrv/finance_bot/internal/model"
 	"github.com/vl-ptrv/finance_bot/internal/service"
 	"github.com/vl-ptrv/finance_bot/internal/store"
 	"github.com/vl-ptrv/finance_bot/pkg/database"
 	"github.com/vl-ptrv/finance_bot/pkg/money"
-	"github.com/google/uuid"
-	"github.com/jmoiron/sqlx"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 )
 
 var (
