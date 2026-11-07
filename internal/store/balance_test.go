@@ -7,6 +7,7 @@ import (
 	"github.com/VladPetriv/finance_bot/internal/model"
 	"github.com/VladPetriv/finance_bot/internal/service"
 	"github.com/VladPetriv/finance_bot/internal/store"
+	"github.com/VladPetriv/finance_bot/pkg/money"
 	"github.com/google/uuid"
 	"github.com/jmoiron/sqlx"
 	"github.com/stretchr/testify/assert"
@@ -14,8 +15,8 @@ import (
 )
 
 var (
-	amount300 = "300.00"
-	amount400 = "400.00"
+	amount300 = money.NewFromInt(300)
+	amount400 = money.NewFromInt(400)
 )
 
 func TestBalance_Create(t *testing.T) {
@@ -111,7 +112,7 @@ func TestBalance_Create(t *testing.T) {
 			assert.Equal(t, tc.args.UserID, actual.UserID)
 			assert.Equal(t, tc.args.CurrencyID, actual.CurrencyID)
 			assert.Equal(t, tc.args.Name, actual.Name)
-			assert.Equal(t, tc.args.Amount, actual.Amount)
+			assert.True(t, tc.args.Amount.Equal(actual.Amount))
 		})
 	}
 }
@@ -253,7 +254,7 @@ func TestBalance_Get(t *testing.T) {
 			assert.Equal(t, tc.expected.UserID, actual.UserID)
 			assert.Equal(t, tc.expected.CurrencyID, actual.CurrencyID)
 			assert.Equal(t, tc.expected.Name, actual.Name)
-			assert.Equal(t, tc.expected.Amount, actual.Amount)
+			assert.True(t, tc.expected.Amount.Equal(actual.Amount))
 
 			if tc.args.PreloadCurrency {
 				assert.Equal(t, tc.expected.Currency.ID, actual.Currency.ID)
@@ -375,7 +376,7 @@ func TestBalance_Update(t *testing.T) {
 			assert.Equal(t, tc.expected.UserID, actual.UserID)
 			assert.Equal(t, tc.expected.CurrencyID, actual.CurrencyID)
 			assert.Equal(t, tc.expected.Name, actual.Name)
-			assert.Equal(t, tc.expected.Amount, actual.Amount)
+			assert.True(t, tc.expected.Amount.Equal(actual.Amount))
 		})
 	}
 }
@@ -472,4 +473,136 @@ func TestBalance_Delete(t *testing.T) {
 func deleteBalanceByID(db *sqlx.DB, balanceID string) error {
 	_, err := db.Exec("DELETE FROM balances WHERE id = $1;", balanceID)
 	return err
+}
+
+func TestBalance_AmountMinorFallback(t *testing.T) {
+	t.Parallel()
+
+	ctx := context.Background() //nolint: forbidigo
+
+	testCaseDB := createTestDB(t, "balance_amount_minor_fallback")
+	balanceStore := store.NewBalance(testCaseDB)
+
+	userID := uuid.NewString()
+	err := store.NewUser(testCaseDB).Create(ctx, &model.User{
+		ID:       userID,
+		Username: "test" + userID,
+	})
+	require.NoError(t, err)
+
+	type precondition struct {
+		legacyAmount *string
+		amountMinor  *int64
+	}
+
+	type expected struct {
+		amount money.Money
+	}
+
+	legacy := "12.34"
+	legacyOther := "99.99"
+	minor := int64(5600)
+
+	testCases := [...]struct {
+		desc         string
+		precondition *precondition
+		expected     *expected
+	}{
+		{
+			desc: "it should return legacy amount converted to minor units when amount_minor is NULL",
+			precondition: &precondition{
+				legacyAmount: &legacy,
+			},
+			expected: &expected{
+				amount: money.NewFromMinorUnits(1234),
+			},
+		},
+		{
+			desc: "it should return amount_minor when legacy amount is NULL",
+			precondition: &precondition{
+				amountMinor: &minor,
+			},
+			expected: &expected{
+				amount: money.NewFromMinorUnits(5600),
+			},
+		},
+		{
+			desc: "it should prefer amount_minor when both columns are set",
+			precondition: &precondition{
+				legacyAmount: &legacyOther,
+				amountMinor:  &minor,
+			},
+			expected: &expected{
+				amount: money.NewFromMinorUnits(5600),
+			},
+		},
+	}
+	for _, tc := range testCases {
+		t.Run(tc.desc, func(t *testing.T) {
+			t.Parallel()
+
+			balanceID := uuid.NewString()
+			_, err := testCaseDB.DB.ExecContext(
+				ctx,
+				"INSERT INTO balances (id, user_id, currency_id, name, amount, amount_minor) VALUES ($1, $4, '', '', $2, $3);",
+				balanceID, tc.precondition.legacyAmount, tc.precondition.amountMinor, userID,
+			)
+			require.NoError(t, err)
+
+			actual, err := balanceStore.Get(ctx, service.GetBalanceFilter{BalanceID: balanceID})
+			require.NoError(t, err)
+			require.NotNil(t, actual)
+			assert.True(t, tc.expected.amount.Equal(actual.Amount))
+		})
+	}
+}
+
+func TestBalance_WritesOnlyAmountMinor(t *testing.T) {
+	t.Parallel()
+
+	ctx := context.Background() //nolint: forbidigo
+
+	testCaseDB := createTestDB(t, "balance_writes_only_amount_minor")
+	balanceStore := store.NewBalance(testCaseDB)
+
+	userID := uuid.NewString()
+	err := store.NewUser(testCaseDB).Create(ctx, &model.User{
+		ID:       userID,
+		Username: "test" + userID,
+	})
+	require.NoError(t, err)
+
+	balanceID := uuid.NewString()
+	err = balanceStore.Create(ctx, &model.Balance{
+		ID:     balanceID,
+		UserID: userID,
+		Amount: money.NewFromMinorUnits(1050),
+	})
+	require.NoError(t, err)
+
+	type row struct {
+		Legacy *string `db:"amount"`
+		Minor  *int64  `db:"amount_minor"`
+	}
+
+	var created row
+	err = testCaseDB.DB.GetContext(ctx, &created, "SELECT amount, amount_minor FROM balances WHERE id = $1;", balanceID)
+	require.NoError(t, err)
+	assert.Nil(t, created.Legacy)
+	require.NotNil(t, created.Minor)
+	assert.Equal(t, int64(1050), *created.Minor)
+
+	err = balanceStore.Update(ctx, &model.Balance{
+		ID:     balanceID,
+		UserID: userID,
+		Amount: money.NewFromMinorUnits(2000),
+	})
+	require.NoError(t, err)
+
+	var updated row
+	err = testCaseDB.DB.GetContext(ctx, &updated, "SELECT amount, amount_minor FROM balances WHERE id = $1;", balanceID)
+	require.NoError(t, err)
+	assert.Nil(t, updated.Legacy)
+	require.NotNil(t, updated.Minor)
+	assert.Equal(t, int64(2000), *updated.Minor)
 }

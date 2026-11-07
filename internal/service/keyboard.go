@@ -219,7 +219,7 @@ func (h handlerService) getOperationsHistoryKeyboard(ctx context.Context, opts g
 				if len(opts.balances) > 1 {
 					label = balance.Name
 				}
-				outputMessage += fmt.Sprintf("💰 *%s:* %v%s\n", label, balance.Amount, balance.GetCurrency().Symbol)
+				outputMessage += fmt.Sprintf("💰 *%s:* %v%s\n", label, balance.Amount.StringFixed(), balance.GetCurrency().Symbol)
 			}
 			outputMessage += periodLine + "\n\n"
 
@@ -249,7 +249,7 @@ func (h handlerService) getOperationsHistoryKeyboard(ctx context.Context, opts g
 					typeLabel,
 					o.Description,
 					category.Title,
-					o.Amount,
+					o.Amount.StringFixed(),
 					balancesByID[o.BalanceID].GetCurrency().Symbol,
 				)
 
@@ -414,7 +414,7 @@ func (h handlerService) getListBalanceSubscriptionsKeyboard(ctx context.Context,
 						"🏷️ Category: %s\n"+
 						"──────────────\n",
 					subscription.Name,
-					subscription.Amount,
+					subscription.Amount.StringFixed(),
 					subscription.Period,
 					startDate,
 					categoryTitle,

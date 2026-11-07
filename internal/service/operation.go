@@ -494,12 +494,7 @@ func (h handlerService) createSpendingOrIncomingOperation(ctx context.Context, o
 	}
 	logger.Debug().Any("category", category).Msg("got category from store")
 
-	balanceAmount, err := money.NewFromString(balance.Amount)
-	if err != nil {
-		logger.Error().Err(err).Msg("parse balance amount")
-		return nil, fmt.Errorf("parse balance amount: %w", err)
-	}
-	logger.Debug().Any("balanceAmount", balanceAmount).Msg("parsed balance amount")
+	balanceAmount := balance.Amount
 
 	switch opts.operationType {
 	case model.OperationTypeIncoming:
@@ -508,14 +503,14 @@ func (h handlerService) createSpendingOrIncomingOperation(ctx context.Context, o
 		calculateSpendingOperation(&balanceAmount, opts.operationAmount)
 	}
 
-	balance.Amount = balanceAmount.StringFixed()
+	balance.Amount = balanceAmount
 
 	operation := &model.Operation{
 		ID:          uuid.NewString(),
 		BalanceID:   balance.ID,
 		CategoryID:  category.ID,
 		Type:        opts.operationType,
-		Amount:      opts.operationAmount.StringFixed(),
+		Amount:      opts.operationAmount,
 		Description: operationDescription,
 		CreatedAt:   time.Now().UTC(),
 	}
@@ -579,7 +574,7 @@ func (h handlerService) createTransferOperation(ctx context.Context, opts create
 		CategoryID:        "",
 		ParentOperationID: operationIDIn,
 		Type:              model.OperationTypeTransferOut,
-		Amount:            opts.operationAmount.StringFixed(),
+		Amount:            opts.operationAmount,
 		Description:       fmt.Sprintf("Transfer: %s ➜ %s", balanceFrom.Name, balanceTo.Name),
 		CreatedAt:         time.Now().UTC(),
 	}
@@ -589,13 +584,13 @@ func (h handlerService) createTransferOperation(ctx context.Context, opts create
 		CategoryID:        "",
 		ParentOperationID: operationIDOut,
 		Type:              model.OperationTypeTransferIn,
-		Amount:            opts.operationAmount.StringFixed(),
+		Amount:            opts.operationAmount,
 		Description:       fmt.Sprintf("Received transfer from %s", balanceFrom.Name),
 		CreatedAt:         time.Now().UTC(),
 	}
 
-	balanceAmountFrom, _ := money.NewFromString(balanceFrom.Amount)
-	balanceAmountTo, _ := money.NewFromString(balanceTo.Amount)
+	balanceAmountFrom := balanceFrom.Amount
+	balanceAmountTo := balanceTo.Amount
 
 	calculateOptions := calculateTransferOperationOptions{
 		operationType:   operationIn.Type,
@@ -610,13 +605,9 @@ func (h handlerService) createTransferOperation(ctx context.Context, opts create
 		operationIn.ExchangeRate = parsedExchangeRate.String()
 		operationOut.ExchangeRate = parsedExchangeRate.String()
 		calculateOptions.exchangeRate = &parsedExchangeRate
-
-		operationAmountIn := opts.operationAmount
-		operationAmountIn.Mul(parsedExchangeRate)
-		operationIn.Amount = operationAmountIn.StringFixed()
 	}
 
-	calculateTransferOperation(calculateOptions)
+	operationIn.Amount = calculateTransferOperation(calculateOptions)
 
 	for _, operation := range []model.Operation{operationIn, operationOut} {
 		err := h.stores.Operation.Create(ctx, &operation)
@@ -626,8 +617,8 @@ func (h handlerService) createTransferOperation(ctx context.Context, opts create
 		}
 	}
 
-	balanceFrom.Amount = balanceAmountFrom.StringFixed()
-	balanceTo.Amount = balanceAmountTo.StringFixed()
+	balanceFrom.Amount = balanceAmountFrom
+	balanceTo.Amount = balanceAmountTo
 
 	for _, balance := range []*model.Balance{balanceFrom, balanceTo} {
 		err := h.stores.Balance.Update(ctx, balance)
@@ -972,11 +963,11 @@ func (h handlerService) deleteTransferOperation(ctx context.Context, initialOper
 		return ErrBalanceNotFound
 	}
 
-	initialBalanceAmount, _ := money.NewFromString(initialBalance.Amount)
-	pairedBalanceAmount, _ := money.NewFromString(pairedBalance.Amount)
+	initialBalanceAmount := initialBalance.Amount
+	pairedBalanceAmount := pairedBalance.Amount
 
-	initialOperationAmount, _ := money.NewFromString(initialOperation.Amount)
-	pairedOperationAmount, _ := money.NewFromString(pairedOperation.Amount)
+	initialOperationAmount := initialOperation.Amount
+	pairedOperationAmount := pairedOperation.Amount
 
 	var calculateOptions calculateTransferOperationOptions
 
@@ -1005,8 +996,8 @@ func (h handlerService) deleteTransferOperation(ctx context.Context, initialOper
 		}
 	}
 
-	initialBalance.Amount = initialBalanceAmount.StringFixed()
-	pairedBalance.Amount = pairedBalanceAmount.StringFixed()
+	initialBalance.Amount = initialBalanceAmount
+	pairedBalance.Amount = pairedBalanceAmount
 
 	for _, balance := range []*model.Balance{initialBalance, pairedBalance} {
 		err := h.stores.Balance.Update(ctx, balance)
@@ -1026,16 +1017,16 @@ func (h handlerService) deleteSpendingOrIncomeOperation(ctx context.Context, ope
 	logger := h.logger.With().Str("name", "handlerService.deleteSpendingOrIncomeOperation").Logger()
 	logger.Debug().Any("operation", operation).Any("balance", balance).Msg("got args")
 
-	balanceAmount, _ := money.NewFromString(balance.Amount)
-	operationAmount, _ := money.NewFromString(operation.Amount)
+	balanceAmount := balance.Amount
+	operationAmount := operation.Amount
 
 	switch operation.Type {
 	case model.OperationTypeSpending:
 		calculateDeletedSpendingOperation(&balanceAmount, operationAmount)
-		balance.Amount = balanceAmount.StringFixed()
+		balance.Amount = balanceAmount
 	case model.OperationTypeIncoming:
 		calculateDeletedIncomingOperation(&balanceAmount, operationAmount)
-		balance.Amount = balanceAmount.StringFixed()
+		balance.Amount = balanceAmount
 	}
 
 	err := h.stores.Balance.Update(ctx, balance)
@@ -1185,7 +1176,7 @@ func (h handlerService) handleChooseUpdateOperationOptionFlowStep(ctx context.Co
 			MessageID:               opts.message.GetMessageID(),
 			InlineMessageID:         opts.message.GetInlineMessageID(),
 			FormatMessageInMarkDown: true,
-			UpdatedMessage:          fmt.Sprintf("Enter updated operation amount(Current: `%s`):", operation.Amount),
+			UpdatedMessage:          fmt.Sprintf("Enter updated operation amount(Current: `%s`):", operation.Amount.StringFixed()),
 		})
 	case model.BotUpdateOperationDescriptionCommand:
 		return model.EnterOperationDescriptionFlowStep, h.apis.Messenger.UpdateMessage(UpdateMessageOptions{
@@ -1337,7 +1328,7 @@ func (h handlerService) handleEnterOperationAmountFlowStepForUpdate(ctx context.
 			FormatMessageInMarkDown: true,
 			Message: fmt.Sprintf(
 				"Operation amount successfully updated!\nNew operation amount: `%s`\nNew paired operation amount: `%s`\nPlease choose other update operation option or finish action by canceling it!",
-				initialOperation.Amount, pairedOperation.Amount,
+				initialOperation.Amount.StringFixed(), pairedOperation.Amount.StringFixed(),
 			),
 			InlineKeyboard: updateOperationOptionsKeyboardForTransferOperations,
 		})
@@ -1350,17 +1341,9 @@ func (h handlerService) updateOperationAmountForSpendingOrIncomeOperation(ctx co
 	logger := h.logger.With().Str("name", "handlerService.updateOperationAmountForSpendingOrIncomeOperation").Logger()
 	logger.Debug().Any("operation", operation).Any("updatedOperationAmount", updatedOperationAmount).Any("balance", balance).Msg("got args")
 
-	balanceAmount, err := money.NewFromString(balance.Amount)
-	if err != nil {
-		logger.Error().Err(err).Msg("parse balance amount")
-		return fmt.Errorf("parse balance amount: %w", err)
-	}
+	balanceAmount := balance.Amount
 
-	operationAmount, err := money.NewFromString(operation.Amount)
-	if err != nil {
-		logger.Error().Err(err).Msg("parse operation amount")
-		return fmt.Errorf("parse operation amount: %w", err)
-	}
+	operationAmount := operation.Amount
 
 	switch operation.Type {
 	case model.OperationTypeIncoming:
@@ -1368,15 +1351,15 @@ func (h handlerService) updateOperationAmountForSpendingOrIncomeOperation(ctx co
 	case model.OperationTypeSpending:
 		calculateUpdatedSpendingOperation(&balanceAmount, operationAmount, updatedOperationAmount)
 	}
-	balance.Amount = balanceAmount.StringFixed()
+	balance.Amount = balanceAmount
 
-	err = h.stores.Balance.Update(ctx, balance)
+	err := h.stores.Balance.Update(ctx, balance)
 	if err != nil {
 		logger.Error().Err(err).Msg("update balance in store")
 		return fmt.Errorf("update balance in store: %w", err)
 	}
 
-	operation.Amount = updatedOperationAmount.StringFixed()
+	operation.Amount = updatedOperationAmount
 	err = h.stores.Operation.Update(ctx, operation.ID, operation)
 	if err != nil {
 		logger.Error().Err(err).Msg("update operation in store")
@@ -1407,10 +1390,10 @@ func (h handlerService) updateOperationAmountForTransferOperation(ctx context.Co
 		return ErrBalanceNotFound
 	}
 
-	initialBalanceAmount, _ := money.NewFromString(initialBalance.Amount)
-	pairedBalanceAmount, _ := money.NewFromString(pairedBalance.Amount)
-	initialOperationAmount, _ := money.NewFromString(initialOperation.Amount)
-	pairedOperationAmount, _ := money.NewFromString(pairedOperation.Amount)
+	initialBalanceAmount := initialBalance.Amount
+	pairedBalanceAmount := pairedBalance.Amount
+	initialOperationAmount := initialOperation.Amount
+	pairedOperationAmount := pairedOperation.Amount
 
 	calculateOptions := calculateTransferOperationOptions{
 		operationType:          initialOperation.Type,
@@ -1437,8 +1420,8 @@ func (h handlerService) updateOperationAmountForTransferOperation(ctx context.Co
 
 	calculateUpdatedTranferOperation(calculateOptions)
 
-	initialOperation.Amount = initialOperationAmount.StringFixed()
-	pairedOperation.Amount = pairedOperationAmount.StringFixed()
+	initialOperation.Amount = initialOperationAmount
+	pairedOperation.Amount = pairedOperationAmount
 
 	for _, operation := range []*model.Operation{initialOperation, pairedOperation} {
 		err := h.stores.Operation.Update(ctx, operation.ID, operation)
@@ -1448,8 +1431,8 @@ func (h handlerService) updateOperationAmountForTransferOperation(ctx context.Co
 		}
 	}
 
-	initialBalance.Amount = initialBalanceAmount.StringFixed()
-	pairedBalance.Amount = pairedBalanceAmount.StringFixed()
+	initialBalance.Amount = initialBalanceAmount
+	pairedBalance.Amount = pairedBalanceAmount
 
 	for _, balance := range []*model.Balance{initialBalance, pairedBalance} {
 		err := h.stores.Balance.Update(ctx, balance)

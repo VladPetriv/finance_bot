@@ -27,7 +27,7 @@ func (b *balanceSubscriptionStore) Create(ctx context.Context, subscription mode
 	_, err := b.db.DB.ExecContext(
 		ctx,
 		`INSERT INTO
-			balance_subscriptions (id, balance_id, category_id, name, amount, period, start_at)
+			balance_subscriptions (id, balance_id, category_id, name, amount_minor, period, start_at)
     	VALUES
      		($1, $2, $3, $4, $5, $6, $7);`,
 		subscription.ID, subscription.BalanceID, subscription.CategoryID, subscription.Name, subscription.Amount, subscription.Period, subscription.StartAt,
@@ -47,11 +47,13 @@ func (b *balanceSubscriptionStore) CreateScheduledOperation(ctx context.Context,
 	return err
 }
 
+const balanceSubscriptionAmountMinorColumn = "COALESCE(balance_subscriptions.amount_minor, ROUND(NULLIF(balance_subscriptions.amount, '')::numeric * 100))::bigint AS amount_minor"
+
 func (b *balanceSubscriptionStore) Get(ctx context.Context, filter service.GetBalanceSubscriptionFilter) (*model.BalanceSubscription, error) {
 	stmt := sq.
 		StatementBuilder.
 		PlaceholderFormat(sq.Dollar).
-		Select("id", "balance_id", "category_id", "name", "amount", "period", "start_at", "created_at", "updated_at").
+		Select("id", "balance_id", "category_id", "name", balanceSubscriptionAmountMinorColumn, "period", "start_at", "created_at", "updated_at").
 		From("balance_subscriptions")
 
 	if filter.ID != "" {
@@ -129,7 +131,7 @@ func applyListBalanceSubscriptionFilter(options applyListBalanceSubscriptionOpti
 	if options.listQuery {
 		expectedColumns = []string{
 			"balance_subscriptions.id", "balance_subscriptions.balance_id", "balance_subscriptions.category_id",
-			"balance_subscriptions.name", "balance_subscriptions.amount", "balance_subscriptions.period",
+			"balance_subscriptions.name", balanceSubscriptionAmountMinorColumn, "balance_subscriptions.period",
 			"balance_subscriptions.start_at", "balance_subscriptions.created_at", "balance_subscriptions.updated_at",
 		}
 	}
@@ -162,7 +164,7 @@ func applyListBalanceSubscriptionFilter(options applyListBalanceSubscriptionOpti
 	}
 
 	if filter.OrderByCreatedAtDesc {
-		stmt = stmt.GroupBy(expectedColumns...).
+		stmt = stmt.GroupBy("balance_subscriptions.id").
 			OrderBy("balance_subscriptions.created_at DESC")
 	}
 
@@ -211,7 +213,7 @@ func (b *balanceSubscriptionStore) Update(ctx context.Context, subscription *mod
 		SET
 			category_id = $1,
 			name = $2,
-			amount = $3,
+			amount_minor = $3,
 			period = $4,
 			start_at = $5,
 			updated_at = NOW()

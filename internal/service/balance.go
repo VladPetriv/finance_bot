@@ -145,12 +145,18 @@ func (h handlerService) handleEnterBalanceCurrencyFlowStepForCreate(ctx context.
 		return "", fmt.Errorf("balance amount not found")
 	}
 
+	parsedBalanceAmount, err := money.NewFromString(balanceAmount)
+	if err != nil {
+		logger.Error().Err(err).Msg("parse balance amount")
+		return "", fmt.Errorf("parse balance amount: %w", err)
+	}
+
 	balance := model.Balance{
 		ID:         balanceID,
 		UserID:     opts.user.ID,
 		CurrencyID: messageText,
 		Name:       balanceName,
-		Amount:     balanceAmount,
+		Amount:     parsedBalanceAmount,
 	}
 
 	err = h.stores.Balance.Create(ctx, &balance)
@@ -161,7 +167,7 @@ func (h handlerService) handleEnterBalanceCurrencyFlowStepForCreate(ctx context.
 
 	outputMessage := fmt.Sprintf(
 		"Balance Created!\nBalance:\n - Name: %s\n - Amount: %s\n - Currency: %s",
-		balance.Name, balance.Amount, currency.GetName(),
+		balance.Name, balance.Amount.StringFixed(), currency.GetName(),
 	)
 
 	return model.EndFlowStep, h.apis.Messenger.UpdateMessage(UpdateMessageOptions{
@@ -411,7 +417,7 @@ func (h handlerService) handleChooseUpdateBalanceOptionFlowStep(ctx context.Cont
 		})
 	case model.BotUpdateBalanceAmountCommand:
 		return model.EnterBalanceAmountFlowStep, h.apis.Messenger.UpdateMessage(UpdateMessageOptions{
-			UpdatedMessage:          fmt.Sprintf("Enter updated balance amount(Current: `%s`):", balance.Amount),
+			UpdatedMessage:          fmt.Sprintf("Enter updated balance amount(Current: `%s`):", balance.Amount.StringFixed()),
 			FormatMessageInMarkDown: true,
 			ChatID:                  opts.message.GetChatID(),
 			MessageID:               opts.message.GetMessageID(),
@@ -539,7 +545,7 @@ func (h handlerService) handleEnterBalanceAmountFlowStepForUpdate(ctx context.Co
 		FormatMessageInMarkDown: true,
 		Message: fmt.Sprintf(
 			"Balance amount successfully updated!\nNew balance amount: `%s`\nPlease choose other update balance option or finish action by canceling it!",
-			updatedBalance.Amount,
+			updatedBalance.Amount.StringFixed(),
 		),
 		InlineKeyboard: updateBalanceOptionsKeyboard,
 	})
@@ -606,7 +612,7 @@ func (h handlerService) handleEnterBalanceCurrencyFlowStepForUpdate(ctx context.
 		outputMessage := fmt.Sprintf(
 			"Initial balance successfully created!\nBalance:\n\t - Name: `%s`\n\t - Amount: `%s`\n\t - Currency: `%s`",
 			balance.Name,
-			balance.Amount,
+			balance.Amount.StringFixed(),
 			balance.Currency.GetName(),
 		)
 
@@ -666,7 +672,7 @@ func (h handlerService) updateBalance(ctx context.Context, opts updateBalanceOpt
 			return nil, ErrInvalidAmountFormat
 		}
 
-		balance.Amount = price.StringFixed()
+		balance.Amount = price
 	case model.EnterBalanceCurrencyFlowStep:
 		balance.CurrencyID = opts.data
 	}
