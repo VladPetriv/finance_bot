@@ -7,6 +7,7 @@ import (
 	"github.com/VladPetriv/finance_bot/internal/model"
 	"github.com/VladPetriv/finance_bot/internal/service"
 	"github.com/VladPetriv/finance_bot/internal/store"
+	"github.com/VladPetriv/finance_bot/pkg/money"
 	"github.com/google/uuid"
 	"github.com/jmoiron/sqlx"
 	"github.com/stretchr/testify/assert"
@@ -350,7 +351,7 @@ func TestUser_Get(t *testing.T) {
 						ID:         balanceID,
 						UserID:     userID2,
 						CurrencyID: currencyID,
-						Amount:     "10",
+						Amount:     money.NewFromInt(10),
 					},
 				},
 			},
@@ -367,7 +368,7 @@ func TestUser_Get(t *testing.T) {
 						ID:         balanceID,
 						UserID:     userID2,
 						CurrencyID: currencyID,
-						Amount:     "10",
+						Amount:     money.NewFromInt(10),
 					},
 				},
 			},
@@ -461,7 +462,7 @@ func TestUser_Get(t *testing.T) {
 			for i := range tc.expected.Balances {
 				assert.Equal(t, tc.expected.Balances[i].ID, actual.Balances[i].ID)
 				assert.Equal(t, tc.expected.Balances[i].UserID, actual.Balances[i].UserID)
-				assert.Equal(t, tc.expected.Balances[i].Amount, actual.Balances[i].Amount)
+				assert.True(t, tc.expected.Balances[i].Amount.Equal(actual.Balances[i].Amount))
 				assert.Equal(t, tc.expected.Balances[i].Currency, actual.Balances[i].Currency)
 			}
 

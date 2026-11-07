@@ -26,18 +26,20 @@ func NewBalance(db *database.PostgreSQL) *balanceStore {
 func (b *balanceStore) Create(ctx context.Context, balance *model.Balance) error {
 	_, err := b.DB.ExecContext(
 		ctx,
-		"INSERT INTO balances (id, user_id, currency_id, name, amount, created_at, updated_at) VALUES ($1, $2, $3, $4, $5, NOW(), NOW());",
+		"INSERT INTO balances (id, user_id, currency_id, name, amount_minor, created_at, updated_at) VALUES ($1, $2, $3, $4, $5, NOW(), NOW());",
 		balance.ID, balance.UserID, balance.CurrencyID, balance.Name, balance.Amount,
 	)
 
 	return err
 }
 
+const balanceAmountMinorColumn = "COALESCE(amount_minor, ROUND(NULLIF(amount, '')::numeric * 100))::bigint AS amount_minor"
+
 func (b *balanceStore) Get(ctx context.Context, filter service.GetBalanceFilter) (*model.Balance, error) {
 	stmt := sq.
 		StatementBuilder.
 		PlaceholderFormat(sq.Dollar).
-		Select("id", "user_id", "currency_id", "name", "amount", "created_at", "updated_at").
+		Select("id", "user_id", "currency_id", "name", balanceAmountMinorColumn, "created_at", "updated_at").
 		From("balances")
 
 	if filter.BalanceID != "" {
@@ -80,7 +82,7 @@ func (b *balanceStore) Get(ctx context.Context, filter service.GetBalanceFilter)
 func (b *balanceStore) Update(ctx context.Context, balance *model.Balance) error {
 	_, err := b.DB.ExecContext(
 		ctx,
-		"UPDATE balances SET user_id = $2, currency_id = $3, name = $4, amount = $5, updated_at = NOW() WHERE id = $1;",
+		"UPDATE balances SET user_id = $2, currency_id = $3, name = $4, amount_minor = $5, updated_at = NOW() WHERE id = $1;",
 		balance.ID, balance.UserID, balance.CurrencyID, balance.Name, balance.Amount,
 	)
 	if err != nil {

@@ -8,6 +8,8 @@ import (
 	"github.com/VladPetriv/finance_bot/internal/model"
 	"github.com/VladPetriv/finance_bot/internal/service"
 	"github.com/VladPetriv/finance_bot/internal/store"
+	"github.com/VladPetriv/finance_bot/pkg/database"
+	"github.com/VladPetriv/finance_bot/pkg/money"
 	"github.com/google/uuid"
 	"github.com/jmoiron/sqlx"
 	"github.com/stretchr/testify/assert"
@@ -15,8 +17,8 @@ import (
 )
 
 var (
-	amount100 = "100.00"
-	amount200 = "200.00"
+	amount100 = money.NewFromInt(100)
+	amount200 = money.NewFromInt(200)
 )
 
 func TestBalanceSubscription_Create(t *testing.T) {
@@ -137,13 +139,13 @@ func TestBalanceSubscription_Create(t *testing.T) {
 			assert.NoError(t, err)
 
 			var actual model.BalanceSubscription
-			err = testCaseDB.DB.GetContext(ctx, &actual, "SELECT * FROM balance_subscriptions WHERE id = $1;", tc.args.ID)
+			err = testCaseDB.DB.GetContext(ctx, &actual, "SELECT id, balance_id, category_id, name, amount_minor, period, start_at, created_at, updated_at FROM balance_subscriptions WHERE id = $1;", tc.args.ID)
 			assert.NoError(t, err)
 			assert.Equal(t, tc.args.ID, actual.ID)
 			assert.Equal(t, tc.args.BalanceID, actual.BalanceID)
 			assert.Equal(t, tc.args.CategoryID, actual.CategoryID)
 			assert.Equal(t, tc.args.Name, actual.Name)
-			assert.Equal(t, tc.args.Amount, actual.Amount)
+			assert.True(t, tc.args.Amount.Equal(actual.Amount))
 			assert.Equal(t, tc.args.Period, actual.Period)
 		})
 	}
@@ -270,7 +272,7 @@ func TestBalanceSubscription_Get(t *testing.T) {
 			assert.Equal(t, tc.expected.BalanceID, actual.BalanceID)
 			assert.Equal(t, tc.expected.CategoryID, actual.CategoryID)
 			assert.Equal(t, tc.expected.Name, actual.Name)
-			assert.Equal(t, tc.expected.Amount, actual.Amount)
+			assert.True(t, tc.expected.Amount.Equal(actual.Amount))
 			assert.Equal(t, tc.expected.Period, actual.Period)
 		})
 	}
@@ -695,7 +697,7 @@ func TestBalanceSubscription_List(t *testing.T) {
 				assert.Equal(t, tc.expected[i].BalanceID, actual[i].BalanceID)
 				assert.Equal(t, tc.expected[i].CategoryID, actual[i].CategoryID)
 				assert.Equal(t, tc.expected[i].Name, actual[i].Name)
-				assert.Equal(t, tc.expected[i].Amount, actual[i].Amount)
+				assert.True(t, tc.expected[i].Amount.Equal(actual[i].Amount))
 				assert.Equal(t, tc.expected[i].Period, actual[i].Period)
 			}
 		})
@@ -846,7 +848,7 @@ func TestBalanceSubscription_Update(t *testing.T) {
 			assert.Equal(t, tc.expected.BalanceID, actual.BalanceID)
 			assert.Equal(t, tc.expected.CategoryID, actual.CategoryID)
 			assert.Equal(t, tc.expected.Name, actual.Name)
-			assert.Equal(t, tc.expected.Amount, actual.Amount)
+			assert.True(t, tc.expected.Amount.Equal(actual.Amount))
 			assert.Equal(t, tc.expected.Period, actual.Period)
 		})
 	}
@@ -1390,4 +1392,170 @@ func getScheledOperationByID(db *sqlx.DB, id string) (*model.ScheduledOperation,
 	var scheduleOperation model.ScheduledOperation
 	err := db.Get(&scheduleOperation, "SELECT * FROM scheduled_operations WHERE id = $1;", id)
 	return &scheduleOperation, err
+}
+
+func TestBalanceSubscription_AmountMinorFallback(t *testing.T) {
+	t.Parallel()
+
+	ctx := context.Background() //nolint: forbidigo
+
+	testCaseDB := createTestDB(t, "balance_subscription_amount_minor_fallback")
+	balanceSubscriptionStore := store.NewBalanceSubscription(testCaseDB)
+
+	_, balanceID, categoryID := createBalanceSubscriptionDependencies(ctx, t, testCaseDB)
+
+	type precondition struct {
+		legacyAmount *string
+		amountMinor  *int64
+	}
+
+	type expected struct {
+		amount money.Money
+	}
+
+	legacy := "12.34"
+	legacyOther := "99.99"
+	minor := int64(5600)
+
+	testCases := [...]struct {
+		desc         string
+		precondition *precondition
+		expected     *expected
+	}{
+		{
+			desc: "it should return legacy amount converted to minor units when amount_minor is NULL",
+			precondition: &precondition{
+				legacyAmount: &legacy,
+			},
+			expected: &expected{
+				amount: money.NewFromMinorUnits(1234),
+			},
+		},
+		{
+			desc: "it should return amount_minor when legacy amount is NULL",
+			precondition: &precondition{
+				amountMinor: &minor,
+			},
+			expected: &expected{
+				amount: money.NewFromMinorUnits(5600),
+			},
+		},
+		{
+			desc: "it should prefer amount_minor when both columns are set",
+			precondition: &precondition{
+				legacyAmount: &legacyOther,
+				amountMinor:  &minor,
+			},
+			expected: &expected{
+				amount: money.NewFromMinorUnits(5600),
+			},
+		},
+	}
+	for _, tc := range testCases {
+		t.Run(tc.desc, func(t *testing.T) {
+			t.Parallel()
+
+			subscriptionID := uuid.NewString()
+			_, err := testCaseDB.DB.ExecContext(
+				ctx,
+				`INSERT INTO balance_subscriptions (id, balance_id, category_id, name, amount, amount_minor, period, start_at)
+				VALUES ($1, $2, $3, 'test', $4, $5, 'monthly', NOW());`,
+				subscriptionID, balanceID, categoryID, tc.precondition.legacyAmount, tc.precondition.amountMinor,
+			)
+			require.NoError(t, err)
+
+			got, err := balanceSubscriptionStore.Get(ctx, service.GetBalanceSubscriptionFilter{ID: subscriptionID})
+			require.NoError(t, err)
+			require.NotNil(t, got)
+			assert.True(t, tc.expected.amount.Equal(got.Amount))
+
+			listed, err := balanceSubscriptionStore.List(ctx, service.ListBalanceSubscriptionFilter{BalanceID: balanceID})
+			require.NoError(t, err)
+
+			var found bool
+			for _, subscription := range listed {
+				if subscription.ID != subscriptionID {
+					continue
+				}
+
+				found = true
+				assert.True(t, tc.expected.amount.Equal(subscription.Amount))
+			}
+			assert.True(t, found)
+		})
+	}
+}
+
+func TestBalanceSubscription_WritesOnlyAmountMinor(t *testing.T) {
+	t.Parallel()
+
+	ctx := context.Background() //nolint: forbidigo
+
+	testCaseDB := createTestDB(t, "balance_subscription_writes_only_amount_minor")
+	balanceSubscriptionStore := store.NewBalanceSubscription(testCaseDB)
+
+	_, balanceID, categoryID := createBalanceSubscriptionDependencies(ctx, t, testCaseDB)
+
+	subscriptionID := uuid.NewString()
+	subscription := model.BalanceSubscription{
+		ID:         subscriptionID,
+		BalanceID:  balanceID,
+		CategoryID: categoryID,
+		Name:       "test",
+		Amount:     money.NewFromMinorUnits(1050),
+		Period:     model.SubscriptionPeriodMonthly,
+	}
+	require.NoError(t, balanceSubscriptionStore.Create(ctx, subscription))
+
+	type row struct {
+		Legacy *string `db:"amount"`
+		Minor  *int64  `db:"amount_minor"`
+	}
+
+	var created row
+	err := testCaseDB.DB.GetContext(ctx, &created, "SELECT amount, amount_minor FROM balance_subscriptions WHERE id = $1;", subscriptionID)
+	require.NoError(t, err)
+	assert.Nil(t, created.Legacy)
+	require.NotNil(t, created.Minor)
+	assert.Equal(t, int64(1050), *created.Minor)
+
+	subscription.Amount = money.NewFromMinorUnits(2000)
+	require.NoError(t, balanceSubscriptionStore.Update(ctx, &subscription))
+
+	var updated row
+	err = testCaseDB.DB.GetContext(ctx, &updated, "SELECT amount, amount_minor FROM balance_subscriptions WHERE id = $1;", subscriptionID)
+	require.NoError(t, err)
+	assert.Nil(t, updated.Legacy)
+	require.NotNil(t, updated.Minor)
+	assert.Equal(t, int64(2000), *updated.Minor)
+}
+
+func createBalanceSubscriptionDependencies(ctx context.Context, t *testing.T, db *database.PostgreSQL) (userID, balanceID, categoryID string) {
+	t.Helper()
+
+	userID = uuid.NewString()
+	balanceID = uuid.NewString()
+	categoryID = uuid.NewString()
+	currencyID := uuid.NewString()
+
+	require.NoError(t, store.NewCurrency(db).CreateIfNotExists(ctx, &model.Currency{
+		ID:   currencyID,
+		Code: "USD",
+	}))
+	require.NoError(t, store.NewUser(db).Create(ctx, &model.User{
+		ID:       userID,
+		Username: "test" + userID,
+	}))
+	require.NoError(t, store.NewBalance(db).Create(ctx, &model.Balance{
+		ID:         balanceID,
+		UserID:     userID,
+		CurrencyID: currencyID,
+	}))
+	require.NoError(t, store.NewCategory(db).Create(ctx, &model.Category{
+		ID:     categoryID,
+		UserID: userID,
+		Title:  "test_category",
+	}))
+
+	return userID, balanceID, categoryID
 }
