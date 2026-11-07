@@ -1,3 +1,19 @@
+# [0.13.0](https://github.com/VladPetriv/finance_bot/compare/v0.12.1...v0.13.0) (2026-11-07)
+
+
+### Features
+
+* **migrations:** add amount_minor to balance_subscriptions and make legacy amount nullable ([82e38fa](https://github.com/VladPetriv/finance_bot/commit/82e38fabd00edb715d1c8655ffbea6b2dbc20bee))
+* **migrations:** add amount_minor to balances and make legacy amount nullable ([64d6e8c](https://github.com/VladPetriv/finance_bot/commit/64d6e8c5b16a6f5e646c071de834baebae1ec883))
+* **migrations:** add amount_minor to operations and make legacy amount nullable ([c6f188b](https://github.com/VladPetriv/finance_bot/commit/c6f188b14271cfaafadd35665ee22fd0e1b33ce2))
+* **migrations:** backfill amount_minor for balances, operations and subscriptions ([7b24e42](https://github.com/VladPetriv/finance_bot/commit/7b24e4290ea7bc321f2ce5f74a19e2cdd80a0ace))
+* **money:** add minor-unit conversions ([f782a3e](https://github.com/VladPetriv/finance_bot/commit/f782a3ef2297228c816e87b4464c11e379afe830))
+* **money:** implement sql Scan and Value in minor units ([47610ee](https://github.com/VladPetriv/finance_bot/commit/47610ee81beb235c1fc71001ef8c591c2c107fcd))
+* **service:** round cross-currency transfer leg once after exchange rate ([425e853](https://github.com/VladPetriv/finance_bot/commit/425e853b2719d85ce3e83eadc37451383dc19377))
+* **store:** read and write balance amounts via amount_minor with legacy fallback ([3e34e7b](https://github.com/VladPetriv/finance_bot/commit/3e34e7b9bc6907ec2863ec92fd07dd4c44eff9bf))
+* **store:** read and write balance subscription amounts via amount_minor with legacy fallback ([3419f11](https://github.com/VladPetriv/finance_bot/commit/3419f11de34067267ae141a6237d710d7ec0d82b))
+* **store:** read, write and search operation amounts via amount_minor with legacy fallback ([c77d4e5](https://github.com/VladPetriv/finance_bot/commit/c77d4e5c08d8981c6b2d3c232392032898e71ccd))
+
 ## [0.12.1](https://github.com/VladPetriv/finance_bot/compare/v0.12.0...v0.12.1) (2026-10-28)
 
 
