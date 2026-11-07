@@ -223,7 +223,6 @@ func (h handlerService) getOperationsHistoryKeyboard(ctx context.Context, opts g
 			}
 			outputMessage += periodLine + "\n\n"
 
-			separator := "━━━━━━━━━━━━━━━"
 			for _, o := range operations {
 				category, err := h.stores.Category.Get(ctx, GetCategoryFilter{
 					ID: o.CategoryID,
@@ -237,34 +236,19 @@ func (h handlerService) getOperationsHistoryKeyboard(ctx context.Context, opts g
 					continue
 				}
 
-				emoji, typeLabel := model.GetOperationTypeLabel(o.Type)
-				outputMessage += fmt.Sprintf(
-					"%s\n"+
-						"📌 *Operation:* %s %s\n"+
-						"📝 *Description:* %s\n"+
-						"📂 *Category:* %s\n"+
-						"💰 *Amount:* %s%s\n",
-					separator,
-					emoji,
-					typeLabel,
-					o.Description,
-					category.Title,
-					o.Amount.StringFixed(),
-					balancesByID[o.BalanceID].GetCurrency().Symbol,
-				)
-
+				balanceName := ""
 				if len(opts.balances) > 1 {
-					outputMessage += fmt.Sprintf("🏦 *Balance:* %s\n", balancesByID[o.BalanceID].Name)
+					balanceName = balancesByID[o.BalanceID].Name
 				}
 
-				if o.ExchangeRate != "" {
-					outputMessage += fmt.Sprintf("💱 *Exchange Rate:* %s\n", o.ExchangeRate)
-				}
-
-				outputMessage += fmt.Sprintf("🕐 *Date:* %s\n", o.CreatedAt.Format(time.ANSIC))
-
+				outputMessage += model.BuildOperationBlock(model.OperationBlockData{
+					Operation:      o,
+					CategoryTitle:  category.Title,
+					CurrencySymbol: balancesByID[o.BalanceID].GetCurrency().Symbol,
+					BalanceName:    balanceName,
+				})
 			}
-			outputMessage += separator
+			outputMessage += model.OperationBlockSeparator
 
 			return outputMessage, nil
 		},

@@ -146,6 +146,43 @@ func GetOperationTypeLabel(t OperationType) (string, string) {
 	}
 }
 
+const OperationBlockSeparator = "━━━━━━━━━━━━━━━"
+
+type OperationBlockData struct {
+	Operation      Operation
+	CategoryTitle  string
+	CurrencySymbol string
+	BalanceName    string
+}
+
+func BuildOperationBlock(data OperationBlockData) string {
+	emoji, typeLabel := GetOperationTypeLabel(data.Operation.Type)
+	block := fmt.Sprintf(
+		"%s\n"+
+			"📌 *Operation:* %s %s\n"+
+			"📝 *Description:* %s\n"+
+			"📂 *Category:* %s\n"+
+			"💰 *Amount:* %s%s\n",
+		OperationBlockSeparator,
+		emoji,
+		typeLabel,
+		data.Operation.Description,
+		data.CategoryTitle,
+		data.Operation.Amount.StringFixed(),
+		data.CurrencySymbol,
+	)
+
+	if data.BalanceName != "" {
+		block += fmt.Sprintf("🏦 *Balance:* %s\n", data.BalanceName)
+	}
+
+	if data.Operation.ExchangeRate != "" {
+		block += fmt.Sprintf("💱 *Exchange Rate:* %s\n", data.Operation.ExchangeRate)
+	}
+
+	return block + fmt.Sprintf("🕐 *Date:* %s\n", data.Operation.CreatedAt.Format(time.ANSIC))
+}
+
 // OperationType represents the type of an operation, which can be either incoming, spending or transfer.
 type OperationType string
 
