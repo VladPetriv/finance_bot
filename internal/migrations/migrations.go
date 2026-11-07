@@ -92,4 +92,8 @@ var Migrations = []any{
 		Name: "Add amount_minor column to operations table",
 		Func: addAmountMinorToOperationsTable,
 	},
+	&migrator.Migration{
+		Name: "Backfill amount_minor",
+		Func: backfillAmountMinor,
+	},
 }
