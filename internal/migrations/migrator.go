@@ -3,9 +3,9 @@ package migrations
 import (
 	"fmt"
 
-	"github.com/VladPetriv/finance_bot/pkg/logger"
 	"github.com/jmoiron/sqlx"
 	"github.com/lopezator/migrator"
+	"github.com/vl-ptrv/finance_bot/pkg/logger"
 )
 
 // MigrateDBOptions represents options for the MigrateDB function.

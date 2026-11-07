@@ -6,9 +6,9 @@ import (
 	"errors"
 
 	sq "github.com/Masterminds/squirrel"
-	"github.com/VladPetriv/finance_bot/internal/model"
-	"github.com/VladPetriv/finance_bot/internal/service"
-	"github.com/VladPetriv/finance_bot/pkg/database"
+	"github.com/vl-ptrv/finance_bot/internal/model"
+	"github.com/vl-ptrv/finance_bot/internal/service"
+	"github.com/vl-ptrv/finance_bot/pkg/database"
 )
 
 type currencyStore struct {

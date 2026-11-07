@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/VladPetriv/finance_bot/internal/service"
-	"github.com/VladPetriv/finance_bot/pkg/money"
+	"github.com/vl-ptrv/finance_bot/internal/service"
+	"github.com/vl-ptrv/finance_bot/pkg/money"
 	"resty.dev/v3"
 )
 

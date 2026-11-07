@@ -6,7 +6,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/VladPetriv/finance_bot/pkg/money"
+	"github.com/vl-ptrv/finance_bot/pkg/money"
 )
 
 // StatisticsMessageBuilder is responsible for building a formatted message containing

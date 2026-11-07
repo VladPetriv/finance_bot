@@ -5,11 +5,11 @@ import (
 	"testing"
 	"time"
 
-	"github.com/VladPetriv/finance_bot/internal/model"
-	"github.com/VladPetriv/finance_bot/pkg/logger"
-	"github.com/VladPetriv/finance_bot/pkg/money"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"github.com/vl-ptrv/finance_bot/internal/model"
+	"github.com/vl-ptrv/finance_bot/pkg/logger"
+	"github.com/vl-ptrv/finance_bot/pkg/money"
 )
 
 func TestGetOperationsHistoryKeyboard(t *testing.T) {

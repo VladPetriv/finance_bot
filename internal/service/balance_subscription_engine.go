@@ -6,12 +6,12 @@ import (
 	"slices"
 	"time"
 
-	"github.com/VladPetriv/finance_bot/config"
-	"github.com/VladPetriv/finance_bot/internal/model"
-	"github.com/VladPetriv/finance_bot/pkg/logger"
-	"github.com/VladPetriv/finance_bot/pkg/money"
-	"github.com/VladPetriv/finance_bot/pkg/worker"
 	"github.com/google/uuid"
+	"github.com/vl-ptrv/finance_bot/config"
+	"github.com/vl-ptrv/finance_bot/internal/model"
+	"github.com/vl-ptrv/finance_bot/pkg/logger"
+	"github.com/vl-ptrv/finance_bot/pkg/money"
+	"github.com/vl-ptrv/finance_bot/pkg/worker"
 )
 
 type balanceSubscriptionEngine struct {
