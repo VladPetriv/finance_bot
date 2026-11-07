@@ -92,65 +92,6 @@ const (
 	operationsPerKeyboardRow = 1
 )
 
-type getOperationsKeyboardOptions struct {
-	balanceID string
-	page      int
-	location  *time.Location
-}
-
-func (h handlerService) getOperationsKeyboard(ctx context.Context, opts getOperationsKeyboardOptions) ([]InlineKeyboardRow, error) {
-	logger := h.logger.With().Str("name", "handlerService.getOperationsKeyboard").Logger()
-	logger.Debug().Any("opts", opts).Msg("got args")
-
-	operationsCount, err := h.stores.Operation.Count(ctx, ListOperationsFilter{
-		BalanceID: opts.balanceID,
-	})
-	if err != nil {
-		logger.Error().Err(err).Msg("count operations")
-		return nil, fmt.Errorf("count operations: %w", err)
-	}
-	if operationsCount == 0 {
-		logger.Info().Any("balanceID", opts.balanceID).Msg("operations not found")
-		return nil, ErrOperationsNotFound
-	}
-
-	keyboard, err := paginateInlineKeyboard(
-		inlineKeyboardPaginatorOptions{
-			totalCount:     operationsCount,
-			maxPerKeyboard: operationsPerKeyboard,
-			maxPerRow:      operationsPerKeyboardRow,
-			currentPage:    opts.page,
-		},
-		func() ([]model.Operation, error) {
-			operations, err := h.stores.Operation.List(ctx, ListOperationsFilter{
-				BalanceID:            opts.balanceID,
-				OrderByCreatedAtDesc: true,
-				Pagination: &Pagination{
-					Limit: operationsPerKeyboard,
-					Page:  opts.page,
-				},
-				Location: opts.location,
-			})
-			if err != nil {
-				logger.Error().Err(err).Msg("list operations from store")
-				return nil, fmt.Errorf("list operations from store: %w", err)
-			}
-			convertOperationsToLocation(operations, opts.location)
-			if len(operations) == 0 {
-				logger.Info().Msg("operations not found")
-				return nil, ErrOperationsNotFound
-			}
-
-			return operations, nil
-		})
-	if err != nil {
-		logger.Error().Err(err).Msg("paginate operations")
-		return nil, fmt.Errorf("paginate operations: %w", err)
-	}
-
-	return keyboard, nil
-}
-
 type getOperationsHistoryKeyboardOptions struct {
 	balances       []model.Balance
 	creationPeriod model.CreationPeriod

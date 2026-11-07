@@ -26,29 +26,6 @@ type Operation struct {
 	UpdatedAt time.Time `db:"updated_at"`
 }
 
-var typeShort = map[OperationType]string{
-	OperationTypeIncoming:    "IN",
-	OperationTypeSpending:    "OUT",
-	OperationTypeTransfer:    "TRF",
-	OperationTypeTransferIn:  "TRF-IN",
-	OperationTypeTransferOut: "TRF-OUT",
-}
-
-// GetName returns a string representation of the operation.
-func (o Operation) GetName() string {
-	truncatedDescription := o.Description
-	if len(o.Description) > 10 {
-		truncatedDescription = o.Description[:10] + "..."
-	}
-
-	return fmt.Sprintf("%s, %s, %s, %s",
-		o.CreatedAt.Format("02.01 15:04:05"),
-		o.Amount.StringFixed(),
-		typeShort[o.Type],
-		truncatedDescription,
-	)
-}
-
 // GetID returns the ID of the operation.
 func (o Operation) GetID() string {
 	return o.ID
