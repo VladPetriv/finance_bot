@@ -1068,22 +1068,24 @@ func (h handlerService) handleChooseBalanceFlowStepForUpdateOperation(ctx contex
 	opts.stateMetaData.Add(model.BalanceNameMetadataKey, opts.message.GetText())
 	opts.stateMetaData.Add(model.PageMetadataKey, firstPage)
 
-	keyboard, err := h.getOperationsKeyboard(ctx, getOperationsKeyboardOptions{
-		balanceID: opts.user.GetBalance(opts.message.GetText()).ID,
-		page:      firstPage,
-		location:  opts.user.GetLocation(),
+	message, keyboard, err := h.getOperationPicker(ctx, getOperationPickerOptions{
+		header:   "Choose operation to update:",
+		balance:  *opts.user.GetBalance(opts.message.GetText()),
+		page:     firstPage,
+		location: opts.user.GetLocation(),
 	})
 	if err != nil {
-		logger.Error().Err(err).Msg("get operations keyboard")
-		return "", fmt.Errorf("get operations keyboard: %w", err)
+		logger.Error().Err(err).Msg("get operation picker")
+		return "", fmt.Errorf("get operation picker: %w", err)
 	}
 
 	return model.ChooseOperationToUpdateFlowStep, h.apis.Messenger.UpdateMessage(UpdateMessageOptions{
-		ChatID:                opts.message.GetChatID(),
-		MessageID:             opts.message.GetMessageID(),
-		InlineMessageID:       opts.message.GetInlineMessageID(),
-		UpdatedMessage:        "Choose operation to update:",
-		UpdatedInlineKeyboard: keyboard,
+		ChatID:                  opts.message.GetChatID(),
+		MessageID:               opts.message.GetMessageID(),
+		InlineMessageID:         opts.message.GetInlineMessageID(),
+		FormatMessageInMarkDown: true,
+		UpdatedMessage:          message,
+		UpdatedInlineKeyboard:   keyboard,
 	})
 }
 
@@ -1102,22 +1104,24 @@ func (h handlerService) handleChooseOperationToUpdateFlowStep(ctx context.Contex
 		nextPage := calculateNextPage(messageText, opts.stateMetaData)
 		opts.stateMetaData.Add(model.PageMetadataKey, nextPage)
 
-		keyboard, err := h.getOperationsKeyboard(ctx, getOperationsKeyboardOptions{
-			balanceID: opts.user.GetBalance(balanceName).ID,
-			page:      nextPage,
-			location:  opts.user.GetLocation(),
+		message, keyboard, err := h.getOperationPicker(ctx, getOperationPickerOptions{
+			header:   "Choose operation to update:",
+			balance:  *opts.user.GetBalance(balanceName),
+			page:     nextPage,
+			location: opts.user.GetLocation(),
 		})
 		if err != nil {
-			logger.Error().Err(err).Msg("get operations keyboard")
-			return "", fmt.Errorf("get operations keyboard: %w", err)
+			logger.Error().Err(err).Msg("get operation picker")
+			return "", fmt.Errorf("get operation picker: %w", err)
 		}
 
 		return model.ChooseOperationToUpdateFlowStep, h.apis.Messenger.UpdateMessage(UpdateMessageOptions{
-			ChatID:                opts.message.GetChatID(),
-			MessageID:             opts.message.GetMessageID(),
-			InlineMessageID:       opts.message.GetInlineMessageID(),
-			UpdatedMessage:        "Choose operation to update:",
-			UpdatedInlineKeyboard: keyboard,
+			ChatID:                  opts.message.GetChatID(),
+			MessageID:               opts.message.GetMessageID(),
+			InlineMessageID:         opts.message.GetInlineMessageID(),
+			FormatMessageInMarkDown: true,
+			UpdatedMessage:          message,
+			UpdatedInlineKeyboard:   keyboard,
 		})
 	}
 
