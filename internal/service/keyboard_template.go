@@ -1,6 +1,6 @@
 package service
 
-import "github.com/VladPetriv/finance_bot/internal/model"
+import "github.com/vl-ptrv/finance_bot/internal/model"
 
 var (
 	defaultKeyboardRows = []KeyboardRow{

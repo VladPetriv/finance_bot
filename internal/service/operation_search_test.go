@@ -4,10 +4,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/VladPetriv/finance_bot/internal/model"
-	"github.com/VladPetriv/finance_bot/pkg/money"
-	"github.com/VladPetriv/finance_bot/pkg/typecast"
 	"github.com/stretchr/testify/assert"
+	"github.com/vl-ptrv/finance_bot/internal/model"
+	"github.com/vl-ptrv/finance_bot/pkg/money"
+	"github.com/vl-ptrv/finance_bot/pkg/typecast"
 )
 
 func TestBuildSearchOperationsFilter(t *testing.T) {

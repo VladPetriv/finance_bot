@@ -1,4 +1,4 @@
-module github.com/VladPetriv/finance_bot
+module github.com/vl-ptrv/finance_bot
 
 go 1.27.1
 

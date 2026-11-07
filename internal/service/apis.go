@@ -3,8 +3,8 @@ package service
 import (
 	"context"
 
-	"github.com/VladPetriv/finance_bot/pkg/errs"
-	"github.com/VladPetriv/finance_bot/pkg/money"
+	"github.com/vl-ptrv/finance_bot/pkg/errs"
+	"github.com/vl-ptrv/finance_bot/pkg/money"
 )
 
 // APIs represents structure containing all the APIs that the application uses.

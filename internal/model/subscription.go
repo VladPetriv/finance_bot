@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/VladPetriv/finance_bot/pkg/money"
+	"github.com/vl-ptrv/finance_bot/pkg/money"
 )
 
 // BalanceSubscription represents a subscription for an internal user balance.

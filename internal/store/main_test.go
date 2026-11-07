@@ -5,14 +5,14 @@ import (
 	"testing"
 	"time"
 
-	"github.com/VladPetriv/finance_bot/config"
-	"github.com/VladPetriv/finance_bot/internal/migrations"
-	"github.com/VladPetriv/finance_bot/pkg/database"
-	"github.com/VladPetriv/finance_bot/pkg/logger"
 	"github.com/lib/pq"
 	"github.com/ory/dockertest/v3"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"github.com/vl-ptrv/finance_bot/config"
+	"github.com/vl-ptrv/finance_bot/internal/migrations"
+	"github.com/vl-ptrv/finance_bot/pkg/database"
+	"github.com/vl-ptrv/finance_bot/pkg/logger"
 )
 
 var (

@@ -2,7 +2,7 @@ package store
 
 import (
 	sq "github.com/Masterminds/squirrel"
-	"github.com/VladPetriv/finance_bot/internal/service"
+	"github.com/vl-ptrv/finance_bot/internal/service"
 )
 
 func applyLimitAndOffsetForStatement(stmt sq.SelectBuilder, paginationFilter *service.Pagination) sq.SelectBuilder {

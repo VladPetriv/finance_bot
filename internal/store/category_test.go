@@ -4,12 +4,12 @@ import (
 	"context"
 	"testing"
 
-	"github.com/VladPetriv/finance_bot/internal/model"
-	"github.com/VladPetriv/finance_bot/internal/service"
-	"github.com/VladPetriv/finance_bot/internal/store"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"github.com/vl-ptrv/finance_bot/internal/model"
+	"github.com/vl-ptrv/finance_bot/internal/service"
+	"github.com/vl-ptrv/finance_bot/internal/store"
 )
 
 func TestCategory_Create(t *testing.T) {
