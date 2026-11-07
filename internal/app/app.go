@@ -7,15 +7,15 @@ import (
 	"os/signal"
 	"syscall"
 
-	"github.com/VladPetriv/finance_bot/config"
-	currencybeacon "github.com/VladPetriv/finance_bot/internal/api/currency_beacon"
-	"github.com/VladPetriv/finance_bot/internal/api/gemini"
-	"github.com/VladPetriv/finance_bot/internal/api/telegram"
-	"github.com/VladPetriv/finance_bot/internal/migrations"
-	"github.com/VladPetriv/finance_bot/internal/service"
-	"github.com/VladPetriv/finance_bot/internal/store"
-	"github.com/VladPetriv/finance_bot/pkg/database"
-	"github.com/VladPetriv/finance_bot/pkg/logger"
+	"github.com/vl-ptrv/finance_bot/config"
+	currencybeacon "github.com/vl-ptrv/finance_bot/internal/api/currency_beacon"
+	"github.com/vl-ptrv/finance_bot/internal/api/gemini"
+	"github.com/vl-ptrv/finance_bot/internal/api/telegram"
+	"github.com/vl-ptrv/finance_bot/internal/migrations"
+	"github.com/vl-ptrv/finance_bot/internal/service"
+	"github.com/vl-ptrv/finance_bot/internal/store"
+	"github.com/vl-ptrv/finance_bot/pkg/database"
+	"github.com/vl-ptrv/finance_bot/pkg/logger"
 )
 
 // Run is used to start the application.

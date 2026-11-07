@@ -4,10 +4,10 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/VladPetriv/finance_bot/internal/model"
-	"github.com/VladPetriv/finance_bot/pkg/errs"
-	"github.com/VladPetriv/finance_bot/pkg/logger"
 	"github.com/google/uuid"
+	"github.com/vl-ptrv/finance_bot/internal/model"
+	"github.com/vl-ptrv/finance_bot/pkg/errs"
+	"github.com/vl-ptrv/finance_bot/pkg/logger"
 )
 
 type flowStepHandlerFunc func(ctx context.Context, opts flowProcessingOptions) (nextStep model.FlowStep, err error)

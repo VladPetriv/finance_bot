@@ -6,10 +6,10 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/VladPetriv/finance_bot/internal/migrations"
-	"github.com/VladPetriv/finance_bot/pkg/money"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"github.com/vl-ptrv/finance_bot/internal/migrations"
+	"github.com/vl-ptrv/finance_bot/pkg/money"
 )
 
 func TestBackfillAmountMinor(t *testing.T) {

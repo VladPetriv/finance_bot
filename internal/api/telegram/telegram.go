@@ -4,11 +4,11 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/VladPetriv/finance_bot/internal/service"
 	"github.com/fasthttp/router"
 	"github.com/mymmrac/telego"
 	"github.com/mymmrac/telego/telegoutil"
 	"github.com/valyala/fasthttp"
+	"github.com/vl-ptrv/finance_bot/internal/service"
 )
 
 type telegramMessenger struct {

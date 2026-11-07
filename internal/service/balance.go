@@ -5,10 +5,10 @@ import (
 	"fmt"
 	"strconv"
 
-	"github.com/VladPetriv/finance_bot/internal/model"
-	"github.com/VladPetriv/finance_bot/pkg/errs"
-	"github.com/VladPetriv/finance_bot/pkg/money"
 	"github.com/google/uuid"
+	"github.com/vl-ptrv/finance_bot/internal/model"
+	"github.com/vl-ptrv/finance_bot/pkg/errs"
+	"github.com/vl-ptrv/finance_bot/pkg/money"
 )
 
 func (h handlerService) handleCreateInitialBalanceFlowStep(ctx context.Context, opts flowProcessingOptions) (model.FlowStep, error) {

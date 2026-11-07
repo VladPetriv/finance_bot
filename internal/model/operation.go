@@ -6,7 +6,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/VladPetriv/finance_bot/pkg/money"
+	"github.com/vl-ptrv/finance_bot/pkg/money"
 )
 
 // Operation represent a financial operation.
@@ -24,29 +24,6 @@ type Operation struct {
 
 	CreatedAt time.Time `db:"created_at"`
 	UpdatedAt time.Time `db:"updated_at"`
-}
-
-var typeShort = map[OperationType]string{
-	OperationTypeIncoming:    "IN",
-	OperationTypeSpending:    "OUT",
-	OperationTypeTransfer:    "TRF",
-	OperationTypeTransferIn:  "TRF-IN",
-	OperationTypeTransferOut: "TRF-OUT",
-}
-
-// GetName returns a string representation of the operation.
-func (o Operation) GetName() string {
-	truncatedDescription := o.Description
-	if len(o.Description) > 10 {
-		truncatedDescription = o.Description[:10] + "..."
-	}
-
-	return fmt.Sprintf("%s, %s, %s, %s",
-		o.CreatedAt.Format("02.01 15:04:05"),
-		o.Amount.StringFixed(),
-		typeShort[o.Type],
-		truncatedDescription,
-	)
 }
 
 // GetID returns the ID of the operation.
@@ -144,6 +121,46 @@ func GetOperationTypeLabel(t OperationType) (string, string) {
 	default:
 		return "❓", string(t)
 	}
+}
+
+// OperationBlockSeparator is the line that closes a list of operation blocks.
+const OperationBlockSeparator = "━━━━━━━━━━━━━━━"
+
+// OperationBlockData is the input for rendering one operation block.
+type OperationBlockData struct {
+	Operation      Operation
+	CategoryTitle  string
+	CurrencySymbol string
+	BalanceName    string
+}
+
+// BuildOperationBlock renders one operation as a Markdown block.
+func BuildOperationBlock(data OperationBlockData) string {
+	emoji, typeLabel := GetOperationTypeLabel(data.Operation.Type)
+	block := fmt.Sprintf(
+		"%s\n"+
+			"📌 *Operation:* %s %s\n"+
+			"📝 *Description:* %s\n"+
+			"📂 *Category:* %s\n"+
+			"💰 *Amount:* %s%s\n",
+		OperationBlockSeparator,
+		emoji,
+		typeLabel,
+		data.Operation.Description,
+		data.CategoryTitle,
+		data.Operation.Amount.StringFixed(),
+		data.CurrencySymbol,
+	)
+
+	if data.BalanceName != "" {
+		block += fmt.Sprintf("🏦 *Balance:* %s\n", data.BalanceName)
+	}
+
+	if data.Operation.ExchangeRate != "" {
+		block += fmt.Sprintf("💱 *Exchange Rate:* %s\n", data.Operation.ExchangeRate)
+	}
+
+	return block + fmt.Sprintf("🕐 *Date:* %s\n", data.Operation.CreatedAt.Format(time.ANSIC))
 }
 
 // OperationType represents the type of an operation, which can be either incoming, spending or transfer.

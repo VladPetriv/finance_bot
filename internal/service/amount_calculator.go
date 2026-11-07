@@ -1,8 +1,8 @@
 package service
 
 import (
-	"github.com/VladPetriv/finance_bot/internal/model"
-	"github.com/VladPetriv/finance_bot/pkg/money"
+	"github.com/vl-ptrv/finance_bot/internal/model"
+	"github.com/vl-ptrv/finance_bot/pkg/money"
 )
 
 func calculateIncomingOperation(balanceAmount *money.Money, incomeAmount money.Money) {

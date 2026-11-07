@@ -7,8 +7,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/VladPetriv/finance_bot/internal/model"
-	"github.com/VladPetriv/finance_bot/pkg/errs"
+	"github.com/vl-ptrv/finance_bot/internal/model"
+	"github.com/vl-ptrv/finance_bot/pkg/errs"
 )
 
 type identifiable interface {
@@ -92,65 +92,6 @@ const (
 	operationsPerKeyboardRow = 1
 )
 
-type getOperationsKeyboardOptions struct {
-	balanceID string
-	page      int
-	location  *time.Location
-}
-
-func (h handlerService) getOperationsKeyboard(ctx context.Context, opts getOperationsKeyboardOptions) ([]InlineKeyboardRow, error) {
-	logger := h.logger.With().Str("name", "handlerService.getOperationsKeyboard").Logger()
-	logger.Debug().Any("opts", opts).Msg("got args")
-
-	operationsCount, err := h.stores.Operation.Count(ctx, ListOperationsFilter{
-		BalanceID: opts.balanceID,
-	})
-	if err != nil {
-		logger.Error().Err(err).Msg("count operations")
-		return nil, fmt.Errorf("count operations: %w", err)
-	}
-	if operationsCount == 0 {
-		logger.Info().Any("balanceID", opts.balanceID).Msg("operations not found")
-		return nil, ErrOperationsNotFound
-	}
-
-	keyboard, err := paginateInlineKeyboard(
-		inlineKeyboardPaginatorOptions{
-			totalCount:     operationsCount,
-			maxPerKeyboard: operationsPerKeyboard,
-			maxPerRow:      operationsPerKeyboardRow,
-			currentPage:    opts.page,
-		},
-		func() ([]model.Operation, error) {
-			operations, err := h.stores.Operation.List(ctx, ListOperationsFilter{
-				BalanceID:            opts.balanceID,
-				OrderByCreatedAtDesc: true,
-				Pagination: &Pagination{
-					Limit: operationsPerKeyboard,
-					Page:  opts.page,
-				},
-				Location: opts.location,
-			})
-			if err != nil {
-				logger.Error().Err(err).Msg("list operations from store")
-				return nil, fmt.Errorf("list operations from store: %w", err)
-			}
-			convertOperationsToLocation(operations, opts.location)
-			if len(operations) == 0 {
-				logger.Info().Msg("operations not found")
-				return nil, ErrOperationsNotFound
-			}
-
-			return operations, nil
-		})
-	if err != nil {
-		logger.Error().Err(err).Msg("paginate operations")
-		return nil, fmt.Errorf("paginate operations: %w", err)
-	}
-
-	return keyboard, nil
-}
-
 type getOperationsHistoryKeyboardOptions struct {
 	balances       []model.Balance
 	creationPeriod model.CreationPeriod
@@ -223,7 +164,6 @@ func (h handlerService) getOperationsHistoryKeyboard(ctx context.Context, opts g
 			}
 			outputMessage += periodLine + "\n\n"
 
-			separator := "━━━━━━━━━━━━━━━"
 			for _, o := range operations {
 				category, err := h.stores.Category.Get(ctx, GetCategoryFilter{
 					ID: o.CategoryID,
@@ -237,34 +177,19 @@ func (h handlerService) getOperationsHistoryKeyboard(ctx context.Context, opts g
 					continue
 				}
 
-				emoji, typeLabel := model.GetOperationTypeLabel(o.Type)
-				outputMessage += fmt.Sprintf(
-					"%s\n"+
-						"📌 *Operation:* %s %s\n"+
-						"📝 *Description:* %s\n"+
-						"📂 *Category:* %s\n"+
-						"💰 *Amount:* %s%s\n",
-					separator,
-					emoji,
-					typeLabel,
-					o.Description,
-					category.Title,
-					o.Amount.StringFixed(),
-					balancesByID[o.BalanceID].GetCurrency().Symbol,
-				)
-
+				balanceName := ""
 				if len(opts.balances) > 1 {
-					outputMessage += fmt.Sprintf("🏦 *Balance:* %s\n", balancesByID[o.BalanceID].Name)
+					balanceName = balancesByID[o.BalanceID].Name
 				}
 
-				if o.ExchangeRate != "" {
-					outputMessage += fmt.Sprintf("💱 *Exchange Rate:* %s\n", o.ExchangeRate)
-				}
-
-				outputMessage += fmt.Sprintf("🕐 *Date:* %s\n", o.CreatedAt.Format(time.ANSIC))
-
+				outputMessage += model.BuildOperationBlock(model.OperationBlockData{
+					Operation:      o,
+					CategoryTitle:  category.Title,
+					CurrencySymbol: balancesByID[o.BalanceID].GetCurrency().Symbol,
+					BalanceName:    balanceName,
+				})
 			}
-			outputMessage += separator
+			outputMessage += model.OperationBlockSeparator
 
 			return outputMessage, nil
 		},

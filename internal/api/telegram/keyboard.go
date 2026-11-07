@@ -1,9 +1,9 @@
 package telegram
 
 import (
-	"github.com/VladPetriv/finance_bot/internal/service"
 	"github.com/mymmrac/telego"
 	"github.com/mymmrac/telego/telegoutil"
+	"github.com/vl-ptrv/finance_bot/internal/service"
 )
 
 func (t *telegramMessenger) createKeyboard(rows []service.KeyboardRow) *telego.ReplyKeyboardMarkup {

@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/VladPetriv/finance_bot/pkg/money"
+	"github.com/vl-ptrv/finance_bot/pkg/money"
 )
 
 // Balance represents a balance model.

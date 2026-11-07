@@ -6,15 +6,15 @@ import (
 	"testing"
 	"time"
 
-	"github.com/VladPetriv/finance_bot/internal/model"
-	"github.com/VladPetriv/finance_bot/internal/service"
-	"github.com/VladPetriv/finance_bot/internal/store"
-	"github.com/VladPetriv/finance_bot/pkg/database"
-	"github.com/VladPetriv/finance_bot/pkg/money"
-	"github.com/VladPetriv/finance_bot/pkg/typecast"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"github.com/vl-ptrv/finance_bot/internal/model"
+	"github.com/vl-ptrv/finance_bot/internal/service"
+	"github.com/vl-ptrv/finance_bot/internal/store"
+	"github.com/vl-ptrv/finance_bot/pkg/database"
+	"github.com/vl-ptrv/finance_bot/pkg/money"
+	"github.com/vl-ptrv/finance_bot/pkg/typecast"
 )
 
 func TestOperation_Create(t *testing.T) {
