@@ -123,8 +123,10 @@ func GetOperationTypeLabel(t OperationType) (string, string) {
 	}
 }
 
+// OperationBlockSeparator is the line that closes a list of operation blocks.
 const OperationBlockSeparator = "━━━━━━━━━━━━━━━"
 
+// OperationBlockData is the input for rendering one operation block.
 type OperationBlockData struct {
 	Operation      Operation
 	CategoryTitle  string
@@ -132,6 +134,7 @@ type OperationBlockData struct {
 	BalanceName    string
 }
 
+// BuildOperationBlock renders one operation as a Markdown block.
 func BuildOperationBlock(data OperationBlockData) string {
 	emoji, typeLabel := GetOperationTypeLabel(data.Operation.Type)
 	block := fmt.Sprintf(
