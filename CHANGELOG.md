@@ -1,3 +1,11 @@
+# [0.14.0](https://github.com/VladPetriv/finance_bot/compare/v0.13.0...v0.14.0) (2026-11-07)
+
+
+### Features
+
+* **service:** add numbered operation picker to the update flow ([7edaa8e](https://github.com/VladPetriv/finance_bot/commit/7edaa8ee8581f119ced4480fb4dfc4c4b75ec55b))
+* **service:** move delete flow to operation picker and remove old keyboard ([5571f47](https://github.com/VladPetriv/finance_bot/commit/5571f47e07b059a5ed0257b2fce270269db71a59))
+
 # [0.13.0](https://github.com/VladPetriv/finance_bot/compare/v0.12.1...v0.13.0) (2026-11-07)
 
 
